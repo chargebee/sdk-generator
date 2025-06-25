@@ -932,46 +932,12 @@ public class Java extends Language {
   }
 
   public Map<String, List<SingularSubResource>> getMultiSubsForBatch(Action action) {
-    List<SingularSubResource> subResources = new ArrayList<>();
-    for (Parameter iparam : action.requestBodyParameters()) {
-      if (iparam.isCompositeArrayBody()) {
-        Attribute multiAttribute =
-            new Attribute(iparam.getName(), iparam.schema, iparam.isRequired);
-        if (!multiAttribute.isNotHiddenAttribute()) continue;
-        if (!multiAttribute.attributes().isEmpty()
-            && multiAttribute.attributes().stream().noneMatch(Attribute::isNotHiddenAttribute))
-          continue;
-        multiAttribute
-            .attributes()
-            .forEach(
-                attribute -> {
-                  String name = attribute.name;
-                  if (name.equals("juris_type")) {
-                    name = "Juris";
-                  }
-                  if (attribute.isHiddenParameter()) return;
-                  if (!attribute.isNotHiddenAttribute()) return;
-                  SingularSubResource subResource = new SingularSubResource();
-                  subResource.setDeprecated(attribute.isDeprecated());
-                  subResource.setListParam(false);
-                  subResource.setReturnGeneric(getReturnGeneric(attribute));
-                  subResource.setMulti(isMultiFilterAttribute(attribute));
-                  subResource.setMethName(
-                      getName(singularize(iparam.getName()) + "_" + attribute.name));
-                  subResource.setJavaType(
-                      dataTypeForMultiAttribute(attribute, iparam.getName(), action.modelName()));
-                  subResource.setVarName(
-                      singularize(getName(iparam.getName())) + toClazName(attribute.name));
-                  subResource.setPutMethodName(attribute.isRequired ? "add" : "addOpt");
-                  subResource.setResName(iparam.getName());
-                  subResource.setName(attribute.name);
-                  subResource.setHasBatch(action.isBatch());
-                  subResource.setSortOrder(
-                      sortOrder(iparam.schema.getProperties().get(attribute.name).getItems()));
-                  subResources.add(subResource);
-                });
-      }
-    }
+    List<SingularSubResource> subResources = getMultiSubs(action);
+    return subResources.stream().collect(Collectors.groupingBy(SingularSubResource::getResName));
+  }
+
+  public Map<String, List<SingularSubResource>> getSingularForJsonTypeRequest(Action action) {
+    List<SingularSubResource> subResources = getSingularSubs(action);
     return subResources.stream().collect(Collectors.groupingBy(SingularSubResource::getResName));
   }
 
@@ -1060,6 +1026,7 @@ public class Java extends Language {
       if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST)) {
         operationRequest.setIdempotent(action.isIdempotent());
       }
+      operationRequest.setSingularSubsForJsonRequest(getSingularForJsonTypeRequest(action));
       operationRequest.setMultiSubsForBatch(
           getMultiSubsForBatch(action)); // for batch there will be only one top level multiSubs
       operationRequest.setRawOperationName(GenUtil.toClazName(action.name));
