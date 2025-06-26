@@ -241,34 +241,13 @@ public class Dotnet extends Language {
         .toList();
   }
 
+  public Map<String, List<SingularSubResource>> getSingularForJsonTypeRequest(Action action) {
+    List<SingularSubResource> subResources = getSingularSubs(action);
+    return subResources.stream().collect(Collectors.groupingBy(SingularSubResource::getResName));
+  }
+
   public Map<String, List<SingularSubResource>> getMultiSubsForBatch(Action action) {
-    List<SingularSubResource> subResources = new ArrayList<>();
-    ActionAssist actionAssist = new ActionAssist().setAction(action).setFlatMultiAttribute(true);
-    for (Attribute attribute : actionAssist.multiSubAttributes()) {
-      attribute
-          .attributes()
-          .forEach(
-              subAttribute -> {
-                SingularSubResource subResource = new SingularSubResource();
-                subResource.setDeprecated(subAttribute.isDeprecated());
-                subResource.setListParam(false);
-                subResource.setReturnGeneric(getReturnGeneric(subAttribute));
-                subResource.setMulti(subAttribute.isMultiAttribute());
-                subResource.setDotNetMethName(
-                    getName(singularize(attribute.name) + "_" + subAttribute.name));
-                subResource.setDotNetType(
-                    dataTypeForMultiAttribute(subAttribute, attribute.name, action.modelName()));
-                subResource.setVarName(
-                    singularize(StringUtils.uncapitalize(singularize(getName(attribute.name))))
-                        + getName(subAttribute.name));
-                subResource.setDotNetPutMethName(
-                    getRequired(subAttribute).equals("true") ? "Add" : "AddOpt");
-                subResource.setResName(attribute.name);
-                subResource.setName(subAttribute.name);
-                subResource.setSortOrder(subAttribute.sortOrder());
-                subResources.add(subResource);
-              });
-    }
+    List<SingularSubResource> subResources = getMultiSubs(action);
     return subResources.stream().collect(Collectors.groupingBy(SingularSubResource::getResName));
   }
 
@@ -314,6 +293,7 @@ public class Dotnet extends Language {
       operationRequest.setSingularSubs(getSingularSubs(action));
       operationRequest.setMultiSubs(getMultiSubs(action));
       operationRequest.setMultiSubsForBatch(getMultiSubsForBatch(action));
+      operationRequest.setSingularSubsForJsonRequest(getSingularForJsonTypeRequest(action));
       operationRequest.setRawOperationName(GenUtil.toClazName(action.name));
       operationRequest.setJsonRequest(action.isOperationNeedsJsonInput());
       operationRequest.setHasBatch(action.isBatch());

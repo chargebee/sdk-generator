@@ -119,7 +119,7 @@ namespace ChargeBee.Models
             {
                 m_params.{{dotNetPutMethName}}("{{name}}", {{{varName}}});
                 return this;
-            }{{/if}}{{/each}}
+            }{{/if}}{{/each}}{{#if (not jsonRequest) }}
             {{~#each singularSubs}}{{#if deprecated}}
             [Obsolete]{{/if}}{{~#if listParam}}
             public {{listType}}{{returnGeneric}} {{dotNetMethName}}()
@@ -130,7 +130,12 @@ namespace ChargeBee.Models
             {
                 m_params.{{dotNetPutMethName}}("{{resName}}[{{name}}]", {{{varName}}});
                 return this;
-            }{{/if}}{{/each}}{{#if (not jsonRequest) }}{{~#each multiSubs}}{{#if deprecated}}
+            }{{/if}}{{/each}}{{else}}{{~#each singularSubsForJsonRequest as |subList key|}}
+            public {{../clazName}} {{camelCase key}}({{{snakeCaseToPascalCaseAndSingularize key}}}{{{../rawOperationName}}}InputParams data){
+                m_params.Add("{{key}}", data);
+                return this;
+            }{{/each}}
+        {{/if}}{{#if (not jsonRequest) }}{{~#each multiSubs}}{{#if deprecated}}
             [Obsolete]{{/if}}
             public {{../clazName}} {{dotNetMethName}}(int index, {{{dotNetType}}} {{varName}}) {{NonBreakingSpace}}
             {
@@ -210,7 +215,7 @@ namespace ChargeBee.Models
                 m_jobj = jobj;
             }
         }{{/if}}
-{{#each operRequestClasses}}{{#if (and hasBatch  jsonRequest) }}{{#each multiSubsForBatch as |subList key|}}
+{{#each operRequestClasses}}{{#if jsonRequest }}{{#each multiSubsForBatch as |subList key|}}
         public class {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams { {{#each subList as | singularSub | }}
             public  {{{singularSub.dotNetType}}} {{snakeCaseToPascalCase singularSub.name}} { get; }{{/each}}
             public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder builder){
@@ -247,7 +252,45 @@ namespace ChargeBee.Models
             }
 
         }
-        {{/each}}{{/if}}{{/each}}
+        {{/each}}{{#each singularSubsForJsonRequest as |subList key|}}
+        public class {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams { {{#each subList as | singularSub | }}
+            public  {{{singularSub.dotNetType}}} {{snakeCaseToPascalCase singularSub.name}} { get; }{{/each}}
+            public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder builder){
+                {{#each subList as |singularSub|}}this.{{snakeCaseToPascalCase singularSub.name}} = builder.Get{{snakeCaseToPascalCase singularSub.name}}();
+                {{/each}}
+            }
+            public JObject ToJObject()
+            {
+                return new JObject
+                {
+                    {{#each subList as |singularSub|}}["{{{singularSub.name}}}"] =  JToken.FromObject(this.{{snakeCaseToPascalCase singularSub.name}}),
+                    {{/each}}
+                };
+            }
+        }
+        public class {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder
+        { {{#each subList as |singularSub|}}
+            private {{{singularSub.dotNetType}}} {{snakeCaseToPascalCase singularSub.name}}; {{/each}}
+    {{#each subList as |singularSub|}}
+            public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder Set{{snakeCaseToPascalCase singularSub.name}} ({{{singularSub.dotNetType}}} {{snakeCaseToPascalCase singularSub.name}})
+            {
+                this.{{snakeCaseToPascalCase singularSub.name}} = {{snakeCaseToPascalCase singularSub.name}};
+                return this;
+            } {{/each}}
+
+    {{#each subList as |singularSub|}}
+            public {{{singularSub.dotNetType}}} Get{{snakeCaseToPascalCase singularSub.name}} ()
+            {
+                return this.{{snakeCaseToPascalCase singularSub.name}};
+            } {{/each}}
+
+            public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams Build() {
+                return new {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams(this);
+            }
+
+        }
+{{/each}}
+        {{/if}}{{/each}}
         #endregion
     }
 }
