@@ -1,0 +1,66 @@
+# This file is part of the Chargebee SDK Generator project.
+
+name: 🚀 Feature Request
+description: I have a suggestion to improve the SDK generator (and may want to implement it 🙂)!
+title: "[Feature] <short descriptive title>"
+labels: ["enhancement", "sdk-gen"]
+
+body:
+  - type: markdown
+    attributes:
+      value: >
+        #### 🙏 Before submitting a feature request:
+        - Please search [existing issues](https://github.com/chargebee/sdk-generator/issues) to avoid duplicates.
+        - If it's a question or open-ended discussion, consider opening a [GitHub Discussion](https://github.com/chargebee/sdk-generator/discussions).
+        - For contribution guidelines, see the [Developer Guide](https://github.com/chargebee/sdk-generator/blob/main/CONTRIBUTING.md).
+
+  - type: textarea
+    attributes:
+      label: ✨ Feature Description
+      description: >
+        What would you like to see added, improved, or changed in the SDK generator?
+        Be as detailed as possible so others can understand your idea clearly.
+      placeholder: |
+        e.g. Support for generating request validation decorators in the Python SDK
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: 🧩 Is your feature request related to a problem?
+      description: A clear and concise description of what the current limitation or problem is.
+      placeholder: |
+        e.g. Our users often misuse optional vs required fields in API requests, and we want to enforce validation via SDKs.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: ✅ Suggested Solution
+      description: Describe your proposed solution. You can include implementation hints or expected CLI options.
+      placeholder: |
+        e.g. Add a new `--with-validation` flag to the CLI and emit language-specific validation stubs.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: 🤔 Alternatives Considered
+      description: What other approaches did you consider? Why is your suggestion preferable?
+      placeholder: |
+        e.g. We considered runtime validation wrappers but prefer static generation for performance.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: 📚 Additional Context
+      description: Add any additional info or links (e.g. RFCs, related tools, screenshots).
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: >
+        👏 Thank you for helping improve the Chargebee SDK generator!  
+        Please review our [Contributing Guidelines](https://github.com/chargebee/sdk-generator/blob/main/CONTRIBUTING.md) before submitting code.

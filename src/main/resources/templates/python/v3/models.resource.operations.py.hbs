@@ -1,0 +1,51 @@
+{{{ operationImports }}}
+
+@dataclass
+class {{ clazName }}:
+
+    env: environment.Environment{{#if enums}}{{#each enums}}
+    class {{ snakeCaseToPascalCase name }}(Enum):{{#each possibleValues}}
+        {{ toUpperCase name }} = "{{ name }}"{{/each}}
+
+        def __str__(self):
+            return self.value{{/each}}{{/if}}{{#if subResources}}{{~#each subResources}}
+
+    class {{clazName}}(TypedDict):
+{{{cols}}}
+{{~/each}}{{~/if}}
+{{#if operations}}{{#each operations}}
+{{~#each inputSubResParams}}
+{{~#if multi}}
+    class {{methodName}}{{camelSingularResName}}Params(TypedDict):
+{{~else}}
+    class {{methodName}}{{camelResName}}Params(TypedDict):
+{{~/if}}
+{{{subParams}}}
+{{~/each}}
+{{~/each}}
+{{~/if}}
+{{#if event}}{{{includeFile "src/main/resources/templates/python/v3/event.py.hbs"}}}
+{{/if}}{{#if export}}{{{includeFile "src/main/resources/templates/python/v3/export.py.hbs"}}}
+{{/if}}{{#if timeMachine}}{{{includeFile "src/main/resources/templates/python/v3/timeMachine.py.hbs"}}}
+{{/if}}{{~#each operations}}{{#if hasInputParams}}
+
+    class {{clazName}}Params(TypedDict):
+{{~#if inputParams}}
+{{{inputParams}}}
+{{~/if}}
+{{~/if}}{{/each}}{{#if actions}}{{#each actions}}
+
+    def {{ camelCaseToSnakeCase name }}(self, {{#if hasPathParameters}}id, {{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}params: {{ operationNameToPascalCase name }}Params{{#and isAllRequestBodyParamsOptional isAllQueryParamsOptional}} = None{{/and}}, {{/or}}headers=None) -> {{ operationNameToPascalCase name }}Response:
+        jsonKeys = { {{#each jsonKeys}}{{#each this}}
+            "{{@key}}": {{this}},
+        {{~/each}}{{/each}}
+        }
+        options = {
+          {{~#each options}}
+           "{{@key}}": {{#if (eq this true)}}True{{else if (eq this false)}}False{{else}}{{this}}{{/if}},
+          {{/each~}}
+       }
+        return request.{{#neq name "list"}}send{{else}}send_list_request{{/neq}}('{{{lower httpRequestType}}}', request.uri_path("{{urlPrefix}}"{{#if hasPathParameters}}, id{{/if}}{{#neq urlSuffix ""}}, "{{urlSuffix}}"{{/neq}}), self.env, {{#or hasRequestBodyParameters hasQueryParameters}}cast(Dict[Any, Any], params){{else}}None{{/or}}, headers, {{ operationNameToPascalCase name }}Response,{{#if subDomain}}"{{{subDomain}}}"{{else}}None{{/if}}, {{#if isOperationNeedsJsonInput}}True{{else}}False{{/if}}, jsonKeys, options)
+{{~/each}}{{else}}
+    pass
+{{/if}}

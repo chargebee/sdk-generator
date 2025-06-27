@@ -1,0 +1,128 @@
+<?php
+
+namespace Chargebee\Resources\Customer;
+
+class Customer  {
+    /**
+    *
+    * @var ?string $id
+    */
+    public ?string $id;
+
+    /**
+    *
+    * @var ?int $net_term_days
+    */
+    public ?int $net_term_days;
+
+    /**
+    *
+    * @var ?int $vat_number_validated_time
+    */
+    public ?int $vat_number_validated_time;
+
+    /**
+    *
+    * @var ?int $resource_version
+    */
+    public ?int $resource_version;
+
+    /**
+    *
+    * @var ?bool $auto_close_invoices
+    */
+    public ?bool $auto_close_invoices;
+
+    /**
+    *
+    * @var mixed $meta_data
+    */
+    public mixed $meta_data;
+
+    /**
+    *
+    * @var mixed $exemption_details
+    */
+    public mixed $exemption_details;
+
+    /**
+    *
+    * @var ?\Chargebee\Resources\Customer\Enums\Type $type
+    */
+    public ?\Chargebee\Resources\Customer\Enums\Type $type;
+
+    /**
+    * @var array<string> $knownFields
+    */
+    protected static array $knownFields = [ "id" , "net_term_days" , "vat_number_validated_time" , "resource_version" , "auto_close_invoices" , "meta_data" , "exemption_details"  ];
+
+    /**
+    * dynamic properties for resources
+    * @var array<mixed> $_data;
+    */
+    protected $_data = [];
+
+    private function __construct(
+        ?string $id,
+        ?int $net_term_days,
+        ?int $vat_number_validated_time,
+        ?int $resource_version,
+        ?bool $auto_close_invoices,
+        mixed $meta_data,
+        mixed $exemption_details,
+        ?\Chargebee\Resources\Customer\Enums\Type $type,
+    )
+    {
+        $this->id = $id;
+        $this->net_term_days = $net_term_days;
+        $this->vat_number_validated_time = $vat_number_validated_time;
+        $this->resource_version = $resource_version;
+        $this->auto_close_invoices = $auto_close_invoices;
+        $this->meta_data = $meta_data;
+        $this->exemption_details = $exemption_details;
+        $this->type = $type;
+    }
+
+    public static function from(array $resourceAttributes): self
+    {
+        $returnData = new self( $resourceAttributes['id'] ?? null,
+        $resourceAttributes['net_term_days'] ?? null,
+        $resourceAttributes['vat_number_validated_time'] ?? null,
+        $resourceAttributes['resource_version'] ?? null,
+        $resourceAttributes['auto_close_invoices'] ?? null,
+        $resourceAttributes['meta_data'] ?? null,
+        $resourceAttributes['exemption_details'] ?? null,
+
+
+        isset($resourceAttributes['type']) ? \Chargebee\Resources\Customer\Enums\Type::tryFromValue($resourceAttributes['type']) : null,
+
+        );
+
+        return $returnData;
+    }
+
+    public function toArray(): array
+    {
+
+        $data = array_filter(['id' => $this->id,
+        'net_term_days' => $this->net_term_days,
+        'vat_number_validated_time' => $this->vat_number_validated_time,
+        'resource_version' => $this->resource_version,
+        'auto_close_invoices' => $this->auto_close_invoices,
+        'meta_data' => $this->meta_data,
+        'exemption_details' => $this->exemption_details,
+
+        'type' => $this->type?->value,
+
+        ], function ($value) {
+            return $value !== null;
+        });
+
+
+
+
+
+        return $data;
+    }
+}
+?>

@@ -1,0 +1,49 @@
+package com.chargebee.models;
+
+import com.chargebee.*;
+import com.chargebee.internal.*;
+import com.chargebee.filters.*;
+import com.chargebee.filters.enums.SortOrder;
+import com.chargebee.internal.HttpUtil.Method;
+import com.chargebee.models.enums.*;
+import org.json.*;
+import java.io.*;
+import java.sql.Timestamp;
+import java.util.*;
+
+public class Customer extends Resource<Customer> {
+
+    public static class Balance extends Resource<Balance> {
+        public Balance(JSONObject jsonObj) {
+            super(jsonObj);
+        }
+
+        public Long promotionalCredits() {
+            return reqLong("promotional_credits");
+        }
+
+    }
+
+    //Constructors
+    //============
+
+    public Customer(String jsonStr) {
+        super(jsonStr);
+    }
+
+    public Customer(JSONObject jsonObj) {
+        super(jsonObj);
+    }
+
+    // Fields
+    //=======
+
+    public List<Customer.Balance> balances() {
+        return optList("balances", Customer.Balance.class);
+    }
+
+    // Operations
+    //===========
+
+
+}

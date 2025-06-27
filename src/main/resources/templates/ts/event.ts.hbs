@@ -1,0 +1,23 @@
+get content() {
+    return new Result(this.values['content']);
+  }
+
+  set content(content) {}
+  
+  public static deserialize(json: string): resources.Event {
+    let webhook_data;
+    try {
+      webhook_data =  JSON.parse(json);
+    }
+    catch (Error) {
+      throw ("Invalid webhook object to deserialize. " + Error.message);
+    }
+
+    let api_version = webhook_data['api_version'];
+    if (Util.isNotUndefinedNEmpty(api_version) && api_version.toUpperCase() !== ChargeBee._api_version.toUpperCase()) {
+      throw ("API version " + "[" + api_version.toUpperCase() + "] in response does not match with client library API version [" + ChargeBee._api_version.toUpperCase() + "]")
+    }
+
+    let event_result = new Result({'event': webhook_data});
+    return event_result.event;
+  }

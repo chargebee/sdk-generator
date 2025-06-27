@@ -1,0 +1,3 @@
+// List of models{{#each resources}}
+export {{curly "open"}}{{name}}{{curly "close"}} from "./{{pascalCaseToSnakeCase name}}";{{#each subResources}}
+export {{curly "open"}}{{ singularize name }} as {{../name}}{{ singularize name }}{{curly "close"}} from "./{{pascalCaseToSnakeCase ../name}}";{{/each}}{{/each}}

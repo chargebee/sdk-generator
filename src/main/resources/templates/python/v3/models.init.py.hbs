@@ -1,0 +1,6 @@
+{{#if globalEnums}}from chargebee.models.enums import ({{#each globalEnums}}
+    {{ name }}{{#unless @last}},{{/unless}}{{/each}}
+){{/if}}
+{{#if resources}}{{#each resources}}
+from chargebee.models.{{ id }}.operations import {{ name }}
+{{/each}}{{/if}}

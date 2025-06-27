@@ -1,0 +1,36 @@
+module ChargeBee
+  class {{ name }} < Model
+{{#if subResources}}{{#each subResources}}
+    class {{ singularize name }} < Model
+      attr_accessor {{#each attributes}}:{{ camelCaseToSnakeCase name }}{{#unless @last}}, {{/unless}}{{/each}}
+    end
+{{/each}}{{/if}}{{#if attributes}}
+  attr_accessor {{{tokenBasedSplitTextToLines attributesAsCommaSeparatedText 90 76 2 ","}}}{{/if}}{{#if (eq name "Subscription")}}, :metadata
+    def metadata
+    warn "[DEPRECATION] `metadata` is deprecated please use meta_data instead."
+    @metadata
+    end{{/if}}
+
+{{#if isEvent}}{{{includeFile "src/main/resources/templates/ruby/event.rb.hbs"}}}
+{{/if}}{{#if isExport}}{{{includeFile "src/main/resources/templates/ruby/export.rb.hbs"}}}
+{{/if}}{{#if isHostedPage}}{{{includeFile "src/main/resources/templates/ruby/hostedPage.rb.hbs"}}}
+{{/if}}{{#if isSession}}{{{includeFile "src/main/resources/templates/ruby/session.rb.hbs"}}}
+{{/if}}{{#if isTimeMachine}}{{{includeFile "src/main/resources/templates/ruby/timeMachine.rb.hbs"}}}
+{{/if}}  # OPERATIONS
+  #-----------
+{{#each actions}}
+  def self.{{ camelCaseToSnakeCase name }}({{#if hasPathParameters}}id, {{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}params{{#and isAllRequestBodyParamsOptional isAllQueryParamsOptional}}={}{{/and}}, {{/or}}env=nil, headers={})
+    jsonKeys = { {{#each jsonKeys}}{{#each this}}
+        :{{@key}} => {{this}},
+    {{~/each}}{{/each}}
+    }
+    options = {
+      {{~#each options}}
+        :{{@key}} => {{this}}{{#unless @last}},{{/unless}}
+      {{/each~}}
+    }
+    Request.{{#neq name "list"}}send{{else}}send_list_request{{/neq}}('{{{lower httpRequestType}}}', uri_path("{{urlPrefix}}"{{#if hasPathParameters}},id.to_s{{/if}}{{#neq urlSuffix ""}},"{{urlSuffix}}"{{/neq}}), {{#or hasRequestBodyParameters hasQueryParameters}}params{{else}}{}{{/or}}, env, headers{{#if subDomain}}, "{{subDomain}}"{{else}},nil{{/if}}{{#if isOperationNeedsJsonInput}}, true{{else}}, false{{/if}}, jsonKeys, options)
+  end
+{{/each}}
+  end # ~{{ name }}
+end # ~ChargeBee

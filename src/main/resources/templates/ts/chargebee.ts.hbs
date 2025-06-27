@@ -1,0 +1,25 @@
+import {Util} from "./util";
+import * as resources from "./resources";{{#each resources}}
+export {_{{pascalCaseToSnakeCase name}}{{curly "close"}} from "./resources/{{pascalCaseToSnakeCase name}}";{{/each}}
+
+interface Conf {
+    api_key: string
+    site: string
+}
+
+export class ChargeBee {
+    static _env = require('./environment');
+    static _api_version = 'v2';
+    public configure(conf: Partial<typeof ChargeBee._env & Conf>) {
+        Util.extend(true, ChargeBee._env, conf)
+    }
+
+    public updateRequestTimeoutInMillis(timeout){
+        ChargeBee._env.timeout = timeout;
+    }
+{{#each resources}}
+    get {{pascalCaseToSnakeCase name}}() {
+        return resources.{{name}};
+    }{{/each}}
+}
+

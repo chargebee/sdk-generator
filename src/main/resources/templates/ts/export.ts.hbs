@@ -1,0 +1,28 @@
+public static wait_for_export_completion(exportId: string): ProcessWait {
+    let count = 0;
+    let export_retrieve = Export.retrieve(exportId);
+
+    let ret = function(deferred, _self) {
+      export_retrieve.request(
+      function(error, result) {
+        if (error) {
+          deferred.reject(error);
+        } else {
+          let exportObj = result.export;
+          if (exportObj.status === 'completed') {
+            deferred.resolve(result);
+          } else if (exportObj.status === 'in_process') {
+            if (count++ > 30) {
+              throw new Error("Export is taking too long");
+            }
+            setTimeout(function(){
+              ret(deferred, _self);
+            }, _self.env.exportWaitInMillis);
+          } else {
+            deferred.reject(result);
+          }
+        }
+      });
+    };
+    return new ProcessWait(ret, ChargeBee._env);
+  }

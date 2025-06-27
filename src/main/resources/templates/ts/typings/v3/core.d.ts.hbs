@@ -1,0 +1,25 @@
+declare module 'chargebee' {
+  export class RequestConfig {
+    site ?: string
+    apiKey ?: string
+    timeout ?: number
+    timemachineWaitInMillis ?: number
+    exportWaitInMillis ?: number
+  }
+  export type ChargebeeResponse<T> = T & {
+    headers: { [key: string]: string };
+    isIdempotencyReplayed?: boolean | string;
+    httpStatusCode: number | null;
+  }
+  export type ChargebeeRequestHeader = {
+    [key: string]: string | undefined;
+    'chargebee-idempotency-key'?: string;
+    'chargebee-event-email'?: string;
+    'chargebee-request-origin-ip'? :string;
+    'chargebee-request-origin-user'?: string;
+    'chargebee-request-origin-user-encoded'?: string;
+    'chargebee-request-origin-device'?: string;
+  };
+  {{#each enums}}type {{name}}Enum = {{{enumDefinition}}}
+  {{/each}}
+}

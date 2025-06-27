@@ -1,0 +1,66 @@
+<?php
+
+namespace Chargebee\Resources\Coupon;
+
+class Coupon  {
+    /**
+    *
+    * @var ?float $discount_percentage
+    */
+    public ?float $discount_percentage;
+
+    /**
+    *
+    * @var ?array<string> $plan_ids
+    */
+    public ?array $plan_ids;
+
+    /**
+    * @var array<string> $knownFields
+    */
+    protected static array $knownFields = [ "discount_percentage" , "plan_ids"  ];
+
+    /**
+    * dynamic properties for resources
+    * @var array<mixed> $_data;
+    */
+    protected $_data = [];
+
+    private function __construct(
+        ?float $discount_percentage,
+        ?array $plan_ids,
+    )
+    {
+        $this->discount_percentage = $discount_percentage;
+        $this->plan_ids = $plan_ids;
+    }
+
+    public static function from(array $resourceAttributes): self
+    {
+        $returnData = new self( $resourceAttributes['discount_percentage'] ?? null,
+        $resourceAttributes['plan_ids'] ?? null,
+
+
+        );
+
+        return $returnData;
+    }
+
+    public function toArray(): array
+    {
+
+        $data = array_filter(['discount_percentage' => $this->discount_percentage,
+        'plan_ids' => $this->plan_ids,
+
+        ], function ($value) {
+            return $value !== null;
+        });
+
+
+
+
+
+        return $data;
+    }
+}
+?>

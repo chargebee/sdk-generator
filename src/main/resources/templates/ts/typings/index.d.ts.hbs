@@ -1,0 +1,9 @@
+{{#each resources}}///<reference path='./resources/{{{name}}}.d.ts' />
+{{/each}}
+declare module 'chargebee' {
+  export default class {
+    static configure({ site, api_key }: { site: string; api_key: string }): void;
+    {{#each resources}}{{#if hasActions}}static {{id}}: {{name}}.{{name}}Resource;
+    {{/if}}{{/each}}
+  }
+}

@@ -1,0 +1,114 @@
+<?php
+
+{{#if namespace}}namespace {{namespace}};{{/if}}
+{{#each imports}}{{{.}}};
+{{/each}}{{#or (eq clazName "Event") (eq clazName "HostedPage")}}
+use Chargebee\Resources\Content\Content;{{/or}}{{#if customFieldSupported}}
+use Chargebee\ValueObjects\SupportsCustomFields;{{/if}}
+class {{clazName}} {{#if customFieldSupported}} extends SupportsCustomFields {{/if}} {{curly "open"}} {{#each cols}}
+    /**
+    *
+    * @var {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{{phpDocField}}} ${{name}}
+    */
+    public {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{{fieldTypePHP}}} ${{name}};
+    {{/each}}{{#each globalEnumCols}}
+    /**
+    *
+    * @var {{#if isOptional}}?{{/if}}{{{phpDocField}}} ${{name}}
+    */
+    public {{#if isOptional}}?{{/if}}{{{ fieldTypePHP }}} ${{name}};
+    {{/each}}{{#each localEnumCols}}
+    /**
+    *
+    * @var {{#if isOptional}}?{{/if}}{{{phpDocField}}} ${{name}}
+    */
+    public {{#if isOptional}}?{{/if}}{{{ fieldTypePHP }}} ${{name}};
+    {{/each}}
+    /**
+    * @var array<string> $knownFields
+    */
+    protected static array $knownFields = [{{#each cols}} "{{apiName}}" {{#unless @last}},{{/unless}}{{/each}} ];
+
+    /**
+    * dynamic properties for resources
+    * @var array<mixed> $_data;
+    */
+    protected $_data = [];
+
+    private function __construct({{#each cols}}
+        {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{{fieldTypePHP}}} ${{name}},{{/each}}{{~#each globalEnumCols}}
+        {{#if isOptional}}?{{/if}}{{{fieldTypePHP}}} ${{name}},{{/each}}{{#each localEnumCols}}
+        {{#if isOptional}}?{{/if}}{{{fieldTypePHP}}} ${{name}},{{/each}}
+    )
+    { {{#each cols}}
+        $this->{{name}} = ${{name}};{{/each}} {{#each globalEnumCols}}
+        $this->{{name}} = ${{name}};{{/each}} {{#each localEnumCols}}
+        $this->{{name}} = ${{name}};{{/each}}
+    }
+
+    public static function from(array $resourceAttributes): self
+    { {{#each cols}}{{~#if arrayOfSubResources}}
+        ${{name}} = array_map(fn (array $result): {{{subResourceName}}} =>  {{{subResourceName}}}::from(
+            $result
+        ), $resourceAttributes['{{apiName}}'] {{#if isOptional}}?? []{{/if}});
+        {{/if~}}
+    {{/each}}
+        $returnData = new self( {{#each cols}}{{~#if arrayOfSubResources}}${{name}},{{else}}
+            {{~#if subResources}}isset($resourceAttributes['{{apiName}}']) ? {{{fieldTypePHP}}}::from($resourceAttributes['{{apiName}}']) : null,{{else}}$resourceAttributes['{{apiName}}'] {{#if isOptional}}?? null{{/if}},
+            {{~/if}}
+        {{~/if}}
+        {{/each}}
+        {{#each globalEnumCols}}
+        isset($resourceAttributes['{{{apiName}}}']) ? {{{fieldTypePHP}}}::tryFromValue($resourceAttributes['{{apiName}}']) : null,
+        {{/each}} {{#each localEnumCols}}
+        isset($resourceAttributes['{{{apiName}}}']) ? {{{fieldTypePHP}}}::tryFromValue($resourceAttributes['{{apiName}}']) : null,
+        {{/each}}
+        );
+       {{#if customFieldSupported}}foreach ($resourceAttributes as $key => $value) {
+            if (!in_array($key, $returnData::$knownFields, true)) {
+                $returnData->__set($key, $value);
+            }
+        } {{/if}}
+        return $returnData;
+    }
+
+    public function toArray(): array
+    {
+
+        $data = array_filter([ {{~#each cols}}{{~#if (and arrayOfSubResources (not isOptional))}}'{{apiName}}' => array_map(
+            static fn( {{{subResourceName}}} $result): array => $result->toArray(),
+            $this->{{name}}
+        ),{{else~}}{{~#if (and subResources (not isOptional))}}'{{apiName}}' => $this->{{name}}->toArray(),{{else~}}{{~#if (and (not subResources) (not arrayOfSubResource) )}}'{{apiName}}' => $this->{{name}},{{/if~}}{{/if~}}
+        {{~/if}}
+        {{/each}}{{#each globalEnumCols}}
+        '{{apiName}}' => $this->{{name}}?->value,
+        {{/each}}{{#each localEnumCols}}
+        '{{apiName}}' => $this->{{name}}?->value,
+        {{/each}}
+        ], function ($value) {
+            return $value !== null;
+        });
+
+        {{#each cols}}{{~#if isOptional}}{{~#if subResources}}{{~#unless arrayOfSubResources}}
+        if($this->{{name}} instanceof {{{fieldTypePHP}}}){
+            $data['{{apiName}}'] = $this->{{{name}}}->toArray();
+        }{{/unless}}{{/if~}}{{/if~}}
+        {{/each}}
+        {{#each cols}}{{~#if isOptional}}{{~#if subResources}}{{~#if arrayOfSubResources}}
+        if($this->{{name}} !== []){
+            $data['{{apiName}}'] = array_map(
+                fn ({{{subResourceName}}} ${{{name}}}): array => ${{{name}}}->toArray(),
+                $this->{{name}}
+            );
+        }{{/if}}{{/if~}}{{/if~}}
+        {{/each}}
+
+        {{#if customFieldSupported}}foreach($this->_data as $keys => $value){
+            if (!in_array($keys, $this::$knownFields)) {
+                $data[$keys] = $value;
+            }
+        } {{/if}}
+        return $data;
+    }
+{{curly "close"}}
+?>

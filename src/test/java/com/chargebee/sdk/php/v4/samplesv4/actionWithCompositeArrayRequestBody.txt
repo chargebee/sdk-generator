@@ -1,0 +1,53 @@
+<?php
+namespace Chargebee\Actions;
+
+use Chargebee\Responses\SubscriptionResponse\CreateWithItemsSubscriptionResponse;
+use Chargebee\Actions\Contracts\SubscriptionActionsInterface;
+use Chargebee\ValueObjects\Encoders\URLFormEncoder;
+use Chargebee\ValueObjects\Transporters\ChargebeePayload;
+use Chargebee\ValueObjects\APIRequester;
+use Chargebee\HttpClient\HttpClientFactory;
+use Chargebee\Environment;
+
+final class SubscriptionActions implements SubscriptionActionsInterface
+{
+    private HttpClientFactory $httpClientFactory;
+    private Environment $env;
+    public function __construct(HttpClientFactory $httpClientFactory, Environment $env){
+       $this->httpClientFactory = $httpClientFactory;
+       $this->env = $env;
+    }
+
+    /**
+    *   @see https://apidocs.chargebee.com/docs/api/subscriptions?lang=php#createWithItems
+    *   @param array{
+    *     subscription_items?: array<array{
+    *     item_price_id?: string,
+    *     }>,
+    *     } $params Description of the parameters
+    *
+    *   @param array<string, string> $headers
+    *   @return CreateWithItemsSubscriptionResponse
+    */
+    public function createWithItems(array $params, array $headers = []): CreateWithItemsSubscriptionResponse
+    {
+        $jsonKeys = [
+        ];
+        $payload = ChargebeePayload::builder()
+        ->withEnvironment($this->env)
+        ->withHttpMethod("post")
+        ->withUriPaths(["subscriptions"])
+        ->withParamEncoder( new URLFormEncoder())
+        ->withSubDomain(null)
+        ->withJsonKeys($jsonKeys)
+        ->withHeaders($headers)
+        ->withParams($params)
+        ->withIdempotent(false)
+        ->build();
+        $apiRequester = new APIRequester($this->httpClientFactory, $this->env);
+        $respObject = $apiRequester->makeRequest($payload);
+        return CreateWithItemsSubscriptionResponse::from($respObject->data, $respObject->headers);
+    }
+
+}
+?>

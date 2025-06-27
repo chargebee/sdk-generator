@@ -1,0 +1,44 @@
+package chargebee
+
+__imports__
+
+type ResultList struct {
+    List []*Result `json:"list"`
+    NextOffset string `json:"next_offset"`
+    responseHeaders http.Header
+    httpStatusCode  int
+}
+__body__
+
+func (rl *ResultList) GetResponseHeaders() http.Header {
+    return rl.responseHeaders
+}
+func (rl *ResultList) GetHttpStatusCode() int {
+    return rl.httpStatusCode
+}
+func (r *Result) GetResponseHeaders() http.Header {
+    return r.responseHeaders
+}
+func (r *Result) GetHttpStatusCode() int {
+    return r.httpStatusCode
+}
+
+func (r *Result) IsIdempotencyReplayed() bool {
+    value := r.responseHeaders.Get(IdempotencyReplayHeader)
+    replayed, err := strconv.ParseBool(value)
+    if err != nil {
+        return false
+    }
+    return replayed
+}
+
+type ResponseMeta struct {
+    Headers http.Header
+    Status string
+    StatusCode int
+}
+
+type CBResponse struct {
+    Body []byte
+    ResponseMeta
+}

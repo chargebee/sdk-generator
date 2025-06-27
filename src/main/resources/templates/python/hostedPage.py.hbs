@@ -1,0 +1,6 @@
+    @property
+    def content(self):
+        from chargebee import Content
+        if 'content' in self.values:
+            return Content(self.values['content'])
+        return None

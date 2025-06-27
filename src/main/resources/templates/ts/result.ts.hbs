@@ -1,0 +1,101 @@
+import * as resources from "./resources";
+import {Util} from "./util";
+import { IdempotencyConstants } from "./idempotency_constants";
+
+export class Result {
+    readonly #_response: any;
+    readonly responseHeaders: any;
+    readonly responseStatusCode: number | string;
+
+{{#each responses}}{{#unless hasDependentAttributes }}    get {{ pascalCaseToSnakeCase name }}(): resources.{{ name }} {{curly "open"}}{{NonBreakingSpace}}
+        let _{{ pascalCaseToSnakeCase name }} = this.get(
+            '{{ pascalCaseToSnakeCase name }}',
+            '{{~ name }}'{{#if subResources}},
+            {{curly "open"}}{{#each subResources}}'{{ pascalCaseToSnakeCase name }}': '{{~ ../name}}{{ singularize name }}'{{#unless @last}}, {{/unless}}{{/each}}{{curly "close"}}{{/if}}
+        );
+        return _{{ pascalCaseToSnakeCase name }};
+    }
+{{/unless}}{{#if hasDependentAttributes}}    get {{ pascalCaseToSnakeCase name }}(): resources.{{ name }} {{curly "open"}}{{NonBreakingSpace}}
+        let _{{ pascalCaseToSnakeCase name }} = this.get(
+            '{{ pascalCaseToSnakeCase name }}',
+            '{{~ singularize name }}',
+            {}{{#if dependentResources}},
+            {{curly "open"}}{{#each dependentResources}}'{{ id }}': '{{~ name }}'{{#unless @last}}, {{/unless}}{{/each}}{{curly "close"}}{{/if}}
+        );{{#each singularDependentResources}}
+        _{{ pascalCaseToSnakeCase ../name }}.init_dependant(
+            this.response['{{ pascalCaseToSnakeCase ../name }}'],
+            '{{ pascalCaseToSnakeCase id }}',
+            {{curly "open"}}{{#each subResources}}'{{id }}': '{{~ ../name }}{{ singularize name }}'{{#unless @last}}, {{/unless}}{{/each}}{{curly "close"}}
+        );{{/each}}{{#each listDependentResources}}
+        _{{ pascalCaseToSnakeCase ../name }}.init_dependant_list(
+            this.response['{{ pascalCaseToSnakeCase ../name }}'],
+            '{{ pascalCaseToSnakeCase id }}',
+            {{curly "open"}}{{#each subResources}}'{{id }}': '{{~ ../name }}{{ singularize name }}'{{#unless @last}}, {{/unless}}{{/each}}{{curly "close"}}
+        );{{/each}}
+        return _{{ pascalCaseToSnakeCase name }};
+    }
+{{/if}}{{/each}}{{#each listResponses}}
+    get {{ pathName }}(): resources.{{ name }}[] {
+        let _{{ pathName }} = this.get_list(
+            '{{ pathName }}',
+            '{{~ name }}',
+            {{curly "open"}}{{#each subResources}}'{{ id }}': '{{~ ../name }}{{ singularize name }}'{{#unless @last}}, {{/unless}}{{/each}}{{curly "close"}}
+        );
+        return _{{ pathName }};
+    }{{/each}}
+
+    get response() {
+        return this.#_response;
+    }
+
+    constructor(response, responseHeaders?, responseStatusCode?) {
+        this.#_response = response;
+        if (responseHeaders) {
+          this.responseHeaders = responseHeaders;
+        }
+        if(responseStatusCode){
+            this.responseStatusCode = responseStatusCode;
+        }
+    }
+
+    getResponseHeaders(){
+        return this.responseHeaders;
+    }
+
+    isIdempotencyReplayed(): boolean {
+        const headers = this.responseHeaders;
+        const replayedHeader = headers[IdempotencyConstants.IDEMPOTENCY_REPLAY_HEADER];
+        if (replayedHeader === undefined) {
+            return false;
+        }
+        return Boolean(replayedHeader);
+    }
+
+    private get<T = any>(type, klass, sub_types = {}, dependant_types = {}): T {
+        return new (resources)[klass](this.response[type], sub_types, dependant_types)
+    }
+
+    private get_list<T = any>(type, klass, sub_types = {}, dependant_types = {}, dependant_sub_types = {}): T[] {
+        if(Util.isEmptyObject(this.response) || Util.isEmptyObject(this.response[type])) {
+            return null;
+        }
+
+        let set_val = [];
+        for(let obj of this.response[type]) {
+            let model = new (resources)[klass](obj, sub_types, dependant_types);
+            for(let k in dependant_sub_types) {
+                let v = dependant_sub_types[k];
+                model.init_dependant(obj, k, v);
+            }
+            set_val.push(model);
+        }
+        return set_val;
+    }
+
+    private toString(...args) {
+        return JSON.stringify(this.response, null, 2);
+    }
+    getResponseStatusCode(){
+        return this.responseStatusCode;
+    }
+}

@@ -1,0 +1,10 @@
+    public static class Content extends ResultBase{
+
+        public Content(JSONObject jsonObj) {
+            super(jsonObj);
+        }
+    }
+
+    public Content content(){
+        return new Content(optJSONObject("content"));
+    }

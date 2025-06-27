@@ -1,0 +1,23 @@
+import * as resources from ".";
+import {RequestWrapper} from "../request_wrapper";
+import {Model} from "./model";
+import {ChargeBee} from "../chargebee";
+import {filter} from "../filter";
+
+export class Subscription extends Model {
+  public id: string;
+
+  
+
+  // OPERATIONS
+  //-----------
+
+  public static create_with_items(customer_id: string, params?: _subscription.create_with_items_params):RequestWrapper {
+    return new RequestWrapper([customer_id, params], {
+      'methodName': 'create_with_items',
+      'httpMethod': 'POST',
+      'urlPrefix': '/customers',
+      'urlSuffix': '/subscription_for_items',
+      'hasIdInUrl': true,
+      'isListReq': false,
+      'subDomain': null,

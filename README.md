@@ -1,0 +1,305 @@
+# SDK Generator
+
+A powerful tool that automatically generates Software Development Kits (SDKs) for multiple programming languages from OpenAPI 3.0 specifications.
+
+## 🚀 Features
+
+- **Multi-language Support**: Generate SDKs for 8 programming languages
+- **OpenAPI 3.0 Compatible**: Built on industry-standard OpenAPI specifications
+- **Template-based Generation**: Customizable templates for each language
+- **Type Safety**: Generates strongly-typed code with proper interfaces
+- **CLI Interface**: Simple command-line tool for easy integration
+
+## 📋 Supported Languages
+
+| Language | Version | Status |
+|----------|---------|--------|
+| Java | Standard | ✅ |
+| TypeScript | Standard & v3 | ✅ |
+| Node.js | Standard & v3 | ✅ |
+| Python | Standard & v3 | ✅ |
+| PHP | Standard & v4 | ✅ |
+| Ruby | Standard | ✅ |
+| .NET | Standard | ✅ |
+| Go | Standard | ✅ |
+
+## 🛠️ Prerequisites
+
+- Java 17 or higher
+- Gradle 7.0 or higher
+
+### For Chargebee Client Library Generation
+
+To generate SDKs for Chargebee's official client libraries, you'll need to clone the respective repositories first, as the generator updates existing code structure rather than creating everything from scratch:
+
+```bash
+# Clone all Chargebee client library repositories
+git clone https://github.com/chargebee/chargebee-php.git
+git clone https://github.com/chargebee/chargebee-node.git
+git clone https://github.com/chargebee/chargebee-python.git
+git clone https://github.com/chargebee/chargebee-ruby.git
+git clone https://github.com/chargebee/chargebee-typescript.git
+git clone https://github.com/chargebee/chargebee-java.git
+git clone https://github.com/chargebee/chargebee-dotnet.git
+git clone https://github.com/chargebee/chargebee-go.git
+```
+
+**Note:** The SDK generator updates existing repository structures rather than creating complete projects from scratch. Make sure to clone the target repositories before running the generation commands.
+
+## 📦 Installation
+
+### From Source
+
+```bash
+git clone https://github.com/your-org/sdk-generator.git
+cd sdk-generator
+./gradlew build
+```
+
+### Using Gradle
+
+```bash
+./gradlew run --args="-i spec.json -l JAVA -o ./output"
+```
+
+## 🚀 Quick Start
+
+### Basic Usage
+
+```bash
+# Generate a Java SDK
+./gradlew run --args="-i openapi-spec.json -l JAVA -o ./generated-sdk"
+
+# Generate TypeScript typings
+./gradlew run --args="-i openapi-spec.json -l TYPESCRIPT_TYPINGS_V3 -o ./generated-types"
+
+# Generate Python SDK
+./gradlew run --args="-i openapi-spec.json -l PYTHON_V3 -o ./python-sdk"
+```
+
+### Command Line Options
+
+| Option | Description | Required |
+|--------|-------------|----------|
+| `-i, --input` | Path to OpenAPI specification file | ✅ |
+| `-l, --language` | Target language for SDK generation | ✅ |
+| `-o, --output` | Output directory path | ✅ |
+
+### Available Languages
+
+#### Current/Latest Versions
+```
+JAVA                    - Java SDK
+TYPESCRIPT             - TypeScript SDK  
+TYPESCRIPT_TYPINGS_V3  - TypeScript type definitions (v3)
+NODE_V3                - Node.js SDK (v3)
+PYTHON_V3              - Python SDK (v3)
+PHP_V4                 - PHP SDK (v4)
+RUBY                   - Ruby SDK
+DOTNET                 - .NET SDK
+GO                     - Go SDK
+```
+
+#### Legacy Versions
+```
+TYPESCRIPT_TYPINGS     - TypeScript type definitions (legacy)
+NODE                   - Node.js SDK (legacy)
+PYTHON                 - Python SDK (legacy)
+PHP                    - PHP SDK (legacy)
+```
+
+## 📁 Project Structure
+
+```
+src/
+├── main/
+│   ├── java/com/chargebee/
+│   │   ├── openapi/           # OpenAPI parsing and processing
+│   │   ├── sdk/               # Language-specific generators
+│   │   └── Main.java          # CLI entry point
+│   └── resources/
+│       └── templates/         # Language-specific templates
+│           ├── java/
+│           ├── typescript/
+│           ├── python/
+│           └── ...
+└── test/                      # Unit tests
+```
+
+## 🔧 Configuration
+
+### Custom Templates
+
+The generator uses Handlebars templates located in `src/main/resources/templates/`. You can customize the generated code by modifying these templates:
+
+- `java/` - Java SDK templates
+- `ts/` - TypeScript templates  
+- `python/` - Python SDK templates
+- `php/` - PHP SDK templates
+- And more...
+
+### OpenAPI Extensions
+
+The generator supports custom OpenAPI extensions for enhanced functionality:
+
+```yaml
+# Example OpenAPI spec with custom extensions
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          x-is-dependent-attribute: true
+        email:
+          type: string
+          x-is-multi-attribute: false
+```
+
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+# Run all tests
+./gradlew test
+
+# Run tests with coverage
+./gradlew test jacocoTestReport
+```
+
+View coverage report at `build/jacocoHtml/index.html`
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### Development Setup
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Add tests for new functionality
+5. Run tests: `./gradlew test`
+6. Commit your changes: `git commit -m 'Add amazing feature'`
+7. Push to the branch: `git push origin feature/amazing-feature`
+8. Open a Pull Request
+
+### Code Style
+
+- Follow Java naming conventions
+- Use meaningful variable and method names
+- Add JavaDoc comments for public APIs
+- Ensure all tests pass before submitting
+
+## 📝 Examples
+
+### Generating Multiple SDKs
+
+#### Using Current/Latest Versions (Recommended)
+```bash
+# Generate SDKs using latest versions
+./gradlew run --args="-i api-spec.json -l JAVA -o ./java-sdk"
+./gradlew run --args="-i api-spec.json -l PYTHON_V3 -o ./python-sdk"
+./gradlew run --args="-i api-spec.json -l TYPESCRIPT_TYPINGS_V3 -o ./ts-types"
+./gradlew run --args="-i api-spec.json -l NODE_V3 -o ./node-sdk"
+./gradlew run --args="-i api-spec.json -l PHP_V4 -o ./php-sdk"
+```
+
+#### Using Legacy Versions
+```bash
+# Generate SDKs using legacy versions (not recommended for new projects)
+./gradlew run --args="-i api-spec.json -l PYTHON -o ./python-legacy-sdk"
+./gradlew run --args="-i api-spec.json -l NODE -o ./node-legacy-sdk"
+./gradlew run --args="-i api-spec.json -l PHP -o ./php-legacy-sdk"
+```
+
+### Batch Generation for Chargebee Client Libraries
+
+Generate SDKs for all supported languages targeting Chargebee's official client library repositories:
+
+**Prerequisites:** Clone all [Chargebee client repositories](https://github.com/chargebee) before running these commands.
+
+#### Current/Latest Versions
+```bash
+# Generate current versions of SDKs
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l PHP_V4 -o ../chargebee-php/src" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l NODE_V3 -o ../chargebee-node/src/resources" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l PYTHON_V3 -o ../chargebee-python/chargebee" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l RUBY -o ../chargebee-ruby/lib/chargebee" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l TYPESCRIPT_TYPINGS_V3 -o ../chargebee-node/types/" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l TYPESCRIPT -o ../chargebee-typescript/src" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l JAVA -o ../chargebee-java/src/main/java/com/chargebee" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l DOTNET -o ../chargebee-dotnet/ChargeBee" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l GO -o ../chargebee-go" &&
+
+echo "Current SDK versions generated successfully."
+```
+
+#### Legacy Versions (For Backward Compatibility)
+```bash
+# Generate legacy versions of SDKs
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l PHP -o ../chargebee-php/lib" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l NODE -o ../chargebee-node/lib/resources" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l PYTHON -o ../chargebee-python/chargebee" &&
+
+./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l TYPESCRIPT_TYPINGS -o ../chargebee-node/types" &&
+
+echo "Legacy SDK versions generated successfully."
+```
+
+#### Repository Structure
+
+The above commands assume the following repository structure with cloned Chargebee repositories:
+```
+parent-directory/
+├── sdk-generator/                 # This repository
+├── cb-openapi-generator/         # OpenAPI specifications
+├── chargebee-php/                # https://github.com/chargebee/chargebee-php
+├── chargebee-node/               # https://github.com/chargebee/chargebee-node
+├── chargebee-python/             # https://github.com/chargebee/chargebee-python
+├── chargebee-ruby/               # https://github.com/chargebee/chargebee-ruby
+├── chargebee-typescript/         # https://github.com/chargebee/chargebee-typescript
+├── chargebee-java/               # https://github.com/chargebee/chargebee-java
+├── chargebee-dotnet/             # https://github.com/chargebee/chargebee-dotnet
+└── chargebee-go/                 # https://github.com/chargebee/chargebee-go
+```
+
+**Important:** The generator updates existing code within these repositories. Ensure you have the latest version of each repository before generating SDKs.
+
+## 🐛 Issues and Support
+
+- 🐛 [Report a Bug](https://github.com/your-org/sdk-generator/issues/new?template=bug-report.yml)
+- 🚀 [Request a Feature](https://github.com/your-org/sdk-generator/issues/new?template=feature-request.yml)
+- 💬 [Start a Discussion](https://github.com/your-org/sdk-generator/discussions)
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built with [OpenAPI Generator](https://openapi-generator.tech/) concepts
+- Uses [Swagger Parser](https://github.com/swagger-api/swagger-parser) for OpenAPI parsing
+- Template engine powered by [Handlebars.java](https://github.com/jknack/handlebars.java)
+
+## 🔗 Related Projects
+
+- [OpenAPI Specification](https://spec.openapis.org/oas/v3.0.3)
+- [Swagger Editor](https://editor.swagger.io/)
+- [OpenAPI Generator](https://openapi-generator.tech/)
+
+---
+
+**Made with ❤️ by the chargebee**

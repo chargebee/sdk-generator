@@ -1,0 +1,19 @@
+<?php
+namespace Chargebee\Actions\Contracts;
+    {{#each imports}}
+use {{.}};{{/each}}
+
+Interface {{resourceName}}Interface
+{
+{{#each actions}}
+    /**
+    *   @see {{{actionDocLink}}}
+    *   {{#or hasRequestBodyParameters hasQueryParameters}}{{{phpDocField}}}{{/or}}
+    *   {{#or hasHandle }}@param string $id  {{/or}}
+    *   @param array<string, string> $headers
+    *   @return {{returnType}}
+    */
+    public function {{#eq name "list"}}all{{else}}{{name}}{{id}}{{/eq}}({{#if hasHandle}}string $id, {{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}array $params{{#and allRequestBodyParamsOptional allQueryParamsOptional}} = []{{/and}}, {{/or}}array $headers = []): {{returnType}};
+{{/each}}
+}
+?>

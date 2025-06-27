@@ -1,0 +1,12 @@
+public function waitForExportCompletion($env = null, $headers = array()) {
+  $count = 0;
+  while($this->status == "in_process") {
+     if( $count++ > 50) {
+        throw new RuntimeException("Export is taking too long");
+     }
+     sleep(Environment::$exportWaitInSecs);
+     $this->_values = self::retrieve($this->id, $env, $headers)->export()->getValues();
+     $this->_load();
+  }
+  return $this;
+}

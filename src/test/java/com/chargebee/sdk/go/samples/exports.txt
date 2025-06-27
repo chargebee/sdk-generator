@@ -1,0 +1,31 @@
+package export
+
+import (
+	"fmt"
+	"github.com/chargebee/chargebee-go/v3"
+	"github.com/chargebee/chargebee-go/v3/models/export"
+	"net/url"
+	"errors"
+	exportEnum "github.com/chargebee/chargebee-go/v3/models/export/enum"
+	"time"
+)
+
+func Retrieve(id string) chargebee.RequestObj {
+	return chargebee.Send("GET", fmt.Sprintf("/exports/%v", url.PathEscape(id)), nil)
+}
+func WaitForExportCompletionWithEnv(exp export.Export, env chargebee.Environment) (export.Export, error) {
+	count := 0
+	for exp.Status == exportEnum.StatusInProcess {
+		if count > 30 {
+			return exp, errors.New("'Export is taking too long'")
+		}
+		count++
+		time.Sleep(chargebee.ExportWaitInSecs)
+		result, err := Retrieve(exp.Id).RequestWithEnv(env)
+		if err != nil {
+			return exp, err
+		}
+		exp = *result.Export
+	}
+	return exp, nil
+}

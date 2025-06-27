@@ -1,0 +1,52 @@
+<?php
+{{#if namespace}}namespace {{namespace}};{{/if}}
+{{#each imports}}
+use {{.}};{{/each}}
+use Chargebee\ValueObjects\Encoders\URLFormEncoder;
+use Chargebee\ValueObjects\Transporters\ChargebeePayload;
+use Chargebee\ValueObjects\APIRequester;
+use Chargebee\HttpClient\HttpClientFactory;
+use Chargebee\Environment;
+
+final class {{resourceName}} implements {{resourceName}}Interface
+{
+    private HttpClientFactory $httpClientFactory;
+    private Environment $env;
+    public function __construct(HttpClientFactory $httpClientFactory, Environment $env){
+       $this->httpClientFactory = $httpClientFactory;
+       $this->env = $env;
+    }
+{{#each actions}}
+    /**
+    *   @see {{{actionDocLink}}}
+    *   {{#or hasRequestBodyParameters hasQueryParameters}}{{{phpDocField}}}{{/or}}
+    *   {{#or hasHandle }}@param string $id  {{/or}}
+    *   @param array<string, string> $headers
+    *   @return {{returnType}}
+    */
+    public function {{#eq name "list"}}all{{else}}{{name}}{{id}}{{/eq}}({{#if hasHandle}}string $id, {{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}array $params{{#and allRequestBodyParamsOptional allQueryParamsOptional}} = []{{/and}}, {{/or}}array $headers = []): {{returnType}}
+    {
+        $jsonKeys = [{{#each jsonKeys}}{{#each this}}
+            "{{snakeCaseToCamelCase @key}}" => {{this}},
+        {{~/each}}{{/each}}
+        ];
+        $payload = ChargebeePayload::builder()
+        ->withEnvironment($this->env)
+        ->withHttpMethod("{{{lower httpMethodName}}}")
+        ->withUriPaths(["{{{urlPrefix}}}"{{#if hasHandle}},$id{{/if}}{{#neq urlSuffix ""}},"{{{urlSuffix}}}"{{/neq}}])
+        ->withParamEncoder({{#if listAction}}new ListParamEncoder(){{else}} {{#if operationNeedsJsonInput}}new JsonParamEncoder(){{else}}new URLFormEncoder(){{/if}}{{/if}})
+        ->withSubDomain({{#if subDomain}}"{{{subDomain}}}"{{else}}null{{/if}})
+        ->withJsonKeys($jsonKeys){{#if operationNeedsJsonInput}}
+        ->withHeaderOverride("Content-Type", "application/json"){{/if}}
+        ->withHeaders($headers){{#or hasRequestBodyParameters hasQueryParameters}}
+        ->withParams($params){{/or}}
+        {{#eq httpMethodName "POST"}}->withIdempotent({{idempotent}})
+        {{/eq~}}
+        ->build();
+        $apiRequester = new APIRequester($this->httpClientFactory, $this->env);
+        $respObject = $apiRequester->makeRequest($payload);
+        return {{returnType}}::from($respObject->data, $respObject->headers);
+    }
+{{/each}}
+}
+?>

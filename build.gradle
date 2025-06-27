@@ -1,0 +1,93 @@
+plugins {
+    id "application"
+    id 'com.adarshr.test-logger' version '3.2.0'
+    id "org.sonarqube" version "4.2.1.3168"
+    id "jacoco"
+    id 'com.diffplug.spotless' version '6.25.0'
+}
+apply plugin : "java"
+def sonarExclusions = "**/Main.java"
+sonar {
+    properties {
+        property "sonar.projectKey", "chargebee_sdk_generator"
+        property "sonar.organization", "chargebee"
+        property "sonar.host", "https://sonarcloud.io"
+        property "sonar.host.url", "https://sonarcloud.io"
+        property "sonar.junit.reportPaths", "${buildDir}/test-results/**/*.xml"
+        property "sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/jacoco/test.xml," +
+                "${buildDir}/jacoco/integrationTest.xml"
+        property "sonar.coverage.exclusions", "$sonarExclusions"
+
+    }
+}
+
+group 'com.chargebee'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
+dependencies {
+    implementation 'io.swagger.parser.v3:swagger-parser:2.1.14'
+    implementation 'com.github.jknack:handlebars:4.3.1'
+    implementation 'info.picocli:picocli:4.7.4'
+    implementation 'com.google.guava:guava:32.0.1-jre'
+    implementation 'com.vladsch.flexmark:flexmark-all:0.64.8'
+
+    testImplementation 'org.assertj:assertj-core:3.24.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
+    compileOnly 'org.projectlombok:lombok:1.18.20'
+    annotationProcessor 'org.projectlombok:lombok:1.18.20'
+}
+
+application {
+    mainClass = "com.chargebee.Main"
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+    jacoco {
+        enabled = true
+    }
+}
+
+spotless {
+    format 'misc', {
+        target '*.gradle', '.gitattributes', '.gitignore'
+        trimTrailingWhitespace()
+        endWithNewline()
+        indentWithTabs(2)
+        indentWithSpaces(4)
+    }
+    java {
+        googleJavaFormat('1.22.0').reflowLongStrings().skipJavadocFormatting()
+        formatAnnotations()
+    }
+}
+
+jacocoTestReport {
+    dependsOn test
+    executionData(file("${project.buildDir}/jacoco/test.exec"))
+    reports {
+        html {
+            enabled true
+            destination file("${buildDir}/jacocoHtml")
+        }
+        xml {
+            enabled true
+            destination file("${buildDir}/jacoco/test.xml")
+        }
+    }
+}
+
+
+
+test.finalizedBy jacocoTestReport

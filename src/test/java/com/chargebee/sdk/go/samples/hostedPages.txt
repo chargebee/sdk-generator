@@ -1,0 +1,21 @@
+package hostedpage
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/chargebee/chargebee-go/v3"
+	"github.com/chargebee/chargebee-go/v3/models/hostedpage"
+	"net/url"
+)
+
+func Retrieve(id string) chargebee.RequestObj {
+	return chargebee.Send("GET", fmt.Sprintf("/hosted_pages/%v", url.PathEscape(id)), nil)
+}
+func Content(page hostedpage.HostedPage) *chargebee.Result {
+	content := &chargebee.Result{}
+	err1 := json.Unmarshal(page.Content, content)
+	if err1 != nil {
+		panic(err1)
+	}
+	return content
+}

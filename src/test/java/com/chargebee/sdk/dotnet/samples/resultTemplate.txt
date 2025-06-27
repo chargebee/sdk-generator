@@ -1,0 +1,74 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
+using ChargeBee.Models;
+
+namespace ChargeBee.Internal
+{
+    public class ResultBase : JSONSupport
+    {
+        public ResultBase () { }
+
+        internal ResultBase(string json)
+        {
+            if (!String.IsNullOrEmpty(json))
+            {
+                try
+                {
+                    m_jobj = JToken.Parse(json);
+                }
+                catch(JsonException e)
+                {
+                    throw new Exception("Not in JSON format. Probably not a ChargeBee response. \n " + json, e);
+                }
+            }
+        }
+
+        internal ResultBase(JToken jobj)
+        {
+            m_jobj = jobj;
+        }
+        public string ToJson()
+        {
+            return m_jobj.ToString(Formatting.None) ;
+        }
+__body__
+
+
+        private List<T> GetResourceList<T>(string property, string propertySingularName) where T : Resource, new()
+        {
+            List<T> list = new List<T> ();
+            JArray jArr = (JArray)m_jobj.SelectToken (property);
+            if (jArr != null) {
+                foreach (JToken jObj in jArr.Children()) {
+                    T t = new T();
+                    t.JObj = jObj;
+                    list.Add(t);
+                }
+            }
+            return list;
+        }
+
+        private T GetResource<T>(string property) where T : Resource, new()
+        {
+            if (m_jobj == null)
+                return default(T);
+
+            JToken jobj = m_jobj[property];
+            if (jobj != null)
+            {
+                T t = new T();
+                t.JObj = jobj;
+                return t;
+            }
+            else
+            {
+                return default(T);
+            }
+        }
+    }
+}

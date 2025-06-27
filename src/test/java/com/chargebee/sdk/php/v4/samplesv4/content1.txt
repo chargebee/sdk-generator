@@ -1,0 +1,74 @@
+<?php
+
+namespace Chargebee\Resources\Content;
+use Chargebee\Resources\Coupon\Coupon;
+use Chargebee\Resources\Invoice\Invoice;
+
+class Content  {
+    /**
+    *
+    * @var ?Coupon $coupon
+    */
+    public ?Coupon $coupon;
+
+    /**
+    *
+    * @var ?Invoice $invoice
+    */
+    public ?Invoice $invoice;
+
+    /**
+    * @var array<string> $knownFields
+    */
+    protected static array $knownFields = [ "coupon" , "invoice"  ];
+
+    /**
+    * dynamic properties for resources
+    * @var array<mixed> $_data;
+    */
+    protected $_data = [];
+
+    private function __construct(
+        ?Coupon $coupon,
+        ?Invoice $invoice,
+    )
+    {
+        $this->coupon = $coupon;
+        $this->invoice = $invoice;
+    }
+
+    public static function from(array $resourceAttributes): self
+    {
+        $returnData = new self( isset($resourceAttributes['coupon']) ? Coupon::from($resourceAttributes['coupon']) : null,
+        isset($resourceAttributes['invoice']) ? Invoice::from($resourceAttributes['invoice']) : null,
+
+
+        );
+
+        return $returnData;
+    }
+
+    public function toArray(): array
+    {
+
+        $data = array_filter([
+
+
+        ], function ($value) {
+            return $value !== null;
+        });
+
+
+        if($this->coupon instanceof Coupon){
+            $data['coupon'] = $this->coupon->toArray();
+        }
+        if($this->invoice instanceof Invoice){
+            $data['invoice'] = $this->invoice->toArray();
+        }
+
+
+
+        return $data;
+    }
+}
+?>
