@@ -15,7 +15,7 @@ A powerful tool that automatically generates Software Development Kits (SDKs) fo
 | Language | Version | Status |
 |----------|---------|--------|
 | Java | v3 | ✅ |
-| Node.js | Standard & v3 | ✅ |
+| Node.js | v2 & v3 | ✅ |
 | Python | v2 & v3 | ✅ |
 | PHP | v3 & v4 | ✅ |
 | Ruby | v2 | ✅ |
