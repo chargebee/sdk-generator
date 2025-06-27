@@ -51,7 +51,7 @@ git clone https://github.com/chargebee/chargebee-go.git
 ### From Source
 
 ```bash
-git clone https://github.com/your-org/sdk-generator.git
+git clone https://github.com/chargebee/sdk-generator.git
 cd sdk-generator
 ./gradlew build
 ```
@@ -156,6 +156,26 @@ components:
           type: string
           x-is-multi-attribute: false
 ```
+
+## X-CB Extension Parameters
+
+This SDK generator uses custom OpenAPI extension parameters (prefixed with `x-cb-`) to enhance code generation capabilities. These extensions provide additional metadata for:
+
+- Operation behavior control (list operations, bulk operations, idempotency)
+- Parameter filtering and ordering
+- Resource relationships and sub-resources
+- Special data type handling (money fields, custom fields)
+- URL construction and routing
+
+For a complete list and detailed descriptions of all supported extensions, see [X-CB Extensions Documentation](docs/X-CB-EXTENSIONS.md).
+
+### Key Extensions
+
+- `x-cb-operation-method-name`: Defines SDK method names
+- `x-cb-operation-is-list`: Marks list operations for special handling
+- `x-cb-is-filter-parameter`: Enables filter parameter generation
+- `x-cb-resource-id`: Links operations to resource models
+- `x-cb-is-money-column`: Special handling for monetary values
 
 ## 🧪 Testing
 
@@ -280,9 +300,9 @@ parent-directory/
 
 ## 🐛 Issues and Support
 
-- 🐛 [Report a Bug](https://github.com/your-org/sdk-generator/issues/new?template=bug-report.yml)
-- 🚀 [Request a Feature](https://github.com/your-org/sdk-generator/issues/new?template=feature-request.yml)
-- 💬 [Start a Discussion](https://github.com/your-org/sdk-generator/discussions)
+- 🐛 [Report a Bug](https://github.com/chargebee/sdk-generator/issues/new?template=bug-report.yml)
+- 🚀 [Request a Feature](https://github.com/chargebee/sdk-generator/issues/new?template=feature-request.yml)
+- 💬 [Start a Discussion](https://github.com/chargebee/sdk-generator/discussions)
 
 ## 📄 License
 
