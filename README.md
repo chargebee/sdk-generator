@@ -14,14 +14,13 @@ A powerful tool that automatically generates Software Development Kits (SDKs) fo
 
 | Language | Version | Status |
 |----------|---------|--------|
-| Java | Standard | ✅ |
-| TypeScript | Standard & v3 | ✅ |
+| Java | v3 | ✅ |
 | Node.js | Standard & v3 | ✅ |
-| Python | Standard & v3 | ✅ |
-| PHP | Standard & v4 | ✅ |
-| Ruby | Standard | ✅ |
-| .NET | Standard | ✅ |
-| Go | Standard | ✅ |
+| Python | v2 & v3 | ✅ |
+| PHP | v3 & v4 | ✅ |
+| Ruby | v2 | ✅ |
+| .NET | v3 | ✅ |
+| Go | v3 | ✅ |
 
 ## 🛠️ Prerequisites
 
@@ -38,7 +37,6 @@ git clone https://github.com/chargebee/chargebee-php.git
 git clone https://github.com/chargebee/chargebee-node.git
 git clone https://github.com/chargebee/chargebee-python.git
 git clone https://github.com/chargebee/chargebee-ruby.git
-git clone https://github.com/chargebee/chargebee-typescript.git
 git clone https://github.com/chargebee/chargebee-java.git
 git clone https://github.com/chargebee/chargebee-dotnet.git
 git clone https://github.com/chargebee/chargebee-go.git
@@ -70,7 +68,7 @@ cd sdk-generator
 # Generate a Java SDK
 ./gradlew run --args="-i openapi-spec.json -l JAVA -o ./generated-sdk"
 
-# Generate TypeScript typings
+# Generate Nodejs typings
 ./gradlew run --args="-i openapi-spec.json -l TYPESCRIPT_TYPINGS_V3 -o ./generated-types"
 
 # Generate Python SDK
@@ -90,7 +88,6 @@ cd sdk-generator
 #### Current/Latest Versions
 ```
 JAVA                    - Java SDK
-TYPESCRIPT             - TypeScript SDK  
 TYPESCRIPT_TYPINGS_V3  - TypeScript type definitions (v3)
 NODE_V3                - Node.js SDK (v3)
 PYTHON_V3              - Python SDK (v3)
@@ -102,7 +99,6 @@ GO                     - Go SDK
 
 #### Legacy Versions
 ```
-TYPESCRIPT_TYPINGS     - TypeScript type definitions (legacy)
 NODE                   - Node.js SDK (legacy)
 PYTHON                 - Python SDK (legacy)
 PHP                    - PHP SDK (legacy)
@@ -120,7 +116,7 @@ src/
 │   └── resources/
 │       └── templates/         # Language-specific templates
 │           ├── java/
-│           ├── typescript/
+│           ├── php/
 │           ├── python/
 │           └── ...
 └── test/                      # Unit tests
@@ -254,8 +250,6 @@ Generate SDKs for all supported languages targeting Chargebee's official client 
 
 ./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l TYPESCRIPT_TYPINGS_V3 -o ../chargebee-node/types/" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l TYPESCRIPT -o ../chargebee-typescript/src" &&
-
 ./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l JAVA -o ../chargebee-java/src/main/java/com/chargebee" &&
 
 ./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l DOTNET -o ../chargebee-dotnet/ChargeBee" &&
@@ -274,8 +268,6 @@ echo "Current SDK versions generated successfully."
 
 ./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l PYTHON -o ../chargebee-python/chargebee" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l TYPESCRIPT_TYPINGS -o ../chargebee-node/types" &&
-
 echo "Legacy SDK versions generated successfully."
 ```
 
@@ -290,7 +282,6 @@ parent-directory/
 ├── chargebee-node/               # https://github.com/chargebee/chargebee-node
 ├── chargebee-python/             # https://github.com/chargebee/chargebee-python
 ├── chargebee-ruby/               # https://github.com/chargebee/chargebee-ruby
-├── chargebee-typescript/         # https://github.com/chargebee/chargebee-typescript
 ├── chargebee-java/               # https://github.com/chargebee/chargebee-java
 ├── chargebee-dotnet/             # https://github.com/chargebee/chargebee-dotnet
 └── chargebee-go/                 # https://github.com/chargebee/chargebee-go
