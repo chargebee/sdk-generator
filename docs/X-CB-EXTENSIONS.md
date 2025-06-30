@@ -35,6 +35,12 @@ This document describes all the custom extension parameters (prefixed with `x-cb
 **Default**: `false`
 **Usage**: Controls request serialization and content-type headers.
 
+### x-cb-is-external-enum
+**Description**: Marks a schema or property as referencing an external enum definition, rather than generating a new enum in the SDK.
+**Type**: `boolean`
+**Default**: `false`
+**Usage**: Used to prevent enum code generation and instead reference an existing enum type in the target SDK language.
+
 ### x-cb-is-operation-idempotent
 **Description**: Marks an operation as idempotent.
 **Type**: `boolean`
@@ -74,6 +80,22 @@ This document describes all the custom extension parameters (prefixed with `x-cb
 **Type**: `boolean`
 **Default**: `false`
 **Usage**: Used for special formatting and type generation for money fields.
+
+### x-cb-is-global-enum
+**Description**: Marks a schema or property as a global enum, meaning it is shared across multiple models or resources.
+**Type**: `boolean`
+**Default**: `false`
+**Usage**: Used to generate a single enum definition that can be referenced by multiple models in the SDK.
+
+### x-cb-global-enum-reference
+**Description**: Specifies the reference name of a global enum to use for a schema or property.
+**Type**: `string`
+**Usage**: Used to link a property or schema to a global enum defined elsewhere, avoiding duplicate enum generation.
+
+### x-cb-meta-model-name
+**Description**: Provides a meta-model name for a schema or property, typically used for internal mapping or code generation purposes.
+**Type**: `string`
+**Usage**: Used to override or specify a model name for SDK generation, especially when the OpenAPI name does not match the desired SDK model name.
 
 ## Resource Extensions
 
