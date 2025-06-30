@@ -182,7 +182,7 @@ public class {{clazName}} extends Resource<{{clazName}}> {
         public {{ ../clazName }} {{key}}(List<{{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams > array) {
             JSONArray jarray = new JSONArray();
             for ({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams item : array) {
-            jarray.put(item.toJObject());
+                jarray.put(item.toJObject());
             }
             params.add("{{key}}", jarray);
             return this;}
@@ -203,7 +203,7 @@ public class {{clazName}} extends Resource<{{clazName}}> {
             params.add("discounts[entity_type][" + index + "]", discountEntityType);
             return this;
         }{{/if}}{{/each}}{{else}}{{~#each singularSubsForJsonRequest as |subList key|}}
-        public {{ ../clazName }} {{key}}({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams item) {
+        public {{ ../clazName }} {{pascalCase key}}({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams item) {
             params.add("{{key}}", item.toJObject());
             return this;
         }{{/each}}
