@@ -64,13 +64,13 @@ cd sdk-generator
 
 ```bash
 # Generate a Java SDK
-./gradlew run --args="-i openapi-spec.json -l JAVA -o ./generated-sdk"
+./gradlew run --args="-i openchargebee_sdk_spec.json -l JAVA -o ./generated-sdk"
 
 # Generate Nodejs typings
-./gradlew run --args="-i openapi-spec.json -l TYPESCRIPT_TYPINGS_V3 -o ./generated-types"
+./gradlew run --args="-i openchargebee_sdk_spec.json -l TYPESCRIPT_TYPINGS_V3 -o ./generated-types"
 
 # Generate Python SDK
-./gradlew run --args="-i openapi-spec.json -l PYTHON_V3 -o ./python-sdk"
+./gradlew run --args="-i openchargebee_sdk_spec.json -l PYTHON_V3 -o ./python-sdk"
 ```
 
 ### Command Line Options
@@ -214,19 +214,19 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 #### Using Current/Latest Versions (Recommended)
 ```bash
 # Generate SDKs using latest versions
-./gradlew run --args="-i api-spec.json -l JAVA -o ./java-sdk"
-./gradlew run --args="-i api-spec.json -l PYTHON_V3 -o ./python-sdk"
-./gradlew run --args="-i api-spec.json -l TYPESCRIPT_TYPINGS_V3 -o ./ts-types"
-./gradlew run --args="-i api-spec.json -l NODE_V3 -o ./node-sdk"
-./gradlew run --args="-i api-spec.json -l PHP_V4 -o ./php-sdk"
+./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA -o ../chargebee-java/src/main/java/com/chargebee"
+./gradlew run --args="-i chargebee_sdk_spec.json -l PHP_V4 -o ../chargebee-php/src"
+./gradlew run --args="-i chargebee_sdk_spec.json -l PYTHON_V3 -o ../chargebee-python/chargebee"
+./gradlew run --args="-i chargebee_sdk_spec.json -l TYPESCRIPT_TYPINGS_V3 -o ../chargebee-node/types/"
+./gradlew run --args="-i chargebee_sdk_spec.json -l NODE_V3 -o ../chargebee-node/src/resources"
 ```
 
 #### Using Legacy Versions
 ```bash
 # Generate SDKs using legacy versions (not recommended for new projects)
-./gradlew run --args="-i api-spec.json -l PYTHON -o ./python-legacy-sdk"
-./gradlew run --args="-i api-spec.json -l NODE -o ./node-legacy-sdk"
-./gradlew run --args="-i api-spec.json -l PHP -o ./php-legacy-sdk"
+./gradlew run --args="-i chargebee_sdk_spec.json -l PYTHON -o ./python-legacy-sdk"
+./gradlew run --args="-i chargebee_sdk_spec.json -l NODE -o ./node-legacy-sdk"
+./gradlew run --args="-i chargebee_sdk_spec.json -l PHP -o ./php-legacy-sdk"
 ```
 
 ### Batch Generation for Chargebee Client Libraries
@@ -238,21 +238,21 @@ Generate SDKs for all supported languages targeting Chargebee's official client 
 #### Current/Latest Versions
 ```bash
 # Generate current versions of SDKs
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l PHP_V4 -o ../chargebee-php/src" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l PHP_V4 -o ../chargebee-php/src" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l NODE_V3 -o ../chargebee-node/src/resources" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l NODE_V3 -o ../chargebee-node/src/resources" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l PYTHON_V3 -o ../chargebee-python/chargebee" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l PYTHON_V3 -o ../chargebee-python/chargebee" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l RUBY -o ../chargebee-ruby/lib/chargebee" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l RUBY -o ../chargebee-ruby/lib/chargebee" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l TYPESCRIPT_TYPINGS_V3 -o ../chargebee-node/types/" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l TYPESCRIPT_TYPINGS_V3 -o ../chargebee-node/types/" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l JAVA -o ../chargebee-java/src/main/java/com/chargebee" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA -o ../chargebee-java/src/main/java/com/chargebee" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l DOTNET -o ../chargebee-dotnet/ChargeBee" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l DOTNET -o ../chargebee-dotnet/ChargeBee" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l GO -o ../chargebee-go" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l GO -o ../chargebee-go" &&
 
 echo "Current SDK versions generated successfully."
 ```
@@ -260,13 +260,29 @@ echo "Current SDK versions generated successfully."
 #### Legacy Versions (For Backward Compatibility)
 ```bash
 # Generate legacy versions of SDKs
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l PHP -o ../chargebee-php/lib" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l PHP -o ../chargebee-php/lib" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l NODE -o ../chargebee-node/lib/resources" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l NODE -o ../chargebee-node/lib/resources" &&
 
-./gradlew run --args="-i ../cb-openapi-generator/swagger-ui/oas/sdk/v2/index.json -l PYTHON -o ../chargebee-python/chargebee" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l PYTHON -o ../chargebee-python/chargebee" &&
 
 echo "Legacy SDK versions generated successfully."
+```
+
+### Note for Node.js (NODE_V3)
+
+After generating the Node.js SDK (NODE_V3), run the following command in the SDK output directory to format the code:
+
+```bash
+npx prettier --write .
+```
+
+### Note for Python (PYTHON_V3)
+
+After generating the Python SDK (PYTHON_V3), run the following command in the SDK output directory to format the code:
+
+```bash
+black .
 ```
 
 #### Repository Structure
@@ -310,5 +326,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [OpenAPI Generator](https://openapi-generator.tech/)
 
 ---
+
 
 **Made with ❤️ by the chargebee**
