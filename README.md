@@ -12,15 +12,13 @@ A powerful tool that automatically generates Software Development Kits (SDKs) fo
 
 ## 📋 Supported Languages
 
-| Language | Version | Status |
-|----------|---------|--------|
-| Java | v3 | ✅ |
-| Node.js | v2 & v3 | ✅ |
-| Python | v2 & v3 | ✅ |
-| PHP | v3 & v4 | ✅ |
-| Ruby | v2 | ✅ |
-| .NET | v3 | ✅ |
-| Go | v3 | ✅ |
+- [Java](https://github.com/chargebee/chargebee-java)
+- [Node.js](https://github.com/chargebee/chargebee-node)
+- [Python](https://github.com/chargebee/chargebee-python)
+- [PHP](https://github.com/chargebee/chargebee-php)
+- [Ruby](https://github.com/chargebee/chargebee-ruby)
+- [.NET](https://github.com/chargebee/chargebee-dotnet)
+- [Go](https://github.com/chargebee/chargebee-go)
 
 ## 🛠️ Prerequisites
 
