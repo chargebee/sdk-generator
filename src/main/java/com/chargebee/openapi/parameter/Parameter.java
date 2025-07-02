@@ -1,0 +1,103 @@
+package com.chargebee.openapi.parameter;
+
+import static com.chargebee.openapi.Action.HIDDEN_FROM_SDK;
+import static com.chargebee.openapi.Extension.IS_FILTER_PARAMETER;
+import static com.chargebee.openapi.Extension.IS_SUB_RESOURCE;
+
+import com.chargebee.openapi.Attribute;
+import com.chargebee.openapi.Extension;
+import com.chargebee.sdk.DataType;
+import com.google.common.base.CaseFormat;
+import io.swagger.v3.oas.models.media.Schema;
+import java.util.Map;
+import lombok.Getter;
+
+public class Parameter {
+  public final Schema<?> schema;
+  public final boolean isRequired;
+  @Getter private final String name;
+
+  public Parameter(String name, Schema<?> schema) {
+    this(name, schema, true);
+  }
+
+  public Parameter(String name, Schema<?> schema, boolean isRequired) {
+    this.name = name;
+    this.schema = schema;
+    this.isRequired = isRequired;
+  }
+
+  public static Parameter fromParameter(io.swagger.v3.oas.models.parameters.Parameter parameter) {
+    return new Parameter(parameter.getName(), parameter.getSchema(), parameter.getRequired());
+  }
+
+  public static int sortOrder(Schema schema) {
+    return schema.getExtensions() != null
+            && schema.getExtensions().get(Extension.SORT_ORDER) != null
+        ? (int) schema.getExtensions().get(Extension.SORT_ORDER)
+        : -1;
+  }
+
+  public boolean isDeprecated() {
+    return schema.getDeprecated() != null && schema.getDeprecated();
+  }
+
+  public boolean isHiddenFromSDK() {
+    return this.schema.getExtensions() != null
+        && this.schema.getExtensions().get(HIDDEN_FROM_SDK) != null
+        && (boolean) this.schema.getExtensions().get(HIDDEN_FROM_SDK);
+  }
+
+  public boolean isPaginationProperty() {
+    return this.schema.getExtensions() != null
+        && this.schema.getExtensions().get("x-cb-is-pagination-parameter") != null
+        && (boolean) this.schema.getExtensions().get("x-cb-is-pagination-parameter");
+  }
+
+  public boolean isSubResource() {
+    return this.schema.getExtensions() != null
+        && this.schema.getExtensions().get(IS_SUB_RESOURCE) != null
+        && (boolean) this.schema.getExtensions().get(IS_SUB_RESOURCE);
+  }
+
+  public boolean isFilterParameters() {
+    return this.schema.getExtensions() != null
+        && this.schema.getExtensions().get(IS_FILTER_PARAMETER) != null
+        && (boolean) this.schema.getExtensions().get(IS_FILTER_PARAMETER);
+  }
+
+  public boolean isCompositeArrayBody() {
+    return this.schema.getExtensions() != null
+        && this.schema.getExtensions().get(Extension.IS_COMPOSITE_ARRAY_REQUEST_BODY) != null
+        && (boolean) this.schema.getExtensions().get(Extension.IS_COMPOSITE_ARRAY_REQUEST_BODY);
+  }
+
+  public int sortOrder() {
+    return schema.getExtensions() != null
+            && schema.getExtensions().get(Extension.SORT_ORDER) != null
+        ? (int) schema.getExtensions().get(Extension.SORT_ORDER)
+        : -1;
+  }
+
+  public boolean hasRequiredSubParameters() {
+    if (this.schema.getProperties() == null) return false;
+    if (this.schema.getRequired() != null && !this.schema.getRequired().isEmpty()) return true;
+    return !this.schema.getProperties().values().stream()
+        .filter(x -> x.getRequired() != null && !x.getRequired().isEmpty())
+        .toList()
+        .isEmpty();
+  }
+
+  public Map<String, Object> templateParams(DataType lang) {
+    return new Attribute(
+            CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_UNDERSCORE, name), schema, isRequired)
+        .templateParams(lang);
+  }
+
+  public int sortOrder(Parameter parameter) {
+    return parameter.schema.getExtensions() != null
+            && parameter.schema.getExtensions().get("x-cb-sort-order") != null
+        ? (int) parameter.schema.getExtensions().get("x-cb-sort-order")
+        : -1;
+  }
+}

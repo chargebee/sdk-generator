@@ -1,0 +1,253 @@
+using System;
+using System.IO;
+using System.ComponentModel;
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
+using ChargeBee.Internal;
+using ChargeBee.Api;
+using ChargeBee.Models.Enums;
+using ChargeBee.Filters.Enums;{{#if customImport}}
+{{{customImport}}}{{/if}}
+
+namespace ChargeBee.Models
+{
+
+    public class {{clazName}} : Resource {{NonBreakingSpace}}
+    {
+    {{NonBreakingSpace}}
+        public {{clazName}}() { }
+
+        public {{clazName}}(Stream stream)
+        {
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                JObj = JToken.Parse(reader.ReadToEnd());
+                apiVersionCheck (JObj);
+            }
+        }
+
+        public {{clazName}}(TextReader reader)
+        {
+            JObj = JToken.Parse(reader.ReadToEnd());
+            apiVersionCheck (JObj);    {{NonBreakingSpace}}
+        }
+
+        public {{clazName}}(String jsonString)
+        {
+            JObj = JToken.Parse(jsonString);
+            apiVersionCheck (JObj);
+        }
+
+        #region Methods
+        {{~#each operations}}{{#if deprecated}}
+        [Obsolete]{{/if}}
+        public static {{{retType}}} {{{camelCase methName}}}({{handleArg}})
+        {
+            string url = ApiUtil.BuildUrl({{{urlArgs}}});
+            {{{reqCreationCode}}};
+        }{{/each}}{{#if (eq clazName "PaymentVoucher")}}
+        [Obsolete("Use PaymentVouchersForInvoice")]
+        public static PaymentVoucherPaymentVouchersForInvoiceRequest Payment_vouchersForInvoice(string id)
+        {
+            string url = ApiUtil.BuildUrl("invoices", CheckNull(id), "payment_vouchers");
+            return new PaymentVoucherPaymentVouchersForInvoiceRequest(url);
+        }
+        [Obsolete("Use PaymentVouchersForInvoice")]
+        public static PaymentVoucherPaymentVouchersForCustomerRequest Payment_vouchersForCustomer(string id)
+        {
+            string url = ApiUtil.BuildUrl("customers", CheckNull(id), "payment_vouchers");
+            return new PaymentVoucherPaymentVouchersForCustomerRequest(url);
+        }
+        {{/if}}
+        #endregion
+        {{NonBreakingSpace}}
+        #region Properties{{#each cols}}
+        {{#if deprecated}}[Obsolete]
+        public {{{returnType}}} {{{methName}}} {{NonBreakingSpace}}{{else}}public {{{returnType}}} {{{methName}}} {{NonBreakingSpace}}{{/if}}
+        {
+            get { return {{{getterCode}}}; }
+        }{{/each}}
+        {{{snippet}}}{{NonBreakingSpace}}
+        #endregion
+        {{NonBreakingSpace}}{{#if hasOperReqClasses}}
+        #region Requests{{#each operRequestClasses}}
+        public class {{clazName}} : {{superClazName}}<{{clazName}}> {{NonBreakingSpace}}
+        {
+            {{~#if list}}
+            public {{clazName}}(string url) {{NonBreakingSpace}}
+                    : base(url)
+            {
+            }
+{{else}}
+            {{~#if postOperationWithFilter}}
+            public {{clazName}}(string url, HttpMethod method, bool supportsFilter=false) {{NonBreakingSpace}}
+                    : base(url, method, supportsFilter)
+            {
+            }
+{{else}}
+            public {{clazName}}(string url, HttpMethod method) {{NonBreakingSpace}}
+                    : base(url, method)
+            {
+            }
+{{/if}}{{/if}}
+            {{~#each params~}}{{#if deprecated}}
+            [Obsolete]{{/if}}
+            {{#if listParam~}}
+            {{~#if sortParam~}}{{~#each sortParams}}
+            public {{../returnGeneric}} {{dotNetMethName}}(SortOrderEnum order) {
+                m_params.AddOpt("sort_by["+order.ToString().ToLower()+"]","{{name}}");
+                return this;
+            }{{/each}}{{else~}}
+            public {{listType}}<{{returnGeneric}}> {{dotNetMethName}}() {{NonBreakingSpace}}
+            {
+                return new {{listType}}<{{returnGeneric}}>("{{name}}", this){{#if multi}}.SupportsMultiOperators(true){{/if}}{{#if supportsPresenceFilter}}.SupportsPresenceOperator(true){{/if}};        {{NonBreakingSpace}}
+            }
+            {{~/if~}}
+            {{~else~}}
+            public {{../clazName}} {{dotNetMethName}}({{{dotNetType}}} {{{varName}}}) {{NonBreakingSpace}}
+            {
+                m_params.{{dotNetPutMethName}}("{{name}}", {{{varName}}});
+                return this;
+            }
+            {{~/if~}}
+            {{#if isExceptionFilterParam }}
+            [Obsolete]
+            public {{clazName}} {{dotNetMethName}}({{{dotNetType}}} {{{varName}}}) {{NonBreakingSpace}}
+            {
+                m_params.{{dotNetPutMethName}}("{{name}}", {{{varName}}});
+                return this;
+            }{{/if}}{{/each}}
+            {{~#each singularSubs}}{{#if deprecated}}
+            [Obsolete]{{/if}}{{~#if listParam}}
+            public {{listType}}{{returnGeneric}} {{dotNetMethName}}()
+            {
+                return new {{listType}}{{returnGeneric}}("{{presName}}[{{name}}]", this){{#if isMulti}}.SupportsMultiOperators(true){{/if}}{{#if supportsPresenceFilter}}.SupportsPresenceOperator(true){{/if}};
+            }{{else}}
+            public {{../clazName}} {{dotNetMethName}}({{{dotNetType}}} {{{varName}}}) {{NonBreakingSpace}}
+            {
+                m_params.{{dotNetPutMethName}}("{{resName}}[{{name}}]", {{{varName}}});
+                return this;
+            }{{/if}}{{/each}}{{#if (not jsonRequest) }}{{~#each multiSubs}}{{#if deprecated}}
+            [Obsolete]{{/if}}
+            public {{../clazName}} {{dotNetMethName}}(int index, {{{dotNetType}}} {{varName}}) {{NonBreakingSpace}}
+            {
+                m_params.{{dotNetPutMethName}}("{{resName}}[{{name}}][" + index + "]", {{varName}});
+                return this;
+            }{{/each}}{{else}}{{~#each multiSubsForBatch as |subList key|}}
+        public {{../clazName}} {{camelCase key}}(List<{{{snakeCaseToPascalCaseAndSingularize key}}}{{{../rawOperationName}}}InputParams> array){
+            JArray jArray = new JArray();
+            foreach (var item in array){
+                jArray.Add(item.ToJObject());
+            }
+            m_params.Add("{{key}}", jArray);
+            return this;
+        }
+        {{/each}}{{/if}}
+        {{ curly "close"}}{{/each}}
+        #endregion{{/if}}
+{{#each enumCols}}{{#if deprecated}}
+        [Obsolete]{{/if}}
+        public enum {{apiClassName}}Enum
+        {
+
+            UnKnown, /*Indicates unexpected value for this enum. You can get this when there is a
+            dotnet-client version incompatibility. We suggest you to upgrade to the latest version */
+            {{~#each visibleEntries}}
+            [EnumMember(Value = "{{apiName}}")]{{#if deprecated}}
+            [Obsolete]{{/if}}
+            {{dotNetName}},
+            {{~/each}}
+
+        }{{/each}}{{#each schemaLessEnums}}{{#if deprecated}}
+        [Obsolete]{{/if}}
+        public enum {{apiClassName}}Enum
+        {
+            UnKnown, /*Indicates unexpected value for this enum. You can get this when there is a
+            dotnet-client version incompatibility. We suggest you to upgrade to the latest version */
+            {{~#each visibleEntries}}
+            [EnumMember(Value = "{{apiName}}")]{{#if deprecated}}
+            [Obsolete]{{/if}}
+            {{dotNetName}},
+            {{~/each}}
+        }{{/each}}
+
+        #region Subclasses
+        {{~#each subResources}}
+        public class {{../clazName}}{{clazName}} : Resource
+        {{curly "open"}}{{#each enumCols}}{{#if visibleEntries}}
+            public enum {{apiClassName}}Enum
+            {
+                UnKnown, /*Indicates unexpected value for this enum. You can get this when there is a
+                dotnet-client version incompatibility. We suggest you to upgrade to the latest version */{{#each visibleEntries}}
+                [EnumMember(Value = "{{apiName}}")]{{#if deprecated}}
+                [Obsolete]{{/if}}
+                {{dotNetName}},{{/each}}
+            }{{/if}}{{/each}}{{#each schemaLessEnum}}{{#if visibleEntries}}
+            public enum {{apiClassName}}Enum
+            {
+                UnKnown, /*Indicates unexpected value for this enum. You can get this when there is a
+                dotnet-client version incompatibility. We suggest you to upgrade to the latest version */{{#each visibleEntries}}
+                [EnumMember(Value = "{{apiName}}")]{{#if deprecated}}
+                [Obsolete]{{/if}}
+                {{dotNetName}},{{/each}}
+            }{{/if}}{{/each}}
+{{#each cols}}
+            public {{returnType}} {{NonBreakingSpace}}{{#if isSubResource}}{{else}}{{returnTypeNullable}}{{~/if~}} {{methName}} {
+                get { return {{{getterCode}}}; }
+            }
+{{/each}}
+        }{{/each}}{{#if hasContent}}
+        public class {{clazName}}Content : ResultBase
+        {
+
+            public {{clazName}}Content () { }
+
+            internal {{clazName}}Content(JToken jobj)
+            {
+                m_jobj = jobj;
+            }
+        }{{/if}}
+{{#each operRequestClasses}}{{#if (and hasBatch  jsonRequest) }}{{#each multiSubsForBatch as |subList key|}}
+        public class {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams { {{#each subList as | singularSub | }}
+            public  {{{singularSub.dotNetType}}} {{snakeCaseToPascalCase singularSub.name}} { get; }{{/each}}
+            public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder builder){
+                {{#each subList as |singularSub|}}this.{{snakeCaseToPascalCase singularSub.name}} = builder.Get{{snakeCaseToPascalCase singularSub.name}}();
+                {{/each}}
+            }
+            public JObject ToJObject()
+            {
+                return new JObject
+                {
+                    {{#each subList as |singularSub|}}["{{{singularSub.name}}}"] =  JToken.FromObject(this.{{snakeCaseToPascalCase singularSub.name}}),
+                    {{/each}}
+                };
+            }
+        }
+        public class {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder
+        { {{#each subList as |singularSub|}}
+            private {{{singularSub.dotNetType}}} {{snakeCaseToPascalCase singularSub.name}}; {{/each}}
+            {{#each subList as |singularSub|}}
+            public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder Set{{snakeCaseToPascalCase singularSub.name}} ( {{{singularSub.dotNetType}}} {{snakeCaseToPascalCase singularSub.name}} )
+            {
+                this.{{snakeCaseToPascalCase singularSub.name}} = {{snakeCaseToPascalCase singularSub.name}};
+                return this;
+            } {{/each}}
+
+            {{#each subList as |singularSub|}}
+            public {{{singularSub.dotNetType}}} Get{{snakeCaseToPascalCase singularSub.name}} ()
+            {
+                return this.{{snakeCaseToPascalCase singularSub.name}};
+            } {{/each}}
+
+            public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams Build() {
+                return new {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams(this);
+            }
+
+        }
+        {{/each}}{{/if}}{{/each}}
+        #endregion
+    }
+}

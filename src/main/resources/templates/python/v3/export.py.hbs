@@ -1,0 +1,20 @@
+
+    def wait_for_export_completion(
+        self, export: ExportResponse, headers=None
+    ) -> RetrieveResponse:
+        import time
+
+        response: RetrieveResponse = None
+        count = 0
+        retry_delay_ms = (
+            10000 if self.env is None else self.env.export_retry_delay_ms
+        ) / 1000.0
+
+        while export.status == "in_process":
+            if count > 50:
+                raise RuntimeError("Export is taking too long")
+            count += 1
+            time.sleep(retry_delay_ms)
+            response = self.retrieve(export.id, headers)
+            export = response.export
+        return response

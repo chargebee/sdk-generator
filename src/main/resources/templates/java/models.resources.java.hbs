@@ -1,0 +1,240 @@
+package {{pkgName}};
+
+import {{pkgNamePrefix}}.*;
+import {{pkgNamePrefix}}.internal.*;{{#if hasFilterImports}}
+import {{pkgNamePrefix}}.filters.*;
+import {{pkgNamePrefix}}.filters.enums.SortOrder;{{/if}}
+import {{pkgNamePrefix}}.internal.HttpUtil.Method;
+import {{enumsPkg}}.*;
+import org.json.*;
+import java.io.*;{{#if customImport}}
+{{customImport}}{{/if}}
+import java.sql.Timestamp;
+import java.util.*;
+
+public class {{clazName}} extends Resource<{{clazName}}> {
+{{#each enumCols }}{{#if deprecated }}
+    @Deprecated{{/if}}
+    public enum {{apiClassName}} {
+    {{~#each visibleEntries ~}}{{#if deprecated}}
+        @Deprecated{{/if}}
+        {{name}},
+    {{~/each}}
+        _UNKNOWN; /*Indicates unexpected value for this enum. You can get this when there is a
+        java-client version incompatibility. We suggest you to upgrade to the latest version */
+    }
+{{/each}}{{#each schemaLessEnums }}{{#if deprecated }}
+    @Deprecated{{/if}}
+    public enum {{apiClassName}} {
+    {{~#each visibleEntries ~}}{{#if deprecated}}
+        @Deprecated{{/if}}
+        {{name}},
+    {{~/each}}
+        _UNKNOWN; /*Indicates unexpected value for this enum. You can get this when there is a
+        java-client version incompatibility. We suggest you to upgrade to the latest version */
+    }
+{{/each}}{{#each subResources}}
+    public static class {{clazName}} extends Resource<{{clazName}}> {{curly "open"}}{{#each enumCols }}
+        public enum {{apiClassName}} {
+             {{#each visibleEntries~}}{{name}},{{~/each}}
+            _UNKNOWN; /*Indicates unexpected value for this enum. You can get this when there is a
+            java-client version incompatibility. We suggest you to upgrade to the latest version */ {{NonBreakingSpace}}
+        }
+{{/each}}{{#each schemaLessEnum }}
+        public enum {{apiClassName}} {
+            {{#each visibleEntries~}}{{name}},{{~/each}}
+            _UNKNOWN; /*Indicates unexpected value for this enum. You can get this when there is a
+            java-client version incompatibility. We suggest you to upgrade to the latest version */ {{NonBreakingSpace}}
+        }
+{{/each}}
+        public {{clazName}}(JSONObject jsonObj) {
+            super(jsonObj);
+        }
+{{#each cols }}{{#if deprecated }}
+        @Deprecated{{/if}}
+        public {{{javaType}}} {{methName}}() {
+            return {{{getterCode}}};
+        }
+{{/each}}
+    }
+{{/each}}
+    //Constructors
+    //============
+{{#if eventResource }}
+    public {{clazName}}(InputStream is) throws IOException {
+        super(is);
+        apiVersionCheck(jsonObj);
+    }
+
+    public {{clazName}}(BufferedReader rd) throws IOException {
+        super(rd);
+        apiVersionCheck(jsonObj);
+    }
+{{/if}}
+    public {{clazName}}(String jsonStr) {
+        super(jsonStr);{{#if eventResource }}
+        apiVersionCheck(jsonObj);{{/if}}
+    }
+
+    public {{clazName}}(JSONObject jsonObj) {
+        super(jsonObj);{{#if eventResource }}
+        apiVersionCheck(jsonObj);{{/if}}
+    }
+
+    // Fields
+    //=======
+{{#each cols }}{{#if deprecated}}
+    @Deprecated{{/if}}
+    public {{{javaType}}} {{{methName}}}() {
+        return {{{getterCode}}};
+    }
+{{/each}}{{#if (eq clazName "Subscription")}}
+    @Deprecated
+    public JSONObject metadata(){
+        return optJSONObject("metadata");
+    }{{/if}}
+    // Operations
+    //===========
+{{#each operations }}{{#if (and (eq retType "PaymentVoucherPaymentVouchersForInvoiceRequest") (eq methName "paymentVouchersForInvoice"))}}
+    @Deprecated
+    public static PaymentVoucherPaymentVouchersForInvoiceRequest payment_vouchersForInvoice(String id) {
+    String uri = uri("invoices", nullCheck(id), "payment_vouchers");
+    return new PaymentVoucherPaymentVouchersForInvoiceRequest(uri);
+    }{{/if}}{{#if (and (eq retType "PaymentVoucherPaymentVouchersForCustomerRequest") (eq methName "paymentVouchersForCustomer"))}}
+    @Deprecated
+    public static PaymentVoucherPaymentVouchersForCustomerRequest payment_vouchersForCustomer(String id) {
+    String uri = uri("customers", nullCheck(id), "payment_vouchers");
+    return new PaymentVoucherPaymentVouchersForCustomerRequest(uri);
+    }{{/if}}{{#if deprecated }}
+    @Deprecated{{/if}}
+    public static {{{retType}}} {{{methName}}}({{{handleArg}}}) {
+        String uri = uri({{{urlArgs}}});
+        {{{reqCreationCode}}};
+    }
+{{/each}}
+{{{snippet}}}{{#if hasOperReqClasses }}
+    // Operation Request Classes
+    //==========================
+{{#each operRequestClasses }}
+    public static class {{clazName}} extends {{superClazName}}<{{clazName}}> {{curly "open"}}
+{{#if list }}
+        {{#if subDomain }}
+        private {{clazName}} (String uri) {
+            super(uri, "{{subDomain}}");
+        }{{else~}}
+        private {{clazName}}(String uri) {
+            super(uri);
+        }{{/if}}{{else}}
+        {{#if subDomain~}}
+        private {{clazName}}(Method httpMeth, String uri) {
+            super(httpMeth, uri, null, "{{subDomain}}"{{#if jsonRequest}},true{{/if}});
+        }{{else~}}
+        private {{clazName}}(Method httpMeth, String uri) {
+            super(httpMeth, uri);
+        }{{/if}}{{/if}}{{#if (and hasBatch (not jsonRequest)) }}
+        private {{clazName}}(Method httpMeth, String uri, String pathParam) {
+            super(httpMeth, uri, pathParam);
+        }{{/if}}
+    {{#each params }}{{#if deprecated }}
+        @Deprecated{{/if}}{{#if  listParam }}{{#if sortParam }}{{#each sortParams }}
+        public {{returnGeneric}} {{dotNetMethName}}(SortOrder order) {
+            params.addOpt("sort_by["+order.name().toLowerCase()+"]","{{name}}");
+            return this;
+        }{{/each}}{{else}}
+        public {{listType}}<{{returnGeneric}}> {{methName}}() {
+            return new {{listType}}<{{returnGeneric}}>("{{name}}",this){{#if multi}}.supportsMultiOperators(true){{/if}}{{#if supportsPresenceFilter}}.supportsPresenceOperator(true){{/if}}{{#if idempotent}}.setIdempotency({{idempotent}}){{/if}};        {{NonBreakingSpace}}
+        }{{/if}}
+{{else}}
+        public {{clazName}} {{methName}}({{{javaType}}} {{varName}}) {
+            params.{{putMethName}}("{{name}}", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
+            paramsV2.{{putMethName}}(new PrimitiveParameter("{{name}}"), {{varName}});{{/if}}
+            return this;
+        }
+{{/if}}{{#if exceptionFilterParam}}
+        @Deprecated
+        public {{clazName}} {{methName}}({{{javaType}}} {{varName}}) {
+            params.{{putMethName}}("{{name}}", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
+            paramsV2.{{putMethName}}(new PrimitiveParameter("{{name}}"), {{varName}});{{/if}}
+            return this;
+        }
+{{/if}}{{#if simpleList }}{{#if deprecated }}
+        @Deprecated{{/if}}
+        public {{clazName}} {{{methName}}}({{javaSimpleType}}... {{varName}}) {
+            params.{{putMethName}}("{{name}}", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
+            paramsV2.{{putMethName}}(new PrimitiveParameter("{{name}}"), {{varName}});{{/if}}
+            return this;
+        }{{/if}}
+{{/each}}{{#each singularSubs }}{{#if deprecated }}
+        @Deprecated{{/if}}
+        {{#if listParam }}
+        public {{listType}}<{{returnGeneric}}> {{methName}}() {
+            return new {{listType}}<{{returnGeneric}}>("{{resName}}[{{name}}]",this){{#if multi}}.supportsMultiOperators(true){{/if}}{{#if supportsPresenceFilter}}.supportsPresenceOperator(true){{/if}};        {{NonBreakingSpace}}
+        }{{else~}}
+        public {{clazName}} {{methName}}({{{javaType}}} {{varName}}) {
+            params.{{putMethName}}("{{resName}}[{{name}}]", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
+            paramsV2.{{putMethName}}(new CompositeParameter("{{resName}}", "{{name}}"), {{varName}});{{/if}}
+            return this;
+        }
+{{/if}}{{/each}}{{#if (not jsonRequest) }}{{#each multiSubs }}{{#if deprecated }}
+        @Deprecated{{/if}}
+        public {{clazName}} {{methName}}(int index, {{{javaType}}} {{{varName}}}) {
+            params.{{putMethName}}("{{resName}}[{{name}}][" + index + "]", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
+            paramsV2.{{putMethName}}(new CompositeArrayParameter("{{resName}}", "{{name}}", index), {{varName}});{{/if}}
+            return this;
+        }{{#if (and (eq clazName "ImportCreditNoteRequest") (eq methName "lineItemEntityType"))}}
+        @Deprecated
+        public ImportCreditNoteRequest lineItemEntityType(int index, Invoice.LineItem.EntityType lineItemEntityType) {
+            params.addOpt("line_items[entity_type][" + index + "]", lineItemEntityType);
+            return this;
+        }{{/if}}{{#if (and (eq clazName "ImportCreditNoteRequest") (eq methName "discountEntityType"))}}
+        @Deprecated
+        public ImportCreditNoteRequest discountEntityType(int index, Invoice.Discount.EntityType discountEntityType) {
+            params.add("discounts[entity_type][" + index + "]", discountEntityType);
+            return this;
+        }{{/if}}{{/each}}{{else}}{{~#each multiSubsForBatch as |subList key|}}
+        public {{ ../clazName }} {{key}}(List<{{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams > array) {
+            JSONArray jarray = new JSONArray();
+            for ({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams item : array) {
+                jarray.put(item.toJObject());
+            }
+            params.add("{{key}}", jarray);
+            return this;}
+        {{/each}}{{/if}}
+        @Override
+        public Params params() {
+            return params;
+        }{{#if (and hasBatch (not jsonRequest))}}
+            @Override
+            public ParamsV2 paramsV2() {
+                return paramsV2;
+            }{{/if}}
+    }
+{{/each}}{{~#each operRequestClasses }}{{#if (and hasBatch  jsonRequest) }}{{#each multiSubsForBatch as |subList key|}}
+    public static class {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams { {{#each subList as |singularSub|}}
+        private final {{{singularSub.javaType}}} {{snakeCaseToPascalCase singularSub.name}};{{/each}}
+        private {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder builder){
+            {{#each subList as |singularSub|}}this.{{snakeCaseToPascalCase singularSub.name}} = builder.{{snakeCaseToPascalCase singularSub.name}};
+            {{/each}}
+        }
+        public JSONObject toJObject(){
+            JSONObject jsonObject = new JSONObject();
+            {{#each subList as |singularSub|}}jsonObject.put("{{{singularSub.name}}}", this.{{snakeCaseToPascalCase singularSub.name}}{{#eq singularSub.javaType "Timestamp"}}.getTime(){{/eq}});
+            {{/each}}
+            return jsonObject;
+        }
+    }
+    public static class {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder { {{#each subList as |singularSub|}}
+        private {{{singularSub.javaType}}} {{snakeCaseToPascalCase singularSub.name}};{{/each}}
+        {{#each subList as |singularSub|}}
+        public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder set{{snakeCaseToPascalCase singularSub.name}}( {{{singularSub.javaType}}} {{snakeCaseToPascalCase singularSub.name}} ) {
+            this.{{snakeCaseToPascalCase singularSub.name}} = {{snakeCaseToPascalCase singularSub.name}};
+            return this;
+        } {{/each}}
+
+        public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams build() {
+            return new {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams(this);
+        }
+
+    }
+    {{/each}}{{/if}}{{/each}}{{~/if}}
+}

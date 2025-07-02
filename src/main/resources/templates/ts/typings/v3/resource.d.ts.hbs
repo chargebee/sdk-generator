@@ -1,0 +1,70 @@
+///<reference path='./../core.d.ts'/>
+///<reference path='./../index.d.ts'/>
+{{#if hasListOperations }}///<reference path='./filter.d.ts'/>{{/if}}
+declare module 'chargebee' {
+  export interface {{name}} {
+    {{#if isAdditionalPropertiesSupported}}[key : string] : unknown;{{/if}}{{#each attributesInMultiLine}}{{#with (lookup ../attributes @index) as |attr|}}{{#if attr.description}}
+    /**
+    * @description {{attr.description}}
+    */
+    {{/if}}{{/with}}
+    {{{this}}}{{/each}}
+  }{{#unless hasEmptyActionsAndSubResources}}
+
+  export namespace {{name}} {
+    {{#if actions.length}}export class {{name}}Resource { {{#each actions}} {{#if description}}
+      /**
+        * @description {{description}}
+        */
+      {{/if}}
+      {{pascalCase name}}({{#each pathParameters}}{{#if @index}}, {{/if}}{{camelCaseToSnakeCase name}}:{{{type}}},{{/each}}{{#if hasQueryParameters}}input{{#if isAllQueryParamsOptional}}?{{/if}}:{{camelCase name}}InputParam,{{/if}}{{#if hasRequestBodyParameters}}input{{#if isAllRequestBodyParamsOptional}}?{{/if}}:{{camelCase name}}InputParam,{{/if}} headers?:ChargebeeRequestHeader):{{#with response}}Promise<ChargebeeResponse<{{camelCaseToPascalCase name}}>>{{/with}};{{#unless @last}}
+        {{/unless}}{{/each}}
+    }{{/if}}
+
+    {{#each actions}}export interface {{#with response}}{{camelCaseToPascalCase name}} { {{#each parameters}} {{#if description}}
+      /**
+        * @description {{description}}
+        */
+       {{/if}}
+       {{camelCaseToSnakeCase name}}{{#unless isRequired}}?{{/unless}}:{{{type}}};{{#unless @last}}{{/unless}}{{/each}}
+    }{{/with}}
+  {{#unless @last}}
+    {{/unless}}{{/each}}
+
+    {{#each subResources}}export interface {{ singularize name}} { {{#each attributes}} {{#if description}}
+         /**
+          * @description {{description}}
+          */
+       {{/if}}
+      {{camelCaseToSnakeCase name}}{{#unless isRequired}}?{{/unless}}:{{{type}}};{{#unless @last}}{{/unless}}{{/each}}
+    }{{#unless @last}}
+    {{/unless}}{{/each}}
+  // REQUEST PARAMS
+  //---------------
+  {{#each operRequestInterfaces}}
+      export interface {{clazName}} {{curly "open"}}{{#each params}}{{#if (not hidden) (not isSubFilterParam) (not sortParam)}}{{#if deprecated }}/**
+          * @deprecated Please refer API docs to use other attributes
+          */
+          {{/if}}
+          {{name}}{{typescriptPutMethName}}: {{{returnGeneric}}};{{/if}}{{/each}}{{#if hasSortParam }}
+          "sort_by[asc]"?: string;
+          "sort_by[desc]"?: string;{{/if}}{{#each subParamsForOperation }}
+          {{{.}}}{{/each}}
+      {{#if customFieldSupported}} [key: `cf_${string}`]: unknown; {{/if}}
+      }{{/each}}{{#each operRequestInterfaces}}{{#if hasSingularSubs }}{{#each singularSubs as |subList key|}}
+      export interface {{key}}{{subList.[0].clazName}} { {{#each subList as |singularSub|}}
+          {{#unless singularSub.hidden}}{{#if singularSub.deprecated}}/**
+          * @deprecated Please refer API docs to use other attributes
+          */
+          {{/if}}{{singularSub.name}}{{singularSub.typescriptPutMethName}}: {{{singularSub.returnGeneric}}};{{/unless}}{{/each}}
+      }{{/each}}
+
+  {{/if}}{{#if hasMultiSubs}}{{#each multiSubs as |subList key|}}
+      export interface {{snakeCaseToPascalCase key}}{{subList.[0].clazName}}{ {{#each subList as |singularSub|}}
+          {{#unless singularSub.hidden}}{{#if singularSub.deprecated}}/**
+          * @deprecated Please refer API docs to use other attributes
+          */
+          {{/if}}{{singularSub.name}}{{singularSub.typescriptPutMethName}}: {{{singularSub.returnGeneric}}};{{/unless}}{{/each}}
+      }{{/each}}{{/if}}{{/each}}
+  }{{/unless}}
+}

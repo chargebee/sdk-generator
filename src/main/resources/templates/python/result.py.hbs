@@ -1,0 +1,78 @@
+from chargebee.compat import json
+from chargebee.models import *
+
+
+class Result(object):
+
+    IDEMPOTENCY_REPLAYED_HEADER = 'chargebee-idempotency-replayed'
+
+    def __init__(self, response, response_header=None, http_status_code=None):
+        self._response = response
+        self._response_obj = {}
+        self._response_header = response_header
+        self._http_status_code = http_status_code
+
+    @property
+    def get_response_headers(self):
+        return self._response_header
+
+    @property
+    def get_http_status_code(self):
+        return self._http_status_code
+
+    @property
+    def is_idempotency_replayed(self):
+        value = self._response_header.get(self.IDEMPOTENCY_REPLAYED_HEADER)
+        if value is not None:
+            return bool(value)
+        else:
+            return False
+{{#each responses}}
+    @property
+    def {{ pascalCaseToSnakeCase name }}(self):
+        {{ pascalCaseToSnakeCase name }} = self._get('{{ pascalCaseToSnakeCase name }}', {{ name }}{{#unless hasDependentAttributes }}{{#if subResources}},
+        {{curly "open"}}{{#each subResources}}'{{ pascalCaseToSnakeCase name }}' : {{../name}}.{{ singularize name }}{{#unless @last}}, {{/unless}}{{/each}}{{curly "close"}}{{/if}});{{/unless}}{{#if hasDependentAttributes}}, {{curly "open"}}{{curly "close"}}{{#if dependentResources}},
+        {{curly "open"}}{{#each dependentResources}}'{{ id }}' : {{ name }}{{#unless @last}}, {{/unless}}{{/each}}{{curly "close"}});{{/if}}{{/if}}{{#each singularDependentResources}}
+        {{ pascalCaseToSnakeCase ../name }}.init_dependant(self._response['{{ pascalCaseToSnakeCase ../name }}'], '{{ pascalCaseToSnakeCase  id }}',
+        {{curly "open"}}{{#each subResources}}'{{ id }}' : {{ ../name }}.{{ singularize name }}{{#unless @last}}, {{/unless}}{{/each}}{{curly "close"}});{{/each}}{{#each listDependentResources}}
+        {{ pascalCaseToSnakeCase ../name }}.init_dependant_list(self._response['{{ pascalCaseToSnakeCase ../name }}'], '{{ pascalCaseToSnakeCase id }}',
+        {{curly "open"}}{{#each subResources}}'{{ id }}' : {{ ../name }}.{{ singularize name }}{{#unless @last}}, {{/unless}}{{/each}}{{curly "close"}});{{/each}}
+        return {{ pascalCaseToSnakeCase name }};
+{{/each}}{{#each listResponses}}
+    @property
+    def {{ pluralize id }}(self):
+        {{ pluralize id }} = self._get_list('{{ pluralize id }}', {{ name }},
+        {{curly "open"}}{{#each subResources}}'{{ id }}' : {{../name}}.{{ singularize name }}{{#unless @last}}, {{/unless}}{{/each}}{{curly "close"}});
+        return {{ pluralize id }};
+{{/each}}
+
+    def _get_list(self, type, cls, sub_types={}, dependant_types={}, dependant_sub_types={}):
+        if not type in self._response:
+            return None
+
+        set_val = []
+        for obj in self._response[type]:
+            if isinstance(obj, dict):
+                model = cls.construct(obj, sub_types, dependant_types)
+                for k in dependant_sub_types:
+                    model.init_dependant(obj, k, dependant_sub_types[k])
+                set_val.append(model)
+
+        self._response_obj[type] = set_val
+        return self._response_obj[type]
+
+    def _get(self, type, cls, sub_types=None, dependant_types=None):
+        if not type in self._response:
+            return None
+
+        if not type in self._response_obj:
+            self._response_obj[type] = cls.construct(self._response[type], sub_types, dependant_types)
+
+        return self._response_obj[type]
+
+    def __str__(self):
+        return json.dumps(self._response, indent=4)
+
+
+class Content(Result):
+    pass

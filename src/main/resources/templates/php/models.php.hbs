@@ -1,0 +1,55 @@
+<?php
+
+namespace ChargeBee\ChargeBee\Models;
+
+use ChargeBee\ChargeBee\Model;{{#if isResourceFile}}
+use ChargeBee\ChargeBee\Request;
+use ChargeBee\ChargeBee\Util;{{#if (or isExport isTimeMachine isEvent)}}
+use ChargeBee\ChargeBee\Environment;{{/if}}{{/if}}{{#if isEvent}}
+use Exception;
+use RuntimeException;{{/if}}
+
+class {{name}} extends Model
+{{curly "open"}}{{#if isResourceFile}}
+{{/if}}
+  protected $allowed = [{{#each attributes}}
+    '{{snakeCaseToCamelCase name }}',{{/each}}
+  ];
+
+{{#if isExport}}{{{includeFile "src/main/resources/templates/php/export.php.hbs"}}}
+{{/if}}{{#if isTimeMachine}}{{{includeFile "src/main/resources/templates/php/timeMachine.php.hbs"}}}
+{{/if}}{{#if isEvent}}{{{includeFile "src/main/resources/templates/php/event.php.hbs"}}}
+{{/if}}{{#if isHostedPage}}{{{includeFile "src/main/resources/templates/php/hostedPage.php.hbs"}}}
+{{/if}}{{#if isSession}}{{{includeFile "src/main/resources/templates/php/session.php.hbs"}}}
+{{/if}}{{#if isResourceFile}}
+
+  # OPERATIONS
+  #-----------
+{{#each actions}}
+  public static function {{#eq name "list"}}all{{else}}{{pascalCase name}}{{/eq}}({{#if hasPathParameters}}$id, {{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}$params{{#and isAllRequestBodyParamsOptional isAllQueryParamsOptional}} = array(){{/and}}, {{/or}}$env = null, $headers = array())
+  {
+    $jsonKeys = array({{#each jsonKeys}}{{#each this}}
+        "{{snakeCaseToCamelCase @key}}" => {{this}},
+    {{~/each}}{{/each}}
+    );
+    return Request::{{#eq name "list"}}sendListRequest{{else}}send{{/eq}}(Request::{{httpRequestType}}, Util::encodeURIPath("{{urlPrefix}}"{{#if hasPathParameters}},$id{{/if}}{{#neq urlSuffix ""}},"{{urlSuffix}}"{{/neq}}), {{#or hasRequestBodyParameters hasQueryParameters}}$params{{else}}array(){{/or}}, $env, $headers{{#if subDomain}}, "{{subDomain}}"{{else}}, null{{/if}}{{#if isOperationNeedsJsonInput}}, true{{else}}, false{{/if}}, $jsonKeys);
+  }
+{{/each}}{{#if (eq name "PaymentVoucher")}}
+  /**
+  * @deprecated use paymentVouchersForInvoice instead
+  */
+  public static function payment_vouchersForInvoice($id, $params = array(), $env = null, $headers = array())
+  {
+    return Request::send(Request::GET, Util::encodeURIPath("invoices",$id,"payment_vouchers"), $params, $env, $headers);
+  }
+  /**
+  * @deprecated use paymentVouchersForCustomer instead
+  */
+  public static function payment_vouchersForCustomer($id, $params = array(), $env = null, $headers = array())
+  {
+    return Request::send(Request::GET, Util::encodeURIPath("customers",$id,"payment_vouchers"), $params, $env, $headers);
+  }
+{{/if}}
+ }{{else}}{{curly "close"}}{{/if}}
+
+?>

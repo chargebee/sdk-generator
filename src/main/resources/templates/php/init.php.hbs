@@ -1,0 +1,27 @@
+<?php
+
+
+require(dirname(__FILE__) . '/AbstractChargeBee.php');
+require(dirname(__FILE__) . '/ChargeBee.php');
+require(dirname(__FILE__) . '/ChargeBee/Version.php');
+require(dirname(__FILE__) . '/ChargeBee/Environment.php');
+require(dirname(__FILE__) . '/ChargeBee/Util.php');
+
+require(dirname(__FILE__) . '/ChargeBee/Exceptions/IOException.php');
+require(dirname(__FILE__) . '/ChargeBee/Exceptions/APIError.php');
+require(dirname(__FILE__) . '/ChargeBee/Exceptions/PaymentException.php');
+require(dirname(__FILE__) . '/ChargeBee/Exceptions/OperationFailedException.php');
+require(dirname(__FILE__) . '/ChargeBee/Exceptions/InvalidRequestException.php');
+
+require(dirname(__FILE__) . '/ChargeBee/Request.php');
+require(dirname(__FILE__) . '/ChargeBee/Guzzle.php');
+
+require(dirname(__FILE__) . '/ChargeBee/Result.php');
+require(dirname(__FILE__) . '/ChargeBee/ListResult.php');
+
+require(dirname(__FILE__) . '/ChargeBee/Model.php');
+{{#each resourceNames}}
+require(dirname(__FILE__) . '/ChargeBee/Models/{{this}}.php');{{/each}}
+require(dirname(__FILE__) . '/ChargeBee/Models/Content.php');
+
+?>

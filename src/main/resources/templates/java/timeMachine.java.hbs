@@ -1,0 +1,30 @@
+    public TimeMachine waitForTimeTravelCompletion()
+            throws Exception{
+        return waitForTimeTravelCompletion(null);
+    }
+
+    public TimeMachine waitForTimeTravelCompletion(Environment env)
+            throws Exception {
+        int count = 0;
+        int sleepTime = Integer.getInteger("cb.java.time_travel.sleep.millis", 3000);
+        while(timeTravelStatus() == TimeTravelStatus.IN_PROGRESS){
+            if(count++ > 30){
+                throw new RuntimeException("The time travel is taking too much time");
+            }
+            Thread.sleep(sleepTime);
+            Request req = retrieve(name());
+            jsonObj = ((env == null) ? req.request() : req.request(env)).timeMachine().jsonObj;
+        }
+        if(timeTravelStatus() == TimeTravelStatus.FAILED){
+            JSONObject errorJson = new JSONObject(errorJson());
+            int httpStatusCode = errorJson.getInt("http_code");
+            String exceptionMessage = errorJson.getString("message");
+            throw new com.chargebee.exceptions.OperationFailedException(httpStatusCode, exceptionMessage, errorJson);
+        }
+        if(timeTravelStatus() == TimeTravelStatus.NOT_ENABLED
+                || timeTravelStatus() == TimeTravelStatus._UNKNOWN){
+            throw new RuntimeException("Time travel status is in wrong state" + timeTravelStatus());
+        }
+        return this;
+    }
+

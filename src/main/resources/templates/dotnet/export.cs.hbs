@@ -1,0 +1,19 @@
+ public Export WaitForExportCompletion()
+        {
+            int count = 0;
+            while (this.Status == Export.StatusEnum.InProcess)
+            {
+                if (count++ > 50)
+                {
+                    throw new Exception("Export is taking too long");
+                }
+                var t = Task.Factory.StartNew(() =>
+                {
+                    Task.Delay(ApiConfig.ExportSleepMillis).Wait();
+                });
+                t.Wait();
+                EntityRequest<Type> req = Retrieve(Id);
+                this.JObj = req.Request().Export.JObj;
+            }
+            return this;
+        }

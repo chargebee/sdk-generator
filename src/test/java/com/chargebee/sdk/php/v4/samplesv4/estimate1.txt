@@ -1,0 +1,79 @@
+<?php
+
+namespace Chargebee\Resources\Estimate;
+
+class Estimate  {
+    /**
+    *
+    * @var ?\Chargebee\Resources\SubscriptionEstimate\SubscriptionEstimate $subscription_estimate
+    */
+    public ?\Chargebee\Resources\SubscriptionEstimate\SubscriptionEstimate $subscription_estimate;
+
+    /**
+    *
+    * @var ?array<\Chargebee\Resources\SubscriptionEstimate\SubscriptionEstimate> $subscription_estimates
+    */
+    public ?array $subscription_estimates;
+
+    /**
+    * @var array<string> $knownFields
+    */
+    protected static array $knownFields = [ "subscription_estimate" , "subscription_estimates"  ];
+
+    /**
+    * dynamic properties for resources
+    * @var array<mixed> $_data;
+    */
+    protected $_data = [];
+
+    private function __construct(
+        ?\Chargebee\Resources\SubscriptionEstimate\SubscriptionEstimate $subscription_estimate,
+        ?array $subscription_estimates,
+    )
+    {
+        $this->subscription_estimate = $subscription_estimate;
+        $this->subscription_estimates = $subscription_estimates;
+    }
+
+    public static function from(array $resourceAttributes): self
+    {
+        $subscription_estimates = array_map(fn (array $result): \Chargebee\Resources\SubscriptionEstimate\SubscriptionEstimate =>  \Chargebee\Resources\SubscriptionEstimate\SubscriptionEstimate::from(
+            $result
+        ), $resourceAttributes['subscription_estimates'] ?? []);
+
+        $returnData = new self( isset($resourceAttributes['subscription_estimate']) ? \Chargebee\Resources\SubscriptionEstimate\SubscriptionEstimate::from($resourceAttributes['subscription_estimate']) : null,
+        $subscription_estimates,
+
+
+        );
+
+        return $returnData;
+    }
+
+    public function toArray(): array
+    {
+
+        $data = array_filter([
+
+
+        ], function ($value) {
+            return $value !== null;
+        });
+
+
+        if($this->subscription_estimate instanceof \Chargebee\Resources\SubscriptionEstimate\SubscriptionEstimate){
+            $data['subscription_estimate'] = $this->subscription_estimate->toArray();
+        }
+
+        if($this->subscription_estimates !== []){
+            $data['subscription_estimates'] = array_map(
+                fn (\Chargebee\Resources\SubscriptionEstimate\SubscriptionEstimate $subscription_estimates): array => $subscription_estimates->toArray(),
+                $this->subscription_estimates
+            );
+        }
+
+
+        return $data;
+    }
+}
+?>

@@ -1,0 +1,106 @@
+<?php
+
+namespace Chargebee\Resources\AdvanceInvoiceSchedule;
+
+class FixedIntervalSchedule  {
+    /**
+    *
+    * @var ?string $end_schedule_on
+    */
+    public ?string $end_schedule_on;
+
+    /**
+    *
+    * @var ?string $number_of_occurrences
+    */
+    public ?string $number_of_occurrences;
+
+    /**
+    *
+    * @var ?string $days_before_renewal
+    */
+    public ?string $days_before_renewal;
+
+    /**
+    *
+    * @var ?string $end_date
+    */
+    public ?string $end_date;
+
+    /**
+    *
+    * @var ?string $created_at
+    */
+    public ?string $created_at;
+
+    /**
+    *
+    * @var ?string $terms_to_change
+    */
+    public ?string $terms_to_change;
+
+    /**
+    * @var array<string> $knownFields
+    */
+    protected static array $knownFields = [ "end_schedule_on" , "number_of_occurrences" , "days_before_renewal" , "end_date" , "created_at" , "terms_to_change"  ];
+
+    /**
+    * dynamic properties for resources
+    * @var array<mixed> $_data;
+    */
+    protected $_data = [];
+
+    private function __construct(
+        ?string $end_schedule_on,
+        ?string $number_of_occurrences,
+        ?string $days_before_renewal,
+        ?string $end_date,
+        ?string $created_at,
+        ?string $terms_to_change,
+    )
+    {
+        $this->end_schedule_on = $end_schedule_on;
+        $this->number_of_occurrences = $number_of_occurrences;
+        $this->days_before_renewal = $days_before_renewal;
+        $this->end_date = $end_date;
+        $this->created_at = $created_at;
+        $this->terms_to_change = $terms_to_change;
+    }
+
+    public static function from(array $resourceAttributes): self
+    {
+        $returnData = new self( $resourceAttributes['end_schedule_on'] ?? null,
+        $resourceAttributes['number_of_occurrences'] ?? null,
+        $resourceAttributes['days_before_renewal'] ?? null,
+        $resourceAttributes['end_date'] ?? null,
+        $resourceAttributes['created_at'] ?? null,
+        $resourceAttributes['terms_to_change'] ?? null,
+
+
+        );
+
+        return $returnData;
+    }
+
+    public function toArray(): array
+    {
+
+        $data = array_filter(['end_schedule_on' => $this->end_schedule_on,
+        'number_of_occurrences' => $this->number_of_occurrences,
+        'days_before_renewal' => $this->days_before_renewal,
+        'end_date' => $this->end_date,
+        'created_at' => $this->created_at,
+        'terms_to_change' => $this->terms_to_change,
+
+        ], function ($value) {
+            return $value !== null;
+        });
+
+
+
+
+
+        return $data;
+    }
+}
+?>

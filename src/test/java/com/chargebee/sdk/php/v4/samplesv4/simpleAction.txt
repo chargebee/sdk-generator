@@ -1,0 +1,51 @@
+<?php
+namespace Chargebee\Actions;
+
+use Chargebee\Actions\Contracts\CustomerActionsInterface;
+use Chargebee\Responses\CustomerResponse\CreateCustomerResponse;
+use Chargebee\ValueObjects\Encoders\URLFormEncoder;
+use Chargebee\ValueObjects\Transporters\ChargebeePayload;
+use Chargebee\ValueObjects\APIRequester;
+use Chargebee\HttpClient\HttpClientFactory;
+use Chargebee\Environment;
+
+final class CustomerActions implements CustomerActionsInterface
+{
+    private HttpClientFactory $httpClientFactory;
+    private Environment $env;
+    public function __construct(HttpClientFactory $httpClientFactory, Environment $env){
+       $this->httpClientFactory = $httpClientFactory;
+       $this->env = $env;
+    }
+
+    /**
+    *   @see https://apidocs.chargebee.com/docs/api/customers?lang=php#create
+    *   @param array{
+    *     id?: string,
+    *     } $params Description of the parameters
+    *
+    *   @param array<string, string> $headers
+    *   @return CreateCustomerResponse
+    */
+    public function create(array $params, array $headers = []): CreateCustomerResponse
+    {
+        $jsonKeys = [
+        ];
+        $payload = ChargebeePayload::builder()
+        ->withEnvironment($this->env)
+        ->withHttpMethod("post")
+        ->withUriPaths(["customers"])
+        ->withParamEncoder( new URLFormEncoder())
+        ->withSubDomain(null)
+        ->withJsonKeys($jsonKeys)
+        ->withHeaders($headers)
+        ->withParams($params)
+        ->withIdempotent(false)
+        ->build();
+        $apiRequester = new APIRequester($this->httpClientFactory, $this->env);
+        $respObject = $apiRequester->makeRequest($payload);
+        return CreateCustomerResponse::from($respObject->data, $respObject->headers);
+    }
+
+}
+?>

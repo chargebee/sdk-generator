@@ -1,0 +1,20 @@
+
+func WaitForExportCompletion(exp export.Export) (export.Export, error) {
+    return WaitForExportCompletionWithEnv(exp, chargebee.DefaultConfig())
+    }
+func WaitForExportCompletionWithEnv(exp export.Export, env chargebee.Environment) (export.Export, error) {
+    count := 0
+    for exp.Status == exportEnum.StatusInProcess {
+        if count > 30 {
+            return exp, errors.New("'Export is taking too long'")
+        }
+        count++
+        time.Sleep(chargebee.ExportWaitInSecs)
+        result, err := Retrieve(exp.Id).RequestWithEnv(env)
+        if err != nil {
+            return exp, err
+        }
+        exp = *result.Export
+    }
+    return exp, nil
+}

@@ -1,0 +1,28 @@
+namespace ChargeBee.Models
+{
+
+    public class CreditNote : Resource __delimiter__
+    {
+    __delimiter__
+        public CreditNote() { }
+
+        public CreditNote(Stream stream)
+        {
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                JObj = JToken.Parse(reader.ReadToEnd());
+                apiVersionCheck (JObj);
+            }
+        }
+
+        public CreditNote(TextReader reader)
+        {
+            JObj = JToken.Parse(reader.ReadToEnd());
+            apiVersionCheck (JObj);    __delimiter__
+        }
+
+        public CreditNote(String jsonString)
+        {
+            JObj = JToken.Parse(jsonString);
+            apiVersionCheck (JObj);
+        }

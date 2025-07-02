@@ -1,0 +1,49 @@
+package com.chargebee.models;
+
+import com.chargebee.*;
+import com.chargebee.internal.*;
+import com.chargebee.filters.*;
+import com.chargebee.filters.enums.SortOrder;
+import com.chargebee.internal.HttpUtil.Method;
+import com.chargebee.models.enums.*;
+import org.json.*;
+import java.io.*;
+import java.sql.Timestamp;
+import java.util.*;
+
+public class Customer extends Resource<Customer> {
+
+    public static class BillingAddress extends Resource<BillingAddress> {
+        public BillingAddress(JSONObject jsonObj) {
+            super(jsonObj);
+        }
+
+        public String firstName() {
+            return optString("first_name");
+        }
+
+    }
+
+    //Constructors
+    //============
+
+    public Customer(String jsonStr) {
+        super(jsonStr);
+    }
+
+    public Customer(JSONObject jsonObj) {
+        super(jsonObj);
+    }
+
+    // Fields
+    //=======
+
+    public Customer.BillingAddress billingAddress() {
+        return optSubResource("billing_address", Customer.BillingAddress.class);
+    }
+
+    // Operations
+    //===========
+
+
+}

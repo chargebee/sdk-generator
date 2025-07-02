@@ -1,0 +1,27 @@
+public static wait_for_time_travel_completion(): ProcessWait {
+    let count = 0;
+    let time_machine_retrieve = TimeMachine.retrieve("delorean");
+    let ret = function (deferred, _self) {
+      time_machine_retrieve.request(
+      function(error, result) {
+        if (error) {
+          deferred.reject(error);
+        } else {
+          let time_machine = result.time_machine;
+          if (time_machine.time_travel_status === 'succeeded') {
+            deferred.resolve(result);
+            } else if (time_machine.time_travel_status === 'in_progress') {
+            if (count++ > 30) {
+            throw new Error("The time travel is taking too much time");
+            }
+            setTimeout(function(){
+            ret(deferred, _self);
+            }, _self.env.timemachineWaitInMillis);
+            } else {
+            deferred.reject(result);
+          }
+        }
+      });
+    };
+    return new ProcessWait(ret, ChargeBee._env);
+  }

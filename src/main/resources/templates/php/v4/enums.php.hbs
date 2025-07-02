@@ -1,0 +1,17 @@
+<?php
+
+namespace {{namespace}};
+
+enum {{ name }} : string { {{#each possibleValues}}
+    case {{upper name }} = "{{ name }}";{{/each}}{{~#if deprecatedEnums}}{{~#each deprecatedEnums}}
+    /*
+    * @depcreated
+    */
+    case {{upper name }} = "{{ name }}";{{/each}}{{/if}}
+    case UNKNOWN = "unknown";
+
+    public static function tryFromValue(string $value): self {
+        return self::tryFrom($value) ?? self::UNKNOWN;
+    }
+}
+?>

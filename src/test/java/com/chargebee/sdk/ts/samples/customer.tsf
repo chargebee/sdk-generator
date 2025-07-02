@@ -1,0 +1,70 @@
+import * as resources from ".";
+import {RequestWrapper} from "../request_wrapper";
+import {Model} from "./model";
+import {ChargeBee} from "../chargebee";
+import {filter} from "../filter";
+
+export class Customer extends Model {
+  public id: string;
+  public first_name?: string;
+  public billing_address?: BillingAddress;
+  public payment_method?: PaymentMethod;
+
+
+
+  // OPERATIONS
+  //-----------
+
+  public static create(params?: _customer.create_params):RequestWrapper {
+    return new RequestWrapper([params], {
+      'methodName': 'create',
+      'httpMethod': 'POST',
+      'urlPrefix': '/customers',
+      'urlSuffix': null,
+      'hasIdInUrl': false,
+      'isListReq': false,
+      'subDomain': null,
+      'isOperationNeedsJsonInput': false,
+      'jsonKeys': {
+      }
+    }, ChargeBee._env)
+  }
+
+  public static update(customer_id: string, params?: _customer.update_params):RequestWrapper {
+    return new RequestWrapper([customer_id, params], {
+      'methodName': 'update',
+      'httpMethod': 'POST',
+      'urlPrefix': '/customers',
+      'urlSuffix': null,
+      'hasIdInUrl': true,
+      'isListReq': false,
+      'subDomain': null,
+      'isOperationNeedsJsonInput': false,
+      'jsonKeys': {
+      }
+    }, ChargeBee._env)
+  }
+
+} // ~Customer
+
+export class BillingAddress extends Model {
+  public first_name?: string;
+} // ~BillingAddress
+
+export class PaymentMethod extends Model {
+  public type: string;
+} // ~PaymentMethod
+
+
+
+  // REQUEST PARAMS
+  //---------------
+
+export namespace _customer {
+  export interface create_params {
+    id?: string;
+  }
+  export interface update_params {
+    first_name?: string;
+  }
+}

@@ -1,0 +1,65 @@
+module ChargeBee
+  class Result
+
+    IDEMPOTENCY_REPLAYED_HEADER = :chargebee_idempotency_replayed
+
+    def initialize(response, rheaders = nil, http_status_code=nil)
+      @response = response
+        @rheaders = rheaders
+        @http_status_code = http_status_code
+    end
+
+    def get_response_headers()
+        @rheaders
+    end
+
+    def get_raw_response()
+        @response
+    end
+
+    def get_http_status_code()
+        @http_status_code
+    end
+
+    def is_idempotency_replayed()
+        replayed_header = get_response_headers[IDEMPOTENCY_REPLAYED_HEADER]
+        if replayed_header != nil
+           return !!replayed_header
+        else
+           return false
+        end
+    end
+
+__body__
+
+
+    def to_s(*args)
+        JSON.pretty_generate(@response)
+    end
+
+    private
+    def get_list(type, klass, sub_types = {}, dependant_types = {}, dependant_sub_types = {})
+      if(@response[type] == nil)
+        return nil
+      end
+      set_val = Array.new
+      @response[type].each do |obj|
+        case obj
+        when Hash
+          model = klass.construct(obj, sub_types, dependant_types)
+          dependant_sub_types.each do |k,v|
+                model.init_dependant(obj, k, v);
+          end
+          set_val.push(model)
+        end
+      end
+      return instance_variable_set("@#{type}", set_val)
+    end
+
+    private
+    def get(type, klass, sub_types = {}, dependant_types = {})
+      return klass.construct(@response[type], sub_types, dependant_types)
+    end
+
+  end
+end

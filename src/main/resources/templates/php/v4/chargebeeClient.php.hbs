@@ -1,0 +1,65 @@
+<?php
+namespace Chargebee;
+{{#each importList}}use {{{.}}}
+{{/each}}
+use Chargebee\HttpClient\GuzzleFactory;
+use Chargebee\HttpClient\HttpClientFactory;
+
+class ChargebeeClient {
+    private HttpClientFactory $httpClientFactory;
+    private Environment $env;
+     /**
+     * @param array{
+     *      apiKey: string,
+     *      site: string,
+     *      httpScheme: 'http' | 'https',
+     *      chargebeeDomain?: string,
+     *      connectTimeoutInMillis?: float,
+     *      requestTimeoutInMillis?: float,
+     *      userAgentSuffix?: string,
+     *      retryConfig?: RetryConfig,
+     *      enableDebugLogs?: bool
+     * } $options
+     * @param HttpClientFactory|null $httpClient
+     * @throws \Exception
+     */
+    public function __construct($options, ?HttpClientFactory $httpClient=null)
+    {
+        if (!is_array($options)) {
+            throw new \Exception('$option must be of type array!');
+        }
+        if (!isset($options["apiKey"]) && !isset($options["site"])) {
+            throw new \Exception('$option must contain apiKey or site.');
+        }
+        $env = new Environment($options["site"], $options["apiKey"]);
+        if (isset($options["chargebeeDomain"])) {
+            $env->setChargebeeDomain($options["chargebeeDomain"]);
+        }
+        if (isset($options["httpScheme"])) {
+            $env->setScheme($options["httpScheme"]);
+        }
+        if (isset($options["connectTimeoutInMillis"]) && is_numeric($options["connectTimeoutInMillis"])) {
+            $env->updateConnectTimeoutInSecs($options["connectTimeoutInMillis"] / 1000);
+        }
+        if (isset($options["requestTimeoutInMillis"]) && is_numeric($options["requestTimeoutInMillis"])) {
+            $env->updateRequestTimeoutInSecs($options["requestTimeoutInMillis"] / 1000);
+        }
+        if(isset($options['userAgentSuffix'])){
+            $env->setUserAgentSuffix($options['userAgentSuffix']);
+        }
+        if (isset($options['retryConfig']) && $options['retryConfig'] instanceof RetryConfig) {
+            $env->setRetryConfig($options['retryConfig']);
+        }
+        if (isset($options['enableDebugLogs']) && is_bool($options['enableDebugLogs'])) {
+            $env->setEnableDebugLogs($options['enableDebugLogs']);
+        }
+        $this->env = $env;
+        $this->httpClientFactory = $httpClient ?? new GuzzleFactory($env->requestTimeoutInSecs, $env->connectTimeoutInSecs);
+    }
+
+{{#each resourcesNameList}}
+    public function {{snakeCaseToCamelCase .}}() :{{snakeCaseToPascalCase .}}ActionsInterface {
+        return new {{snakeCaseToPascalCase .}}Actions($this->httpClientFactory, $this->env);
+    }
+{{/each}}
+}

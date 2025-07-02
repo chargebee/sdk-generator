@@ -1,0 +1,25 @@
+{{{responseImports}}}
+{{~#each subResources}}
+
+@dataclass
+class {{clazName}}Response(Model):
+    raw_data: Dict[Any, Any] = None
+{{{responseCols}}}
+{{/each}}
+
+@dataclass
+class {{clazName}}Response(Model):
+    raw_data: Dict[Any, Any] = None
+{{{responseCols}}}
+
+{{#each operations}}{{#if operationResponses.subResponseClassName}}
+@dataclass
+class {{{ operationResponses.subResponseClassName }}}:
+{{{ operationResponses.subResponseParams }}}
+{{/if}}
+@dataclass
+class {{{ operationResponses.className }}}(Response):
+{{#eq httpRequestType "POST"}}    is_idempotency_replayed: bool{{/eq}}
+{{{ operationResponses.responseParams }}}
+{{/each}}
+{{NewLinePlaceholder}}

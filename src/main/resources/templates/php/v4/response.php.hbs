@@ -1,0 +1,61 @@
+<?php
+
+{{#if namespace}}namespace {{namespace}};{{/if}}
+{{#each imports}}{{.}};
+{{/each}}
+use Chargebee\ValueObjects\ResponseBase;
+
+class {{clazName}} extends ResponseBase {{curly "open"}} {{#each cols}}
+    /**
+    *
+    * @var {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{#if arrayOfSubResources}}array<{{{phpDocField}}}>{{else}}{{{phpDocField}}}{{/if}} ${{name}}
+    */
+    public {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{#if arrayOfSubResources}}array{{else}}{{{fieldTypePHP}}}{{/if}} ${{name}};
+    {{/each}}
+
+    private function __construct({{#each cols}}
+        {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{#if arrayOfSubResources}}array{{else}}{{{phpDocField}}}{{/if}} ${{name}},{{/each}}
+        array $responseHeaders=[],
+        array $rawResponse=[]
+    )
+    {
+        parent::__construct($responseHeaders, $rawResponse);
+        {{#each cols}}$this->{{name}} = ${{name}};
+        {{/each}}
+    {{curly "close"}}
+    public static function from(array $resourceAttributes, array $headers = []): self
+    { {{~#each cols}}{{~#if arrayOfSubResources}}
+        ${{name}} = array_map(fn (array $result): {{{phpDocField}}} =>  {{{phpDocField}}}::from(
+            $result
+        ), $resourceAttributes['{{apiName}}'] {{#if isOptional}}?? []{{/if}});
+        {{/if~}}
+    {{/each}}
+        return new self(
+        {{~#each cols}}{{~#if arrayOfSubResources}}${{name}},{{else}}
+        {{~#if primitiveDataType}}
+            $resourceAttributes['{{name}}'] {{#if isOptional}}?? null{{/if}},{{else}}
+            {{#if isOptional}}isset($resourceAttributes['{{name}}']) ? {{{fieldTypePHP}}}::from($resourceAttributes['{{name}}']) : null,
+            {{else}} {{{fieldTypePHP}}}::from($resourceAttributes['{{name}}']),{{/if}}{{/if~}}{{/if}}{{/each}} $headers, $resourceAttributes);
+    }
+
+    public function toArray(): array
+    {
+        $data = array_filter([{{#each cols}} {{~#if primitiveDataType}}
+            '{{name}}' => $this->{{name}},{{else}} {{#unless (or isOptional arrayOfSubResources) }}
+            '{{name}}' => $this->{{name}}->toArray(),{{/unless}}{{/if~}}{{/each}}
+        ]);
+        {{#each cols}}{{#if isOptional}} {{#unless (or primitiveDataType arrayOfSubResources) }}
+        if($this->{{name}} instanceof {{{fieldTypePHP}}}){
+            $data['{{{name}}}'] = $this->{{{name}}}->toArray();
+        }{{/unless}} {{/if}}{{/each}}
+{{#each cols}}{{#if arrayOfSubResources}}
+        if($this->{{name}} !== []) {
+            $data['{{name}}'] = array_map(
+                fn ({{{fieldTypePHP}}} ${{{name}}}): array => ${{{name}}}->toArray(),
+                $this->{{name}}
+            );
+        }{{/if}}{{/each}}
+        return $data;
+    }
+{{curly "close"}}
+?>

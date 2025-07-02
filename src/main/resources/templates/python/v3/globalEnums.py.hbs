@@ -1,0 +1,9 @@
+from enum import Enum{{#each globalEnums}}
+
+
+class {{ name }}(Enum):{{#each possibleValues}}
+    {{ toUpperCase name }} = "{{ name }}"{{/each}}
+
+    def __str__(self):
+        return self.value{{/each}}
+{{NewLinePlaceholder}}

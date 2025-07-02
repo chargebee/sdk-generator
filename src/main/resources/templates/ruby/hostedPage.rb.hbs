@@ -1,0 +1,10 @@
+  class Content < Result
+  end
+
+  def content
+    if @values[:content].nil?
+        nil
+    else
+        Content.new(@values[:content])
+    end
+  end

@@ -1,0 +1,87 @@
+<?php
+
+namespace ChargeBee\ChargeBee;
+
+use ChargeBee\ChargeBee\Models;
+
+define('IDEMPOTENCY_REPLAY_HEADER', 'chargebee-idempotency-replayed');
+
+class Result
+{
+    private $_response;
+    private $_responseHeaders;
+    private $_responseObj;
+    private $_responseStatusCode;
+    public function __construct($_response, $_responseHeaders = null, $_responseStatusCode = null)
+    {
+            $this->_response = $_response;
+        $this->_responseHeaders = $_responseHeaders;
+            $this->_responseObj = array();
+            $this->_responseStatusCode = $_responseStatusCode;
+    }
+
+    public function getResponseHeaders()
+    {
+        return $this->_responseHeaders;
+    }
+
+    public function getResponseStatusCode()
+    {
+        return $this->_responseStatusCode;
+    }
+
+    public function isIdempotencyReplayed()
+    {   
+        $headers = $this->getResponseHeaders();
+        if (isset($headers[IDEMPOTENCY_REPLAY_HEADER])) {
+            $value = $headers[IDEMPOTENCY_REPLAY_HEADER][0];
+            return  boolval($value);
+        }
+        return false;
+    }
+body
+
+    public function toJson()
+    {
+        return json_encode($this->_response);
+    }
+
+    private function _getList($type, $class, $subTypes = array(), $dependantTypes = array(),  $dependantSubTypes = array())
+    {
+        if(!array_key_exists($type, $this->_response))
+        {
+            return null;
+        }
+        if(!array_key_exists($type, $this->_responseObj))
+        {
+            $setVal = array();
+            foreach($this->_response[$type] as $stV)
+            {
+                $obj = new $class($stV, $subTypes, $dependantTypes);
+                foreach($dependantSubTypes as $k => $v)
+                {
+                    $obj->_initDependant($stV, $k, $v);
+                }
+                array_push($setVal, $obj);
+            }
+            $this->_responseObj[$type] = $setVal;
+        }
+        return $this->_responseObj[$type];
+    }
+
+    private function _get($type, $class, $subTypes = array(), $dependantTypes = array())
+    {
+        if(!array_key_exists($type, $this->_response))
+        {
+                return null;
+        }
+        if(!array_key_exists($type, $this->_responseObj))
+        {
+                $this->_responseObj[$type] = new $class($this->_response[$type], $subTypes, $dependantTypes);
+        }
+        return $this->_responseObj[$type];
+    }
+
+}
+
+?>

@@ -1,0 +1,28 @@
+namespace ChargeBee.Models
+{
+
+    public class VirtualBankAccount : Resource __delimiter__
+    {
+    __delimiter__
+        public VirtualBankAccount() { }
+
+        public VirtualBankAccount(Stream stream)
+        {
+            using (StreamReader reader = new StreamReader(stream))
+            {
+                JObj = JToken.Parse(reader.ReadToEnd());
+                apiVersionCheck (JObj);
+            }
+        }
+
+        public VirtualBankAccount(TextReader reader)
+        {
+            JObj = JToken.Parse(reader.ReadToEnd());
+            apiVersionCheck (JObj);    __delimiter__
+        }
+
+        public VirtualBankAccount(String jsonString)
+        {
+            JObj = JToken.Parse(jsonString);
+            apiVersionCheck (JObj);
+        }

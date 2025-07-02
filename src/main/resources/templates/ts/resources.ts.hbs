@@ -1,0 +1,83 @@
+import * as resources from ".";{{#if listAPI }}
+import {ListResult} from '../list_result';{{/if}}
+import {RequestWrapper} from "../request_wrapper";
+import {Model} from "./model";
+import {ChargeBee} from "../chargebee";
+import {filter} from "../filter";{{#or (eq clazName "Export") (eq clazName  "TimeMachine") }}
+import {ProcessWait} from "../process_wait";{{/or}}{{#eq clazName "Event" }}
+import {Result} from "../result";
+import {Util} from "../util";{{/eq}}
+
+export class {{clazName}} extends Model {{curly "open"}}{{#each attributesInMultiLine}}
+  {{{.}}}{{/each}}{{#if (eq clazName "Subscription")}}{{#if attributesInMultiLine.[3]}}
+    /**
+    * @deprecated use meta_data instead
+    */
+    public metadata?: any;
+    {{/if}}{{/if}}
+
+  {{{snippet}}}
+
+  // OPERATIONS
+  //-----------
+{{#each operations}}{{#if hasHandle }}{{#if hasInterface }}{{#if list }}
+  public static {{methName}}({{entity}}_id: string, params?: _{{singularName}}.{{getClazName}}):RequestWrapper<ListResult> {{curly "open"}}{{else}}
+  public static {{methName}}({{entity}}_id: string, params?: _{{singularName}}.{{getClazName}}):RequestWrapper {{curly "open"}}{{/if}}{{else}}{{#if list}}
+  public static {{methName}}({{entity}}_id: string, params?: any):RequestWrapper<ListResult> {{curly "open"}}{{else}}
+  public static {{methName}}({{entity}}_id: string, params?: any):RequestWrapper {{curly "open"}}{{/if}}{{/if}}
+    return new RequestWrapper([{{entity}}_id, params], {{curly "open"}}{{else}}{{#if hasInterface }}{{#if list}}
+  public static {{methName}}(params?: _{{singularName}}.{{getClazName}}):RequestWrapper<ListResult> {{curly "open"}}{{else}}
+  public static {{methName}}(params?: _{{singularName}}.{{getClazName}}):RequestWrapper {{curly "open"}}{{/if}}{{else}}{{#if list}}
+  public static {{methName}}(params?: any):RequestWrapper<ListResult>{{curly "open"}}{{else}}
+  public static {{methName}}(params?: any):RequestWrapper{{curly "open"}}{{/if}}{{/if}}
+    return new RequestWrapper([params], {{curly "open"}}{{/if}}
+      'methodName': '{{methName}}',
+      'httpMethod': '{{httpMethName}}',
+      'urlPrefix': {{{resourceIdentifier1}}},
+      'urlSuffix': {{{resourceIdentifier2}}},{{#if hasHandle}}
+      'hasIdInUrl': true,{{else}}
+      'hasIdInUrl': false,{{/if}}{{#if list }}
+      'isListReq': true,{{else}}
+      'isListReq': false,{{/if}}
+      'subDomain': {{#if subDomain }} '{{subDomain}}',{{ else }}null,{{/if}}
+      'isOperationNeedsJsonInput': {{#if operationNeedsJsonInput}}true,{{else}}false,{{/if}}
+      'jsonKeys': { {{#each jsonKeys}}{{#each this}}
+        "{{@key}}": {{this}},{{~/each}}{{/each}}
+      }
+    }, ChargeBee._env)
+  }
+{{/each}}
+} // ~{{clazName}}
+{{#each subResources}}
+export class {{clazName}} extends Model {{curly "open"}}{{#each cols}}
+  public {{name}}{{{fieldTypeTypescript}}};{{/each}}
+} // ~{{clazName}}
+{{/each}}
+
+
+  // REQUEST PARAMS
+  //---------------
+
+export namespace _{{singularName}} {{curly "open"}}{{#each operRequestInterfaces}}
+  export interface {{clazName}} {{curly "open"}}{{#each params}}{{#if (not hidden) (not isSubFilterParam) (not sortParam)}}{{#if deprecated }}
+    /**
+     * @deprecated Please refer API docs to use other attributes
+     */{{/if}}
+    {{name}}{{typescriptPutMethName}}: {{{returnGeneric}}};{{/if}}{{/each}}{{#if hasSortParam }}
+    "sort_by[asc]"?: string;
+    "sort_by[desc]"?: string;{{/if}}{{#each subParamsForOperation }}
+    {{{.}}}{{/each}}
+  }{{/each}}{{#each operRequestInterfaces}}{{#if hasSingularSubs }}{{#each singularSubs}}
+  export interface {{resName}}_{{clazName}} {{curly "open"}}{{#unless hidden}}{{#if deprecated}}
+    /**
+     * @deprecated Please refer API docs to use other attributes
+     */{{/if}}
+    {{name}}{{typescriptPutMethName}}: {{{returnGeneric}}};{{/unless}}
+  }{{/each}}{{/if}}{{#if hasMultiSubs}}{{#each multiSubs}}
+  export interface {{resName}}_{{clazName}} {{curly "open"}}{{#unless hidden }}{{#if deprecated }}
+    /**
+     * @deprecated Please refer API docs to use other attributes
+     */{{/if}}
+    {{name}}{{typescriptPutMethName}}: {{{returnGeneric}}};{{/unless}}
+  }{{/each}}{{/if}}{{/each}}
+}

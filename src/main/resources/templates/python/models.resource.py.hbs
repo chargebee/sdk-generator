@@ -1,0 +1,48 @@
+import json
+from chargebee.model import Model
+from chargebee import request
+from chargebee import APIError{{#if isEvent}}
+from chargebee.main import Environment{{/if}}{{#if isTimeMachine}}
+from chargebee import OperationFailedError{{/if}}{{#if (eq name "Subscription")}}
+import warnings
+{{/if}}
+
+class {{  name }}(Model):
+{{#if subResources}}{{#each subResources}}    class {{ singularize name }}(Model):
+      fields = [{{#each attributes}}"{{ camelCaseToSnakeCase name }}"{{#unless @last}}, {{/unless}}{{/each}}]
+      pass
+{{/each}}{{/if}}{{#if attributes}}
+    fields = [{{{tokenBasedSplitTextToLines attributesAsCommaSeparatedText 90 75}}}{{#if (eq name "Subscription")}}, "metadata" {{/if}}]{{/if}}{{#if (eq name "Subscription")}}
+    @property
+    def metadata(self):
+        warnings.warn(
+        "`metadata` please use meta_data instead",
+        DeprecationWarning,
+        stacklevel=2
+        )
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, value):
+        warnings.warn(
+        "`metadata` please use meta_data instead",
+        DeprecationWarning,
+        stacklevel=2
+        )
+        self._metadata = value
+{{/if}}
+
+{{#if isEvent}}{{{includeFile "src/main/resources/templates/python/event.py.hbs"}}}
+{{/if}}{{#if isExport}}{{{includeFile "src/main/resources/templates/python/export.py.hbs"}}}
+{{/if}}{{#if isHostedPage}}{{{includeFile "src/main/resources/templates/python/hostedPage.py.hbs"}}}
+{{/if}}{{#if isSession}}{{{includeFile "src/main/resources/templates/python/session.py.hbs"}}}
+{{/if}}{{#if isTimeMachine}}{{{includeFile "src/main/resources/templates/python/timeMachine.py.hbs"}}}
+{{/if}}{{#each actions}}
+    @staticmethod
+    def {{ camelCaseToSnakeCase name }}({{#if hasPathParameters}}id, {{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}params{{#and isAllRequestBodyParamsOptional isAllQueryParamsOptional}}=None{{/and}}, {{/or}}env=None, headers=None):
+        json_keys = { {{#each jsonKeys}}{{#each this}}
+            "{{@key}}": {{this}},
+        {{~/each}}{{/each}}
+        }
+        return request.{{#neq name "list"}}send{{else}}send_list_request{{/neq}}('{{{lower httpRequestType}}}', request.uri_path("{{urlPrefix}}"{{#if hasPathParameters}},id{{/if}}{{#neq urlSuffix ""}},"{{urlSuffix}}"{{/neq}}), {{#or hasRequestBodyParameters hasQueryParameters}}params{{else}}None{{/or}}, env, headers{{#if subDomain}}, "{{subDomain}}"{{else}}, None{{/if}}{{#if isOperationNeedsJsonInput}}, True{{else}}, False{{/if}},json_keys)
+{{/each}}

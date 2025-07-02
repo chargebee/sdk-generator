@@ -1,0 +1,65 @@
+<?php
+
+{{#if namespace}}namespace {{namespace}};{{/if}}
+{{#each imports}}{{.}};
+{{/each}}
+use Chargebee\ValueObjects\ResponseBase;
+
+class {{clazName}} extends ResponseBase {{curly "open"}} {{#each cols}}
+    /**
+    *
+    * @var {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{#if arrayOfSubResources}}array<{{{phpDocField}}}>{{else}}{{{phpDocField}}}{{/if}} ${{name}}
+    */
+    public {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{#if arrayOfSubResources}}array{{else}}{{{fieldTypePHP}}}{{/if}} ${{name}};
+    {{/each}}
+
+    private function __construct({{#each cols}}
+        {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{#if arrayOfSubResources}}array{{else}}{{{phpDocField}}}{{/if}} ${{name}},{{/each}}
+        array $responseHeaders=[],
+        array $rawResponse=[]
+    )
+    {
+        parent::__construct($responseHeaders, $rawResponse);
+        {{#each cols}}$this->{{name}} = ${{name}};
+        {{/each}}
+    {{curly "close"}}
+    public static function from(array $resourceAttributes, array $headers = []): self
+    {
+        {{~#each cols}}{{~#if hasChildCols}}
+            ${{name}} = array_map(function (array $result): {{phpDocField}} {
+                return new {{phpDocField}}({{~# each childCols}}
+                    isset($result['{{name}}']) ? {{fieldTypePHP}}::from($result['{{name}}']) : null,
+                {{/each}});}, $resourceAttributes['{{name}}'] ?? []);
+        {{/if}}{{/each}}
+        return new self(
+        {{~#each cols}}{{~#if arrayOfSubResources}}${{name}},{{else}}
+        {{~#if primitiveDataType}}
+            $resourceAttributes['{{name}}'] {{#if isOptional}}?? null{{/if}},{{else}}
+            {{#if isOptional}}isset($resourceAttributes['{{name}}']) ? {{{fieldTypePHP}}}::from($resourceAttributes['{{name}}']) : null,
+            {{else}} {{{fieldTypePHP}}}::from($resourceAttributes['{{name}}']),{{/if}}{{/if~}}{{/if}}{{/each}} $headers, $resourceAttributes);
+    }
+
+    public function toArray(): array
+    {
+        $data = array_filter([{{#each cols}} {{~#if primitiveDataType}}
+            '{{name}}' => $this->{{name}},{{else}} {{#unless (or isOptional arrayOfSubResources) }}
+            '{{name}}' => $this->{{name}}->toArray(),{{/unless}}{{/if~}}{{/each}}
+        ]);
+        return $data;
+    }
+{{curly "close"}}
+
+{{#each cols}}{{#if hasChildCols}}
+class {{ phpDocField }} {
+    {{#each childCols}}
+        public {{#if isOptional}}?{{/if}}{{fieldTypePHP}} ${{name}};
+    {{/each}}
+public function __construct({{#each childCols}}
+    {{#if isOptional}}?{{/if}}{{fieldTypePHP}} ${{name}},
+{{/each}}){ {{#each childCols}}
+    $this->{{name}} = ${{name}};
+{{/each}}
+}
+}
+{{/if}}{{/each}}
+?>

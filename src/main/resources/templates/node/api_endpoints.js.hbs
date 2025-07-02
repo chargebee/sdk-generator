@@ -1,0 +1,22 @@
+var _endpoints = { {{~#each resources}}{{#if actions}}
+  "{{pascalCaseToSnakeCase name}}": [{{#each actions}}
+    [
+      "{{camelCaseToSnakeCase name}}",
+      "{{httpRequestType}}",
+      "/{{urlPrefix}}",{{#if urlSuffix}}
+      "/{{urlSuffix}}",{{else}}
+      null,{{/if}}{{~#if hasPathParameters}}
+      true{{else}}
+      false{{/if}},{{~#if subDomain}}
+      "{{subDomain}}",{{else}}
+      null,{{/if}}{{~#if isOperationNeedsJsonInput}}
+      true{{else}}
+      false{{/if}},
+      { {{#each jsonKeys}}{{#each this}}
+        "{{@key}}": {{this}},{{~/each}}{{/each}}
+      }
+    ]{{#unless @last}},{{/unless}}{{/each}}
+  ]{{#unless @last}},{{/unless}}{{else}}
+  "{{pascalCaseToSnakeCase name}}": []{{#unless @last}},{{/unless}}{{/if}}{{/each}}
+};
+module.exports = _endpoints;

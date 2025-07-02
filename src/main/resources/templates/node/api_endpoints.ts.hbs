@@ -1,0 +1,40 @@
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+type EndpointTuple = [
+    action: string,
+    method: Method,
+    urlPrefix: string,
+    urlSuffix: string | null,
+    hasPathParameters: boolean,
+    subDomain?: string | null,
+    isJsonRequest?: boolean,
+    jsonKeys?: any,
+    options?: {
+      isIdempotent?: boolean;
+    }
+];
+interface Endpoints { {{~#each resources}}
+    {{pascalCaseToCamelCase name}} : EndpointTuple[]{{/each}}
+}
+export const Endpoints:Endpoints = { {{~#each resources}}{{#if actions}}
+  "{{pascalCaseToCamelCase name}}": [{{#each actions}}
+    [
+      "{{name}}",
+      "{{httpRequestType}}",
+      "/{{urlPrefix}}",{{#if urlSuffix}}
+      "/{{urlSuffix}}",{{else}}
+      null,{{/if}}{{~#if hasPathParameters}}
+      true{{else}}
+      false{{/if}}{{~#if subDomain}},
+    "{{subDomain}}"{{else}},null{{/if}}{{~#if isOperationNeedsJsonInput}},true{{else}}, false{{/if}},
+    { {{#each jsonKeys}}{{#each this}}
+        "{{@key}}": {{this}},{{~/each}}{{/each}}
+    },
+    {
+        {{#each options}}{{#if @last}}
+        {{@key}}: {{this}}{{else}}
+        {{@key}}: {{this}},{{/if}}{{/each}}
+    }
+    ]{{#unless @last}},{{/unless}}{{/each}}
+  ]{{#unless @last}},{{/unless}}{{else}}
+  "{{pascalCaseToCamelCase name}}": []{{#unless @last}},{{/unless}}{{/if}}{{/each}}
+};

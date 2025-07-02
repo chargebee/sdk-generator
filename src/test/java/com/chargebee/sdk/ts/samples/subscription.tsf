@@ -1,0 +1,54 @@
+import * as resources from ".";
+import {ListResult} from '../list_result';
+import {RequestWrapper} from "../request_wrapper";
+import {Model} from "./model";
+import {ChargeBee} from "../chargebee";
+import {filter} from "../filter";
+
+export class Subscription extends Model {
+  public id: string;
+
+  
+
+  // OPERATIONS
+  //-----------
+
+  public static create_with_items(customer_id: string, params?: _subscription.create_with_items_params):RequestWrapper {
+    return new RequestWrapper([customer_id, params], {
+      'methodName': 'create_with_items',
+      'httpMethod': 'POST',
+      'urlPrefix': '/customers',
+      'urlSuffix': '/subscription_for_items',
+      'hasIdInUrl': true,
+      'isListReq': false,
+      'subDomain': null,
+      'isOperationNeedsJsonInput': false,
+      'jsonKeys': {
+      }
+    }, ChargeBee._env)
+  }
+
+  public static list(params?: _subscription.subscription_list_params):RequestWrapper<ListResult> {
+    return new RequestWrapper([params], {
+      'methodName': 'list',
+      'httpMethod': 'GET',
+      'urlPrefix': '/subscriptions',
+      'urlSuffix': null,
+      'hasIdInUrl': false,
+      'isListReq': true,
+      'subDomain': null,
+      'isOperationNeedsJsonInput': false,
+      'jsonKeys': {
+      }
+    }, ChargeBee._env)
+  }
+
+} // ~Subscription
+
+
+
+  // REQUEST PARAMS
+  //---------------
+
+export namespace _subscription {
+}

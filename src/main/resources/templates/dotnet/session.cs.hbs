@@ -1,0 +1,11 @@
+public SessionContent Content
+        {
+            get
+            {
+                if(GetValue<JToken>("content", false) == null)
+                {
+                    return null;
+                }
+                return new SessionContent(GetValue<JToken>("content"));
+            }
+        }

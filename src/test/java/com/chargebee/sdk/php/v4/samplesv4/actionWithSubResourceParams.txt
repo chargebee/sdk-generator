@@ -1,0 +1,59 @@
+<?php
+namespace Chargebee\Actions;
+
+use Chargebee\Responses\CustomerResponse\ListCustomerResponse;
+use Chargebee\Actions\Contracts\CustomerActionsInterface;
+use Chargebee\ValueObjects\Encoders\ListParamEncoder;
+use Chargebee\ValueObjects\Encoders\URLFormEncoder;
+use Chargebee\ValueObjects\Transporters\ChargebeePayload;
+use Chargebee\ValueObjects\APIRequester;
+use Chargebee\HttpClient\HttpClientFactory;
+use Chargebee\Environment;
+
+final class CustomerActions implements CustomerActionsInterface
+{
+    private HttpClientFactory $httpClientFactory;
+    private Environment $env;
+    public function __construct(HttpClientFactory $httpClientFactory, Environment $env){
+       $this->httpClientFactory = $httpClientFactory;
+       $this->env = $env;
+    }
+
+    /**
+    *   @see https://apidocs.chargebee.com/docs/api/customers?lang=php#list
+    *   @param array{
+    *     limit?: int,
+    *     offset?: string,
+    *     first_name?: array{
+    *     gateway?: array{
+    *         gateway?: array{
+    *             hello?: string,
+    *             },
+    *         },
+    *     },
+    * } $params Description of the parameters
+    *
+    *   @param array<string, string> $headers
+    *   @return ListCustomerResponse
+    */
+    public function all(array $params = [], array $headers = []): ListCustomerResponse
+    {
+        $jsonKeys = [
+        ];
+        $payload = ChargebeePayload::builder()
+        ->withEnvironment($this->env)
+        ->withHttpMethod("get")
+        ->withUriPaths(["customers"])
+        ->withParamEncoder(new ListParamEncoder())
+        ->withSubDomain(null)
+        ->withJsonKeys($jsonKeys)
+        ->withHeaders($headers)
+        ->withParams($params)
+        ->build();
+        $apiRequester = new APIRequester($this->httpClientFactory, $this->env);
+        $respObject = $apiRequester->makeRequest($payload);
+        return ListCustomerResponse::from($respObject->data, $respObject->headers);
+    }
+
+}
+?>

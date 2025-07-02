@@ -1,0 +1,63 @@
+///<reference path='./../core.d.ts'/>
+///<reference path='./../index.d.ts'/>
+declare module 'chargebee' {
+  export interface {{name}} {
+    {{#if isAdditionalPropertiesSupported}}[key : string] : any;{{/if}}
+{{#each actualAttributes}}{{#with (lookup ../attributes @index) as |attr|}}{{#if attr.description}}
+            /**
+            * @description {{attr.description}}
+            */
+        {{/if}}{{/with}}
+    {{{this}}}
+{{/each}}{{#if (eq name "Subscription")}}   /**
+    * @deprecated metadata is deprecated please use meta_data instead
+    */
+    metadata?:object;
+{{/if}}
+  }{{#unless hasEmptyActionsAndSubResources}}
+  export namespace {{name}} {
+    {{#if actions.length}}export class {{name}}Resource { {{#each actions}} {{#if description}}
+      /**
+        * @description {{description}}
+        */
+      {{/if}}
+      {{camelCaseToSnakeCase name}}({{#each pathParameters}}{{#if @index}}, {{/if}}{{camelCaseToSnakeCase name}}:{{{type}}}{{/each}}{{#if hasMultipleInputParams}}, {{/if}}{{#if hasQueryParameters}}input{{#if isAllQueryParamsOptional}}?{{/if}}:{{camelCaseToPascalCase name}}InputParam{{/if}}{{#if hasRequestBodyParameters}}input{{#if isAllRequestBodyParamsOptional}}?{{/if}}:{{camelCaseToPascalCase name}}InputParam{{/if}}):{{#with response}}ChargebeeRequest<{{camelCaseToPascalCase name}}>{{/with}};{{#unless @last}}
+      {{/unless}}{{/each}}
+    }{{/if}}
+    {{#each actions}}export interface {{#with response}}{{camelCaseToPascalCase name}} { {{#each parameters}} {{#if description}}
+      /**
+        * @description {{description}}
+        */
+       {{/if}}
+       {{camelCaseToSnakeCase name}}{{#unless isRequired}}?{{/unless}}:{{{type}}};{{#unless @last}}
+      {{/unless}}{{/each}}
+    }{{/with}}
+    {{#if hasQueryParameters}}export interface {{camelCaseToPascalCase name}}InputParam {
+      {{#if isListResourceAction}}[key : string]: any; {{/if}}{{#each queryParameters}} {{#if description}}
+      /**
+        * @description {{description}}
+        */
+        {{/if}}
+      {{camelCaseToSnakeCase name}}{{#unless isRequired}}?{{/unless}}:{{{type}}};{{#unless @last}}
+      {{/unless}}{{/each}}
+    }{{/if}}{{#if hasRequestBodyParameters}}export interface {{camelCaseToPascalCase name}}InputParam {
+      {{#if isAdditionalPropertiesSupportedInRequestBody}}[key : string] : any; {{/if}}{{#each requestBodyParameters}} {{#if description}}
+      /**
+        * @description {{description}}
+        */
+       {{/if}}
+      {{camelCaseToSnakeCase name}}{{#unless isRequired}}?{{/unless}}:{{{type}}};{{#unless @last}}
+      {{/unless}}{{/each}}
+    }{{/if}}{{#unless @last}}
+    {{/unless}}{{/each}}
+    {{#each subResources}}export interface {{ singularize name}} { {{#each attributes}} {{#if description}}
+         /**
+          * @description {{description}}
+          */
+       {{/if}}
+      {{camelCaseToSnakeCase name}}{{#unless isRequired}}?{{/unless}}:{{{type}}};{{#unless @last}}
+      {{/unless}}{{/each}}
+    }{{#unless @last}}
+    {{/unless}}{{/each}}
+  }{{/unless}}
+}
