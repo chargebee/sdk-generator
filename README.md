@@ -303,11 +303,10 @@ parent-directory/
 
 **Important:** The generator updates existing code within these repositories. Ensure you have the latest version of each repository before generating SDKs.
 
-## 🐛 Issues and Support
 
-- 🐛 [Report a Bug](https://github.com/chargebee/sdk-generator/issues/new?template=bug-report.yml)
-- 🚀 [Request a Feature](https://github.com/chargebee/sdk-generator/issues/new?template=feature-request.yml)
-- 💬 [Start a Discussion](https://github.com/chargebee/sdk-generator/discussions)
+## Feedback
+
+If you find any bugs or have any questions / feedback, open an issue in this repository or reach out to us on [dx@chargebee.com](mailto:dx@chargebee.com)
 
 ## 📄 License
 
