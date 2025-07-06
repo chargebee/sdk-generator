@@ -1,7 +1,7 @@
 package com.chargebee.sdk.test_data;
 
-import static com.chargebee.openapi.Version.API_VERSION;
-import static com.chargebee.openapi.Version.PRODUCT_CATALOG_VERSION;
+import static com.chargebee.openapi.Extension.API_VERSION;
+import static com.chargebee.openapi.Extension.PRODUCT_CATALOG_VERSION;
 import static com.chargebee.sdk.test_data.ResourceBuilder.buildResource;
 
 import com.chargebee.openapi.ApiVersion;

@@ -1,5 +1,7 @@
 package com.chargebee.openapi;
 
+import static com.chargebee.openapi.Extension.*;
+
 import com.chargebee.sdk.DataType;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
@@ -39,10 +41,10 @@ public class Enum {
 
   public Optional<String> globalEnumReference() {
     if (schema.getExtensions() == null
-        || schema.getExtensions().get("x-cb-global-enum-reference") == null) {
+        || schema.getExtensions().get(GLOBAL_ENUM_REFERENCE) == null) {
       return Optional.empty();
     }
-    var reference = (String) schema.getExtensions().get("x-cb-global-enum-reference");
+    var reference = (String) schema.getExtensions().get(GLOBAL_ENUM_REFERENCE);
     String[] referenceTokens = reference.split("/");
     var referenceTypeName = referenceTokens[referenceTokens.length - 1].split("\\.")[0];
     return Optional.of(referenceTypeName);
@@ -71,16 +73,15 @@ public class Enum {
 
   public List<String> deprecatedValues() {
     if (schema.getExtensions() != null
-        && schema.getExtensions().get("x-cb-deprecated-enum-values") != null) {
-      return List.of(
-          ((String) schema.getExtensions().get("x-cb-deprecated-enum-values")).split(","));
+        && schema.getExtensions().get(DEPRECATED_ENUM_VALUES) != null) {
+      return List.of(((String) schema.getExtensions().get(DEPRECATED_ENUM_VALUES)).split(","));
     }
     return List.of();
   }
 
   public Boolean isParamBlankOption() {
     return schema.getExtensions() != null
-        && schema.getExtensions().get("x-cb-parameter-blank-option") != null
-        && schema.getExtensions().get("x-cb-parameter-blank-option").equals("not_allowed");
+        && schema.getExtensions().get(IS_PARAMETER_BLANK_OPTION) != null
+        && schema.getExtensions().get(IS_PARAMETER_BLANK_OPTION).equals("not_allowed");
   }
 }

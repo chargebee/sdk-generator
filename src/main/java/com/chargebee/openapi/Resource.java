@@ -1,7 +1,6 @@
 package com.chargebee.openapi;
 
 import static com.chargebee.openapi.Extension.*;
-import static com.chargebee.openapi.Version.PRODUCT_CATALOG_VERSION;
 
 import com.chargebee.ApiVersionHandler;
 import com.chargebee.QAModeHandler;
@@ -16,8 +15,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Resource {
-  public static final String RESOURCE_ID_EXTENSION = "x-cb-resource-id";
-  public static final String SORT_ORDER = "x-cb-sort-order";
   public final String name;
   public final String id;
   public final List<Action> actions;
@@ -49,7 +46,7 @@ public class Resource {
     if (schema.getExtensions() == null) {
       return null;
     }
-    Object resourceId = schema.getExtensions().get(RESOURCE_ID_EXTENSION);
+    Object resourceId = schema.getExtensions().get(RESOURCE_ID);
     if (resourceId == null) {
       return null;
     }
@@ -68,14 +65,14 @@ public class Resource {
       return isSubResourceSchema(schema.getItems());
     }
     return schema.getExtensions() != null
-        && schema.getExtensions().get("x-cb-is-sub-resource") != null
-        && (boolean) schema.getExtensions().get("x-cb-is-sub-resource");
+        && schema.getExtensions().get(IS_SUB_RESOURCE) != null
+        && (boolean) schema.getExtensions().get(IS_SUB_RESOURCE);
   }
 
   public static boolean isCompositeArrayRequestBody(Schema<?> schema) {
     return schema.getExtensions() != null
-        && schema.getExtensions().get("x-cb-is-composite-array-request-body") != null
-        && (boolean) schema.getExtensions().get("x-cb-is-composite-array-request-body");
+        && schema.getExtensions().get(IS_COMPOSITE_ARRAY_REQUEST_BODY) != null
+        && (boolean) schema.getExtensions().get(IS_COMPOSITE_ARRAY_REQUEST_BODY);
   }
 
   public static boolean isReferenceSchema(Schema<?> schema) {
@@ -112,8 +109,7 @@ public class Resource {
       return isGlobalResourceReference(schema.getItems());
     }
     if (schema.getExtensions() == null) return false;
-    Object isGlobalResourceReference =
-        schema.getExtensions().get("x-cb-is-global-resource-reference");
+    Object isGlobalResourceReference = schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE);
     return isGlobalResourceReference != null && (boolean) isGlobalResourceReference;
   }
 
@@ -400,8 +396,8 @@ public class Resource {
   }
 
   public String pathName() {
-    return schema.getExtensions().get("x-cb-resource-path-name") != null
-        ? (String) schema.getExtensions().get("x-cb-resource-path-name")
+    return schema.getExtensions().get(RESOURCE_PATH_NAME) != null
+        ? (String) schema.getExtensions().get(RESOURCE_PATH_NAME)
         : Inflector.pluralize(id);
   }
 

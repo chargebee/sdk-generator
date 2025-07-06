@@ -1,14 +1,14 @@
 package com.chargebee.openapi;
 
+import static com.chargebee.openapi.Extension.API_VERSION;
+import static com.chargebee.openapi.Extension.PRODUCT_CATALOG_VERSION;
+
 import io.swagger.v3.oas.models.info.Info;
 import java.util.Map;
 
 public class Version {
   public final ApiVersion apiVersion;
   public final ProductCatalogVersion productCatalogVersion;
-
-  public static final String PRODUCT_CATALOG_VERSION = "x-cb-product-catalog-version";
-  public static final String API_VERSION = "x-cb-api-version";
 
   private Version(ApiVersion apiVersion, ProductCatalogVersion productCatalogVersion) {
     this.apiVersion = apiVersion;

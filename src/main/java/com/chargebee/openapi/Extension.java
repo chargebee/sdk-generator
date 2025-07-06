@@ -42,6 +42,17 @@ public class Extension {
 
   public static final String IS_OPERATION_NEEDS_JSON_INPUT = "x-cb-is-operation-needs-json-input";
   public static final String IS_OPERATION_IDEMPOTENT = "x-cb-operation-is-idempotent";
+  public static final String IS_PAGINATION_PARAMETER = "x-cb-is-pagination-parameter";
+  public static final String PRODUCT_CATALOG_VERSION = "x-cb-product-catalog-version";
+  public static final String API_VERSION = "x-cb-api-version";
+  public static final String IS_BULK_OPERATION = "x-cb-operation-is-bulk";
+  public static final String IS_INTERNAL = "x-cb-internal";
+  public static final String OPERATION_METHOD_NAME = "x-cb-operation-method-name";
+  public static final String DEPRECATED_ENUM_VALUES = "x-cb-deprecated-enum-values";
+  public static final String RESOURCE_ID = "x-cb-resource-id";
+  public static final String IS_GLOBAL_RESOURCE_REFERENCE = "x-cb-is-global-resource-reference";
+  public static final String IS_OPERATION_LIST = "x-cb-operation-is-list";
+  public static final String RESOURCE_PATH_NAME = "x-cb-resource-path-name";
 
   private Extension() {}
 }
