@@ -339,8 +339,8 @@ public class Attribute {
 
   public boolean isPaginationProperty() {
     return this.schema.getExtensions() != null
-        && this.schema.getExtensions().get("x-cb-is-pagination-parameter") != null
-        && (boolean) this.schema.getExtensions().get("x-cb-is-pagination-parameter");
+        && this.schema.getExtensions().get(IS_PAGINATION_PARAMETER) != null
+        && (boolean) this.schema.getExtensions().get(IS_PAGINATION_PARAMETER);
   }
 
   public String paramBlankOption() {

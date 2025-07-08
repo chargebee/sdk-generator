@@ -1,8 +1,8 @@
 package com.chargebee.sdk.common;
 
-import static com.chargebee.openapi.Action.HIDDEN_FROM_SDK;
 
 import com.chargebee.openapi.Attribute;
+import com.chargebee.openapi.Extension;
 import com.chargebee.openapi.Resource;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.ArrayList;
@@ -14,8 +14,8 @@ public class AttributeAssistant {
 
   public static boolean isHiddenFromSDK(Schema<?> schema, boolean forQa) {
     return schema.getExtensions() != null
-        && schema.getExtensions().get(HIDDEN_FROM_SDK) != null
-        && (boolean) schema.getExtensions().get(HIDDEN_FROM_SDK)
+        && schema.getExtensions().get(Extension.HIDDEN_FROM_CLIENT_SDK) != null
+        && (boolean) schema.getExtensions().get(Extension.HIDDEN_FROM_CLIENT_SDK)
         && !forQa;
   }
 

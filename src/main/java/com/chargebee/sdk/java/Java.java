@@ -770,7 +770,7 @@ public class Java extends Language {
     if (schema.getEnum() != null && !schema.getEnum().isEmpty()) {
       if (schema.getExtensions() != null
           && !schema.getExtensions().isEmpty()
-          && schema.getExtensions().get("x-cb-global-enum-reference") != null) {
+          && schema.getExtensions().get(GLOBAL_ENUM_REFERENCE) != null) {
         return getPackagePrefix() + Constants.MODELS_DOT_ENUMS + toCamelCase(attributeName);
       }
       if (schema.getDeprecated()) {

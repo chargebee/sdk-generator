@@ -25,6 +25,11 @@ A powerful tool that automatically generates Software Development Kits (SDKs) fo
 - Java 17 or higher
 - Gradle 7.0 or higher
 
+### Download Latest OpenAPI Specification
+
+To get the latest OpenAPI specification for Chargebee, you can download it from the [Chargebee OpenAPI repository](
+https://github.com/chargebee/openapi/blob/main/spec/chargebee_sdk_spec.json)
+
 ### For Chargebee Client Library Generation
 
 To generate SDKs for Chargebee's official client libraries, you'll need to clone the respective repositories first, as the generator updates existing code structure rather than creating everything from scratch:
@@ -64,13 +69,13 @@ cd sdk-generator
 
 ```bash
 # Generate a Java SDK
-./gradlew run --args="-i openchargebee_sdk_spec.json -l JAVA -o ./generated-sdk"
+./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA -o ../chargebee-java/src/main/java/com/chargebee"
 
 # Generate Nodejs typings
-./gradlew run --args="-i openchargebee_sdk_spec.json -l TYPESCRIPT_TYPINGS_V3 -o ./generated-types"
+./gradlew run --args="-i chargebee_sdk_spec.json -l TYPESCRIPT_TYPINGS_V3 -o ../chargebee-node/types/"
 
 # Generate Python SDK
-./gradlew run --args="-i openchargebee_sdk_spec.json -l PYTHON_V3 -o ./python-sdk"
+./gradlew run --args="-i chargebee_sdk_spec.json -l PYTHON_V3 -o ../chargebee-python/chargebee"
 ```
 
 ### Command Line Options

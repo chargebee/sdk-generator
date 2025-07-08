@@ -1,8 +1,6 @@
 package com.chargebee.openapi.parameter;
 
-import static com.chargebee.openapi.Action.HIDDEN_FROM_SDK;
-import static com.chargebee.openapi.Extension.IS_FILTER_PARAMETER;
-import static com.chargebee.openapi.Extension.IS_SUB_RESOURCE;
+import static com.chargebee.openapi.Extension.*;
 
 import com.chargebee.openapi.Attribute;
 import com.chargebee.openapi.Extension;
@@ -44,14 +42,14 @@ public class Parameter {
 
   public boolean isHiddenFromSDK() {
     return this.schema.getExtensions() != null
-        && this.schema.getExtensions().get(HIDDEN_FROM_SDK) != null
-        && (boolean) this.schema.getExtensions().get(HIDDEN_FROM_SDK);
+        && this.schema.getExtensions().get(HIDDEN_FROM_CLIENT_SDK) != null
+        && (boolean) this.schema.getExtensions().get(HIDDEN_FROM_CLIENT_SDK);
   }
 
   public boolean isPaginationProperty() {
     return this.schema.getExtensions() != null
-        && this.schema.getExtensions().get("x-cb-is-pagination-parameter") != null
-        && (boolean) this.schema.getExtensions().get("x-cb-is-pagination-parameter");
+        && this.schema.getExtensions().get(IS_PAGINATION_PARAMETER) != null
+        && (boolean) this.schema.getExtensions().get(IS_PAGINATION_PARAMETER);
   }
 
   public boolean isSubResource() {
@@ -96,8 +94,8 @@ public class Parameter {
 
   public int sortOrder(Parameter parameter) {
     return parameter.schema.getExtensions() != null
-            && parameter.schema.getExtensions().get("x-cb-sort-order") != null
-        ? (int) parameter.schema.getExtensions().get("x-cb-sort-order")
+            && parameter.schema.getExtensions().get(SORT_ORDER) != null
+        ? (int) parameter.schema.getExtensions().get(SORT_ORDER)
         : -1;
   }
 }

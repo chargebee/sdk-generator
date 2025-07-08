@@ -1,8 +1,8 @@
 package com.chargebee.sdk.test_data;
 
-import static com.chargebee.openapi.Resource.RESOURCE_ID_EXTENSION;
-import static com.chargebee.openapi.Version.PRODUCT_CATALOG_VERSION;
+import static com.chargebee.openapi.Extension.PRODUCT_CATALOG_VERSION;
 
+import com.chargebee.openapi.Extension;
 import com.chargebee.openapi.ProductCatalogVersion;
 import io.swagger.v3.oas.models.media.*;
 import java.util.Arrays;
@@ -13,15 +13,13 @@ import java.util.stream.Collectors;
 import org.assertj.core.data.MapEntry;
 
 public class ResourceBuilder {
-  private final String resourceId;
   private final String resourceName;
   private final Schema<?> schema;
 
   private ResourceBuilder(String resourceId) {
-    this.resourceId = resourceId;
     this.resourceName = snakeCaseToPascalCase(resourceId);
     LinkedHashMap extensions = new LinkedHashMap<>();
-    extensions.put(RESOURCE_ID_EXTENSION, resourceId);
+    extensions.put(Extension.RESOURCE_ID, resourceId);
     this.schema = new ObjectSchema().extensions(extensions);
   }
 

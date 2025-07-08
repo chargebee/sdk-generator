@@ -2,7 +2,6 @@ package com.chargebee.openapi;
 
 import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.openapi.MarkdownHelper.convertHtmlToMarkdown;
-import static com.chargebee.openapi.Resource.RESOURCE_ID_EXTENSION;
 
 import com.chargebee.QAModeHandler;
 import com.chargebee.openapi.parameter.Path;
@@ -21,9 +20,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 public class Action {
-  public static final String HIDDEN_FROM_SDK = "x-cb-hidden-from-client-sdk";
-  static String bulkOperation = "x-cb-operation-is-bulk";
-  static String internalOperation = "x-cb-internal";
   public final String id;
   public final String name;
   public final HttpRequestType httpRequestType;
@@ -37,7 +33,7 @@ public class Action {
     if (operation.getExtensions() == null) {
       throw new IllegalArgumentException("Operation Extensions not found");
     }
-    Object methodName = operation.getExtensions().get("x-cb-operation-method-name");
+    Object methodName = operation.getExtensions().get(OPERATION_METHOD_NAME);
     if (methodName == null) {
       throw new IllegalArgumentException("Operation method name not found");
     }
@@ -247,22 +243,22 @@ public class Action {
 
   public boolean isNotHiddenFromSDK() {
     return operation.getExtensions() == null
-        || operation.getExtensions().get(HIDDEN_FROM_SDK) == null
-        || !((boolean) operation.getExtensions().get(HIDDEN_FROM_SDK))
+        || operation.getExtensions().get(HIDDEN_FROM_CLIENT_SDK) == null
+        || !((boolean) operation.getExtensions().get(HIDDEN_FROM_CLIENT_SDK))
         || QAModeHandler.getInstance().getValue();
   }
 
   public boolean isNotBulkOperation() {
     return operation.getExtensions() == null
-        || operation.getExtensions().get(bulkOperation) == null
-        || !((boolean) operation.getExtensions().get(bulkOperation))
+        || operation.getExtensions().get(IS_BULK_OPERATION) == null
+        || !((boolean) operation.getExtensions().get(IS_BULK_OPERATION))
         || QAModeHandler.getInstance().getValue();
   }
 
   public boolean isNotInternalOperation() {
     return operation.getExtensions() == null
-        || operation.getExtensions().get(internalOperation) == null
-        || !((boolean) operation.getExtensions().get(internalOperation))
+        || operation.getExtensions().get(IS_INTERNAL) == null
+        || !((boolean) operation.getExtensions().get(IS_INTERNAL))
         || QAModeHandler.getInstance().getValue();
   }
 
@@ -298,17 +294,17 @@ public class Action {
   }
 
   public String resourceId() {
-    return operation.getExtensions().get(RESOURCE_ID_EXTENSION).toString();
+    return operation.getExtensions().get(RESOURCE_ID).toString();
   }
 
   public int sortOrder() {
-    return operation.getExtensions().get("x-cb-sort-order") != null
-        ? (int) operation.getExtensions().get("x-cb-sort-order")
+    return operation.getExtensions().get(SORT_ORDER) != null
+        ? (int) operation.getExtensions().get(SORT_ORDER)
         : -1;
   }
 
   public boolean isListResourceAction() {
-    Object isListOperation = operation.getExtensions().get("x-cb-operation-is-list");
+    Object isListOperation = operation.getExtensions().get(IS_OPERATION_LIST);
     if (isListOperation == null) {
       return false;
     }
@@ -473,8 +469,8 @@ public class Action {
 
   private boolean schemaHiddenFromSDK(Schema schema) {
     return schema.getExtensions() != null
-        && schema.getExtensions().get(HIDDEN_FROM_SDK) != null
-        && (boolean) schema.getExtensions().get(HIDDEN_FROM_SDK);
+        && schema.getExtensions().get(HIDDEN_FROM_CLIENT_SDK) != null
+        && (boolean) schema.getExtensions().get(HIDDEN_FROM_CLIENT_SDK);
   }
 
   public boolean isAllRequestBodyParamsOptional() {

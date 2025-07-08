@@ -48,6 +48,22 @@ class Generate implements Callable<Integer> {
 
   @Override
   public Integer call() throws Exception {
+    // Check if the OpenAPI spec file exists
+    File specFile = new File(openAPISpecFilePath);
+    if (!specFile.exists()) {
+      System.err.println("\u001B[31m❌ Error: OpenAPI specification file not found\u001B[0m");
+      System.err.println("\u001B[33m📁 File path: \u001B[0m" + openAPISpecFilePath);
+      System.err.println("\u001B[36m💡 Please ensure the file path is correct and the file exists.\u001B[0m");
+      return 1;
+    }
+    
+    if (!specFile.canRead()) {
+      System.err.println("\u001B[31m❌ Error: Cannot read OpenAPI specification file\u001B[0m");
+      System.err.println("\u001B[33m📁 File path: \u001B[0m" + openAPISpecFilePath);
+      System.err.println("\u001B[36m🔒 Please check file permissions.\u001B[0m");
+      return 1;
+    }
+    
     var openAPI = new OpenAPIV3Parser().read(openAPISpecFilePath);
     Language language = Lang.sdkLanguage(lang);
     if (language.cleanDirectoryBeforeGenerate()) {
