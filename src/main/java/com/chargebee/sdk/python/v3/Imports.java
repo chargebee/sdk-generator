@@ -170,6 +170,7 @@ public class Imports {
         if (!response.getListResponse().isEmpty()
             || response.getName().equals("next_offset")
             || ResponseParser.isPythonDataType(type)) continue;
+        if (type.equals("Any")) continue;
         if (!type.equalsIgnoreCase(resource.name)
             && !externalResourceResponseImports.contains(type)) {
           externalResourceResponseImports.add(type);

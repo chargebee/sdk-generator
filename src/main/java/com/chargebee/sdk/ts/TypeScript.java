@@ -22,9 +22,8 @@ import java.io.IOException;
 import java.util.*;
 
 public class TypeScript extends Language {
-
+  protected final String[] hiddenOverride = {"media"};
   Resource activeResource;
-
   boolean forQa = false;
   boolean forEap = false;
 

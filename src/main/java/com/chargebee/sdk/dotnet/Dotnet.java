@@ -33,6 +33,8 @@ public class Dotnet extends Language {
   List<Resource> resourceList = new ArrayList<>();
   List<Enum> globalEnums;
 
+  protected final String[] hiddenOverride = {"usage_file", "media", "non_subscription"};
+
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
     globalEnums = spec.globalEnums();

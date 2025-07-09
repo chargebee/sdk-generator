@@ -12,6 +12,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Ruby extends Language {
+  protected final String[] hiddenOverride = {"media", "business_entity_change"};
+
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
     String modelsDirectoryPath = "/models";
@@ -66,6 +68,10 @@ public class Ruby extends Language {
         "attributesAsCommaSeparatedText",
         resource.attributes().stream()
             .filter(Attribute::isNotHiddenAttribute)
+            .filter(
+                attr ->
+                    !("content".equals(attr.name)
+                        && ("Event".equals(resource.name) || "HostedPage".equals(resource.name))))
             .sorted(Comparator.comparing(Attribute::sortOrder))
             .map(attr -> ":" + attr.name)
             .collect(Collectors.joining(",")));

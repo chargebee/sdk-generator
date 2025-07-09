@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TypeScriptTypings extends Language {
+  protected final String[] hiddenOverride = {"media"};
   Resource activeResource;
 
   boolean forQa = false;
@@ -34,7 +35,7 @@ public class TypeScriptTypings extends Language {
     List<FileOp> fileOps = new ArrayList<>(List.of(createResourcesDirectory));
 
     var resources =
-        spec.pcAwareResources().stream()
+        spec.resources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
     List<FileOp> generateResourceTypings =

@@ -11,6 +11,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public class Php extends Language {
+  protected final String[] hiddenOverride = {"media", "business_entity_change"};
 
   @Override
   protected List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {

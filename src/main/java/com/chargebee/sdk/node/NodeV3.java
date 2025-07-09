@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.*;
 
 public class NodeV3 extends Language {
+  protected final String[] hiddenOverride = {"media"};
 
   @Override
   protected List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {

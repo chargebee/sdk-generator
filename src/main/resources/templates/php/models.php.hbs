@@ -12,8 +12,8 @@ use RuntimeException;{{/if}}
 class {{name}} extends Model
 {{curly "open"}}{{#if isResourceFile}}
 {{/if}}
-  protected $allowed = [{{#each attributes}}
-    '{{snakeCaseToCamelCase name }}',{{/each}}
+  protected $allowed = [{{#each attributes}}{{#if (eq name "content")}}{{else}}
+    '{{snakeCaseToCamelCase name }}',{{/if}}{{/each}}
   ];
 
 {{#if isExport}}{{{includeFile "src/main/resources/templates/php/export.php.hbs"}}}

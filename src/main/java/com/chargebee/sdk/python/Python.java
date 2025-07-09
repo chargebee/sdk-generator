@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class Python extends Language {
+  protected final String[] hiddenOverride = {"media"};
 
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
@@ -82,6 +83,10 @@ public class Python extends Language {
         "attributesAsCommaSeparatedText",
         resource.attributes().stream()
             .filter(Attribute::isNotHiddenAttribute)
+            .filter(
+                attr ->
+                    !("content".equals(attr.name)
+                        && ("Event".equals(resource.name) || "HostedPage".equals(resource.name))))
             .sorted(Comparator.comparing(Attribute::sortOrder))
             .map(attr -> "\"" + attr.name + "\"")
             .collect(Collectors.joining(",")));

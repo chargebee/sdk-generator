@@ -180,7 +180,11 @@ public class Go extends Language {
       for (Attribute sr : getSubResource(activeResource)) {
         for (Attribute nestedSubRes :
             sr.attributes().stream()
-                .filter(com.chargebee.openapi.Attribute::isDependentAttribute)
+                .filter(
+                    (attr ->
+                        attr.isDependentAttribute()
+                            || attr.isGlobalResourceReference()
+                                && attr.name != "error_detail")) // error detail is handled below
                 .toList()) {
           buf.add(
               "\t\"github.com/chargebee/chargebee-go/v3/models/"
@@ -424,6 +428,7 @@ public class Go extends Language {
         for (Map<String, Object> action : actions) {
           Map<String, Object> mutableAction = new HashMap<>(action);
           mutableAction.put("goParamName", toCamelCase((String) action.get("name")));
+          mutableAction.put("goActionName", toCamelCase((String) action.get("name")));
           mutableActions.add(mutableAction);
         }
 
@@ -787,7 +792,7 @@ public class Go extends Language {
                     + String.join(
                         delimiter,
                         toCamelCase(a.name),
-                        dataType(a.schema, a.subResourceName()),
+                        dataTypeCustomLogic(dataType(a.schema, a.subResourceName())),
                         getJsonVal(a, true)));
           }
         } else {
@@ -819,6 +824,15 @@ public class Go extends Language {
     return formatUsingDelimiter(buf.toString());
   }
 
+  private String dataTypeCustomLogic(String colsRetType) {
+    if (colsRetType != null) {
+      colsRetType =
+          colsRetType.replace(
+              "*omnichanneltransaction.OmnichannelTransaction", "OmnichannelTransaction");
+    }
+    return colsRetType;
+  }
+
   public String getSubResourceCols(Resource subResource) {
     String type = "";
     StringJoiner buf = new StringJoiner("\n");
@@ -838,10 +852,8 @@ public class Go extends Language {
             //              type = firstCharLower(attribute.name);
             //              type = type.replace(".", Constants.ENUM_DOT);
             //            }
-            type =
-                firstCharLower(activeResource.name)
-                    + Constants.ENUM_DOT
-                    + toCamelCase(attribute.name);
+            type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+            type = enumTypeCustomLogic(type);
           } else {
             type =
                 firstCharLower(activeResource.name)
@@ -866,6 +878,8 @@ public class Go extends Language {
               case "orderEnum.LinkedCreditNoteStatus" ->
                   "orderEnum.OrderLineItemLinkedCreditStatus";
               case "discountEnum.EntityType" -> "invoiceEnum.DiscountEntityType";
+              case "omnichannelSubscriptionEnum.OmnichannelTransactionType" ->
+                  "omnichannelSubscriptionEnum.InitialPurchaseTransactionType";
               default -> type;
             };
         addEnumImport(type);
@@ -893,6 +907,18 @@ public class Go extends Language {
     }
     buf.add("\t" + String.join(delimiter, "Object", Constants.STRING_TYPE, "`json:\"object\"`"));
     return formatUsingDelimiter(buf.toString());
+  }
+
+  private String enumTypeCustomLogic(String colsRetType) {
+    if (colsRetType != null) {
+      colsRetType = colsRetType.replace("enum.TxnStatus", "transactionEnum.Status");
+      colsRetType = colsRetType.replace("enum.InvoiceStatus", "invoiceEnum.Status");
+      colsRetType = colsRetType.replace("enum.CnReasonCode", "creditNoteEnum.ReasonCode");
+      colsRetType = colsRetType.replace("enum.CnStatus", "creditNoteEnum.Status");
+      colsRetType =
+          colsRetType.replace("enum.PaymentMethodType", "paymentIntentEnum.PaymentMethodType");
+    }
+    return colsRetType;
   }
 
   public String dataType(Schema schema, String attributeName) {

@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class PHP_V4 extends Language {
+  protected final String[] hiddenOverride = {"media"};
   private final ObjectMapper objectMapper;
   private Map<String, FileGenerator> generators;
 
