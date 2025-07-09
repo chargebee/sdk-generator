@@ -10,7 +10,8 @@ public class Extension {
   public static final String OPERATION_SUB_DOMAIN = "x-cb-operation-sub-domain-name";
   public static final String BATCH_OPERATION_PATH_ID = "x-cb-batch-operation-path-id";
   public static final String IS_OPERATION_NEEDS_JSON_INPUT = "x-cb-is-operation-needs-json-input";
-  public static final String IS_OPERATION_NEEDS_INPUT_OBJECT = "x-cb-is-operation-needs-input-object";
+  public static final String IS_OPERATION_NEEDS_INPUT_OBJECT =
+      "x-cb-is-operation-needs-input-object";
   public static final String IS_CUSTOM_FIELDS_SUPPORTED = "x-cb-is-custom-fields-supported";
   public static final String SORT_ORDER = "x-cb-sort-order";
 
@@ -36,7 +37,8 @@ public class Extension {
   public static final String IS_FOREIGN_KEY_COLUMN = "x-cb-is-foreign-column";
   public static final String IS_MULTI_ATTRIBUTE = "x-cb-is-multi-value-attribute";
   public static final String IS_DEPENDENT_ATTRIBUTE = "x-cb-is-dependent-attribute";
-  public static final String IS_COMPOSITE_ARRAY_REQUEST_BODY = "x-cb-is-composite-array-request-body";
+  public static final String IS_COMPOSITE_ARRAY_REQUEST_BODY =
+      "x-cb-is-composite-array-request-body";
 
   // Resource Extensions
   public static final String RESOURCE_ID = "x-cb-resource-id";

@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'io.swagger.parser.v3:swagger-parser:2.1.14'
+    implementation 'io.swagger.parser.v3:swagger-parser:2.1.31'
     implementation 'com.github.jknack:handlebars:4.3.1'
     implementation 'info.picocli:picocli:4.7.4'
     implementation 'com.google.guava:guava:32.0.1-jre'

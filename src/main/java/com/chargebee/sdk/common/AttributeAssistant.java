@@ -1,6 +1,5 @@
 package com.chargebee.sdk.common;
 
-
 import com.chargebee.openapi.Attribute;
 import com.chargebee.openapi.Extension;
 import com.chargebee.openapi.Resource;
