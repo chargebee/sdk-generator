@@ -64,6 +64,7 @@ public class Ruby extends Language {
 
   @Override
   public Map<String, Object> additionalTemplateParams(Resource resource) {
+    System.out.println(resource.name);
     return Map.of(
         "attributesAsCommaSeparatedText",
         resource.attributes().stream()
