@@ -868,6 +868,22 @@ public class Go extends Language {
               case "discountEnum.EntityType" -> "invoiceEnum.DiscountEntityType";
               default -> type;
             };
+        if (Set.of("QuotedSubscription", "Subscription", "Gift").contains(activeResource.name)
+            && Set.of("SubscriptionItems", "GiftTimelines").contains(subResource.name)) {
+
+          type =
+              switch (activeResource.name) {
+                case "QuotedSubscription" ->
+                    type.replace(
+                            "enum.BillingPeriodUnit", "quotedSubscriptionEnum.BillingPeriodUnit")
+                        .replace("enum.Status", "giftEnum.Status");
+                case "Subscription" ->
+                    type.replace("enum.BillingPeriodUnit", "subscriptionEnum.BillingPeriodUnit")
+                        .replace("enum.Status", "giftEnum.Status");
+                case "Gift" -> type.replace("enum.Status", "giftEnum.Status");
+                default -> type;
+              };
+        }
         addEnumImport(type);
         buf.add(
             "\t"
