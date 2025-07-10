@@ -320,15 +320,18 @@ public class TypeScript extends Language {
     actionParameters.addAll(action.requestBodyParameters());
     for (Parameter iparam : actionParameters) {
       Attribute attribute = new Attribute(iparam.getName(), iparam.schema, iparam.isRequired);
-      boolean isCodeGen =
-          forQa
-              ? (attribute.isSubResource() && !attribute.isMultiAttribute())
-              : (attribute.isSubResource()
-                  && !attribute.isMultiAttribute()
-                  && (attribute.isNotHiddenAttribute()));
-      if (isCodeGen) attributes.add(attribute);
+      if (shouldIncludeSingularSub(attribute)) {
+        attributes.add(attribute);
+      }
     }
     return attributes;
+  }
+
+  private boolean shouldIncludeSingularSub(Attribute attribute) {
+    if (!attribute.isSubResource() || attribute.isMultiAttribute()) {
+      return false;
+    }
+    return forQa || attribute.isNotHiddenAttribute();
   }
 
   public List<Attribute> getMultiSubs(Action action) {
@@ -338,17 +341,24 @@ public class TypeScript extends Language {
     actionParameters.addAll(action.requestBodyParameters());
     for (Parameter iparam : actionParameters) {
       Attribute attribute = new Attribute(iparam.getName(), iparam.schema, iparam.isRequired);
-      boolean isCodeGen =
-          forQa
-              ? (attribute.isSubResource() && attribute.isMultiAttribute())
-              : (forEap
-                  ? (attribute.isSubResource()
-                      && attribute.isMultiAttribute()
-                      && (attribute.isNotHiddenAttribute()))
-                  : (iparam.isCompositeArrayBody() && attribute.isNotHiddenAttribute()));
-      if (isCodeGen) attributes.add(attribute);
+      if (shouldIncludeMultiSub(attribute, iparam)) {
+        attributes.add(attribute);
+      }
     }
     return attributes;
+  }
+
+  private boolean shouldIncludeMultiSub(Attribute attribute, Parameter iparam) {
+    if (!attribute.isSubResource() || !attribute.isMultiAttribute()) {
+      return false;
+    }
+    if (forQa) {
+      return true;
+    }
+    if (forEap) {
+      return attribute.isNotHiddenAttribute();
+    }
+    return iparam.isCompositeArrayBody() && attribute.isNotHiddenAttribute();
   }
 
   public boolean getSubFilterParam(Attribute attribute) {

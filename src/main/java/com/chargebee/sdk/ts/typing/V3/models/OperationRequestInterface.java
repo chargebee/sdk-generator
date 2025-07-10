@@ -3,10 +3,9 @@ package com.chargebee.sdk.ts.typing.V3.models;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
-import lombok.Getter;
 
-@Getter
-public @Data class OperationRequestInterface {
+@Data
+public class OperationRequestInterface {
   private String clazName;
   private List<OperationRequestParameter> params;
   private boolean hasSortParam;

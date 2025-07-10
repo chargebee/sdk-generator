@@ -3,12 +3,9 @@ package com.chargebee.sdk.ts.models;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
-import lombok.Getter;
-import lombok.ToString;
 
-@Getter
-@ToString
-public @Data class Operation {
+@Data
+public class Operation {
 
   private boolean hasHandle;
   private boolean hasInterface;
