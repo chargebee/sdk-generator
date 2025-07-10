@@ -6,7 +6,7 @@ import lombok.ToString;
 
 @Getter
 @ToString
-public @Data class SingluarSubResource {
+public @Data class SingularSubResource {
   private boolean hidden;
   private boolean deprecated;
   private boolean isListParam;

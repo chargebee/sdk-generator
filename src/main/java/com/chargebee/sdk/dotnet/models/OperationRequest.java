@@ -14,12 +14,12 @@ public @Data class OperationRequest {
   private List<OperationRequestParameter> params;
   private String getReturnGeneric;
   private boolean isList;
-  private List<SingluarSubResource> singularSubs;
-  private List<SingluarSubResource> multiSubs;
+  private List<SingularSubResource> singularSubs;
+  private List<SingularSubResource> multiSubs;
   private boolean isPostOperationWithFilter;
   private boolean hasBatch;
   private boolean isJsonRequest;
-  private Map<String, List<SingluarSubResource>> multiSubsForBatch;
+  private Map<String, List<SingularSubResource>> multiSubsForBatch;
   private String rawOperationName;
 
   public boolean canHide() {
