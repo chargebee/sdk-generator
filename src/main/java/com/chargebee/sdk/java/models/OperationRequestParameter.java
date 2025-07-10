@@ -18,7 +18,7 @@ public @Data class OperationRequestParameter {
   private String javaSimpleType;
   private String varName;
   private String name;
-  private String putMethName;
+  private String putMethodName;
   private String returnGeneric;
   private boolean isMulti;
   private boolean isExceptionFilterParam;
@@ -27,4 +27,8 @@ public @Data class OperationRequestParameter {
   private boolean simpleList;
   private boolean hasBatch;
   private boolean isIdempotent;
+
+  public void setPutMethodName(String putMethodName) {
+    this.putMethodName = putMethodName;
+  }
 }

@@ -574,8 +574,8 @@ public class Java extends Language {
         operationRequestParameter.setJavaSimpleType(dataType(attribute.schema));
         operationRequestParameter.setVarName(GenUtil.getVarName(attribute.name));
         operationRequestParameter.setName(attribute.name);
-        operationRequestParameter.setPutMethName(
-            getDotNetPutMethName(
+        operationRequestParameter.setPutMethodName(
+            getPutMethodName(
                 attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
         operationRequestParameter.setSupportsPresenceFilter(
             attribute.isPresenceOperatorSupported());
@@ -655,7 +655,7 @@ public class Java extends Language {
     return dataType;
   }
 
-  public String getDotNetPutMethName(boolean isRequired) {
+  public String getPutMethodName(boolean isRequired) {
     return isRequired ? Constants.ADD : Constants.ADD_OPT;
   }
 
@@ -708,8 +708,7 @@ public class Java extends Language {
     operationRequestParameter.setMulti(isMultiFilterAttribute(attribute));
     operationRequestParameter.setSimpleList(attribute.isListOfSimpleType());
     operationRequestParameter.setSupportsPresenceFilter(attribute.isPresenceOperatorSupported());
-    operationRequestParameter.setPutMethName(
-        getDotNetPutMethName(attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
+    operationRequestParameter.setPutMethodName(getPutMethodName(attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
     if (attribute.name.equals(Constants.SORT_BY) && !getSortParams(attribute).isEmpty()) {
       operationRequestParameter.setListParam(true);
       operationRequestParameter.setSortParam(true);
@@ -743,7 +742,7 @@ public class Java extends Language {
         OperationRequestParameterSortParameter operationRequestParameterSortParameter =
             new OperationRequestParameterSortParameter();
         operationRequestParameterSortParameter.setName(enumValue);
-        operationRequestParameterSortParameter.setDotNetMethName(
+        operationRequestParameterSortParameter.setMethodName(
             getName(singularize(attribute.name) + "_" + enumValue));
         sortParameters.add(operationRequestParameterSortParameter);
       }
@@ -754,7 +753,7 @@ public class Java extends Language {
   private String getFilterReturnGeneric(Attribute attribute, Action action, String parentName) {
     return new ReturnTypeBuilder()
         .setDataTypeMethod(this::dataType)
-        .setGetFullNameDotnetMethod(this::getFullNameJava)
+        .setGetFullNameMethod(this::getFullNameJava)
         .setParentName(parentName)
         .setAction(action)
         .setAttribute(attribute)
@@ -842,7 +841,7 @@ public class Java extends Language {
                       dataTypeForMultiAttribute(attribute, iparam.getName(), action.modelName()));
                   subResource.setVarName(
                       singularize(getName(iparam.getName())) + toClazName(attribute.name));
-                  subResource.setPutMethName(attribute.isRequired ? "add" : "addOpt");
+                  subResource.setPutMethodName(attribute.isRequired ? "add" : "addOpt");
                   subResource.setResName(iparam.getName());
                   subResource.setName(attribute.name);
                   subResource.setSortOrder(
@@ -881,7 +880,7 @@ public class Java extends Language {
                       dataTypeForMultiAttribute(attribute, iparam.getName(), action.modelName()));
                   subResource.setVarName(
                       singularize(getName(iparam.getName())) + toClazName(attribute.name));
-                  subResource.setPutMethName(attribute.isRequired ? "add" : "addOpt");
+                  subResource.setPutMethodName(attribute.isRequired ? "add" : "addOpt");
                   subResource.setResName(iparam.getName());
                   subResource.setName(attribute.name);
                   subResource.setHasBatch(action.isBatch());
@@ -927,7 +926,7 @@ public class Java extends Language {
                       dataTypeForMultiAttribute(attribute, iparam.getName(), action.modelName()));
                   subResource.setVarName(
                       singularize(getName(iparam.getName())) + toClazName(attribute.name));
-                  subResource.setPutMethName(attribute.isRequired ? "add" : "addOpt");
+                  subResource.setPutMethodName(attribute.isRequired ? "add" : "addOpt");
                   subResource.setResName(iparam.getName());
                   subResource.setName(attribute.name);
                   subResource.setHasBatch(action.isBatch());
@@ -1132,8 +1131,8 @@ public class Java extends Language {
                   subResource.setHasBatch(action.isBatch());
                   subResource.setVarName(
                       GenUtil.getVarName(iParam.getName() + Inflector.capitalize(value.name)));
-                  subResource.setPutMethName(
-                      getDotNetPutMethName(
+                  subResource.setPutMethodName(
+                      getPutMethodName(
                           value.isRequired || value.isAttributeMetaCommentRequired()));
                   subResource.setResName(iParam.getName());
                   subResource.setName(value.name);
@@ -1166,8 +1165,8 @@ public class Java extends Language {
                   subResource.setHasBatch(action.isBatch());
                   subResource.setVarName(
                       GenUtil.getVarName(iParam.getName() + Inflector.capitalize(value.name)));
-                  subResource.setPutMethName(
-                      getDotNetPutMethName(
+                  subResource.setPutMethodName(
+                      getPutMethodName(
                           value.isRequired || value.isAttributeMetaCommentRequired()));
                   subResource.setResName(iParam.getName());
                   subResource.setName(value.name);

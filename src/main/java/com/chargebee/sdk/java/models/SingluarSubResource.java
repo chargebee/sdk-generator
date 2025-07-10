@@ -16,7 +16,7 @@ public @Data class SingluarSubResource {
   private String methName;
   private String javaType;
   private String varName;
-  private String putMethName;
+  private String putMethodName;
   private String resName;
   private String name;
   private String returnGeneric;
@@ -26,5 +26,9 @@ public @Data class SingluarSubResource {
 
   public int sortOrder() {
     return sortOrder != 0 ? sortOrder : -1;
+  }
+
+  public void setPutMethodName(String putMethodName) {
+    this.putMethodName = putMethodName;
   }
 }
