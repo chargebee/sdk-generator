@@ -815,8 +815,8 @@ public class Java extends Language {
     return dataType(attribute.schema);
   }
 
-  public List<SingluarSubResource> getMultiSubs(Action action) {
-    List<SingluarSubResource> subResources = new ArrayList<>();
+  public List<SingularSubResource> getMultiSubs(Action action) {
+    List<SingularSubResource> subResources = new ArrayList<>();
     for (Parameter iparam : action.queryParameters()) {
       if (iparam.isCompositeArrayBody()) {
         Attribute multiAttribute =
@@ -830,7 +830,7 @@ public class Java extends Language {
             .forEach(
                 attribute -> {
                   if (attribute.isHiddenParameter()) return;
-                  SingluarSubResource subResource = new SingluarSubResource();
+                  SingularSubResource subResource = new SingularSubResource();
                   subResource.setDeprecated(attribute.isDeprecated());
                   subResource.setListParam(false);
                   subResource.setReturnGeneric(getReturnGeneric(attribute));
@@ -869,7 +869,7 @@ public class Java extends Language {
                   }
                   if (attribute.isHiddenParameter()) return;
                   if (!attribute.isNotHiddenAttribute()) return;
-                  SingluarSubResource subResource = new SingluarSubResource();
+                  SingularSubResource subResource = new SingularSubResource();
                   subResource.setDeprecated(attribute.isDeprecated());
                   subResource.setListParam(false);
                   subResource.setReturnGeneric(getReturnGeneric(attribute));
@@ -891,12 +891,12 @@ public class Java extends Language {
       }
     }
     return subResources.stream()
-        .sorted(Comparator.comparing(SingluarSubResource::sortOrder))
+        .sorted(Comparator.comparing(SingularSubResource::sortOrder))
         .toList();
   }
 
-  public Map<String, List<SingluarSubResource>> getMultiSubsForBatch(Action action) {
-    List<SingluarSubResource> subResources = new ArrayList<>();
+  public Map<String, List<SingularSubResource>> getMultiSubsForBatch(Action action) {
+    List<SingularSubResource> subResources = new ArrayList<>();
     for (Parameter iparam : action.requestBodyParameters()) {
       if (iparam.isCompositeArrayBody()) {
         Attribute multiAttribute =
@@ -915,7 +915,7 @@ public class Java extends Language {
                   }
                   if (attribute.isHiddenParameter()) return;
                   if (!attribute.isNotHiddenAttribute()) return;
-                  SingluarSubResource subResource = new SingluarSubResource();
+                  SingularSubResource subResource = new SingularSubResource();
                   subResource.setDeprecated(attribute.isDeprecated());
                   subResource.setListParam(false);
                   subResource.setReturnGeneric(getReturnGeneric(attribute));
@@ -936,7 +936,7 @@ public class Java extends Language {
                 });
       }
     }
-    return subResources.stream().collect(Collectors.groupingBy(SingluarSubResource::getResName));
+    return subResources.stream().collect(Collectors.groupingBy(SingularSubResource::getResName));
   }
 
   public int sortOrder(Schema schema) {
@@ -1104,8 +1104,8 @@ public class Java extends Language {
     return dataType;
   }
 
-  public List<SingluarSubResource> getSingularSubs(Action action) {
-    List<SingluarSubResource> subResources = new ArrayList<>();
+  public List<SingularSubResource> getSingularSubs(Action action) {
+    List<SingularSubResource> subResources = new ArrayList<>();
     for (Parameter iParam : action.queryParameters()) {
       if ((iParam.schema instanceof ObjectSchema || iParam.schema instanceof MapSchema)
           && iParam.schema.getProperties() != null
@@ -1119,7 +1119,7 @@ public class Java extends Language {
             .forEach(
                 value -> {
                   if (!value.isNotHiddenAttribute()) return;
-                  SingluarSubResource subResource = new SingluarSubResource();
+                  SingularSubResource subResource = new SingularSubResource();
                   subResource.setDeprecated(value.isDeprecated());
                   subResource.setListParam(false);
                   subResource.setReturnGeneric(getReturnGenericForSingularSubParams(iParam));
@@ -1153,7 +1153,7 @@ public class Java extends Language {
             .forEach(
                 value -> {
                   if (!value.isNotHiddenAttribute()) return;
-                  SingluarSubResource subResource = new SingluarSubResource();
+                  SingularSubResource subResource = new SingularSubResource();
                   subResource.setDeprecated(value.isDeprecated());
                   subResource.setListParam(false);
                   subResource.setReturnGeneric(getReturnGenericForSingularSubParams(iParam));
@@ -1176,7 +1176,7 @@ public class Java extends Language {
       }
     }
     return subResources.stream()
-        .sorted(Comparator.comparing(SingluarSubResource::sortOrder))
+        .sorted(Comparator.comparing(SingularSubResource::sortOrder))
         .toList();
   }
 

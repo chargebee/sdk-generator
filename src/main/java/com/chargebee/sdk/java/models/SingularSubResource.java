@@ -1,12 +1,9 @@
 package com.chargebee.sdk.java.models;
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.ToString;
 
-@Getter
-@ToString
-public @Data class SingluarSubResource {
+@Data
+public class SingularSubResource {
   private boolean hidden;
   private boolean deprecated;
   private boolean isListParam;
@@ -26,9 +23,5 @@ public @Data class SingluarSubResource {
 
   public int sortOrder() {
     return sortOrder != 0 ? sortOrder : -1;
-  }
-
-  public void setPutMethodName(String putMethodName) {
-    this.putMethodName = putMethodName;
   }
 }
