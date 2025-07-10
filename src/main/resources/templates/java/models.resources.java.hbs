@@ -142,7 +142,7 @@ public class {{clazName}} extends Resource<{{clazName}}> {
             return this;
         }{{/each}}{{else}}
         public {{listType}}<{{returnGeneric}}> {{methName}}() {
-            return new {{listType}}<{{returnGeneric}}>("{{name}}",this){{#if multi}}.supportsMultiOperators(true){{/if}}{{#if supportsPresenceFilter}}.supportsPresenceOperator(true){{/if}}{{#if idempotent}}.setIdempotency({{idempotent}}){{/if}};        {{NonBreakingSpace}}
+            return new {{listType}}<{{returnGeneric}}>("{{name}}",this){{#if multi}}.supportsMultiOperators(true){{/if}}{{#if supportsPresenceFilter}}.supportsPresenceOperator(true){{/if}}{{#if ../idempotent}}.setIdempotency({{../idempotent}}){{/if}};        {{NonBreakingSpace}}
         }{{/if}}
 {{else}}
         public {{clazName}} {{methName}}({{{javaType}}} {{varName}}) {

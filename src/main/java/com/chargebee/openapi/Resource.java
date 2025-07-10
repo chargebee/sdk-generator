@@ -1,7 +1,6 @@
 package com.chargebee.openapi;
 
 import static com.chargebee.openapi.Extension.*;
-import static com.chargebee.openapi.Version.PRODUCT_CATALOG_VERSION;
 
 import com.chargebee.ApiVersionHandler;
 import com.chargebee.QAModeHandler;

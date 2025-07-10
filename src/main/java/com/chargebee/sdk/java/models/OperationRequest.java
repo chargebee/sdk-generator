@@ -21,4 +21,5 @@ public @Data class OperationRequest {
   private String rawOperationName;
   private List<SingluarSubResource> singularSubs;
   private List<SingluarSubResource> multiSubs;
+  private boolean isIdempotent;
 }

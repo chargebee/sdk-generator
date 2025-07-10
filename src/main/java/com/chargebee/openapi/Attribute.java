@@ -41,8 +41,8 @@ public class Attribute {
 
   public boolean isGlobalResourceReference() {
     return schema.getExtensions() != null
-        && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE) != null
-        && (boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE);
+        && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
+        && (boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE);
   }
 
   public boolean isForeignColumn() {

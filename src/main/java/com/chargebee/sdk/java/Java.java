@@ -1022,6 +1022,9 @@ public class Java extends Language {
       operationRequest.setParams(getOperationParams(action));
       operationRequest.setSingularSubs(getSingularSubs(action));
       operationRequest.setMultiSubs(getMultiSubs(action));
+      if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST) ) {
+        operationRequest.setIdempotent(action.isIdempotent());
+      }
       operationRequest.setMultiSubsForBatch(
           getMultiSubsForBatch(action)); // for batch there will be only one top level multiSubs
       operationRequest.setRawOperationName(GenUtil.toClazName(action.name));
@@ -1264,6 +1267,9 @@ public class Java extends Language {
         reqCodeBuffer.append(", \"").append(action.batchId()).append("\"");
       }
       reqCodeBuffer.append(")");
+      if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST)) {
+        reqCodeBuffer.append(".setIdempotency(false)");
+      }
       return reqCodeBuffer.toString();
     }
     if (action.isInputObjNeeded() && isCodeGen) {
@@ -1276,6 +1282,9 @@ public class Java extends Language {
         reqCodeBuffer.append(", nullCheckWithoutEncoding(id)");
       }
       reqCodeBuffer.append(")");
+      if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST)) {
+        reqCodeBuffer.append(".setIdempotency(false)");
+      }
       return reqCodeBuffer.toString();
     } else {
       if (action.isListResourceAction()) {
@@ -1285,7 +1294,11 @@ public class Java extends Language {
         if (action.isBatch() && !action.pathParameters().isEmpty()) {
           reqCodeBuffer.append(", nullCheckWithoutEncoding(id)");
         }
-        return reqCodeBuffer.append(")").toString();
+        reqCodeBuffer.append(")");
+        if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST)) {
+          reqCodeBuffer.append(".setIdempotency(false)");
+        }
+        return reqCodeBuffer.toString();
       }
     }
   }
