@@ -2,12 +2,9 @@ package com.chargebee.sdk.go.model;
 
 import java.util.List;
 import lombok.Data;
-import lombok.Getter;
-import lombok.ToString;
 
-@Getter
-@ToString
-public @Data class Resource {
+@Data
+public class Resource {
   private String pkgName;
   private String importFiles;
   private String clazName;
