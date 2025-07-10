@@ -3,12 +3,9 @@ package com.chargebee.sdk.dotnet.models;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
-import lombok.Getter;
-import lombok.ToString;
 
-@Getter
-@ToString
-public @Data class OperationRequest {
+@Data
+public class OperationRequest {
   private String clazName;
   private String superClazName;
   private List<OperationRequestParameter> params;
