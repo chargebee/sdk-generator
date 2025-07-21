@@ -7,7 +7,11 @@ import lombok.ToString;
 @Getter
 @ToString
 public @Data class OperationRequestParameterSortParameter {
-  private String dotNetMethName;
+  private String methodName;
   private String name;
   private String returnGeneric;
+
+  public void setMethodName(String methodName) {
+    this.methodName = methodName;
+  }
 }

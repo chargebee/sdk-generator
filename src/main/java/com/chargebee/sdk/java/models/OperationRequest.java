@@ -17,8 +17,9 @@ public @Data class OperationRequest {
   private boolean hasBatch;
   private String subDomain;
   private boolean isJsonRequest;
-  private Map<String, List<SingluarSubResource>> multiSubsForBatch;
+  private Map<String, List<SingularSubResource>> multiSubsForBatch;
   private String rawOperationName;
-  private List<SingluarSubResource> singularSubs;
-  private List<SingluarSubResource> multiSubs;
+  private List<SingularSubResource> singularSubs;
+  private List<SingularSubResource> multiSubs;
+  private boolean isIdempotent;
 }

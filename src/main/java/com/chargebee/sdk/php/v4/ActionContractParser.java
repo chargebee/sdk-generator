@@ -17,6 +17,9 @@ public class ActionContractParser extends ActionParser {
     Set<String> imports = new HashSet<>();
 
     for (var action : res.actions) {
+      if (!action.isNotInternalOperation()) {
+        continue;
+      }
       if (!action.isNotHiddenFromSDK()) {
         continue;
       }

@@ -32,7 +32,7 @@ public class Customer extends Resource<Customer> {
 
     public static CreateRequest create() {
         String uri = uri("customers");
-        return new CreateRequest(Method.POST, uri);
+        return new CreateRequest(Method.POST, uri).setIdempotency(false);
     }
 
 

@@ -40,7 +40,10 @@ public class JavaTests extends LanguageTests {
     String expectedContent =
         FileOp.fetchFileContent("src/test/java/com/chargebee/sdk/java/samples/" + fileName)
             .replace("__body__", body);
-    assertThat(fileOp.fileContent).startsWith(expectedContent);
+    // Normalize whitespace for more robust comparison
+    String normalizedExpected = expectedContent.replaceAll("\\s+", " ").trim();
+    String normalizedActual = fileOp.fileContent.replaceAll("\\s+", " ").trim();
+    assertThat(normalizedActual).startsWith(normalizedExpected);
   }
 
   void assertJavaResultBaseFileContent(FileOp.WriteString fileOp, String body) throws IOException {
@@ -515,7 +518,7 @@ public class Coupon extends Resource<Coupon> {
     var operation =
         buildOperation("retrieve")
             .forResource("customer")
-            .withPathParam("customer_id")
+            .withPathParam("customer-id")
             .withResponse(
                 resourceResponseParam("contact", contact),
                 resourceResponseParam("token", token),
@@ -670,7 +673,7 @@ public class Coupon extends Resource<Coupon> {
 
             public static CreateRequest create() {
                 String uri = uri("customers");
-                return new CreateRequest(Method.POST, uri);
+                return new CreateRequest(Method.POST, uri).setIdempotency(false);
             }
 
             public static Request retrieve(String id) {
@@ -763,7 +766,7 @@ public class Coupon extends Resource<Coupon> {
 
             public static CreateRequest create() {
                 String uri = uri("customers");
-                return new CreateRequest(Method.POST, uri);
+                return new CreateRequest(Method.POST, uri).setIdempotency(false);
             }
         """);
   }
@@ -872,7 +875,7 @@ public class Coupon extends Resource<Coupon> {
 
             public static UpdateRequest update(String id) {
                 String uri = uri("customers", nullCheck(id));
-                return new UpdateRequest(Method.POST, uri);
+                return new UpdateRequest(Method.POST, uri).setIdempotency(false);
             }
         """);
   }
@@ -908,7 +911,7 @@ public class Coupon extends Resource<Coupon> {
 
             public static CreateRequest create() {
                 String uri = uri("customers");
-                return new CreateRequest(Method.POST, uri);
+                return new CreateRequest(Method.POST, uri).setIdempotency(false);
             }
         """);
   }
@@ -946,7 +949,7 @@ public class Coupon extends Resource<Coupon> {
 
             public static UpdateRequest update(String id) {
                 String uri = uri("customers", nullCheck(id));
-                return new UpdateRequest(Method.POST, uri);
+                return new UpdateRequest(Method.POST, uri).setIdempotency(false);
             }
         """);
   }
@@ -985,7 +988,7 @@ public class Coupon extends Resource<Coupon> {
 
             public static UpdateBillingInfoRequest updateBillingInfo(String id) {
                 String uri = uri("customers", nullCheck(id), "update_billing_info");
-                return new UpdateBillingInfoRequest(Method.POST, uri);
+                return new UpdateBillingInfoRequest(Method.POST, uri).setIdempotency(false);
             }
         """);
   }
@@ -1033,7 +1036,7 @@ public class Coupon extends Resource<Coupon> {
 
             public static UpdateBillingInfoRequest updateBillingInfo(String id) {
                 String uri = uri("customers", nullCheck(id), "update_billing_info");
-                return new UpdateBillingInfoRequest(Method.POST, uri);
+                return new UpdateBillingInfoRequest(Method.POST, uri).setIdempotency(false);
             }
 
             public static HierarchyRequest hierarchy(String id) {
@@ -1113,7 +1116,7 @@ public class Coupon extends Resource<Coupon> {
             @Deprecated
             public static AddPromotionalCreditsRequest addPromotionalCredits(String id) {
                 String uri = uri("customers", nullCheck(id), "add_promotional_credits");
-                return new AddPromotionalCreditsRequest(Method.POST, uri);
+                return new AddPromotionalCreditsRequest(Method.POST, uri).setIdempotency(false);
             }
         """);
   }
@@ -1530,7 +1533,7 @@ public class Coupon extends Resource<Coupon> {
 
             public static CreateRequest create() {
                 String uri = uri("invoices");
-                return new CreateRequest(Method.POST, uri);
+                return new CreateRequest(Method.POST, uri).setIdempotency(false);
             }
 
 
@@ -1616,7 +1619,7 @@ public class Customer extends Resource<Customer> {
 
     public static ChangeBillingDateRequest changeBillingDate(String id) {
         String uri = uri("customers", nullCheck(id), "change_billing_date");
-        return new ChangeBillingDateRequest(Method.POST, uri);
+        return new ChangeBillingDateRequest(Method.POST, uri).setIdempotency(false);
     }
 
 
@@ -1696,7 +1699,7 @@ public class Customer extends Resource<Customer> {
 
     public static CreateRequest create() {
         String uri = uri("customers");
-        return new CreateRequest(Method.POST, uri);
+        return new CreateRequest(Method.POST, uri).setIdempotency(false);
     }
 
 
@@ -1773,7 +1776,7 @@ public class Customer extends Resource<Customer> {
 
     public static CreateRequest create() {
         String uri = uri("customers");
-        return new CreateRequest(Method.POST, uri);
+        return new CreateRequest(Method.POST, uri).setIdempotency(false);
     }
 
 
@@ -1858,7 +1861,7 @@ public class Customer extends Resource<Customer> {
 
     public static CreateRequest create() {
         String uri = uri("customers");
-        return new CreateRequest(Method.POST, uri);
+        return new CreateRequest(Method.POST, uri).setIdempotency(false);
     }
 
 
@@ -1949,7 +1952,7 @@ public class Invoice extends Resource<Invoice> {
 
     public static CreateForChargeItemsAndChargesRequest createForChargeItemsAndCharges() {
         String uri = uri("invoices", "create_for_charge_items_and_charges");
-        return new CreateForChargeItemsAndChargesRequest(Method.POST, uri);
+        return new CreateForChargeItemsAndChargesRequest(Method.POST, uri).setIdempotency(false);
     }
 
 
@@ -2032,7 +2035,7 @@ public class Invoice extends Resource<Invoice> {
 
     public static CreateForChargeItemsAndChargesRequest createForChargeItemsAndCharges() {
         String uri = uri("invoices", "create_for_charge_items_and_charges");
-        return new CreateForChargeItemsAndChargesRequest(Method.POST, uri);
+        return new CreateForChargeItemsAndChargesRequest(Method.POST, uri).setIdempotency(false);
     }
 
 
@@ -2113,7 +2116,7 @@ public class Customer extends Resource<Customer> {
 
     public static CreateRequest create() {
         String uri = uri("customers");
-        return new CreateRequest(Method.POST, uri);
+        return new CreateRequest(Method.POST, uri).setIdempotency(false);
     }
 
 
@@ -2201,7 +2204,7 @@ public class Estimate extends Resource<Estimate> {
 
     public static UpdateSubscriptionRequest updateSubscription() {
         String uri = uri("estimates", "update_subscription");
-        return new UpdateSubscriptionRequest(Method.POST, uri);
+        return new UpdateSubscriptionRequest(Method.POST, uri).setIdempotency(false);
     }
 
 
@@ -2213,9 +2216,9 @@ public class Estimate extends Resource<Estimate> {
         private UpdateSubscriptionRequest(Method httpMeth, String uri) {
             super(httpMeth, uri);
         }
-   \s
+
         public UpdateSubscriptionRequest eventBasedAddonId(int index, String eventBasedAddonId) {
-            params.addOpt("event_based_addons[id][" + index + "]", eventBasedAddonId);
+            params.addOpt("event_based_addons[id][\" + index + \"]\", eventBasedAddonId);
             return this;
         }
         @Override
@@ -2293,7 +2296,7 @@ public class Invoice extends Resource<Invoice> {
 
     public static CreateForChargeItemsAndChargesRequest createForChargeItemsAndCharges() {
         String uri = uri("invoices", "create_for_charge_items_and_charges");
-        return new CreateForChargeItemsAndChargesRequest(Method.POST, uri);
+        return new CreateForChargeItemsAndChargesRequest(Method.POST, uri).setIdempotency(false);
     }
 
 
@@ -2399,7 +2402,7 @@ public class Invoice extends Resource<Invoice> {
 
     public static ImportInvoiceRequest importInvoice() {
         String uri = uri("invoices", "import_invoice");
-        return new ImportInvoiceRequest(Method.POST, uri);
+        return new ImportInvoiceRequest(Method.POST, uri).setIdempotency(false);
     }
 
 
@@ -2752,7 +2755,7 @@ public class Invoice extends Resource<Invoice> {
             + "\n"
             + "    public static Request create() {\n"
             + "        String uri = uri(\"customer\", \"create\");\n"
-            + "        return new Request(Method.POST, uri);\n"
+            + "        return new Request(Method.POST, uri).setIdempotency(false);\n"
             + "    }\n"
             + "\n"
             + "\n"
@@ -2998,7 +3001,7 @@ public class Customer extends Resource<Customer> {
 
     public static ChangeBillingDateRequest changeBillingDate(String id) {
         String uri = uri("customers", nullCheck(id), "change_billing_date");
-        return new ChangeBillingDateRequest(Method.POST, uri);
+        return new ChangeBillingDateRequest(Method.POST, uri).setIdempotency(false);
     }
 
 

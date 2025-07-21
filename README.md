@@ -290,6 +290,14 @@ After generating the Python SDK (PYTHON_V3), run the following command in the SD
 black .
 ```
 
+### Note for GO
+
+After generating the GO SDK, run the following command in the SDK output directory to format the code:
+
+```bash
+gofmt -w .
+```
+
 #### Repository Structure
 
 The above commands assume the following repository structure with cloned Chargebee repositories:

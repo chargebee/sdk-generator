@@ -137,31 +137,31 @@ public class {{clazName}} extends Resource<{{clazName}}> {
         }{{/if}}
     {{#each params }}{{#if deprecated }}
         @Deprecated{{/if}}{{#if  listParam }}{{#if sortParam }}{{#each sortParams }}
-        public {{returnGeneric}} {{dotNetMethName}}(SortOrder order) {
+        public {{returnGeneric}} {{methodName}}(SortOrder order) {
             params.addOpt("sort_by["+order.name().toLowerCase()+"]","{{name}}");
             return this;
         }{{/each}}{{else}}
         public {{listType}}<{{returnGeneric}}> {{methName}}() {
-            return new {{listType}}<{{returnGeneric}}>("{{name}}",this){{#if multi}}.supportsMultiOperators(true){{/if}}{{#if supportsPresenceFilter}}.supportsPresenceOperator(true){{/if}}{{#if idempotent}}.setIdempotency({{idempotent}}){{/if}};        {{NonBreakingSpace}}
+            return new {{listType}}<{{returnGeneric}}>("{{name}}",this){{#if multi}}.supportsMultiOperators(true){{/if}}{{#if supportsPresenceFilter}}.supportsPresenceOperator(true){{/if}}{{#if ../idempotent}}.setIdempotency({{../idempotent}}){{/if}};        {{NonBreakingSpace}}
         }{{/if}}
 {{else}}
         public {{clazName}} {{methName}}({{{javaType}}} {{varName}}) {
-            params.{{putMethName}}("{{name}}", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
-            paramsV2.{{putMethName}}(new PrimitiveParameter("{{name}}"), {{varName}});{{/if}}
+            params.{{putMethodName}}("{{name}}", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
+            paramsV2.{{putMethodName}}(new PrimitiveParameter("{{name}}"), {{varName}});{{/if}}
             return this;
         }
 {{/if}}{{#if exceptionFilterParam}}
         @Deprecated
         public {{clazName}} {{methName}}({{{javaType}}} {{varName}}) {
-            params.{{putMethName}}("{{name}}", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
-            paramsV2.{{putMethName}}(new PrimitiveParameter("{{name}}"), {{varName}});{{/if}}
+            params.{{putMethodName}}("{{name}}", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
+            paramsV2.{{putMethodName}}(new PrimitiveParameter("{{name}}"), {{varName}});{{/if}}
             return this;
         }
 {{/if}}{{#if simpleList }}{{#if deprecated }}
         @Deprecated{{/if}}
         public {{clazName}} {{{methName}}}({{javaSimpleType}}... {{varName}}) {
-            params.{{putMethName}}("{{name}}", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
-            paramsV2.{{putMethName}}(new PrimitiveParameter("{{name}}"), {{varName}});{{/if}}
+            params.{{putMethodName}}("{{name}}", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
+            paramsV2.{{putMethodName}}(new PrimitiveParameter("{{name}}"), {{varName}});{{/if}}
             return this;
         }{{/if}}
 {{/each}}{{#each singularSubs }}{{#if deprecated }}
@@ -171,15 +171,15 @@ public class {{clazName}} extends Resource<{{clazName}}> {
             return new {{listType}}<{{returnGeneric}}>("{{resName}}[{{name}}]",this){{#if multi}}.supportsMultiOperators(true){{/if}}{{#if supportsPresenceFilter}}.supportsPresenceOperator(true){{/if}};        {{NonBreakingSpace}}
         }{{else~}}
         public {{clazName}} {{methName}}({{{javaType}}} {{varName}}) {
-            params.{{putMethName}}("{{resName}}[{{name}}]", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
-            paramsV2.{{putMethName}}(new CompositeParameter("{{resName}}", "{{name}}"), {{varName}});{{/if}}
+            params.{{putMethodName}}("{{resName}}[{{name}}]", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
+            paramsV2.{{putMethodName}}(new CompositeParameter("{{resName}}", "{{name}}"), {{varName}});{{/if}}
             return this;
         }
 {{/if}}{{/each}}{{#if (not jsonRequest) }}{{#each multiSubs }}{{#if deprecated }}
         @Deprecated{{/if}}
         public {{clazName}} {{methName}}(int index, {{{javaType}}} {{{varName}}}) {
-            params.{{putMethName}}("{{resName}}[{{name}}][" + index + "]", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
-            paramsV2.{{putMethName}}(new CompositeArrayParameter("{{resName}}", "{{name}}", index), {{varName}});{{/if}}
+            params.{{putMethodName}}("{{resName}}[{{name}}][" + index + "]", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
+            paramsV2.{{putMethodName}}(new CompositeArrayParameter("{{resName}}", "{{name}}", index), {{varName}});{{/if}}
             return this;
         }{{#if (and (eq clazName "ImportCreditNoteRequest") (eq methName "lineItemEntityType"))}}
         @Deprecated
@@ -229,7 +229,7 @@ public class {{clazName}} extends Resource<{{clazName}}> {
         public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder set{{snakeCaseToPascalCase singularSub.name}}( {{{singularSub.javaType}}} {{snakeCaseToPascalCase singularSub.name}} ) {
             this.{{snakeCaseToPascalCase singularSub.name}} = {{snakeCaseToPascalCase singularSub.name}};
             return this;
-        } {{/each}}
+        } {{/each }}
 
         public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams build() {
             return new {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams(this);

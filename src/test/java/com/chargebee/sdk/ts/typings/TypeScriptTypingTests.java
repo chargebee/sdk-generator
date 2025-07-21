@@ -160,12 +160,12 @@ public class TypeScriptTypingTests extends LanguageTests {
             .done();
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(3);
+    assertThat(fileOps).hasSize(4);
     assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
     assertThat(fileOps.get(1)).isInstanceOf(FileOp.WriteString.class);
-    assertThat(((FileOp.WriteString) fileOps.get(1)).fileName).isEqualTo("core.d.ts");
+    assertThat(((FileOp.WriteString) fileOps.get(2)).fileName).isEqualTo("core.d.ts");
     assertThat(fileOps.get(2)).isInstanceOf(FileOp.WriteString.class);
-    assertThat(((FileOp.WriteString) fileOps.get(2)).fileName).isEqualTo("index.d.ts");
+    assertThat(((FileOp.WriteString) fileOps.get(3)).fileName).isEqualTo("index.d.ts");
   }
 
   @Test

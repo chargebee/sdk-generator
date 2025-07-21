@@ -22,7 +22,7 @@ public class ReturnTypeBuilder {
 
   private ApiVersion apiVersion;
   private GenerationMode generationMode;
-  private BiFunction<Attribute, String, String> getFullNameJavaMethod;
+  private BiFunction<Attribute, String, String> getFullNameMethod;
   private Resource activeResource;
   private List<Resource> resourceList;
   private List<Enum> globalEnum;
@@ -32,9 +32,9 @@ public class ReturnTypeBuilder {
     return this;
   }
 
-  public ReturnTypeBuilder setGetFullNameDotnetMethod(
-      BiFunction<Attribute, String, String> getFullNameDotnetMethod) {
-    this.getFullNameJavaMethod = getFullNameDotnetMethod;
+  public ReturnTypeBuilder setGetFullNameMethod(
+      BiFunction<Attribute, String, String> getFullNameMethod) {
+    this.getFullNameMethod = getFullNameMethod;
     return this;
   }
 
@@ -151,7 +151,7 @@ public class ReturnTypeBuilder {
 
   private String multiEnum(Attribute attribute) {
     if (attribute.attributes().get(0).isEnumAttribute()) {
-      return getFullNameJavaMethod.apply(attribute, parentName) + ", " + getClazName(action);
+      return getFullNameMethod.apply(attribute, parentName) + ", " + getClazName(action);
     }
     if (attribute.attributes().stream().anyMatch(Attribute::isGlobalEnumAttribute)) {
       return getPackagePrefix()

@@ -1,12 +1,9 @@
 package com.chargebee.sdk.dotnet.models;
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.ToString;
 
-@Getter
-@ToString
-public @Data class Operation {
+@Data
+public class Operation {
   private String retType;
   private String methName;
   private String handleArg;

@@ -39,6 +39,12 @@ public class Attribute {
         && (boolean) schema.getExtensions().get(IS_DEPENDENT_ATTRIBUTE);
   }
 
+  public boolean isGlobalResourceReference() {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
+        && (boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE);
+  }
+
   public boolean isForeignColumn() {
     return schema.getExtensions() != null
         && schema.getExtensions().get(IS_FOREIGN_KEY_COLUMN) != null

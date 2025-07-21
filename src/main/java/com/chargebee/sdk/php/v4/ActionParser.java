@@ -22,6 +22,9 @@ public class ActionParser {
       if (!action.isNotHiddenFromSDK()) {
         continue;
       }
+      if (!action.isNotInternalOperation()) {
+        continue;
+      }
 
       var act = buildAction(action, res);
       actions.add(act);

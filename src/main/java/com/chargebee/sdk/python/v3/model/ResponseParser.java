@@ -74,8 +74,8 @@ public class ResponseParser {
                   typeSuffix));
     } else if (operationResponse.isListResponse()
         && operationResponse.getListResponse().isEmpty()) {
-      typePrefix += "List[";
-      typeSuffix = "]" + typeSuffix;
+      typePrefix += type.equals("Any") ? "" : "List[";
+      typeSuffix = type.equals("Any") ? "" : "]" + typeSuffix;
       buf.add(
           Constants.INDENT_DELIMITER
               + String.join(
@@ -130,6 +130,7 @@ public class ResponseParser {
   }
 
   private String operationResponseType(String type) {
+    if (type.equals("Any")) return "Any";
     if (type.equals("unknown")) return Constants.STRING_TYPE;
     if (isPythonDataType(type)) return type;
     if (type.equalsIgnoreCase(activeResourceName)) return type + "Response";

@@ -7,8 +7,8 @@ import ({{#if isEvent}}
     "errors"{{/if}}{{#or isHostedPage isSession}}
     "encoding/json"{{/or}}
     "fmt"
-    "github.com/chargebee/chargebee-go/v3"
-    "github.com/chargebee/chargebee-go/v3/models/{{golangCase name}}"{{#if isTimeMachine}}
+    "github.com/chargebee/chargebee-go/v3"{{#if anyActionHasBodyOrQueryParams}}
+    "github.com/chargebee/chargebee-go/v3/models/{{golangCase name}}"{{/if}}{{#if isTimeMachine}}
     timeMachineEnum "github.com/chargebee/chargebee-go/v3/models/timemachine/enum"
     "time"{{/if}}{{#if anyActionHasPathParam}}
     "net/url"{{/if}}{{#if isEvent}}
@@ -18,7 +18,7 @@ import ({{#if isEvent}}
     "time"{{/if}}
 )
 {{#each actions}}
-func {{camelCaseToPascalCase name}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}params *{{golangCase ../name}}.{{camelCaseToPascalCase goParamName}}RequestParams{{/or}}) chargebee.RequestObj {
+func {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}params *{{golangCase ../name}}.{{camelCaseToPascalCase goParamName}}RequestParams{{/or}}) chargebee.RequestObj {
     return chargebee.Send{{#if isOperationNeedsJsonInput}}JsonRequest{{/if}}{{#if isListResourceAction}}List{{/if}}("{{httpRequestType}}", fmt.Sprintf("/{{urlPrefix}}{{#if hasPathParameters}}/%v{{/if}}{{#if urlSuffix}}/{{urlSuffix}}{{/if}}"{{#if hasPathParameters}}, url.PathEscape(id){{/if}}), {{#or hasRequestBodyParameters hasQueryParameters}}params{{else}}nil{{/or}}){{#if subDomain}}.SetSubDomain("{{subDomain}}"){{/if}}{{#if options.isIdempotent}}.SetIdempotency({{options.isIdempotent}}){{/if}}
 }{{/each}}{{#if isExport}}{{{includeFile "src/main/resources/templates/go/export.go.hbs"}}}{{/if}}{{#if isTimeMachine}}
 {{{includeFile "src/main/resources/templates/go/timeMachine.go.hbs"}}}{{/if}}{{#if isEvent}}

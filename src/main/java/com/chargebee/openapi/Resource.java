@@ -335,7 +335,9 @@ public class Resource {
                 listDependentResources().stream().map(r -> r.templateParams(lang)).toList()),
             new AbstractMap.SimpleEntry<String, Object>(
                 "hasBigDecimalTypeAttribute", hasBigDecimalAttributes(lang)),
-            new AbstractMap.SimpleEntry<String, Object>("hasListOperations", hasListOperations()));
+            new AbstractMap.SimpleEntry<String, Object>("hasListOperations", hasListOperations()),
+            new AbstractMap.SimpleEntry<String, Object>(
+                "anyActionHasBodyOrQueryParams", anyActionHasBodyOrQueryParams()));
 
     return Streams.concat(
             templateParams.entrySet().stream(),
@@ -450,5 +452,14 @@ public class Resource {
 
   public boolean hasContentTypeJsonAction() {
     return !actions.stream().filter(Action::isContentTypeJsonAction).toList().isEmpty();
+  }
+
+  public boolean anyActionHasBodyOrQueryParams() {
+    for (Action act : actions) {
+      if (!act.requestBodyParameters().isEmpty() || !act.queryParameters().isEmpty()) {
+        return true;
+      }
+    }
+    return false;
   }
 }

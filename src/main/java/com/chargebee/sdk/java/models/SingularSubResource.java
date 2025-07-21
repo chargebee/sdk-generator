@@ -1,12 +1,9 @@
 package com.chargebee.sdk.java.models;
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.ToString;
 
-@Getter
-@ToString
-public @Data class SingluarSubResource {
+@Data
+public class SingularSubResource {
   private boolean hidden;
   private boolean deprecated;
   private boolean isListParam;
@@ -16,7 +13,7 @@ public @Data class SingluarSubResource {
   private String methName;
   private String javaType;
   private String varName;
-  private String putMethName;
+  private String putMethodName;
   private String resName;
   private String name;
   private String returnGeneric;

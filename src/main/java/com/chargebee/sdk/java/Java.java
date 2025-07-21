@@ -574,8 +574,8 @@ public class Java extends Language {
         operationRequestParameter.setJavaSimpleType(dataType(attribute.schema));
         operationRequestParameter.setVarName(GenUtil.getVarName(attribute.name));
         operationRequestParameter.setName(attribute.name);
-        operationRequestParameter.setPutMethName(
-            getDotNetPutMethName(
+        operationRequestParameter.setPutMethodName(
+            getPutMethodName(
                 attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
         operationRequestParameter.setSupportsPresenceFilter(
             attribute.isPresenceOperatorSupported());
@@ -655,7 +655,7 @@ public class Java extends Language {
     return dataType;
   }
 
-  public String getDotNetPutMethName(boolean isRequired) {
+  public String getPutMethodName(boolean isRequired) {
     return isRequired ? Constants.ADD : Constants.ADD_OPT;
   }
 
@@ -708,8 +708,7 @@ public class Java extends Language {
     operationRequestParameter.setMulti(isMultiFilterAttribute(attribute));
     operationRequestParameter.setSimpleList(attribute.isListOfSimpleType());
     operationRequestParameter.setSupportsPresenceFilter(attribute.isPresenceOperatorSupported());
-    operationRequestParameter.setPutMethName(
-        getDotNetPutMethName(attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
+    operationRequestParameter.setPutMethodName(getPutMethodName(attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
     if (attribute.name.equals(Constants.SORT_BY) && !getSortParams(attribute).isEmpty()) {
       operationRequestParameter.setListParam(true);
       operationRequestParameter.setSortParam(true);
@@ -743,7 +742,7 @@ public class Java extends Language {
         OperationRequestParameterSortParameter operationRequestParameterSortParameter =
             new OperationRequestParameterSortParameter();
         operationRequestParameterSortParameter.setName(enumValue);
-        operationRequestParameterSortParameter.setDotNetMethName(
+        operationRequestParameterSortParameter.setMethodName(
             getName(singularize(attribute.name) + "_" + enumValue));
         sortParameters.add(operationRequestParameterSortParameter);
       }
@@ -754,7 +753,7 @@ public class Java extends Language {
   private String getFilterReturnGeneric(Attribute attribute, Action action, String parentName) {
     return new ReturnTypeBuilder()
         .setDataTypeMethod(this::dataType)
-        .setGetFullNameDotnetMethod(this::getFullNameJava)
+        .setGetFullNameMethod(this::getFullNameJava)
         .setParentName(parentName)
         .setAction(action)
         .setAttribute(attribute)
@@ -816,8 +815,8 @@ public class Java extends Language {
     return dataType(attribute.schema);
   }
 
-  public List<SingluarSubResource> getMultiSubs(Action action) {
-    List<SingluarSubResource> subResources = new ArrayList<>();
+  public List<SingularSubResource> getMultiSubs(Action action) {
+    List<SingularSubResource> subResources = new ArrayList<>();
     for (Parameter iparam : action.queryParameters()) {
       if (iparam.isCompositeArrayBody()) {
         Attribute multiAttribute =
@@ -831,7 +830,7 @@ public class Java extends Language {
             .forEach(
                 attribute -> {
                   if (attribute.isHiddenParameter()) return;
-                  SingluarSubResource subResource = new SingluarSubResource();
+                  SingularSubResource subResource = new SingularSubResource();
                   subResource.setDeprecated(attribute.isDeprecated());
                   subResource.setListParam(false);
                   subResource.setReturnGeneric(getReturnGeneric(attribute));
@@ -842,7 +841,7 @@ public class Java extends Language {
                       dataTypeForMultiAttribute(attribute, iparam.getName(), action.modelName()));
                   subResource.setVarName(
                       singularize(getName(iparam.getName())) + toClazName(attribute.name));
-                  subResource.setPutMethName(attribute.isRequired ? "add" : "addOpt");
+                  subResource.setPutMethodName(attribute.isRequired ? "add" : "addOpt");
                   subResource.setResName(iparam.getName());
                   subResource.setName(attribute.name);
                   subResource.setSortOrder(
@@ -870,7 +869,7 @@ public class Java extends Language {
                   }
                   if (attribute.isHiddenParameter()) return;
                   if (!attribute.isNotHiddenAttribute()) return;
-                  SingluarSubResource subResource = new SingluarSubResource();
+                  SingularSubResource subResource = new SingularSubResource();
                   subResource.setDeprecated(attribute.isDeprecated());
                   subResource.setListParam(false);
                   subResource.setReturnGeneric(getReturnGeneric(attribute));
@@ -881,7 +880,7 @@ public class Java extends Language {
                       dataTypeForMultiAttribute(attribute, iparam.getName(), action.modelName()));
                   subResource.setVarName(
                       singularize(getName(iparam.getName())) + toClazName(attribute.name));
-                  subResource.setPutMethName(attribute.isRequired ? "add" : "addOpt");
+                  subResource.setPutMethodName(attribute.isRequired ? "add" : "addOpt");
                   subResource.setResName(iparam.getName());
                   subResource.setName(attribute.name);
                   subResource.setHasBatch(action.isBatch());
@@ -892,12 +891,12 @@ public class Java extends Language {
       }
     }
     return subResources.stream()
-        .sorted(Comparator.comparing(SingluarSubResource::sortOrder))
+        .sorted(Comparator.comparing(SingularSubResource::sortOrder))
         .toList();
   }
 
-  public Map<String, List<SingluarSubResource>> getMultiSubsForBatch(Action action) {
-    List<SingluarSubResource> subResources = new ArrayList<>();
+  public Map<String, List<SingularSubResource>> getMultiSubsForBatch(Action action) {
+    List<SingularSubResource> subResources = new ArrayList<>();
     for (Parameter iparam : action.requestBodyParameters()) {
       if (iparam.isCompositeArrayBody()) {
         Attribute multiAttribute =
@@ -916,7 +915,7 @@ public class Java extends Language {
                   }
                   if (attribute.isHiddenParameter()) return;
                   if (!attribute.isNotHiddenAttribute()) return;
-                  SingluarSubResource subResource = new SingluarSubResource();
+                  SingularSubResource subResource = new SingularSubResource();
                   subResource.setDeprecated(attribute.isDeprecated());
                   subResource.setListParam(false);
                   subResource.setReturnGeneric(getReturnGeneric(attribute));
@@ -927,7 +926,7 @@ public class Java extends Language {
                       dataTypeForMultiAttribute(attribute, iparam.getName(), action.modelName()));
                   subResource.setVarName(
                       singularize(getName(iparam.getName())) + toClazName(attribute.name));
-                  subResource.setPutMethName(attribute.isRequired ? "add" : "addOpt");
+                  subResource.setPutMethodName(attribute.isRequired ? "add" : "addOpt");
                   subResource.setResName(iparam.getName());
                   subResource.setName(attribute.name);
                   subResource.setHasBatch(action.isBatch());
@@ -937,7 +936,7 @@ public class Java extends Language {
                 });
       }
     }
-    return subResources.stream().collect(Collectors.groupingBy(SingluarSubResource::getResName));
+    return subResources.stream().collect(Collectors.groupingBy(SingularSubResource::getResName));
   }
 
   public int sortOrder(Schema schema) {
@@ -1022,6 +1021,9 @@ public class Java extends Language {
       operationRequest.setParams(getOperationParams(action));
       operationRequest.setSingularSubs(getSingularSubs(action));
       operationRequest.setMultiSubs(getMultiSubs(action));
+      if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST) ) {
+        operationRequest.setIdempotent(action.isIdempotent());
+      }
       operationRequest.setMultiSubsForBatch(
           getMultiSubsForBatch(action)); // for batch there will be only one top level multiSubs
       operationRequest.setRawOperationName(GenUtil.toClazName(action.name));
@@ -1102,8 +1104,8 @@ public class Java extends Language {
     return dataType;
   }
 
-  public List<SingluarSubResource> getSingularSubs(Action action) {
-    List<SingluarSubResource> subResources = new ArrayList<>();
+  public List<SingularSubResource> getSingularSubs(Action action) {
+    List<SingularSubResource> subResources = new ArrayList<>();
     for (Parameter iParam : action.queryParameters()) {
       if ((iParam.schema instanceof ObjectSchema || iParam.schema instanceof MapSchema)
           && iParam.schema.getProperties() != null
@@ -1117,7 +1119,7 @@ public class Java extends Language {
             .forEach(
                 value -> {
                   if (!value.isNotHiddenAttribute()) return;
-                  SingluarSubResource subResource = new SingluarSubResource();
+                  SingularSubResource subResource = new SingularSubResource();
                   subResource.setDeprecated(value.isDeprecated());
                   subResource.setListParam(false);
                   subResource.setReturnGeneric(getReturnGenericForSingularSubParams(iParam));
@@ -1129,8 +1131,8 @@ public class Java extends Language {
                   subResource.setHasBatch(action.isBatch());
                   subResource.setVarName(
                       GenUtil.getVarName(iParam.getName() + Inflector.capitalize(value.name)));
-                  subResource.setPutMethName(
-                      getDotNetPutMethName(
+                  subResource.setPutMethodName(
+                      getPutMethodName(
                           value.isRequired || value.isAttributeMetaCommentRequired()));
                   subResource.setResName(iParam.getName());
                   subResource.setName(value.name);
@@ -1151,7 +1153,7 @@ public class Java extends Language {
             .forEach(
                 value -> {
                   if (!value.isNotHiddenAttribute()) return;
-                  SingluarSubResource subResource = new SingluarSubResource();
+                  SingularSubResource subResource = new SingularSubResource();
                   subResource.setDeprecated(value.isDeprecated());
                   subResource.setListParam(false);
                   subResource.setReturnGeneric(getReturnGenericForSingularSubParams(iParam));
@@ -1163,8 +1165,8 @@ public class Java extends Language {
                   subResource.setHasBatch(action.isBatch());
                   subResource.setVarName(
                       GenUtil.getVarName(iParam.getName() + Inflector.capitalize(value.name)));
-                  subResource.setPutMethName(
-                      getDotNetPutMethName(
+                  subResource.setPutMethodName(
+                      getPutMethodName(
                           value.isRequired || value.isAttributeMetaCommentRequired()));
                   subResource.setResName(iParam.getName());
                   subResource.setName(value.name);
@@ -1174,7 +1176,7 @@ public class Java extends Language {
       }
     }
     return subResources.stream()
-        .sorted(Comparator.comparing(SingluarSubResource::sortOrder))
+        .sorted(Comparator.comparing(SingularSubResource::sortOrder))
         .toList();
   }
 
@@ -1264,6 +1266,9 @@ public class Java extends Language {
         reqCodeBuffer.append(", \"").append(action.batchId()).append("\"");
       }
       reqCodeBuffer.append(")");
+      if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST)) {
+        reqCodeBuffer.append(".setIdempotency(false)");
+      }
       return reqCodeBuffer.toString();
     }
     if (action.isInputObjNeeded() && isCodeGen) {
@@ -1276,6 +1281,9 @@ public class Java extends Language {
         reqCodeBuffer.append(", nullCheckWithoutEncoding(id)");
       }
       reqCodeBuffer.append(")");
+      if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST)) {
+        reqCodeBuffer.append(".setIdempotency(false)");
+      }
       return reqCodeBuffer.toString();
     } else {
       if (action.isListResourceAction()) {
@@ -1285,7 +1293,11 @@ public class Java extends Language {
         if (action.isBatch() && !action.pathParameters().isEmpty()) {
           reqCodeBuffer.append(", nullCheckWithoutEncoding(id)");
         }
-        return reqCodeBuffer.append(")").toString();
+        reqCodeBuffer.append(")");
+        if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST)) {
+          reqCodeBuffer.append(".setIdempotency(false)");
+        }
+        return reqCodeBuffer.toString();
       }
     }
   }

@@ -33,6 +33,8 @@ public class Dotnet extends Language {
   List<Resource> resourceList = new ArrayList<>();
   List<Enum> globalEnums;
 
+  protected final String[] hiddenOverride = {"usage_file", "media", "non_subscription"};
+
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
     globalEnums = spec.globalEnums();
@@ -205,15 +207,15 @@ public class Dotnet extends Language {
     return visibleEnumEntries;
   }
 
-  public List<SingluarSubResource> getMultiSubs(Action action) {
-    List<SingluarSubResource> subResources = new ArrayList<>();
+  public List<SingularSubResource> getMultiSubs(Action action) {
+    List<SingularSubResource> subResources = new ArrayList<>();
     ActionAssist actionAssist = new ActionAssist().setAction(action).setFlatMultiAttribute(true);
     for (Attribute attribute : actionAssist.multiSubAttributes()) {
       attribute
           .attributes()
           .forEach(
               subAttribute -> {
-                SingluarSubResource subResource = new SingluarSubResource();
+                SingularSubResource subResource = new SingularSubResource();
                 subResource.setDeprecated(subAttribute.isDeprecated());
                 subResource.setListParam(false);
                 subResource.setReturnGeneric(getReturnGeneric(subAttribute));
@@ -234,19 +236,19 @@ public class Dotnet extends Language {
               });
     }
     return subResources.stream()
-        .sorted(Comparator.comparing(SingluarSubResource::sortOrder))
+        .sorted(Comparator.comparing(SingularSubResource::sortOrder))
         .toList();
   }
 
-  public Map<String, List<SingluarSubResource>> getMultiSubsForBatch(Action action) {
-    List<SingluarSubResource> subResources = new ArrayList<>();
+  public Map<String, List<SingularSubResource>> getMultiSubsForBatch(Action action) {
+    List<SingularSubResource> subResources = new ArrayList<>();
     ActionAssist actionAssist = new ActionAssist().setAction(action).setFlatMultiAttribute(true);
     for (Attribute attribute : actionAssist.multiSubAttributes()) {
       attribute
           .attributes()
           .forEach(
               subAttribute -> {
-                SingluarSubResource subResource = new SingluarSubResource();
+                SingularSubResource subResource = new SingularSubResource();
                 subResource.setDeprecated(subAttribute.isDeprecated());
                 subResource.setListParam(false);
                 subResource.setReturnGeneric(getReturnGeneric(subAttribute));
@@ -266,11 +268,11 @@ public class Dotnet extends Language {
                 subResources.add(subResource);
               });
     }
-    return subResources.stream().collect(Collectors.groupingBy(SingluarSubResource::getResName));
+    return subResources.stream().collect(Collectors.groupingBy(SingularSubResource::getResName));
   }
 
-  public List<SingluarSubResource> getSingularSubs(Action action) {
-    List<SingluarSubResource> subResources = new ArrayList<>();
+  public List<SingularSubResource> getSingularSubs(Action action) {
+    List<SingularSubResource> subResources = new ArrayList<>();
     ActionAssist actionAssist = new ActionAssist().setAction(action).setFlatSingleAttribute(true);
     for (Attribute attribute : actionAssist.singularSubAttributes()) {
       if (attribute.isFilterAttribute()) continue;
@@ -278,7 +280,7 @@ public class Dotnet extends Language {
           .attributes()
           .forEach(
               value -> {
-                SingluarSubResource subResource = new SingluarSubResource();
+                SingularSubResource subResource = new SingularSubResource();
                 subResource.setDeprecated(value.isDeprecated());
                 subResource.setListParam(false);
                 subResource.setReturnGeneric(getReturnGenericForSingularSubParams(attribute));
@@ -296,7 +298,7 @@ public class Dotnet extends Language {
               });
     }
     return subResources.stream()
-        .sorted(Comparator.comparing(SingluarSubResource::sortOrder))
+        .sorted(Comparator.comparing(SingularSubResource::sortOrder))
         .toList();
   }
 

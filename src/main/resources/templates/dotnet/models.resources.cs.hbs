@@ -195,7 +195,7 @@ namespace ChargeBee.Models
                 {{dotNetName}},{{/each}}
             }{{/if}}{{/each}}
 {{#each cols}}
-            public {{returnType}} {{NonBreakingSpace}}{{#if isSubResource}}{{else}}{{returnTypeNullable}}{{~/if~}} {{methName}} {
+            public {{{returnType}}} {{NonBreakingSpace}}{{#if isSubResource}}{{else}}{{returnTypeNullable}}{{~/if~}} {{methName}} {
                 get { return {{{getterCode}}}; }
             }
 {{/each}}
