@@ -332,7 +332,15 @@ public class Attribute {
   public boolean isListOfSimpleType() {
     return isListAttribute()
         && !isSubResource()
-        && !(paramBlankOption() != null && paramBlankOption().equals("not_allowed"));
+        && !(paramBlankOption() != null && paramBlankOption().equals("not_allowed"))
+        && !isListOfEnum();
+  }
+
+  public boolean isListOfEnum() {
+    return isListAttribute()
+        && !isSubResource()
+        && schema.getItems() != null
+        && schema.getItems().getEnum() != null;
   }
 
   public Schema getSchema() {

@@ -4,7 +4,7 @@ import static com.chargebee.GenUtil.*;
 import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.sdk.common.Constant.DEBUG_RESOURCE;
 import static com.chargebee.sdk.common.Constant.SDK_DEBUG;
-import static com.chargebee.sdk.java.Constants.STRING_TYPE;
+import static com.chargebee.sdk.java.Constants.*;
 
 import com.chargebee.GenUtil;
 import com.chargebee.handlebar.Inflector;
@@ -317,6 +317,9 @@ public class Java extends Language {
   }
 
   private String getColsRetType(Attribute attribute) {
+    if (attribute.isListOfEnum()) {
+      return Constants.LIST_OF + listEnumAttributeType(attribute) + ">";
+    }
     if (attribute.isListOfSimpleType()) {
       return Constants.LIST_OF + dataType(attribute.schema) + ">";
     }
@@ -375,17 +378,37 @@ public class Java extends Language {
     return dataType != null && dataType.equals(Constants.DATE_TIME);
   }
 
+  public final String listEnumAttributeType(Attribute attribute) {
+    String importPiece =
+        this.generationMode == GenerationMode.INTERNAL ? ENUMS_EXPORT_INTERNAL : ENUMS_EXPORT;
+    String type =
+        singularize(
+                (String) attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME))
+            + TYPE;
+    return importPiece + type;
+  }
+
   public String getGetterCode(Attribute attribute) {
     StringBuilder buf = new StringBuilder();
     String name = attribute.name;
     if (attribute.isEnumAttribute()) {
-      buf.append(getRequiredEnum(attribute))
-          .append("(\"")
-          .append(name)
-          .append("\", ")
-          .append(attribute.getEnumApiName())
-          .append(".class")
-          .append(")");
+      if (attribute.isListOfEnum()) {
+        buf.append(attribute.isRequired ? "" : "opt")
+            .append("List")
+            .append("(\"")
+            .append(name)
+            .append("\", ")
+            .append(listEnumAttributeType(attribute))
+            .append(Constants.DOT_CLASS);
+      } else {
+        buf.append(getRequiredEnum(attribute))
+            .append("(\"")
+            .append(name)
+            .append("\", ")
+            .append(attribute.getEnumApiName())
+            .append(".class")
+            .append(")");
+      }
     } else if (attribute.isListOfSimpleType()) {
       buf.append(attribute.isRequired ? "" : "opt")
           .append("List")
@@ -515,6 +538,12 @@ public class Java extends Language {
     return enumColumns;
   }
 
+  private String getDataTypeForArrayOfEnum(Attribute attribute) {
+    return (!attribute.isGenSeparate()
+        ? getClazName(attribute)
+        : "com.chargebee.v2.models.enums." + pluralize(getClazName(attribute)) + ">");
+  }
+
   private String getCustomImport() {
     List<String> importStatements = new ArrayList();
     if (activeResource.hasBigDecimalAttributes(this)) {
@@ -641,6 +670,13 @@ public class Java extends Language {
 
   public String dataTypePrimitiveParamters(Attribute attribute) {
     if (attribute.isEnumAttribute()) {
+      if (attribute.isListOfEnum()) {
+        return Constants.LIST_OF
+            + ((!attribute.isGenSeparate()
+                    ? getClazName(attribute)
+                    : listEnumAttributeType(attribute))
+                + ">");
+      }
       return getFullNameJava(attribute, null);
     }
 
