@@ -6,6 +6,9 @@ public class Constants {
   public static final String ADD = "add";
   public static final String TIMESTAMP = "timestamp";
   public static final String LIST_OF = "List<";
+  public static final String ENUMS_EXPORT = "com.chargebee.models.enums.";
+  public static final String ENUMS_EXPORT_INTERNAL = "com.chargebee.v2.models.enums.";
+  public static final String TYPE = "Type";
 
   public static final String MODELS_DOT_ENUMS = ".models.enums.";
   public static final String SORT_BY = "sort_by";
