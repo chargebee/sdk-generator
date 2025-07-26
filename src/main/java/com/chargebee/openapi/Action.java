@@ -446,8 +446,8 @@ public class Action {
   }
 
   public boolean isIdempotent() {
-    if(operation.getExtensions() == null || operation.getExtensions().get(IS_OPERATION_IDEMPOTENT) == null)
-      return false;
+    if (operation.getExtensions() == null
+        || operation.getExtensions().get(IS_OPERATION_IDEMPOTENT) == null) return false;
     return operation.getExtensions() != null
         && operation.getExtensions().get(IS_OPERATION_IDEMPOTENT) != null
         && (boolean) operation.getExtensions().get(IS_OPERATION_IDEMPOTENT);
