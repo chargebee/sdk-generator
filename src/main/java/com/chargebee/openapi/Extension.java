@@ -13,7 +13,7 @@ public class Extension {
   public static final String IS_OPERATION_NEEDS_INPUT_OBJECT =
       "x-cb-is-operation-needs-input-object";
   public static final String IS_CUSTOM_FIELDS_SUPPORTED = "x-cb-is-custom-fields-supported";
-   public static final String IS_GLOBAL_RESOURCE_REFRENCE = "x-cb-is-global-resource-reference";
+  public static final String IS_GLOBAL_RESOURCE_REFRENCE = "x-cb-is-global-resource-reference";
   public static final String SORT_ORDER = "x-cb-sort-order";
 
   // Parameter Extensions

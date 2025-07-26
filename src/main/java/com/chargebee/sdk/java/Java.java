@@ -604,8 +604,7 @@ public class Java extends Language {
         operationRequestParameter.setVarName(GenUtil.getVarName(attribute.name));
         operationRequestParameter.setName(attribute.name);
         operationRequestParameter.setPutMethodName(
-            getPutMethodName(
-                attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
+            getPutMethodName(attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
         operationRequestParameter.setSupportsPresenceFilter(
             attribute.isPresenceOperatorSupported());
         operationRequestParameter.setMulti(isMultiFilterAttribute(attribute));
@@ -744,7 +743,8 @@ public class Java extends Language {
     operationRequestParameter.setMulti(isMultiFilterAttribute(attribute));
     operationRequestParameter.setSimpleList(attribute.isListOfSimpleType());
     operationRequestParameter.setSupportsPresenceFilter(attribute.isPresenceOperatorSupported());
-    operationRequestParameter.setPutMethodName(getPutMethodName(attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
+    operationRequestParameter.setPutMethodName(
+        getPutMethodName(attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
     if (attribute.name.equals(Constants.SORT_BY) && !getSortParams(attribute).isEmpty()) {
       operationRequestParameter.setListParam(true);
       operationRequestParameter.setSortParam(true);
@@ -1057,7 +1057,7 @@ public class Java extends Language {
       operationRequest.setParams(getOperationParams(action));
       operationRequest.setSingularSubs(getSingularSubs(action));
       operationRequest.setMultiSubs(getMultiSubs(action));
-      if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST) ) {
+      if (!action.isIdempotent() && action.httpRequestType.equals(HttpRequestType.POST)) {
         operationRequest.setIdempotent(action.isIdempotent());
       }
       operationRequest.setMultiSubsForBatch(
@@ -1168,8 +1168,7 @@ public class Java extends Language {
                   subResource.setVarName(
                       GenUtil.getVarName(iParam.getName() + Inflector.capitalize(value.name)));
                   subResource.setPutMethodName(
-                      getPutMethodName(
-                          value.isRequired || value.isAttributeMetaCommentRequired()));
+                      getPutMethodName(value.isRequired || value.isAttributeMetaCommentRequired()));
                   subResource.setResName(iParam.getName());
                   subResource.setName(value.name);
                   subResource.setSortOrder(value.sortOrder());
@@ -1202,8 +1201,7 @@ public class Java extends Language {
                   subResource.setVarName(
                       GenUtil.getVarName(iParam.getName() + Inflector.capitalize(value.name)));
                   subResource.setPutMethodName(
-                      getPutMethodName(
-                          value.isRequired || value.isAttributeMetaCommentRequired()));
+                      getPutMethodName(value.isRequired || value.isAttributeMetaCommentRequired()));
                   subResource.setResName(iParam.getName());
                   subResource.setName(value.name);
                   subResource.setSortOrder(value.sortOrder());
