@@ -65,6 +65,16 @@ cd sdk-generator
 
 ## 🚀 Quick Start
 
+### With docker-compose
+
+```bash
+# Checkout or update all required SDK repositories to ../chargebee-sdks
+docker compose run --rm sdk-generator setup
+
+# Generate the SDK
+docker compose run --rm sdk-generator generate <lang1> <lang2>
+```
+
 ### Basic Usage
 
 ```bash
