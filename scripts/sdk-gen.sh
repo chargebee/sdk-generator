@@ -18,6 +18,7 @@ function _gradlew() {
         go) args+=("-l GO -o $BASE_DIR/chargebee-go");;
         *) echo "Unknown language"; exit 1;;
     esac
+
     ./gradlew run --args="${args[*]}"
 }
 
@@ -43,7 +44,6 @@ function setup() {
 function generate() {
     local sdk_langs="${@:?"No language specified, pass a list of languages to generate the SDK"}"
     for lang in $sdk_langs; do
-        # ./gradlew run --args="-i ${BASE_DIR}/openapi_sdk_spec.json -l JAVA -o ${BASE_DIR}/chargebee-java/src/main/java/com/chargebee"
         _gradlew $lang
     done
 }

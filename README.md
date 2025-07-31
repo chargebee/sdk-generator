@@ -65,16 +65,6 @@ cd sdk-generator
 
 ## 🚀 Quick Start
 
-### With docker-compose
-
-```bash
-# Checkout or update all required SDK repositories to ../chargebee-sdks
-docker compose run --rm sdk-generator setup
-
-# Generate the SDK
-docker compose run --rm sdk-generator generate <lang1> <lang2>
-```
-
 ### Basic Usage
 
 ```bash
@@ -86,6 +76,17 @@ docker compose run --rm sdk-generator generate <lang1> <lang2>
 
 # Generate Python SDK
 ./gradlew run --args="-i chargebee_sdk_spec.json -l PYTHON_V3 -o ../chargebee-python/chargebee"
+```
+
+### With docker-compose
+
+```bash
+# Checkout or update all required SDK repositories to ../chargebee-sdks
+# Also downloads the latest OpenAPI spec
+docker compose run --rm sdk-generator setup
+
+# Generate the SDK
+docker compose run --rm sdk-generator generate <lang1> <lang2>
 ```
 
 ### Command Line Options
