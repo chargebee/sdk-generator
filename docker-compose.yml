@@ -17,5 +17,3 @@ services:
 volumes:
   gradle-cache:
     driver: local
-  maven-cache:
-    driver: local
