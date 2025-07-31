@@ -1,0 +1,19 @@
+services:
+  sdk-generator:
+    image: gradle:8-jdk21-corretto
+    container_name: sdk-generator
+    volumes:
+      - .:/workspace
+      - ../chargebee-sdks:/sdks
+      # gradle cache
+      - gradle-cache:/home/gradle/.gradle
+    working_dir: /workspace
+    environment:
+      - JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto
+      - GRADLE_OPTS=-Dorg.gradle.daemon=false
+      - BASE_DIR=/sdks
+    entrypoint: ["scripts/sdk-gen.sh"]
+
+volumes:
+  gradle-cache:
+    driver: local
