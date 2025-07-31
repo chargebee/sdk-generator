@@ -12,5 +12,12 @@ public enum SpecialCharacters implements Helper<Object> {
       }
       return option.toString().equals("open") ? "{" : "}";
     }
+  },
+
+  BACK_SLASH {
+    @Override
+    public CharSequence apply(final Object option, final Options options) {
+      return "\\";
+    }
   }
 }

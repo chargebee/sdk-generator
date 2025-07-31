@@ -21,11 +21,13 @@ public class ResourceFileGenerator implements FileGenerator {
   private final PHP_V4 phpGenerator;
   private final Template resourceTemplate;
   private final Template enumTemplate;
+  private final Template classBasedEnumTemplate;
 
   public ResourceFileGenerator(PHP_V4 phpGenerator) {
     this.phpGenerator = phpGenerator;
     this.resourceTemplate = phpGenerator.getTemplateContent(Constants.RESOURCES);
     this.enumTemplate = phpGenerator.getTemplateContent(ENUMS);
+    this.classBasedEnumTemplate = phpGenerator.getTemplateContent(CLASS_BASED_ENUM);
   }
 
   @Override
@@ -55,6 +57,7 @@ public class ResourceFileGenerator implements FileGenerator {
         new ResourceAssist().setResource(resource).enums();
     if (!resourceEnums.isEmpty()) {
       fileOps.addAll(generateEnumFiles(outputPath, resource.name, resourceEnums));
+      fileOps.addAll(generateClassBasedEnumFiles(outputPath, resource.name, resourceEnums));
     }
 
     return fileOps;
@@ -152,6 +155,35 @@ public class ResourceFileGenerator implements FileGenerator {
             .collect(Collectors.toList());
     for (Map<String, Object> enumMap : enumMaps) {
       String content = enumTemplate.apply(enumMap);
+      String fileName = firstCharUpper(toCamelCase(enumMap.get(NAME).toString()));
+      fileOps.add(new FileOp.WriteString(enumDirPath, fileName + DOT_PHP, content));
+    }
+    return fileOps;
+  }
+
+  private List<FileOp> generateClassBasedEnumFiles(
+      String outputPath, String resourceName, List<com.chargebee.openapi.Enum> enums)
+      throws IOException {
+    List<FileOp> fileOps = new ArrayList<>();
+    String enumDirPath =
+        outputPath + FORWARD_SLASH + resourceName + FORWARD_SLASH + CLASS_BASED_ENUM;
+    fileOps.add(
+        new FileOp.CreateDirectory(outputPath + FORWARD_SLASH + resourceName, CLASS_BASED_ENUM));
+    String namespace =
+        CHARGEBEE
+            + BACK_SLASH
+            + "Resources"
+            + BACK_SLASH
+            + resourceName
+            + BACK_SLASH
+            + CLASS_BASED_ENUM;
+    List<Map<String, Object>> enumMaps =
+        enums.stream()
+            .map(e -> createEnumMap(e, namespace))
+            .filter(map -> !map.isEmpty())
+            .collect(Collectors.toList());
+    for (Map<String, Object> enumMap : enumMaps) {
+      String content = classBasedEnumTemplate.apply(enumMap);
       String fileName = firstCharUpper(toCamelCase(enumMap.get(NAME).toString()));
       fileOps.add(new FileOp.WriteString(enumDirPath, fileName + DOT_PHP, content));
     }

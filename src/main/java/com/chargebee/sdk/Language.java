@@ -72,6 +72,7 @@ public abstract class Language implements DataType {
     handlebars.registerHelper("singularize", NameFormatHelpers.SINGULARIZE);
     handlebars.registerHelper("in", ArrayHelpers.IN);
     handlebars.registerHelper("curly", SpecialCharacters.CURLY_BRACKETS);
+    handlebars.registerHelper("backslash", SpecialCharacters.BACK_SLASH);
     handlebars.registerHelper("includeFile", IncludeFileHelpers.INCLUDE_FILE);
     loadTemplates(handlebars);
     initialiseQAHandler();

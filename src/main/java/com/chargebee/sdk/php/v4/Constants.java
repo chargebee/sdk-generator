@@ -2,6 +2,8 @@ package com.chargebee.sdk.php.v4;
 
 public class Constants {
   public static final String RESOURCES = "resources";
+  public static final String CLASS_BASED_ENUM = "ClassBasedEnums";
+  public static final String LIST_RESPONSE_OBJECT = "listResponseObject";
   public static final String PHP_FILE_NAME_EXTENSION = ".php";
   public static final String RESPONSE = "response";
   public static final String API_DOCS_URL = "https://apidocs.chargebee.com/docs/api/";
@@ -41,5 +43,6 @@ public class Constants {
   public static final String RESOURCES_NAME_LIST = "resourcesNameList";
   public static final String SEMICOLON = ";";
   public static final String CHARGEBEE_ENUMS = "Chargebee\\Enums";
+  public static final String CHARGEBEE_CLASS_BASED_ENUMS = "Chargebee\\ClassBasedEnums";
   public static final String PASCAL_CASE_ENUMS = "Enums";
 }
