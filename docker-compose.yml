@@ -5,9 +5,8 @@ services:
     volumes:
       - .:/workspace
       - ../chargebee-sdks:/sdks
-      # gradle and maven cache
-      - gradle-cache:/root/.gradle
-      - maven-cache:/root/.m2
+      # gradle cache
+      - gradle-cache:/home/gradle/.gradle
     working_dir: /workspace
     environment:
       - JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto
