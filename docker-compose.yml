@@ -1,6 +1,6 @@
 services:
   sdk-generator:
-    image: gradle:7-jdk17-corretto
+    image: gradle:8-jdk21-corretto
     container_name: sdk-generator
     volumes:
       - .:/workspace
@@ -9,7 +9,7 @@ services:
       - gradle-cache:/home/gradle/.gradle
     working_dir: /workspace
     environment:
-      - JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto
+      - JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto
       - GRADLE_OPTS=-Dorg.gradle.daemon=false
       - BASE_DIR=/sdks
     entrypoint: ["scripts/sdk-gen.sh"]
