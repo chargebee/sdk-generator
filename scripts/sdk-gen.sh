@@ -7,7 +7,7 @@ BASE_DIR="${BASE_DIR:-"../chargebee-sdks"}"
 LANGS=${LANGS:-"java node python php go ruby dotnet"}
 
 function _gradlew() {
-    args=("-i ${BASE_DIR}/openapi_sdk_spec.json")
+    args=("-i ${BASE_DIR}/chargebee_sdk_spec.json")
     case "$1" in
         java) args+=("-l JAVA -o $BASE_DIR/chargebee-java/src/main/java/com/chargebee");;
         php) args+=("-l PHP_V4 -o $BASE_DIR/chargebee-php/src");;
@@ -38,7 +38,7 @@ function setup() {
     done
 
     # Update openapi spec
-    wget https://github.com/chargebee/openapi/raw/refs/heads/main/spec/chargebee_sdk_spec.json -O "${BASE_DIR}/openapi_sdk_spec.json"
+    wget https://github.com/chargebee/openapi/raw/refs/heads/main/spec/chargebee_sdk_spec.json -O "${BASE_DIR}/chargebee_sdk_spec.json"
 }
 
 function generate() {
