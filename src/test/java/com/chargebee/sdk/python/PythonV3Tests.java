@@ -926,7 +926,7 @@ public class PythonV3Tests extends LanguageTests {
     var customer =
         buildResource("customer")
             .withAttribute(
-                "meta_data", new MapSchema().type("object").additionalProperties(true), false)
+                "meta_data", new ObjectSchema().type("object").additionalProperties(true), false)
             .done();
 
     var spec = buildSpec().withResources(customer).done();

@@ -75,24 +75,25 @@ public class PHPDocSerializer {
           .append(ASTERISK)
           .append(INDENT.repeat(indentLevel));
     }
-    schema
-        .getProperties()
-        .forEach(
-            (key, value) -> {
-              String propertyName = key;
-              if (value instanceof ArraySchema) {
-                builder
-                    .append(propertyName)
-                    .append("?: array<")
-                    .append(dataType(value.getItems()))
-                    .append(">,")
-                    .append(System.lineSeparator())
-                    .append(ASTERISK)
-                    .append(INDENT.repeat(indentLevel));
-              } else {
-                parseSchemaProperty(value, builder, indentLevel + 1, propertyName);
-              }
-            });
+    var properties = schema.getProperties();
+    if (properties != null) {
+      properties.forEach(
+          (key, value) -> {
+            String propertyName = key;
+            if (value instanceof ArraySchema) {
+              builder
+                  .append(propertyName)
+                  .append("?: array<")
+                  .append(dataType(value.getItems()))
+                  .append(">,")
+                  .append(System.lineSeparator())
+                  .append(ASTERISK)
+                  .append(INDENT.repeat(indentLevel));
+            } else {
+              parseSchemaProperty(value, builder, indentLevel + 1, propertyName);
+            }
+          });
+    }
     if (filter == null) {
       builder
           .append("},")

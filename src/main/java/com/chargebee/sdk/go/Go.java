@@ -4,8 +4,7 @@ import static com.chargebee.GenUtil.*;
 import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.openapi.Resource.isListOfSubResourceSchema;
 import static com.chargebee.openapi.Resource.isSubResourceSchema;
-import static com.chargebee.sdk.common.Constant.DEBUG_RESOURCE;
-import static com.chargebee.sdk.common.Constant.SDK_DEBUG;
+import static com.chargebee.sdk.common.Constant.*;
 import static com.chargebee.sdk.go.Formatter.delimiter;
 import static com.chargebee.sdk.go.Formatter.formatUsingDelimiter;
 
@@ -490,11 +489,10 @@ public class Go extends Language {
         opRequest.setHasInputParams(hasInputParams(action));
         opRequest.setInputParams(inputParams(action));
         ActionAssist actionAssist =
-            new ActionAssist()
-                .setAction(action)
-                .setFlatMultiAttribute(false)
-                .includePagination()
-                .includeFilterSubResource();
+            ActionAssist.of(action)
+                .withFlatMultiAttribute(false)
+                .withPagination(true)
+                .withFilterSubResource(true);
         for (Attribute subResource : actionAssist.consolidatedSubParams()) {
           InputSubResParam inputSubResParam = new InputSubResParam();
           inputSubResParam.setMethodName(toCamelCase(action.name));
@@ -636,12 +634,11 @@ public class Go extends Language {
     StringJoiner buf = new StringJoiner("\n");
     HashMap<String, Integer> m = new HashMap<>();
     ActionAssist actionAssist =
-        new ActionAssist()
-            .setAction(action)
-            .setFlatOuterEntries(true)
-            .includePagination()
-            .setAcceptOnlyPagination()
-            .includeFilterSubResource();
+        ActionAssist.of(action)
+            .withFlatOuterEntries(true)
+            .withPagination(true)
+            .withOnlyPagination(true)
+            .withFilterSubResource(true);
     for (Attribute attribute : actionAssist.getAllAttribute()) {
       if (attribute.isSubResource() || attribute.isCompositeArrayRequestBody()) {
         if (m.containsKey(attribute.name)) {
@@ -967,7 +964,9 @@ public class Go extends Language {
     if (schema instanceof BooleanSchema) {
       return "bool";
     }
-    if (schema instanceof MapSchema && Objects.equals(schema.getAdditionalProperties(), true)) {
+    if (schema instanceof ObjectSchema
+        && GenUtil.hasAdditionalProperties(schema)
+        && !attributeName.equals(SORT_BY)) {
       return Constants.JSON_RAW_MESSAGE;
     }
     if (schema instanceof ArraySchema
@@ -1049,8 +1048,7 @@ public class Go extends Language {
       return Constants.INT_THIRTY_TWO;
     } else if (schema instanceof BooleanSchema) {
       type = "*bool";
-    } else if (schema instanceof MapSchema
-        && Objects.equals(schema.getAdditionalProperties(), true)) {
+    } else if (schema instanceof ObjectSchema && GenUtil.hasAdditionalProperties(schema)) {
       type = Constants.MAP_STRING_INTERFACE;
     } else if (schema instanceof ArraySchema
         && schema.getItems() != null

@@ -8,7 +8,6 @@ import com.chargebee.openapi.parameter.Path;
 import com.chargebee.sdk.DataType;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.media.ArraySchema;
-import io.swagger.v3.oas.models.media.MapSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
@@ -140,7 +139,7 @@ public class Action {
       return false;
     }
     return requestBodySchema.getAdditionalProperties() != null
-        && (boolean) requestBodySchema.getAdditionalProperties();
+        && Objects.equals(requestBodySchema.getAdditionalProperties(), true);
   }
 
   public List<com.chargebee.openapi.parameter.Parameter> requestBodyParameters() {
@@ -151,7 +150,7 @@ public class Action {
     if (schema == null
         || schema.getProperties() == null
         || schema.getProperties().isEmpty()
-        || !(schema instanceof ObjectSchema || schema instanceof MapSchema)) {
+        || !(schema instanceof ObjectSchema)) {
       return List.of();
     }
     var requiredProperties =
@@ -176,7 +175,7 @@ public class Action {
     if (schema == null
         || schema.getProperties() == null
         || schema.getProperties().isEmpty()
-        || !(schema instanceof ObjectSchema || schema instanceof MapSchema)) {
+        || !(schema instanceof ObjectSchema)) {
       return List.of();
     }
     List<Map<String, Integer>> jsonKeys = new ArrayList<>();
@@ -215,8 +214,7 @@ public class Action {
       if (schemaHiddenFromSDK(schema)) {
         continue;
       }
-      if ((schema instanceof MapSchema && schema.getProperties() == null)
-          || (schema instanceof ObjectSchema && schema.getProperties() == null)
+      if ((schema instanceof ObjectSchema && schema.getProperties() == null)
           || (schema instanceof ArraySchema
               && schema.getItems() != null
               && schema.getItems().getType() == null)) {
@@ -224,7 +222,7 @@ public class Action {
         map.put(key, level);
         jsonKeys.add(map);
       }
-      if (schema instanceof ObjectSchema || schema instanceof MapSchema) {
+      if (schema instanceof ObjectSchema) {
         recursivelyExtractJsonKeysInEachLevel(schema.getProperties(), jsonKeys, level + 1);
       }
       if (schema instanceof ArraySchema && schema.getItems() != null) {
@@ -422,7 +420,7 @@ public class Action {
     if (schema == null
         || schema.getProperties() == null
         || schema.getProperties().isEmpty()
-        || !(schema instanceof ObjectSchema || schema instanceof MapSchema)) {
+        || !(schema instanceof ObjectSchema)) {
       return List.of();
     }
     var requiredProperties =

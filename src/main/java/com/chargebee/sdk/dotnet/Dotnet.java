@@ -209,7 +209,7 @@ public class Dotnet extends Language {
 
   public List<SingularSubResource> getMultiSubs(Action action) {
     List<SingularSubResource> subResources = new ArrayList<>();
-    ActionAssist actionAssist = new ActionAssist().setAction(action).setFlatMultiAttribute(true);
+    ActionAssist actionAssist = ActionAssist.of(action).withFlatMultiAttribute(true);
     for (Attribute attribute : actionAssist.multiSubAttributes()) {
       attribute
           .attributes()
@@ -242,7 +242,7 @@ public class Dotnet extends Language {
 
   public Map<String, List<SingularSubResource>> getMultiSubsForBatch(Action action) {
     List<SingularSubResource> subResources = new ArrayList<>();
-    ActionAssist actionAssist = new ActionAssist().setAction(action).setFlatMultiAttribute(true);
+    ActionAssist actionAssist = ActionAssist.of(action).withFlatMultiAttribute(true);
     for (Attribute attribute : actionAssist.multiSubAttributes()) {
       attribute
           .attributes()
@@ -273,7 +273,7 @@ public class Dotnet extends Language {
 
   public List<SingularSubResource> getSingularSubs(Action action) {
     List<SingularSubResource> subResources = new ArrayList<>();
-    ActionAssist actionAssist = new ActionAssist().setAction(action).setFlatSingleAttribute(true);
+    ActionAssist actionAssist = ActionAssist.of(action).withFlatSingleAttribute(true);
     for (Attribute attribute : actionAssist.singularSubAttributes()) {
       if (attribute.isFilterAttribute()) continue;
       attribute
@@ -325,9 +325,9 @@ public class Dotnet extends Language {
   }
 
   private List<OperationRequestParameter> getOperationParams(Action action) {
-    ActionAssist actionAssist = new ActionAssist().setAction(action).includeSortBy();
+    ActionAssist actionAssist = ActionAssist.of(action).withSortBy(true);
     if (activeResource.name.equals(EXPORT)) {
-      actionAssist.setFlatSingleAttribute(true);
+      actionAssist = actionAssist.withFlatSingleAttribute(true);
     }
     List<OperationRequestParameter> operationRequestParameters = new ArrayList<>();
     for (Attribute attribute : actionAssist.getAllAttribute()) {
@@ -1051,7 +1051,7 @@ public class Dotnet extends Language {
     if (schema instanceof BooleanSchema) {
       return "bool";
     }
-    if (schema instanceof MapSchema && Objects.equals(schema.getAdditionalProperties(), true)) {
+    if (schema instanceof ObjectSchema && GenUtil.hasAdditionalProperties(schema)) {
       if (activeResource.hasContentTypeJsonAction()) {
         return DICTIONARY_K_STR_V_OBJ;
       }

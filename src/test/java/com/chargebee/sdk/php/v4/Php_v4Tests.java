@@ -237,7 +237,7 @@ public class Php_v4Tests extends LanguageTests {
             .withAttribute("auto_close_invoices", new BooleanSchema(), false)
             .withEnumAttribute(type)
             .withAttribute(
-                "meta_data", new MapSchema().type("object").additionalProperties(true), false)
+                "meta_data", new ObjectSchema().type("object").additionalProperties(true), false)
             .withAttribute(
                 "exemption_details", new ArraySchema().items(new ObjectSchema().type(null)), false)
             .done();
@@ -322,7 +322,7 @@ public class Php_v4Tests extends LanguageTests {
     var event =
         buildResource("event")
             .withAttribute(
-                "content", new MapSchema().type("object").additionalProperties(true), false)
+                "content", new ObjectSchema().type("object").additionalProperties(true), false)
             .withAttribute("discount_percentage", new NumberSchema().format("double"), false)
             .withAttribute("plan_ids", new ArraySchema().items(new StringSchema()), false)
             .done();
@@ -678,7 +678,7 @@ public class Php_v4Tests extends LanguageTests {
             .withAttribute("auto_close_invoices", new BooleanSchema(), false)
             .withEnumAttribute(type)
             .withAttribute(
-                "meta_data", new MapSchema().type("object").additionalProperties(true), false)
+                "meta_data", new ObjectSchema().type("object").additionalProperties(true), false)
             .withAttribute(
                 "exemption_details", new ArraySchema().items(new ObjectSchema().type(null)), false)
             .done();

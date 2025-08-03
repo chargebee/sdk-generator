@@ -356,8 +356,7 @@ public class TypeScript extends Language {
   }
 
   private List<OperationRequestParameter> getOperationRequestParameter(Action action) {
-    ActionAssist actionAssist =
-        new ActionAssist().setAction(action).includeSortBy().includePagination();
+    ActionAssist actionAssist = ActionAssist.of(action).withSortBy(true).withPagination(true);
     List<OperationRequestParameter> operationRequestParameters = new ArrayList<>();
     for (Attribute attribute : actionAssist.getAllAttribute()) {
       if (attribute.isFilterAttribute() && !attribute.isSubResource()) {
@@ -380,7 +379,7 @@ public class TypeScript extends Language {
 
   public List<SingularSubResource> getSingularSubAttribute(Action action) {
     List<SingularSubResource> subResources = new ArrayList<>();
-    ActionAssist actionAssist = new ActionAssist().setAction(action);
+    ActionAssist actionAssist = ActionAssist.of(action);
     for (Attribute attribute : actionAssist.singularSubAttributes()) {
       attribute
           .attributes()
@@ -406,7 +405,7 @@ public class TypeScript extends Language {
 
   public List<SingularSubResource> getMultiSubsParameter(Action action) {
     List<SingularSubResource> subResources = new ArrayList<>();
-    ActionAssist actionAssist = new ActionAssist().setAction(action);
+    ActionAssist actionAssist = ActionAssist.of(action);
     for (Attribute attribute : actionAssist.multiSubAttributes()) {
       attribute
           .attributes()

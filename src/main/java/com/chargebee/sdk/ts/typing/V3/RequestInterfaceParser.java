@@ -110,11 +110,7 @@ public class RequestInterfaceParser {
   private static List<OperationRequestParameter> getOperationRequestParameter(
       Action action, Resource activeResource) {
     ActionAssist actionAssist =
-        new ActionAssist()
-            .setAction(action)
-            .includeSortBy()
-            .setAcceptOnlyPagination()
-            .includePagination();
+        ActionAssist.of(action).withSortBy(true).withOnlyPagination(true).withPagination(true);
     List<OperationRequestParameter> operationRequestParameters = new ArrayList<>();
     for (Attribute attribute : actionAssist.getAllAttribute()) {
       if (attribute.isFilterAttribute() && !attribute.isSubResource()) {
@@ -138,7 +134,7 @@ public class RequestInterfaceParser {
   public static Map<String, List<SingularSubResource>> getSingularSubAttribute(
       Action action, Resource activeResource) {
     List<SingularSubResource> subResources = new ArrayList<>();
-    ActionAssist actionAssist = new ActionAssist().setAction(action);
+    ActionAssist actionAssist = ActionAssist.of(action);
 
     for (Attribute attribute : actionAssist.singularSubAttributes()) {
       attribute
@@ -167,7 +163,7 @@ public class RequestInterfaceParser {
 
   public static Map<String, List<SingularSubResource>> getMultiSubsParameter(Action action) {
     List<SingularSubResource> subResources = new ArrayList<>();
-    ActionAssist actionAssist = new ActionAssist().setAction(action);
+    ActionAssist actionAssist = ActionAssist.of(action);
     for (Attribute attribute : actionAssist.multiSubAttributes()) {
       attribute
           .attributes()

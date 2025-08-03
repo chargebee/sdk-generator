@@ -8,7 +8,7 @@ import com.chargebee.QAModeHandler;
 import com.chargebee.sdk.DataType;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.ArraySchema;
-import io.swagger.v3.oas.models.media.MapSchema;
+import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -348,7 +348,9 @@ public class Attribute {
   }
 
   public boolean isContentObjectAttribute() {
-    return schema instanceof MapSchema && schema.getProperties() == null && name.equals("content");
+    return schema instanceof ObjectSchema
+        && schema.getProperties() == null
+        && name.equals("content");
   }
 
   public boolean isPaginationProperty() {

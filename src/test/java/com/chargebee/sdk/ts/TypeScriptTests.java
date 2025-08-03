@@ -533,7 +533,7 @@ export {SpecificDatesSchedule as AdvanceInvoiceScheduleSpecificDatesSchedule} fr
   void shouldSupportJsonObjectAndJsonArrayType() throws IOException {
     var resource =
         buildResource("customer")
-            .withAttribute("metadata", new MapSchema().additionalProperties(true))
+            .withAttribute("metadata", new ObjectSchema().additionalProperties(true))
             .withAttribute("exemption_details", new ArraySchema().items(new Schema<>()))
             .done();
 
