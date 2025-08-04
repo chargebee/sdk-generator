@@ -2,7 +2,7 @@
 
 namespace {{namespace}};
 
-class {{ name }} { {{#each possibleValues}}
+final class {{ name }} { {{#each possibleValues}}
     const {{ upper name }} = "{{ name }}";{{/each}}{{~#if deprecatedEnums}}{{~#each deprecatedEnums}}
     /*
     * @depcreated
@@ -11,7 +11,7 @@ class {{ name }} { {{#each possibleValues}}
     const UNKNOWN = "unknown";
 
     private static array $choices = [ {{#each possibleValues}}"{{name}}",{{/each}} ];
-    public string $value;
+    public final string $value;
 
     public static function tryFromValue(string $key): self
     {
