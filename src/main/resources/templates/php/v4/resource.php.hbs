@@ -23,6 +23,12 @@ class {{clazName}} {{#if customFieldSupported}} extends SupportsCustomFields {{/
     * @var {{#if isOptional}}?{{/if}}{{{phpDocField}}} ${{name}}
     */
     public {{#if isOptional}}?{{/if}}{{{ fieldTypePHP }}} ${{name}};
+    {{/each}}{{#each listOfEnumCols}}
+    /**
+    *
+    * @var array<{{{phpDocField}}}>
+    */
+    public {{#if isOptiona}}?{{/if}} array ${{name}};
     {{/each}}
     /**
     * @var array<string> $knownFields
@@ -38,12 +44,16 @@ class {{clazName}} {{#if customFieldSupported}} extends SupportsCustomFields {{/
     private function __construct({{#each cols}}
         {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{{fieldTypePHP}}} ${{name}},{{/each}}{{~#each globalEnumCols}}
         {{#if isOptional}}?{{/if}}{{{fieldTypePHP}}} ${{name}},{{/each}}{{#each localEnumCols}}
-        {{#if isOptional}}?{{/if}}{{{fieldTypePHP}}} ${{name}},{{/each}}
+        {{#if isOptional}}?{{/if}}{{{fieldTypePHP}}} ${{name}},{{/each}}{{#each listOfEnumCols}}
+        {{#if isOptional}}?{{/if}}array ${{name}},
+        {{/each}}
     )
     { {{#each cols}}
         $this->{{name}} = ${{name}};{{/each}} {{#each globalEnumCols}}
         $this->{{name}} = ${{name}};{{/each}} {{#each localEnumCols}}
-        $this->{{name}} = ${{name}};{{/each}}
+        $this->{{name}} = ${{name}};{{/each}} {{#each listOfEnumCols}}
+        $this->{{name}} = ${{name}};
+        {{/each}}
     }
 
     public static function from(array $resourceAttributes): self
@@ -52,6 +62,13 @@ class {{clazName}} {{#if customFieldSupported}} extends SupportsCustomFields {{/
             $result
         ), $resourceAttributes['{{apiName}}'] {{#if isOptional}}?? []{{/if}});
         {{/if~}}
+    {{/each}}{{#each listOfEnumCols}}
+        ${{ snakeCaseToCamelCase name }}  = [];
+        if (!empty($resourceAttributes['{{apiName}}']) && is_array($resourceAttributes['{{apiName}}'])) {
+            foreach ($resourceAttributes['{{apiName}}'] as $enumValue) {
+                $enabledEvents[] = {{{fieldTypePHP}}}::tryFromValue($enumValue);
+            }
+        }
     {{/each}}
         $returnData = new self( {{#each cols}}{{~#if arrayOfSubResources}}${{name}},{{else}}
             {{~#if subResources}}isset($resourceAttributes['{{apiName}}']) ? {{{fieldTypePHP}}}::from($resourceAttributes['{{apiName}}']) : null,{{else}}$resourceAttributes['{{apiName}}'] {{#if isOptional}}?? null{{/if}},
@@ -62,6 +79,8 @@ class {{clazName}} {{#if customFieldSupported}} extends SupportsCustomFields {{/
         isset($resourceAttributes['{{{apiName}}}']) ? {{{fieldTypePHP}}}::tryFromValue($resourceAttributes['{{apiName}}']) : null,
         {{/each}} {{#each localEnumCols}}
         isset($resourceAttributes['{{{apiName}}}']) ? {{{fieldTypePHP}}}::tryFromValue($resourceAttributes['{{apiName}}']) : null,
+        {{/each}} {{#each listOfEnumCols}}
+            ${{ snakeCaseToCamelCase name }},
         {{/each}}
         );
        {{#if customFieldSupported}}foreach ($resourceAttributes as $key => $value) {
@@ -74,7 +93,14 @@ class {{clazName}} {{#if customFieldSupported}} extends SupportsCustomFields {{/
 
     public function toArray(): array
     {
-
+        {{#each listOfEnumCols}}
+        ${{snakeCaseToCamelCase name}} = [];
+        foreach ($this->{{apiName}} as $enumValue) {
+            if ($enumValue instanceof {{fieldTypePHP}}) {
+                ${{snakeCaseToCamelCase name}}[] = $enumValue->value;
+            }
+        }
+        {{/each}}
         $data = array_filter([ {{~#each cols}}{{~#if (and arrayOfSubResources (not isOptional))}}'{{apiName}}' => array_map(
             static fn( {{{subResourceName}}} $result): array => $result->toArray(),
             $this->{{name}}
@@ -84,6 +110,8 @@ class {{clazName}} {{#if customFieldSupported}} extends SupportsCustomFields {{/
         '{{apiName}}' => $this->{{name}}?->value,
         {{/each}}{{#each localEnumCols}}
         '{{apiName}}' => $this->{{name}}?->value,
+        {{/each}}{{#each listOfEnumCols}}
+        '{{apiName}}' => ${{ snakeCaseToCamelCase name}},
         {{/each}}
         ], function ($value) {
             return $value !== null;
