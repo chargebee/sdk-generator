@@ -4,6 +4,8 @@ import java.util.regex.Pattern;
 
 public class Constants {
   public static final String STRING_TYPE = "str";
+
+  public static final String LIST_OF_STRING_TYPE = "List[str]";
   public static final String INT_TYPE = "int";
   public static final String FLOAT_TYPE = "float";
   public static final String BOOLEAN_TYPE = "bool";
