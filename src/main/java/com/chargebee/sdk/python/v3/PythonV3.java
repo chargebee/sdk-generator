@@ -2,6 +2,7 @@ package com.chargebee.sdk.python.v3;
 
 import static com.chargebee.GenUtil.*;
 import static com.chargebee.openapi.Extension.IS_MONEY_COLUMN;
+import static com.chargebee.openapi.Extension.SDK_ENUM_API_NAME;
 import static com.chargebee.openapi.Resource.isListOfSubResourceSchema;
 import static com.chargebee.openapi.Resource.isSubResourceSchema;
 import static com.chargebee.sdk.common.Constant.DEBUG_RESOURCE;
@@ -376,7 +377,10 @@ public class PythonV3 extends Language {
                     Constants.FILTER + dataType(attribute.schema, attribute.name) + "]"));
         resourceOperationImport.add(Constants.FILTER);
       } else if (attribute.isEnumAttribute() && !attribute.isFilterAttribute()) {
-        if (attribute.isGenSeparate()) {
+        if (attribute.isListOfEnum()) {
+          type =
+              "List[" + Constants.ENUM_WITH_DELIMITER + getTypeForListOfAttribute(attribute) + "]";
+        } else if (attribute.isGenSeparate()) {
           type = Constants.ENUM_WITH_DELIMITER + toClazName(attribute.name);
         } else {
           type =
@@ -429,6 +433,11 @@ public class PythonV3 extends Language {
     return buf.toString();
   }
 
+  private String getTypeForListOfAttribute(Attribute attribute) {
+    return singularize((String) attribute.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME))
+        + "Type";
+  }
+
   public String getResponseCols() {
     String type = "";
     String typePrefix = ": ";
@@ -437,7 +446,11 @@ public class PythonV3 extends Language {
     List<Attribute> attributes = activeResource.getSortedResourceAttributes();
     for (Attribute a : attributes) {
       if (a.isEnumAttribute()) {
-        type = Constants.STRING_TYPE;
+        if (a.isListOfEnum()) {
+          type = Constants.LIST_OF_STRING_TYPE;
+        } else {
+          type = Constants.STRING_TYPE;
+        }
         buf.add(
             Constants.INDENT_DELIMITER
                 + String.join(STRING_JOIN_DELIMITER, a.name, typePrefix, type, typeSuffix));

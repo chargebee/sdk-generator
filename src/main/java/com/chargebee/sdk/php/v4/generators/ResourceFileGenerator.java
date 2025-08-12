@@ -65,6 +65,7 @@ public class ResourceFileGenerator implements FileGenerator {
     model.setCols(ResourceParser.getCols(resource));
     model.setGlobalEnumCols(ResourceParser.generateGlobalEnumColumn(resource));
     model.setLocalEnumCols(ResourceParser.generateLocalEnumCloumn(resource));
+    model.setListOfEnumCols(ResourceParser.generateListOfEnumColumns(resource));
     model.setClazName(resource.name);
     model.setNamespace(RESOURCE_NAMESPACE + BACK_SLASH + resource.name);
     model.setCustomFieldSupported(resource.isCustomFieldSupported());

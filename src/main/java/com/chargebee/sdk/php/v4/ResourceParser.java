@@ -15,7 +15,8 @@ public class ResourceParser {
         .filter(
             attribute ->
                 attribute.isNotHiddenAttribute()
-                    && !attribute.isEnumAttribute()) // Exclude hidden & enum attributes
+                    && !attribute.isEnumAttribute()
+                    && !attribute.isListOfEnum()) // Exclude hidden & enum attributes
         .map(
             attribute ->
                 attribute.isContentObjectAttribute()
@@ -42,7 +43,8 @@ public class ResourceParser {
             attribute ->
                 attribute.isNotHiddenAttribute()
                     && attribute.isEnumAttribute()
-                    && (attribute.isGlobalEnumAttribute() || attribute.isGenSeparate()))
+                    && (attribute.isGlobalEnumAttribute() || attribute.isGenSeparate())
+                    && !attribute.isListOfEnum())
         .map(Common::globalEnumParser)
         .collect(Collectors.toList());
   }
@@ -53,8 +55,16 @@ public class ResourceParser {
             attribute ->
                 attribute.isNotHiddenAttribute()
                     && attribute.isEnumAttribute()
-                    && !(attribute.isGlobalEnumAttribute() || attribute.isGenSeparate()))
+                    && !(attribute.isGlobalEnumAttribute() || attribute.isGenSeparate())
+                    && !attribute.isListOfEnum())
         .map(attribute -> Common.localEnumParser(attribute, res))
+        .collect(Collectors.toList());
+  }
+
+  public static List<Column> generateListOfEnumColumns(Resource res) {
+    return res.getSortedResourceAttributes().stream()
+        .filter(Attribute::isListOfEnum)
+        .map(attribute -> Common.listOfEnumParser(attribute))
         .collect(Collectors.toList());
   }
 }

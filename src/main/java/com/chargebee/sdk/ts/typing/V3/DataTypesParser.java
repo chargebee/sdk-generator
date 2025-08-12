@@ -2,6 +2,7 @@ package com.chargebee.sdk.ts.typing.V3;
 
 import static com.chargebee.GenUtil.pluralize;
 import static com.chargebee.GenUtil.toCamelCase;
+import static com.chargebee.sdk.ts.typing.V3.AttributeParser.listOfEnumType;
 import static com.chargebee.sdk.ts.typing.V3.Common.primitiveDataType;
 
 import com.chargebee.openapi.Attribute;
@@ -49,6 +50,9 @@ public class DataTypesParser {
   }
 
   public static String dataTypePrimitiveParameters(Attribute attribute) {
+    if (attribute.isListOfEnum()) {
+      return String.format("%s[]", listOfEnumType(attribute));
+    }
     String dataType = dataTypeForSubResources(attribute.schema);
     if (dataType.equalsIgnoreCase("string") && attribute.schema instanceof ArraySchema) {
       return "string[]";

@@ -2,6 +2,7 @@ package com.chargebee.sdk.dotnet;
 
 import static com.chargebee.GenUtil.*;
 import static com.chargebee.openapi.Extension.IS_MONEY_COLUMN;
+import static com.chargebee.openapi.Extension.SDK_ENUM_API_NAME;
 import static com.chargebee.sdk.common.Constant.DEBUG_RESOURCE;
 import static com.chargebee.sdk.common.Constant.SDK_DEBUG;
 import static com.chargebee.sdk.dotnet.Constants.*;
@@ -506,15 +507,26 @@ public class Dotnet extends Language {
     StringBuilder buf = new StringBuilder();
     String name = attribute.name;
     if (attribute.isEnumAttribute()) {
-      String type = attribute.getEnumApiName() + "Enum";
-      buf.append("GetEnum<")
-          .append(type)
-          .append(">")
-          .append("(\"")
-          .append(name)
-          .append("\", ")
-          .append(getRequired(attribute))
-          .append(")");
+      if (attribute.isListOfEnum()) {
+        String type = getTypeForListOfEnumsAttribute(attribute);
+        buf.append("GetList<")
+            .append(type)
+            .append(">")
+            .append("(\"")
+            .append(name)
+            .append("\"")
+            .append(")");
+      } else {
+        String type = attribute.getEnumApiName() + "Enum";
+        buf.append("GetEnum<")
+            .append(type)
+            .append(">")
+            .append("(\"")
+            .append(name)
+            .append("\", ")
+            .append(getRequired(attribute))
+            .append(")");
+      }
     } else if (attribute.isListSubResourceAttribute()) {
       buf.append("GetResourceList<")
           .append(getFullClazName(attribute))
@@ -615,7 +627,9 @@ public class Dotnet extends Language {
   }
 
   private String getColsRetType(Attribute attribute) {
-
+    if (attribute.isListOfEnum()) {
+      return LIST_OF + getTypeForListOfEnumsAttribute(attribute) + ">";
+    }
     if (attribute.isListSubResourceAttribute()) {
       return LIST_OF + getFullClazName(attribute) + ">";
     }
@@ -864,6 +878,9 @@ public class Dotnet extends Language {
 
   public String parameterPrimitiveDataType(Attribute attribute) {
     if (attribute.isEnumAttribute()) {
+      if (attribute.isListOfEnum()) {
+        return getDotnetTypeForListOfEnums(attribute);
+      }
       return getFullNameDotnet(attribute);
     }
     if (isDateTimeAttribute(attribute)) {
@@ -1069,6 +1086,15 @@ public class Dotnet extends Language {
       return filter;
     }
     return "unknown";
+  }
+
+  public String getTypeForListOfEnumsAttribute(Attribute attribute) {
+    return singularize((String) attribute.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME))
+        + "TypeEnum";
+  }
+
+  private String getDotnetTypeForListOfEnums(Attribute attribute) {
+    return String.format("List<%s>", getTypeForListOfEnumsAttribute(attribute));
   }
 
   @Override
