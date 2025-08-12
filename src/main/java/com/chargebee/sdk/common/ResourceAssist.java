@@ -56,7 +56,7 @@ public class ResourceAssist {
 
         if (!attributeType.equals(toCamelCase(singularize(attributeName)))) {
           enumName =
-              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, (attributeType))
+              singularize(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, (attributeType)))
                   + "_"
                   + subAttribute.name;
         }
