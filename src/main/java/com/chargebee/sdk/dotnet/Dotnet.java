@@ -105,7 +105,8 @@ public class Dotnet extends Language {
       resource.setHasOperReqClasses(!resource.getOperRequestClasses().isEmpty());
       resource.setSnippet(getSnippet(res.name));
       resource.setHasContent(
-          new AttributeAssistant().setResource(activeResource).hasAttributeByGivenName("content"));
+          new AttributeAssistant().setResource(activeResource).hasAttributeByGivenName("content")
+              && !activeResource.name.equals("PersonalizedOffer"));
       resource.setCustomImport(getCustomImport(res.name));
       resource.setEnumCols(getEnumCols());
       resource.setSubResources(getSubResources());

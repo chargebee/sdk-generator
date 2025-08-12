@@ -132,7 +132,7 @@ namespace ChargeBee.Models
                 return this;
             }{{/if}}{{/each}}{{else}}{{~#each singularSubsForJsonRequest as |subList key|}}
             public {{../clazName}} {{camelCase key}}({{{snakeCaseToPascalCaseAndSingularize key}}}{{{../rawOperationName}}}InputParams data){
-                m_params.Add("{{key}}", data);
+                m_params.Add("{{key}}", data.ToJObject(), false, true);
                 return this;
             }{{/each}}
         {{/if}}{{#if (not jsonRequest) }}{{~#each multiSubs}}{{#if deprecated}}
