@@ -185,6 +185,7 @@ public class Attribute {
                       CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_UNDERSCORE, e.getKey()),
                       e.getValue(),
                       schema.getRequired() != null && schema.getRequired().contains(e.getKey())))
+          .filter(a -> a.schema != null)
           .filter(Attribute::isNotHiddenAttribute)
           .toList();
     } else if (schema.getItems() != null && schema.getItems().getProperties() != null) {
