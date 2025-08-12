@@ -1,5 +1,6 @@
 package com.chargebee.sdk.common;
 
+import static com.chargebee.GenUtil.toCamelCase;
 import static com.chargebee.handlebar.Inflector.singularize;
 
 import com.chargebee.openapi.Attribute;
@@ -49,9 +50,17 @@ public class ResourceAssist {
               .filter(attr -> !attr.isGlobalEnumAttribute() && attr.isEnumAttribute())
               .toList()) {
         if (subAttribute.isExternalEnum()) continue;
-        enums.add(
-            new Enum(
-                singularize(attribute.name) + "_" + subAttribute.name, subAttribute.getSchema()));
+        String enumName = singularize(attribute.name) + "_" + subAttribute.name;
+        String attributeName = attribute.name;
+        String attributeType = attribute.subResourceName();
+
+        if (!attributeType.equals(toCamelCase(singularize(attributeName)))) {
+          enumName =
+              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, (attributeType))
+                  + "_"
+                  + subAttribute.name;
+        }
+        enums.add(new Enum(enumName, subAttribute.getSchema()));
       }
     }
     return enums;

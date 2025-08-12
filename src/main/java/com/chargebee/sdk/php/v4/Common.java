@@ -2,6 +2,7 @@ package com.chargebee.sdk.php.v4;
 
 import static com.chargebee.GenUtil.singularize;
 import static com.chargebee.GenUtil.toCamelCase;
+import static com.chargebee.openapi.Extension.SDK_ENUM_API_NAME;
 import static com.chargebee.openapi.Extension.SUB_RESOURCE_NAME;
 import static com.chargebee.openapi.Resource.*;
 import static com.chargebee.sdk.php.v4.Constants.BACK_SLASH;
@@ -151,6 +152,12 @@ public class Common {
     return createEnumColumn(attribute, CHARGEBEE_ENUMS_BASE_PATH);
   }
 
+  public static Column listOfEnumParser(Attribute attribute) {
+    String type = (String) attribute.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME);
+    return createEnumColumn(
+        attribute, CHARGEBEE_ENUMS_BASE_PATH, String.format("%sType", singularize(type)));
+  }
+
   public static Column localEnumParser(Attribute attribute, Resource res) {
     return createEnumColumn(
         attribute,
@@ -166,6 +173,17 @@ public class Common {
     column.setName(attribute.name);
     column.setFieldTypePHP(basePath + toCamelCase(attribute.name));
     column.setPhpDocField(basePath + toCamelCase(attribute.name));
+    column.setIsOptional(true);
+    column.setApiName(attribute.name);
+    return column;
+  }
+
+  private static Column createEnumColumn(
+      Attribute attribute, String basePath, String fieldTypePHP) {
+    Column column = new Column();
+    column.setName(attribute.name);
+    column.setFieldTypePHP(basePath + fieldTypePHP);
+    column.setPhpDocField(basePath + fieldTypePHP);
     column.setIsOptional(true);
     column.setApiName(attribute.name);
     return column;

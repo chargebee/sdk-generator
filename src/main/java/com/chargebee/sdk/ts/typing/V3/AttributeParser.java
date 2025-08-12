@@ -1,5 +1,7 @@
 package com.chargebee.sdk.ts.typing.V3;
 
+import static com.chargebee.GenUtil.singularize;
+import static com.chargebee.openapi.Extension.SDK_ENUM_API_NAME;
 import static com.chargebee.openapi.Resource.*;
 import static com.chargebee.sdk.ts.typing.V3.Utils.getClazName;
 
@@ -35,6 +37,9 @@ public class AttributeParser {
     if (attribute.schema instanceof ArraySchema
         && attribute.schema.getItems() != null
         && attribute.schema.getItems().getType() != null) {
+      if (attribute.isListOfEnum()) {
+        return String.format("%s[]", listOfEnumType(attribute));
+      }
       if (attribute.schema.getItems() instanceof ObjectSchema
           && isSubResourceSchema(attribute.schema.getItems())) {
         if (isGlobalResourceReference(attribute.schema.getItems())) {
@@ -50,5 +55,10 @@ public class AttributeParser {
       return String.format("%s[]", Common.primitiveDataType(attribute.schema.getItems()));
     }
     return Common.primitiveDataType(attribute.schema);
+  }
+
+  static String listOfEnumType(Attribute attribute) {
+    return singularize((String) attribute.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME))
+        + "TypeEnum";
   }
 }

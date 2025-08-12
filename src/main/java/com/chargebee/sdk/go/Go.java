@@ -684,7 +684,9 @@ public class Go extends Language {
                       Constants.FILTER + dataType(attribute.schema, attribute.name),
                       getJsonVal(attribute, req)));
       } else if (attribute.isEnumAttribute() && !attribute.isFilterAttribute()) {
-        if (attribute.isGenSeparate()) {
+        if (attribute.isListOfEnum()) {
+          type = "[]enum." + getListOfEnumTypeForAttribute(attribute);
+        } else if (attribute.isGenSeparate()) {
           type = Constants.ENUM_WITH_DELIMITER + toClazName(attribute.name);
         } else {
           type =
@@ -764,7 +766,9 @@ public class Go extends Language {
     List<Attribute> attributes = activeResource.getSortedResourceAttributes();
     for (Attribute a : attributes) {
       if (a.isEnumAttribute()) {
-        if (a.isGenSeparate()) {
+        if (a.isListOfEnum()) {
+          type = "[]" + Constants.ENUM_WITH_DELIMITER + getListOfEnumTypeForAttribute(a);
+        } else if (a.isGenSeparate()) {
           type =
               Constants.ENUM_WITH_DELIMITER
                   + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
@@ -822,6 +826,13 @@ public class Go extends Language {
     buf.add("\t" + String.join(delimiter, "Object", Constants.STRING_TYPE, "`json:\"object\"`"));
 
     return formatUsingDelimiter(buf.toString());
+  }
+
+  private String getListOfEnumTypeForAttribute(Attribute a) {
+    return CaseFormat.LOWER_UNDERSCORE.to(
+            CaseFormat.UPPER_CAMEL,
+            singularize((String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME)))
+        + "Type";
   }
 
   private String dataTypeCustomLogic(String colsRetType) {
