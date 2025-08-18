@@ -113,7 +113,7 @@ public class Java extends Language {
           }
         }
         for (var action : res.actions) {
-          ActionAssist actionEnum = new ActionAssist().setAction(action).includeSortBy();
+          ActionAssist actionEnum = ActionAssist.of(action).withSortBy(true);
           for (Attribute attribute : actionEnum.getAllAttribute().stream().toList()) {
             processEnumAttribute(attribute, globalEnums);
             for (var subAttribute : attribute.attributes()) {
@@ -573,9 +573,9 @@ public class Java extends Language {
 
   private List<com.chargebee.sdk.java.models.OperationRequestParameter> getOperationParams(
       Action action) {
-    ActionAssist actionAssist = new ActionAssist().setAction(action).includeSortBy();
+    ActionAssist actionAssist = ActionAssist.of(action).withSortBy(true);
     if (activeResource.name.equals("Export")) {
-      actionAssist.setFlatSingleAttribute(true);
+      actionAssist = actionAssist.withFlatSingleAttribute(true);
     }
     List<com.chargebee.sdk.java.models.OperationRequestParameter> operationRequestParameters =
         new ArrayList<>();
@@ -1143,7 +1143,7 @@ public class Java extends Language {
   public List<SingularSubResource> getSingularSubs(Action action) {
     List<SingularSubResource> subResources = new ArrayList<>();
     for (Parameter iParam : action.queryParameters()) {
-      if ((iParam.schema instanceof ObjectSchema || iParam.schema instanceof MapSchema)
+      if ((iParam.schema instanceof ObjectSchema)
           && iParam.schema.getProperties() != null
           && iParam.schema.getItems() == null
           && !iParam.isCompositeArrayBody()) {
@@ -1177,7 +1177,7 @@ public class Java extends Language {
       }
     }
     for (Parameter iParam : action.requestBodyParameters()) {
-      if ((iParam.schema instanceof ObjectSchema || iParam.schema instanceof MapSchema)
+      if ((iParam.schema instanceof ObjectSchema)
           && iParam.schema.getProperties() != null
           && iParam.schema.getItems() == null
           && !iParam.isCompositeArrayBody()) {
@@ -1473,7 +1473,7 @@ public class Java extends Language {
     if (schema instanceof BooleanSchema) {
       return "Boolean";
     }
-    if (schema instanceof MapSchema && Objects.equals(schema.getAdditionalProperties(), true)) {
+    if (schema instanceof ObjectSchema && GenUtil.hasAdditionalProperties(schema)) {
       if (activeResource.hasContentTypeJsonAction()) {
         return "Map<String, Object>";
       } else {

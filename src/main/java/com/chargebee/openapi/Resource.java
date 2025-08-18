@@ -3,6 +3,7 @@ package com.chargebee.openapi;
 import static com.chargebee.openapi.Extension.*;
 
 import com.chargebee.ApiVersionHandler;
+import com.chargebee.GenUtil;
 import com.chargebee.QAModeHandler;
 import com.chargebee.handlebar.Inflector;
 import com.chargebee.openapi.parameter.Response;
@@ -10,6 +11,7 @@ import com.chargebee.sdk.DataType;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Streams;
 import io.swagger.v3.oas.models.media.ArraySchema;
+import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -76,7 +78,7 @@ public class Resource {
   }
 
   public static boolean isReferenceSchema(Schema<?> schema) {
-    return schema.get$ref() != null;
+    return schema != null && schema.get$ref() != null;
   }
 
   public static String referredResourceName(Schema<?> schema) {
@@ -404,7 +406,7 @@ public class Resource {
   }
 
   public boolean isAdditionalPropertiesSupported() {
-    return schema.getAdditionalProperties() != null && (boolean) schema.getAdditionalProperties();
+    return schema.getAdditionalProperties() != null && GenUtil.hasAdditionalProperties(schema);
   }
 
   // should handle HiddenFromSDK in calling function

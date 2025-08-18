@@ -1328,7 +1328,7 @@ public class Coupon extends Resource<Coupon> {
                 "resource_version", new IntegerSchema().type("integer").format("int64"), false)
             .withAttribute("auto_close_invoices", new BooleanSchema(), false)
             .withAttribute(
-                "meta_data", new MapSchema().type("object").additionalProperties(true), false)
+                "meta_data", new ObjectSchema().type("object").additionalProperties(true), false)
             .withAttribute(
                 "exemption_details", new ArraySchema().items(new ObjectSchema().type(null)), false)
             .done();
@@ -2929,7 +2929,7 @@ public class Invoice extends Resource<Invoice> {
             .forResource("customer")
             .withRequestBody("first_name", new StringSchema())
             .withRequestBody(
-                "properties", new MapSchema().type("object").additionalProperties(true), false)
+                "properties", new ObjectSchema().type("object").additionalProperties(true), false)
             .withResponse(resourceResponseParam("customer", customer))
             .withSubDomain("test-domain")
             .isContentTypeJson(true)

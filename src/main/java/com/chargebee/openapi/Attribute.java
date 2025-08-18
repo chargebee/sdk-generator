@@ -8,7 +8,7 @@ import com.chargebee.QAModeHandler;
 import com.chargebee.sdk.DataType;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.ArraySchema;
-import io.swagger.v3.oas.models.media.MapSchema;
+import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -185,6 +185,7 @@ public class Attribute {
                       CaseFormat.LOWER_HYPHEN.to(CaseFormat.LOWER_UNDERSCORE, e.getKey()),
                       e.getValue(),
                       schema.getRequired() != null && schema.getRequired().contains(e.getKey())))
+          .filter(a -> a.schema != null)
           .filter(Attribute::isNotHiddenAttribute)
           .toList();
     } else if (schema.getItems() != null && schema.getItems().getProperties() != null) {
@@ -348,7 +349,9 @@ public class Attribute {
   }
 
   public boolean isContentObjectAttribute() {
-    return schema instanceof MapSchema && schema.getProperties() == null && name.equals("content");
+    return schema instanceof ObjectSchema
+        && schema.getProperties() == null
+        && name.equals("content");
   }
 
   public boolean isPaginationProperty() {

@@ -4,6 +4,7 @@ import static com.chargebee.GenUtil.singularize;
 import static com.chargebee.openapi.Resource.*;
 import static com.chargebee.sdk.common.AttributeAssistant.isHiddenFromSDK;
 
+import com.chargebee.GenUtil;
 import com.chargebee.openapi.Attribute;
 import com.chargebee.openapi.Enum;
 import com.chargebee.openapi.Resource;
@@ -175,7 +176,7 @@ public class TypeScriptTyping extends Language {
     if (schema instanceof BooleanSchema) {
       return "boolean";
     }
-    if (schema instanceof MapSchema && Objects.equals(schema.getAdditionalProperties(), true)) {
+    if (schema instanceof ObjectSchema && GenUtil.hasAdditionalProperties(schema)) {
       return "object";
     }
     if (schema instanceof ObjectSchema

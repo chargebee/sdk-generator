@@ -12,7 +12,8 @@ public class AttributeAssistant {
   private Attribute attribute;
 
   public static boolean isHiddenFromSDK(Schema<?> schema, boolean forQa) {
-    return schema.getExtensions() != null
+    return schema != null
+        && schema.getExtensions() != null
         && schema.getExtensions().get(Extension.HIDDEN_FROM_CLIENT_SDK) != null
         && (boolean) schema.getExtensions().get(Extension.HIDDEN_FROM_CLIENT_SDK)
         && !forQa;
