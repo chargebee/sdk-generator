@@ -34,7 +34,7 @@ public class Dotnet extends Language {
   List<Resource> resourceList = new ArrayList<>();
   List<Enum> globalEnums;
 
-  protected final String[] hiddenOverride = {"usage_file", "media", "non_subscription"};
+  protected final String[] hiddenOverride = { "media", "non_subscription"};
 
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
@@ -319,7 +319,8 @@ public class Dotnet extends Language {
       operationRequest.setHasBatch(action.isBatch());
       operationRequest.setPostOperationWithFilter(
           action.hasPostActionContainingFilterAsBodyParams());
-      if (operationRequest.canHide()) continue;
+      // Don't hide operations that have subDomain - they need specific request classes for fluent chaining
+      if (operationRequest.canHide() && action.subDomain() == null) continue;
       operationRequests.add(operationRequest);
     }
     return operationRequests;
@@ -715,7 +716,8 @@ public class Dotnet extends Language {
 
   public String getReqCreationCode(Action action) {
     boolean isCodeGen = isCodeGen(action);
-    if (action.isInputObjNeeded() && isCodeGen) {
+    // Generate specific request class if action needs input object OR has subDomain (for fluent chaining)
+    if ((action.isInputObjNeeded() && isCodeGen) || action.subDomain() != null) {
       StringBuilder buf = new StringBuilder();
       buf.append("return new ").append(getClazName(action)).append("(url");
       if (!action.isListResourceAction()) {
@@ -794,7 +796,8 @@ public class Dotnet extends Language {
 
   private String getRetType(Action action) {
     boolean isCodeGen = isCodeGen(action);
-    if (action.isInputObjNeeded() && isCodeGen) {
+    // Generate specific request class if action needs input object OR has subDomain (for fluent chaining)
+    if ((action.isInputObjNeeded() && isCodeGen) || action.subDomain() != null) {
       return getClazName(action);
     } else {
       return action.isListResourceAction() ? "ListRequest" : "EntityRequest<Type>";
