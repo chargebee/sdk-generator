@@ -23,7 +23,6 @@ public class PHPDocSerializer {
 
     StringBuilder docBuilder = new StringBuilder("@param array{" + System.lineSeparator());
     docBuilder.append(ASTERISK).append(INDENT);
-
     allParams.stream()
         .filter(param -> !param.isHiddenFromSDK())
         .forEach(param -> parseParameter(param.schema, docBuilder, 1, param.getName()));
@@ -35,7 +34,6 @@ public class PHPDocSerializer {
   private static void parseParameter(
       Schema<?> schema, StringBuilder builder, int indentLevel, String name) {
     String paramName = name;
-
     if (isCompositeArrayBody(schema)) {
       parseCompositeArray(schema, builder, paramName);
       return;
@@ -67,6 +65,16 @@ public class PHPDocSerializer {
   private static void parseObjectSchema(
       ObjectSchema schema, StringBuilder builder, int indentLevel, String paramName) {
     String filter = new Attribute(schema.getName(), schema, false).getFilterType();
+    var properties = schema.getProperties();
+    if (properties == null) {
+      builder
+          .append(paramName)
+          .append("?: mixed,")
+          .append(System.lineSeparator())
+          .append(ASTERISK)
+          .append(INDENT.repeat(indentLevel));
+      return;
+    }
     if (filter == null) {
       builder
           .append(paramName)
@@ -75,7 +83,6 @@ public class PHPDocSerializer {
           .append(ASTERISK)
           .append(INDENT.repeat(indentLevel));
     }
-    var properties = schema.getProperties();
     if (properties != null) {
       properties.forEach(
           (key, value) -> {
@@ -138,17 +145,25 @@ public class PHPDocSerializer {
     builder.append(propertyName).append("?: ");
 
     if (schema instanceof ObjectSchema && isSubResourceSchema(schema)) {
-      builder
-          .append("array{")
-          .append(System.lineSeparator())
-          .append(ASTERISK)
-          .append(INDENT.repeat(indentLevel));
-      parseParameter(schema, builder, indentLevel + 1, propertyName);
-      builder
-          .append("},")
-          .append(System.lineSeparator())
-          .append(ASTERISK)
-          .append(INDENT.repeat(indentLevel - 1));
+      if (schema.getProperties() != null) {
+        builder
+            .append("array{")
+            .append(System.lineSeparator())
+            .append(ASTERISK)
+            .append(INDENT.repeat(indentLevel));
+        parseParameter(schema, builder, indentLevel + 1, propertyName);
+        builder
+            .append("},")
+            .append(System.lineSeparator())
+            .append(ASTERISK)
+            .append(INDENT.repeat(indentLevel - 1));
+      } else {
+        builder
+            .append("mixed,")
+            .append(System.lineSeparator())
+            .append(ASTERISK)
+            .append(INDENT.repeat(indentLevel - 1));
+      }
     } else if (schema instanceof ArraySchema) {
       Schema<?> itemSchema = schema.getItems();
       builder
