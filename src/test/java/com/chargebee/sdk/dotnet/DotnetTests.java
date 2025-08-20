@@ -2334,7 +2334,7 @@ using System.Net;"""
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(2);
     assertThat(writeStringFileOp.fileContent)
         .contains(
-            "return new EntityRequest<Type>(url,"
+            "return new CreateRequest(url,"
                 + " HttpMethod.POST).SetSubDomain(\"test-domain\").IsJsonRequest(true).SetIdempotent(false);");
   }
 
