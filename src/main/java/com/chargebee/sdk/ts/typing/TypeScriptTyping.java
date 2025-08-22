@@ -176,7 +176,9 @@ public class TypeScriptTyping extends Language {
     if (schema instanceof BooleanSchema) {
       return "boolean";
     }
-    if (schema instanceof ObjectSchema && GenUtil.hasAdditionalProperties(schema)) {
+    if (schema instanceof ObjectSchema
+        && schema.getProperties() == null
+        && GenUtil.hasAdditionalProperties(schema)) {
       return "object";
     }
     if (schema instanceof ObjectSchema
