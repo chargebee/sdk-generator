@@ -3,6 +3,7 @@ package com.chargebee.openapi;
 import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.openapi.MarkdownHelper.convertHtmlToMarkdown;
 
+import com.chargebee.GenUtil;
 import com.chargebee.QAModeHandler;
 import com.chargebee.openapi.parameter.Path;
 import com.chargebee.sdk.DataType;
@@ -138,8 +139,7 @@ public class Action {
     if (requestBodySchema == null) {
       return false;
     }
-    return requestBodySchema.getAdditionalProperties() != null
-        && Objects.equals(requestBodySchema.getAdditionalProperties(), true);
+    return GenUtil.hasAdditionalProperties(requestBodySchema);
   }
 
   public List<com.chargebee.openapi.parameter.Parameter> requestBodyParameters() {
