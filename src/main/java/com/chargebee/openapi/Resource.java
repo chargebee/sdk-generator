@@ -11,7 +11,6 @@ import com.chargebee.sdk.DataType;
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Streams;
 import io.swagger.v3.oas.models.media.ArraySchema;
-import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.*;
 import java.util.stream.Collectors;

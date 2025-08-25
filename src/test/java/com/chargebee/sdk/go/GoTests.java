@@ -398,7 +398,7 @@ func Retrieve(id string) chargebee.RequestObj {
             "github.com/chargebee/chargebee-go/v3/models/customer"
         )
         """,
-        "func List(params *customer.ListRequestParams) chargebee.RequestObj {");
+        "func List(params *customer.ListRequestParams) chargebee.ListRequestObj {");
   }
 
   @Test
@@ -586,7 +586,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
         )
         """,
         """
-        func List(params *customer.ListRequestParams) chargebee.RequestObj {
+        func List(params *customer.ListRequestParams) chargebee.ListRequestObj {
             return chargebee.SendList("GET", fmt.Sprintf("/customers"), params)
         }""");
   }
@@ -1839,23 +1839,23 @@ type Result struct {
          type ListAutoCollectionParams struct {
 
          }
-         
+
          type ListAutoCloseInvoicesParams struct {
 
          }
-         
+
          type ListCreatedAtParams struct {
 
          }
-         
+
          type ListSortByParams struct {
-         
+
          }
-         
+
          type ListFirstNameParams struct {
 
          }
-         
+
 
         """);
   }
