@@ -214,10 +214,10 @@ public class GoTests extends LanguageTests {
         writeStringFileOp,
         FileOp.fetchFileContent("src/test/java/com/chargebee/sdk/go/samples/customers_imports.txt"),
         """
-func Create(params *customer.CreateRequestParams) chargebee.RequestObj {
+func Create(params *customer.CreateRequestParams) chargebee.Request {
     return chargebee.Send("POST", fmt.Sprintf("/customers"), params)
 }
-func Retrieve(id string) chargebee.RequestObj {
+func Retrieve(id string) chargebee.Request {
     return chargebee.Send("GET", fmt.Sprintf("/customers/%v", url.PathEscape(id)), nil)
 }""");
   }
@@ -370,7 +370,7 @@ func Retrieve(id string) chargebee.RequestObj {
             "github.com/chargebee/chargebee-go/v3/models/customer"
         )
         """,
-        "func Create(params *customer.CreateRequestParams) chargebee.RequestObj {");
+        "func Create(params *customer.CreateRequestParams) chargebee.Request {");
   }
 
   @Test
@@ -398,7 +398,7 @@ func Retrieve(id string) chargebee.RequestObj {
             "github.com/chargebee/chargebee-go/v3/models/customer"
         )
         """,
-        "func List(params *customer.ListRequestParams) chargebee.ListRequestObj {");
+        "func List(params *customer.ListRequestParams) chargebee.ListRequest {");
   }
 
   @Test
@@ -424,7 +424,7 @@ func Retrieve(id string) chargebee.RequestObj {
         writeStringFileOp,
         FileOp.fetchFileContent("src/test/java/com/chargebee/sdk/go/samples/customers_imports.txt"),
         """
-func Update(id string, params *customer.UpdateRequestParams) chargebee.RequestObj {
+func Update(id string, params *customer.UpdateRequestParams) chargebee.Request {
     return chargebee.Send("POST", fmt.Sprintf("/customers/%v", url.PathEscape(id)), params)
 }""");
   }
@@ -457,7 +457,7 @@ func Update(id string, params *customer.UpdateRequestParams) chargebee.RequestOb
         )
         """,
         """
-        func Create(params *customer.CreateRequestParams) chargebee.RequestObj {
+        func Create(params *customer.CreateRequestParams) chargebee.Request {
             return chargebee.Send("POST", fmt.Sprintf("/customers"), params)
         }""");
   }
@@ -485,7 +485,7 @@ func Update(id string, params *customer.UpdateRequestParams) chargebee.RequestOb
         writeStringFileOp,
         FileOp.fetchFileContent("src/test/java/com/chargebee/sdk/go/samples/customers_imports.txt"),
         """
-func Update(id string, params *customer.UpdateRequestParams) chargebee.RequestObj {
+func Update(id string, params *customer.UpdateRequestParams) chargebee.Request {
     return chargebee.Send("POST", fmt.Sprintf("/customers/%v", url.PathEscape(id)), params)
 }""");
   }
@@ -514,7 +514,7 @@ func Update(id string, params *customer.UpdateRequestParams) chargebee.RequestOb
         writeStringFileOp,
         FileOp.fetchFileContent("src/test/java/com/chargebee/sdk/go/samples/customers_imports.txt"),
         """
-func UpdateBillingInfo(id string, params *customer.UpdateBillingInfoRequestParams) chargebee.RequestObj {
+func UpdateBillingInfo(id string, params *customer.UpdateBillingInfoRequestParams) chargebee.Request {
     return chargebee.Send("POST", fmt.Sprintf("/customers/%v/update_billing_info", url.PathEscape(id)), params)
 }""");
   }
@@ -551,10 +551,10 @@ func UpdateBillingInfo(id string, params *customer.UpdateBillingInfoRequestParam
         writeStringFileOp,
         FileOp.fetchFileContent("src/test/java/com/chargebee/sdk/go/samples/customers_imports.txt"),
         """
-func UpdateBillingInfo(id string, params *customer.UpdateBillingInfoRequestParams) chargebee.RequestObj {
+func UpdateBillingInfo(id string, params *customer.UpdateBillingInfoRequestParams) chargebee.Request {
     return chargebee.Send("POST", fmt.Sprintf("/customers/%v/update_billing_info", url.PathEscape(id)), params)
 }
-func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.RequestObj {
+func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Request {
     return chargebee.Send("GET", fmt.Sprintf("/customers/%v/hierarchy", url.PathEscape(id)), params)
 }""");
   }
@@ -586,7 +586,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
         )
         """,
         """
-        func List(params *customer.ListRequestParams) chargebee.ListRequestObj {
+        func List(params *customer.ListRequestParams) chargebee.ListRequest {
             return chargebee.SendList("GET", fmt.Sprintf("/customers"), params)
         }""");
   }
