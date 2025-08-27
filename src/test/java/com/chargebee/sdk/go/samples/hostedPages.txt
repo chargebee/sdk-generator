@@ -8,7 +8,7 @@ import (
 	"net/url"
 )
 
-func Retrieve(id string) chargebee.RequestObj {
+func Retrieve(id string) chargebee.Request {
 	return chargebee.Send("GET", fmt.Sprintf("/hosted_pages/%v", url.PathEscape(id)), nil)
 }
 func Content(page hostedpage.HostedPage) *chargebee.Result {

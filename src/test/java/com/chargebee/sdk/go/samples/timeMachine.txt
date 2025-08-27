@@ -11,7 +11,7 @@ import (
 	"net/url"
 )
 
-func Retrieve(id string) chargebee.RequestObj {
+func Retrieve(id string) chargebee.Request {
 	return chargebee.Send("GET", fmt.Sprintf("/time_machines/%v", url.PathEscape(id)), nil)
 }
 func WaitForTimeTravelCompletion(tm timemachine.TimeMachine) (timemachine.TimeMachine, error) {
