@@ -2,6 +2,7 @@ package com.chargebee.openapi;
 
 import com.chargebee.QAModeHandler;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.media.Schema;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -82,5 +83,36 @@ public class Spec {
 
   public List<Enum> globalEnums() {
     return Enum.globalEnums(openAPI);
+  }
+
+  public List<Resource> errorResources() {
+    if (openAPI.getComponents() == null) {
+      return List.of();
+    }
+    if (openAPI.getComponents().getSchemas() == null) {
+      return List.of();
+    }
+
+    return openAPI.getComponents().getSchemas().entrySet().stream()
+        .filter(entry -> isErrorSchema(entry.getKey(), entry.getValue()))
+        .map(
+            entry -> {
+              if (QAModeHandler.getInstance().getValue()) {
+                return new Resource(entry.getKey(), entry.getValue(), List.of()).enableForQa();
+              }
+              return new Resource(entry.getKey(), entry.getValue(), List.of());
+            })
+        .filter(Resource::isNotHiddenFromSDKGeneration)
+        .filter(Resource::isNotThirdPartyResource)
+        .sorted(Comparator.comparing(resource -> resource.name))
+        .toList();
+  }
+
+  private boolean isErrorSchema(String schemaName, Schema schema) {
+    if (schema.getProperties() != null) {
+      Set<String> propertyNames = schema.getProperties().keySet();
+      return propertyNames.contains("api_error_code") && propertyNames.contains("message");
+    }
+    return false;
   }
 }
