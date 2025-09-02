@@ -1,6 +1,8 @@
 package com.chargebee;
 
 import com.chargebee.handlebar.Inflector;
+import io.swagger.v3.oas.models.media.ObjectSchema;
+import io.swagger.v3.oas.models.media.Schema;
 import org.apache.commons.lang3.ArrayUtils;
 
 public class GenUtil {
@@ -79,5 +81,22 @@ public class GenUtil {
       buf.append(c);
     }
     return buf.toString();
+  }
+
+  public static boolean hasAdditionalProperties(Schema schema) {
+    var additionalProperties = schema.getAdditionalProperties();
+    if (additionalProperties == null) {
+      return false;
+    }
+    if (additionalProperties instanceof Boolean) {
+      return (Boolean) additionalProperties;
+    }
+    if (additionalProperties instanceof ObjectSchema) {
+      return ((ObjectSchema) additionalProperties).getBooleanSchemaValue();
+    }
+    if (additionalProperties instanceof Schema<?>) {
+      return ((Schema<?>) additionalProperties).getBooleanSchemaValue();
+    }
+    return false;
   }
 }

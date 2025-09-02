@@ -12,7 +12,6 @@ import com.chargebee.openapi.parameter.Parameter;
 import com.chargebee.sdk.dotnet.models.EnumColumn;
 import com.chargebee.sdk.dotnet.models.VisibleEnumEntries;
 import com.google.common.base.CaseFormat;
-import io.swagger.v3.oas.models.media.MapSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import java.util.*;
 
@@ -26,7 +25,7 @@ public class SchemaLessEnumParser {
         for (Parameter iParam : action.requestBodyParameters()) {
           List<Attribute> atter = new ArrayList<>();
           Attribute attribute = new Attribute(iParam.getName(), iParam.schema, iParam.isRequired);
-          if ((iParam.schema instanceof ObjectSchema || iParam.schema instanceof MapSchema)
+          if ((iParam.schema instanceof ObjectSchema)
               && iParam.schema.getProperties() != null
               && iParam.schema.getItems() == null
               && !iParam.isCompositeArrayBody()) {
@@ -94,7 +93,7 @@ public class SchemaLessEnumParser {
     for (Action action : activeResource.getSortedAction()) {
       if (action.id.contains(Constants.BATCH)) continue;
       for (Parameter iParam : action.requestBodyParameters()) {
-        if ((iParam.schema instanceof ObjectSchema || iParam.schema instanceof MapSchema)
+        if ((iParam.schema instanceof ObjectSchema)
             && iParam.schema.getProperties() != null
             && iParam.schema.getItems() == null
             && !iParam.isCompositeArrayBody()) {

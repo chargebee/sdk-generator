@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func Retrieve(id string) chargebee.RequestObj {
+func Retrieve(id string) chargebee.Request {
 	return chargebee.Send("GET", fmt.Sprintf("/exports/%v", url.PathEscape(id)), nil)
 }
 func WaitForExportCompletionWithEnv(exp export.Export, env chargebee.Environment) (export.Export, error) {

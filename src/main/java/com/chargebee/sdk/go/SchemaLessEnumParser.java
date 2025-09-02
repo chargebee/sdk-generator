@@ -9,7 +9,6 @@ import com.chargebee.openapi.Enum;
 import com.chargebee.openapi.Resource;
 import com.chargebee.openapi.parameter.Parameter;
 import com.google.common.base.CaseFormat;
-import io.swagger.v3.oas.models.media.MapSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +22,7 @@ public class SchemaLessEnumParser {
         for (Parameter iParam : action.requestBodyParameters()) {
           List<Attribute> atter = new ArrayList<>();
           Attribute attribute = new Attribute(iParam.getName(), iParam.schema, iParam.isRequired);
-          if ((iParam.schema instanceof ObjectSchema || iParam.schema instanceof MapSchema)
+          if ((iParam.schema instanceof ObjectSchema)
               && iParam.schema.getProperties() != null
               && iParam.schema.getItems() == null
               && !iParam.isCompositeArrayBody()) {

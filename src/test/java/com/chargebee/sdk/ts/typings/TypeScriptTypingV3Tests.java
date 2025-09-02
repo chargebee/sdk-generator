@@ -320,7 +320,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
   void shouldSupportJsonObjectAndJsonArrayType() throws IOException {
     var resource =
         buildResource("customer")
-            .withAttribute("metadata", new MapSchema().additionalProperties(true), true)
+            .withAttribute("metadata", new ObjectSchema().additionalProperties(true), true)
             .withAttribute("exemption_details", new ArraySchema().items(new Schema<>()), true)
             .done();
 

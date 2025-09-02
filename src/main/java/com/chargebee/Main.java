@@ -66,6 +66,7 @@ class Generate implements Callable<Integer> {
     }
 
     var openAPI = new OpenAPIV3Parser().read(openAPISpecFilePath);
+    new JsonSchemaUpcaster(openAPI).upcastAllSchemas();
     Language language = Lang.sdkLanguage(lang);
     if (language.cleanDirectoryBeforeGenerate()) {
       cleanDirectory(Paths.get(outputDirectoryPath));

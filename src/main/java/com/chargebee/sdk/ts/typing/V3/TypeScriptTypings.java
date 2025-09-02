@@ -5,6 +5,7 @@ import static com.chargebee.sdk.common.AttributeAssistant.isHiddenFromSDK;
 import static com.chargebee.sdk.ts.typing.V3.AttributeParser.getAttributesInMultiLine;
 import static com.chargebee.sdk.ts.typing.V3.RequestInterfaceParser.getOperRequestInterfaces;
 
+import com.chargebee.GenUtil;
 import com.chargebee.QAModeHandler;
 import com.chargebee.openapi.*;
 import com.chargebee.openapi.Enum;
@@ -115,7 +116,7 @@ public class TypeScriptTypings extends Language {
     if (schema instanceof BooleanSchema) {
       return "boolean";
     }
-    if (schema instanceof MapSchema && Objects.equals(schema.getAdditionalProperties(), true)) {
+    if (schema instanceof ObjectSchema && GenUtil.hasAdditionalProperties(schema)) {
       return "object";
     }
     if (schema instanceof ObjectSchema
@@ -147,7 +148,14 @@ public class TypeScriptTypings extends Language {
       Map<String, Schema<?>> properties = schema.getProperties();
       boolean isCompositeArrayRequestBody = isCompositeArrayRequestBody(schema);
       if (isCompositeArrayRequestBody) {
-        properties.keySet().forEach(key -> properties.put(key, properties.get(key).getItems()));
+        properties
+            .keySet()
+            .forEach(
+                key -> {
+                  if (properties.get(key) instanceof ArraySchema) {
+                    properties.put(key, properties.get(key).getItems());
+                  }
+                });
       }
       var requiredProps =
           new HashSet<>(schema.getRequired() == null ? List.of() : schema.getRequired());

@@ -8,11 +8,13 @@ import static com.chargebee.openapi.Resource.isSubResourceSchema;
 import static com.chargebee.sdk.common.Constant.DEBUG_RESOURCE;
 import static com.chargebee.sdk.common.Constant.SDK_DEBUG;
 import static com.chargebee.sdk.python.v3.Common.*;
+import static com.chargebee.sdk.python.v3.Constants.SORT_BY;
 import static com.chargebee.sdk.python.v3.Constants.STRING_JOIN_DELIMITER;
 import static com.chargebee.sdk.python.v3.DataTypeParser.*;
 import static com.chargebee.sdk.python.v3.Imports.operationImports;
 import static com.chargebee.sdk.python.v3.Imports.responseImports;
 
+import com.chargebee.GenUtil;
 import com.chargebee.openapi.*;
 import com.chargebee.openapi.Enum;
 import com.chargebee.sdk.FileOp;
@@ -157,11 +159,10 @@ public class PythonV3 extends Language {
         operation.setHttpRequestType(action.httpRequestType.toString());
         operation.setJsonKeys(action.getJsonKeysInRequestBody());
         ActionAssist actionAssist =
-            new ActionAssist()
-                .setAction(action)
-                .setFlatMultiAttribute(false)
-                .includePagination()
-                .includeFilterSubResource();
+            ActionAssist.of(action)
+                .withFlatMultiAttribute(false)
+                .withPagination(true)
+                .withFilterSubResource(true);
         ResponseParser pyOperationResponse =
             new ResponseParser(
                 action, activeResource.name, action.response().responseParameters(this));
@@ -322,12 +323,11 @@ public class PythonV3 extends Language {
     StringJoiner buf = new StringJoiner("\n");
     HashMap<String, Integer> m = new HashMap<>();
     ActionAssist actionAssist =
-        new ActionAssist()
-            .setAction(action)
-            .setFlatOuterEntries(true)
-            .includePagination()
-            .setAcceptOnlyPagination()
-            .includeFilterSubResource();
+        ActionAssist.of(action)
+            .withFlatOuterEntries(true)
+            .withPagination(true)
+            .withOnlyPagination(true)
+            .withFilterSubResource(true);
     for (Attribute attribute : actionAssist.getAllAttribute()) {
       typePrefix = attribute.isRequired ? ": Required" : ": NotRequired";
       if (attribute.isSubResource() || attribute.isCompositeArrayRequestBody()) {
@@ -619,7 +619,9 @@ public class PythonV3 extends Language {
     if (schema instanceof BooleanSchema) {
       return Constants.BOOLEAN_TYPE;
     }
-    if (schema instanceof MapSchema && Objects.equals(schema.getAdditionalProperties(), true)) {
+    if (schema instanceof ObjectSchema
+        && GenUtil.hasAdditionalProperties(schema)
+        && !attributeName.equalsIgnoreCase(SORT_BY)) {
       return Constants.JSON_OBJECT_TYPE;
     }
     if (schema instanceof ArraySchema
@@ -698,8 +700,7 @@ public class PythonV3 extends Language {
       return Constants.INT_TYPE;
     } else if (schema instanceof BooleanSchema) {
       type = Constants.BOOLEAN_TYPE;
-    } else if (schema instanceof MapSchema
-        && Objects.equals(schema.getAdditionalProperties(), true)) {
+    } else if (schema instanceof ObjectSchema && GenUtil.hasAdditionalProperties(schema)) {
       type = Constants.JSON_OBJECT_TYPE;
     } else if (schema instanceof ArraySchema
         && schema.getItems() != null
@@ -748,7 +749,7 @@ public class PythonV3 extends Language {
     if (schema instanceof BooleanSchema) {
       return Constants.BOOLEAN_TYPE;
     }
-    if (schema instanceof MapSchema && Objects.equals(schema.getAdditionalProperties(), true)) {
+    if (schema instanceof ObjectSchema && GenUtil.hasAdditionalProperties(schema)) {
       return Constants.JSON_OBJECT_TYPE;
     }
     if (schema instanceof ArraySchema

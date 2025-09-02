@@ -3,6 +3,7 @@ package com.chargebee.openapi;
 import static com.chargebee.openapi.Extension.*;
 
 import com.chargebee.ApiVersionHandler;
+import com.chargebee.GenUtil;
 import com.chargebee.QAModeHandler;
 import com.chargebee.handlebar.Inflector;
 import com.chargebee.openapi.parameter.Response;
@@ -76,7 +77,7 @@ public class Resource {
   }
 
   public static boolean isReferenceSchema(Schema<?> schema) {
-    return schema.get$ref() != null;
+    return schema != null && schema.get$ref() != null;
   }
 
   public static String referredResourceName(Schema<?> schema) {
@@ -404,7 +405,7 @@ public class Resource {
   }
 
   public boolean isAdditionalPropertiesSupported() {
-    return schema.getAdditionalProperties() != null && (boolean) schema.getAdditionalProperties();
+    return schema.getAdditionalProperties() != null && GenUtil.hasAdditionalProperties(schema);
   }
 
   // should handle HiddenFromSDK in calling function

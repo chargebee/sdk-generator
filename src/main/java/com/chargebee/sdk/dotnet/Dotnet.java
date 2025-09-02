@@ -34,7 +34,7 @@ public class Dotnet extends Language {
   List<Resource> resourceList = new ArrayList<>();
   List<Enum> globalEnums;
 
-  protected final String[] hiddenOverride = {"usage_file", "media", "non_subscription"};
+  protected final String[] hiddenOverride = {"media", "non_subscription"};
 
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
@@ -211,7 +211,7 @@ public class Dotnet extends Language {
 
   public List<SingularSubResource> getMultiSubs(Action action) {
     List<SingularSubResource> subResources = new ArrayList<>();
-    ActionAssist actionAssist = new ActionAssist().setAction(action).setFlatMultiAttribute(true);
+    ActionAssist actionAssist = ActionAssist.of(action).withFlatMultiAttribute(true);
     for (Attribute attribute : actionAssist.multiSubAttributes()) {
       attribute
           .attributes()
@@ -254,7 +254,7 @@ public class Dotnet extends Language {
 
   public List<SingularSubResource> getSingularSubs(Action action) {
     List<SingularSubResource> subResources = new ArrayList<>();
-    ActionAssist actionAssist = new ActionAssist().setAction(action).setFlatSingleAttribute(true);
+    ActionAssist actionAssist = ActionAssist.of(action).withFlatSingleAttribute(true);
     for (Attribute attribute : actionAssist.singularSubAttributes()) {
       if (attribute.isFilterAttribute()) continue;
       attribute
@@ -300,16 +300,18 @@ public class Dotnet extends Language {
       operationRequest.setHasBatch(action.isBatch());
       operationRequest.setPostOperationWithFilter(
           action.hasPostActionContainingFilterAsBodyParams());
-      if (operationRequest.canHide()) continue;
+      // Don't hide operations that have subDomain - they need specific request classes for fluent
+      // chaining
+      if (operationRequest.canHide() && action.subDomain() == null) continue;
       operationRequests.add(operationRequest);
     }
     return operationRequests;
   }
 
   private List<OperationRequestParameter> getOperationParams(Action action) {
-    ActionAssist actionAssist = new ActionAssist().setAction(action).includeSortBy();
+    ActionAssist actionAssist = ActionAssist.of(action).withSortBy(true);
     if (activeResource.name.equals(EXPORT)) {
-      actionAssist.setFlatSingleAttribute(true);
+      actionAssist = actionAssist.withFlatSingleAttribute(true);
     }
     List<OperationRequestParameter> operationRequestParameters = new ArrayList<>();
     for (Attribute attribute : actionAssist.getAllAttribute()) {
@@ -696,7 +698,9 @@ public class Dotnet extends Language {
 
   public String getReqCreationCode(Action action) {
     boolean isCodeGen = isCodeGen(action);
-    if (action.isInputObjNeeded() && isCodeGen) {
+    // Generate specific request class if action needs input object OR has subDomain (for fluent
+    // chaining)
+    if ((action.isInputObjNeeded() && isCodeGen) || action.subDomain() != null) {
       StringBuilder buf = new StringBuilder();
       buf.append("return new ").append(getClazName(action)).append("(url");
       if (!action.isListResourceAction()) {
@@ -775,7 +779,9 @@ public class Dotnet extends Language {
 
   private String getRetType(Action action) {
     boolean isCodeGen = isCodeGen(action);
-    if (action.isInputObjNeeded() && isCodeGen) {
+    // Generate specific request class if action needs input object OR has subDomain (for fluent
+    // chaining)
+    if ((action.isInputObjNeeded() && isCodeGen) || action.subDomain() != null) {
       return getClazName(action);
     } else {
       return action.isListResourceAction() ? "ListRequest" : "EntityRequest<Type>";
@@ -1049,7 +1055,7 @@ public class Dotnet extends Language {
     if (schema instanceof BooleanSchema) {
       return "bool";
     }
-    if (schema instanceof MapSchema && Objects.equals(schema.getAdditionalProperties(), true)) {
+    if (schema instanceof ObjectSchema && GenUtil.hasAdditionalProperties(schema)) {
       if (activeResource.hasContentTypeJsonAction()) {
         return DICTIONARY_K_STR_V_OBJ;
       }
