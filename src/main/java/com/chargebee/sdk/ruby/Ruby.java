@@ -21,6 +21,7 @@ public class Ruby extends Language {
         spec.resources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
+    var exceptionsResources = spec.errorResources();
     var createModelsDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>();
@@ -28,8 +29,18 @@ public class Ruby extends Language {
     fileOps.add(createModelsDirectory);
     fileOps.addAll(generateResourceFiles(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
+    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
 
     return fileOps;
+  }
+
+  private FileOp generateExeptionFile(
+      String outputDirectoryPath, List<com.chargebee.openapi.Error> errorsResources)
+      throws IOException {
+    Template exceptionTemplate = getTemplateContent("errors");
+    var templateParams = errorSchemas(errorsResources);
+    return new FileOp.WriteString(
+        outputDirectoryPath, "errors.rb", exceptionTemplate.apply(templateParams));
   }
 
   @Override
@@ -38,7 +49,9 @@ public class Ruby extends Language {
         "models.resource",
         "/templates/ruby/models.resource.rb.hbs",
         "result",
-        "/templates/ruby/result.rb.hbs");
+        "/templates/ruby/result.rb.hbs",
+        "errors",
+        "/templates/ruby/errors.rb.hbs");
   }
 
   private List<FileOp> generateResourceFiles(String outDirectoryPath, List<Resource> resources)

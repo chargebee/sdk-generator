@@ -85,7 +85,7 @@ public class Spec {
     return Enum.globalEnums(openAPI);
   }
 
-  public List<Resource> errorResources() {
+  public List<Error> errorResources() {
     if (openAPI.getComponents() == null) {
       return List.of();
     }
@@ -97,14 +97,9 @@ public class Spec {
         .filter(entry -> isErrorSchema(entry.getKey(), entry.getValue()))
         .map(
             entry -> {
-              if (QAModeHandler.getInstance().getValue()) {
-                return new Resource(entry.getKey(), entry.getValue(), List.of()).enableForQa();
-              }
-              return new Resource(entry.getKey(), entry.getValue(), List.of());
+              return new Error(entry.getKey(), entry.getValue());
             })
-        .filter(Resource::isNotHiddenFromSDKGeneration)
-        .filter(Resource::isNotThirdPartyResource)
-        .sorted(Comparator.comparing(resource -> resource.name))
+        .sorted(Comparator.comparing(error -> error.name))
         .toList();
   }
 

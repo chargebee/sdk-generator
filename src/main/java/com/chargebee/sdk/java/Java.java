@@ -72,7 +72,7 @@ public class Java extends Language {
     var createEnumsDirectory =
         new FileOp.CreateDirectory(
             outputDirectoryPath + "/" + Constants.MODELS, "/" + Constants.ENUMS);
-    List<Resource> customErroException =
+    List<com.chargebee.openapi.Error> customErroException =
         spec.errorResources().stream()
             .filter(r -> !r.name.matches("\\d+"))
             .collect(Collectors.toCollection(ArrayList::new));
@@ -206,7 +206,8 @@ public class Java extends Language {
   }
 
   private List<FileOp> generateErrorExceptions(
-      String outDirectoryPath, List<Resource> customErroException) throws IOException {
+      String outDirectoryPath, List<com.chargebee.openapi.Error> customErroException)
+      throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
     Template resourceTemplate = getTemplateContent("exceptions");
     for (var exception : customErroException) {
@@ -1221,11 +1222,11 @@ public class Java extends Language {
     return cols;
   }
 
-  private List<Column> getExceptionCols(Resource res) {
+  private List<Column> getExceptionCols(com.chargebee.openapi.Error res) {
     List<Column> cols = new ArrayList<>();
     List<String> superAttributes =
         Arrays.asList("message", "error_msg", "type", "error_code", "api_error_code");
-    for (Attribute attribute : res.getSortedResourceAttributes()) {
+    for (Attribute attribute : res.attributes()) {
       if (attribute.isContentObjectAttribute()) continue;
       if (superAttributes.contains(attribute.name)) continue;
       Column column = new Column();
