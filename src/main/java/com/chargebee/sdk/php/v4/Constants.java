@@ -2,6 +2,7 @@ package com.chargebee.sdk.php.v4;
 
 public class Constants {
   public static final String RESOURCES = "resources";
+  public static final String LIST_RESPONSE_OBJECT = "listResponseObject";
   public static final String PHP_FILE_NAME_EXTENSION = ".php";
   public static final String RESPONSE = "response";
   public static final String API_DOCS_URL = "https://apidocs.chargebee.com/docs/api/";

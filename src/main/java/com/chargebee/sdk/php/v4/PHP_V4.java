@@ -35,6 +35,8 @@ public class PHP_V4 extends Language {
         "/templates/php/v4/listResponse.php.hbs",
         CHARGEBEE_CLIENT,
         "/templates/php/v4/chargebeeClient.php.hbs",
+        LIST_RESPONSE_OBJECT,
+        "/templates/php/v4/listResponseObject.php.hbs",
         ACTION_CONTRACT,
         "/templates/php/v4/actionContract.php.hbs");
   }
