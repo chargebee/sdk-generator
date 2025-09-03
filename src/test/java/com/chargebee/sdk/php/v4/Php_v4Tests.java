@@ -657,7 +657,7 @@ public class Php_v4Tests extends LanguageTests {
         buildSpec().withResources(customer, card).withOperation("/customers", operation).done();
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(14);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(16);
     String expectedContentFile = FileOp.fetchFileContent(sampleDirectoryPath + "/clientFile.txt");
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
   }
@@ -694,5 +694,27 @@ public class Php_v4Tests extends LanguageTests {
     var createDirectoryFileOp = (FileOp.CreateDirectory) fileOps.get(7);
     assertCreateDirectoryFileOp(createDirectoryFileOp, basePath + "/Resources/Customer", "Enums");
     assertThat(writeStringFileOp.fileName).isEqualTo("Type.php");
+  }
+
+  @Test
+  void shouldCreateListResponseObjectForListRequests() throws IOException {
+    var customer =
+        buildResource("customer").withAttribute("id", true).withAttribute("email", true).done();
+    var card = buildResource("card").withAttribute("id", true).withAttribute("last4", true).done();
+    var operation =
+        buildListOperation("list")
+            .forResource("customer")
+            .withResponse(
+                resourceResponseParam("customer", customer),
+                resourceResponseParam("card", card, false))
+            .done();
+    var spec =
+        buildSpec().withResources(customer, card).withOperation("/customers", operation).done();
+    List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
+
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(15);
+    String expectedContentFile =
+        FileOp.fetchFileContent(sampleDirectoryPath + "/ListCustomerResponseListObjectSample.txt");
+    assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
   }
 }
