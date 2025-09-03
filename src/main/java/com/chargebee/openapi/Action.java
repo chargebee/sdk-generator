@@ -318,13 +318,31 @@ public class Action {
   }
 
   private ObjectSchema onSuccessSchema() {
-    return (ObjectSchema)
-        operation.getResponses().get("200").getContent().get("application/json").getSchema();
+    if (operation.getResponses().get("200") != null
+        && operation.getResponses().get("200").getContent() != null
+        && operation.getResponses().get("200").getContent().get("application/json") != null) {
+      return (ObjectSchema)
+          operation.getResponses().get("200").getContent().get("application/json").getSchema();
+    }
+
+    if (operation.getResponses().get("202") != null
+        && operation.getResponses().get("202").getContent() != null
+        && operation.getResponses().get("202").getContent().get("application/json") != null) {
+      return (ObjectSchema)
+          operation.getResponses().get("202").getContent().get("application/json").getSchema();
+    }
+
+    if (operation.getResponses().get("204") != null
+        && operation.getResponses().get("204").getContent() != null) {
+      return (ObjectSchema)
+          operation.getResponses().get("204").getContent().get("application/json").getSchema();
+    }
+
+    return null; // fallback if none exist
   }
 
   public ObjectSchema getOnSuccessSchema() {
-    return (ObjectSchema)
-        operation.getResponses().get("200").getContent().get("application/json").getSchema();
+    return onSuccessSchema();
   }
 
   public boolean hasInputParamsForEAPClientLibs() {
