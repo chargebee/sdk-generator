@@ -1,0 +1,15 @@
+<?php
+{{#if namespace}}namespace {{namespace}};{{/if}}
+{{#each cols}}{{#if hasChildCols}}
+{{#each childCols}}use Chargebee{{backslash}}Resources{{backslash}}{{fieldTypePHP}}{{backslash}}{{fieldTypePHP}};
+{{/each}}{{/if}}{{/each}}{{#each cols}}{{#if hasChildCols}}
+class {{ phpDocField }}
+{ {{#each childCols}}
+    public {{#if isOptional}}?{{/if}}{{fieldTypePHP}} ${{name}};
+{{/each}}    public function __construct({{#each childCols}}
+        {{#if isOptional}}?{{/if}}{{fieldTypePHP}} ${{name}},
+    {{/each}}) { {{#each childCols}}
+        $this->{{name}} = ${{name}};{{/each}}
+    }
+}
+{{/if}}{{/each}}

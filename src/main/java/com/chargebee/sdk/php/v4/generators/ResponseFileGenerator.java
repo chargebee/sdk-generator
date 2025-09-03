@@ -18,11 +18,13 @@ public class ResponseFileGenerator implements FileGenerator {
   private final PHP_V4 phpGenerator;
   private final Template responseTemplate;
   private final Template listResponseTemplate;
+  private final Template listResponseObjectTemplate;
 
   public ResponseFileGenerator(PHP_V4 phpGenerator) {
     this.phpGenerator = phpGenerator;
     this.responseTemplate = phpGenerator.getTemplateContent(Constants.RESPONSE);
     this.listResponseTemplate = phpGenerator.getTemplateContent(LIST_RESPONSE);
+    this.listResponseObjectTemplate = phpGenerator.getTemplateContent(LIST_RESPONSE_OBJECT);
   }
 
   @Override
@@ -73,6 +75,9 @@ public class ResponseFileGenerator implements FileGenerator {
         fileOps.addAll(
             generateResponseFile(
                 outputPath, directoryName, responseResource, listResponseTemplate));
+        fileOps.addAll(
+            (generateListResponseObject(
+                outputPath, directoryName, responseResource, listResponseObjectTemplate)));
       }
     }
 
@@ -94,6 +99,24 @@ public class ResponseFileGenerator implements FileGenerator {
         new FileOp.WriteString(
             basePath + "/" + directoryName,
             resource.getClazName() + PHP_FILE_NAME_EXTENSION,
+            content));
+  }
+
+  private List<FileOp> generateListResponseObject(
+      String basePath,
+      String directoryName,
+      com.chargebee.sdk.php.v4.models.Resource resource,
+      Template template)
+      throws IOException {
+
+    String content =
+        template.apply(phpGenerator.getObjectMapper().convertValue(resource, Map.class));
+
+    return Arrays.asList(
+        new FileOp.CreateDirectory(basePath, directoryName),
+        new FileOp.WriteString(
+            basePath + "/" + directoryName,
+            resource.getClazName() + "ListObject" + PHP_FILE_NAME_EXTENSION,
             content));
   }
 }

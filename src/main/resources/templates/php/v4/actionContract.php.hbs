@@ -3,7 +3,6 @@ namespace Chargebee\Actions\Contracts;
     {{#each imports}}
 use {{.}};{{/each}}
 use Exception;
-use Psr\Http\Client\ClientExceptionInterface;
 use Chargebee\Exceptions\PaymentException;
 use Chargebee\Exceptions\OperationFailedException;
 use Chargebee\Exceptions\APIError;
@@ -19,12 +18,10 @@ Interface {{resourceName}}Interface
     *   @param array<string, string> $headers
     *   @return {{returnType}}
     *   @throws PaymentException
-    *   @throws ClientExceptionInterface
     *   @throws OperationFailedException
     *   @throws APIError
     *   @throws InvalidRequestException
     *   @throws Exception
-    *   @throws ClientExceptionInterface
     */
     public function {{#eq name "list"}}all{{else}}{{name}}{{id}}{{/eq}}({{#if hasHandle}}string $id, {{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}array $params{{#and allRequestBodyParamsOptional allQueryParamsOptional}} = []{{/and}}, {{/or}}array $headers = []): {{returnType}};
 {{/each}}
