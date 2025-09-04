@@ -1,6 +1,7 @@
 package com.chargebee.sdk.php;
 
 import com.chargebee.handlebar.Inflector;
+import com.chargebee.openapi.Error;
 import com.chargebee.openapi.Resource;
 import com.chargebee.openapi.Spec;
 import com.chargebee.sdk.FileOp;
@@ -16,10 +17,11 @@ public class Php extends Language {
   @Override
   protected List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
     String modelsDirectoryPath = "/ChargeBee/Models";
+    String ExceptionDirectoryPath = "/ChargeBee/Exceptions";
     var createModelsDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>(List.of(createModelsDirectory));
-
+    List<Error> errors = spec.errorResources();
     var resources =
         spec.resources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
@@ -29,6 +31,7 @@ public class Php extends Language {
     fileOps.addAll(generateResourceFiles);
     fileOps.add(generateResultFile(outputDirectoryPath + "/ChargeBee", resources));
     fileOps.add(generateInitFile(outputDirectoryPath, resources));
+    fileOps.addAll(generateExceptionFiles(outputDirectoryPath + ExceptionDirectoryPath, errors));
 
     return fileOps;
   }
@@ -41,7 +44,9 @@ public class Php extends Language {
         "init",
         "/templates/php/init.php.hbs",
         "result",
-        "/templates/php/result.php.hbs");
+        "/templates/php/result.php.hbs",
+        "exception",
+        "/templates/php/exception.php.hbs");
   }
 
   private List<FileOp> generateResourceFiles(
@@ -65,6 +70,20 @@ public class Php extends Language {
                 resource.name + Inflector.singularize(subResource.name) + ".php",
                 resourceTemplate.apply(subContent)));
       }
+    }
+    return fileOps;
+  }
+
+  private List<FileOp> generateExceptionFiles(String resourcesDirectoryPath, List<Error> errors)
+      throws IOException {
+    List<FileOp> fileOps = new ArrayList<>();
+    Template resourceTemplate = getTemplateContent("exception");
+    for (var error : errors) {
+      if (error.name.matches("\\d+")) continue;
+      var content = error.templateParams(this);
+      fileOps.add(
+          new FileOp.WriteString(
+              resourcesDirectoryPath, error.name + ".php", resourceTemplate.apply(content)));
     }
     return fileOps;
   }

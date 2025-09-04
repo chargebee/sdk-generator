@@ -86,6 +86,8 @@ public class Spec {
   }
 
   public List<Error> errorResources() {
+    List<String> superAttributes =
+        Arrays.asList("message", "error_msg", "type", "error_code", "api_error_code");
     if (openAPI.getComponents() == null) {
       return List.of();
     }
@@ -95,6 +97,7 @@ public class Spec {
 
     return openAPI.getComponents().getSchemas().entrySet().stream()
         .filter(entry -> isErrorSchema(entry.getKey(), entry.getValue()))
+        .filter(entry -> !superAttributes.contains(entry.getKey()))
         .map(
             entry -> {
               return new Error(entry.getKey(), entry.getValue());
