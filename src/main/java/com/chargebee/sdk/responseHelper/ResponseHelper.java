@@ -1,5 +1,8 @@
 package com.chargebee.sdk.responseHelper;
 
+import static com.chargebee.GenUtil.toCamelCase;
+
+import com.chargebee.GenUtil;
 import com.chargebee.openapi.Resource;
 import com.chargebee.openapi.parameter.Response;
 import com.chargebee.sdk.DataType;
@@ -39,11 +42,22 @@ public class ResponseHelper {
 
   public List<String> jsonResponse(DataType lang) {
     Set<String> uniqueFields = new HashSet<>();
+    Set<String> resourceNames =
+        resourceList.stream()
+            .map(r -> r.name) // or r.getName()
+            .collect(Collectors.toSet());
+
     for (var resource : resourceList) {
       for (var response : resource.responseList()) {
-        if (response.templateParams(lang).get("type").equals("unknown[]")
-            || response.templateParams(lang).get("type").equals("unknown")) {
-          uniqueFields.add((String) response.templateParams(lang).get("name"));
+        String respName = (String) response.templateParams(lang).get("name");
+        String respCamel = toCamelCase(respName);
+        Object typeObj = response.templateParams(lang).get("type");
+        boolean typeUnknown = "unknown".equals(typeObj) || "unknown[]".equals(typeObj);
+        boolean responseNameAppearsInResources =
+            resourceNames.contains(respCamel)
+                || resourceNames.contains(GenUtil.singularize(respCamel));
+        if (typeUnknown || !responseNameAppearsInResources) {
+          uniqueFields.add(respName);
         }
       }
     }
