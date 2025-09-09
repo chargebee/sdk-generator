@@ -1031,7 +1031,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
     assertGoModelFileContent(
         writeStringFileOp,
         """

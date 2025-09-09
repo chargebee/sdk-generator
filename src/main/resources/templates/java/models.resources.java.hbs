@@ -128,10 +128,13 @@ public class {{clazName}} extends Resource<{{clazName}}> {
         {{#if subDomain~}}
         private {{clazName}}(Method httpMeth, String uri) {
             super(httpMeth, uri, null, "{{subDomain}}"{{#if jsonRequest}},true{{/if}});
+        }{{else~}}{{#if jsonRequest~}}
+        private {{clazName}}(Method httpMeth, String uri) {
+            super(httpMeth, uri, null, null,true);
         }{{else~}}
         private {{clazName}}(Method httpMeth, String uri) {
             super(httpMeth, uri);
-        }{{/if}}{{/if}}{{#if (and hasBatch (not jsonRequest)) }}
+        }{{/if}}{{/if}}{{/if}}{{#if (and hasBatch (not jsonRequest)) }}
         private {{clazName}}(Method httpMeth, String uri, String pathParam) {
             super(httpMeth, uri, pathParam);
         }{{/if}}
@@ -164,7 +167,7 @@ public class {{clazName}} extends Resource<{{clazName}}> {
             paramsV2.{{putMethodName}}(new PrimitiveParameter("{{name}}"), {{varName}});{{/if}}
             return this;
         }{{/if}}
-{{/each}}{{#each singularSubs }}{{#if deprecated }}
+{{/each}}{{~#if (not jsonRequest) }}{{~#each singularSubs }}{{~#if deprecated }}
         @Deprecated{{/if}}
         {{#if listParam }}
         public {{listType}}<{{returnGeneric}}> {{methName}}() {
@@ -175,7 +178,15 @@ public class {{clazName}} extends Resource<{{clazName}}> {
             paramsV2.{{putMethodName}}(new CompositeParameter("{{resName}}", "{{name}}"), {{varName}});{{/if}}
             return this;
         }
-{{/if}}{{/each}}{{#if (not jsonRequest) }}{{#each multiSubs }}{{#if deprecated }}
+        {{/if}}{{/each}}{{else}}{{~#each multiSubsForBatch as |subList key|}}
+        public {{ ../clazName }} {{key}}(List<{{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams > array) {
+            JSONArray jarray = new JSONArray();
+            for ({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams item : array) {
+                jarray.put(item.toJObject());
+            }
+            params.add("{{key}}", jarray);
+            return this;}
+{{/each~}}{{/if~}}{{#if (not jsonRequest) }}{{#each multiSubs }}{{#if deprecated }}
         @Deprecated{{/if}}
         public {{clazName}} {{methName}}(int index, {{{javaType}}} {{{varName}}}) {
             params.{{putMethodName}}("{{resName}}[{{name}}][" + index + "]", {{varName}});{{#if (and hasBatch (not jsonRequest)) }}
@@ -191,15 +202,12 @@ public class {{clazName}} extends Resource<{{clazName}}> {
         public ImportCreditNoteRequest discountEntityType(int index, Invoice.Discount.EntityType discountEntityType) {
             params.add("discounts[entity_type][" + index + "]", discountEntityType);
             return this;
-        }{{/if}}{{/each}}{{else}}{{~#each multiSubsForBatch as |subList key|}}
-        public {{ ../clazName }} {{key}}(List<{{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams > array) {
-            JSONArray jarray = new JSONArray();
-            for ({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams item : array) {
-                jarray.put(item.toJObject());
-            }
-            params.add("{{key}}", jarray);
-            return this;}
-        {{/each}}{{/if}}
+        }{{/if}}{{/each}}{{else}}{{~#each singularSubsForJsonRequest as |subList key|}}
+        public {{ ../clazName }} {{pascalCase key}}({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams item) {
+            params.add("{{key}}", item.toJObject());
+            return this;
+        }{{/each}}
+{{/if}}
         @Override
         public Params params() {
             return params;
@@ -209,7 +217,7 @@ public class {{clazName}} extends Resource<{{clazName}}> {
                 return paramsV2;
             }{{/if}}
     }
-{{/each}}{{~#each operRequestClasses }}{{#if (and hasBatch  jsonRequest) }}{{#each multiSubsForBatch as |subList key|}}
+{{/each}}{{~#each operRequestClasses }}{{#if jsonRequest }}{{#each multiSubsForBatch as |subList key|}}
     public static class {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams { {{#each subList as |singularSub|}}
         private final {{{singularSub.javaType}}} {{snakeCaseToPascalCase singularSub.name}};{{/each}}
         private {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder builder){
@@ -236,5 +244,32 @@ public class {{clazName}} extends Resource<{{clazName}}> {
         }
 
     }
+    {{/each}}{{#each singularSubsForJsonRequest as |subList key|}}
+    public static class {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams { {{#each subList as |singularSub|}}
+        private final {{{singularSub.javaType}}} {{snakeCaseToPascalCase singularSub.name}};{{/each}}
+        private {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams({{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder builder){
+            {{#each subList as |singularSub|}}this.{{snakeCaseToPascalCase singularSub.name}} = builder.{{snakeCaseToPascalCase singularSub.name}};
+            {{/each}}
+        }
+        public JSONObject toJObject(){
+            JSONObject jsonObject = new JSONObject();
+            {{#each subList as |singularSub|}}jsonObject.put("{{{singularSub.name}}}", this.{{snakeCaseToPascalCase singularSub.name}}{{#eq singularSub.javaType "Timestamp"}}.getTime(){{/eq}});
+            {{/each}}
+            return jsonObject;
+            }
+        }
+        public static class {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder { {{#each subList as |singularSub|}}
+            private {{{singularSub.javaType}}} {{snakeCaseToPascalCase singularSub.name}};{{/each}}
+        {{#each subList as |singularSub|}}
+            public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParamsBuilder set{{snakeCaseToPascalCase singularSub.name}}( {{{singularSub.javaType}}} {{snakeCaseToPascalCase singularSub.name}} ) {
+            this.{{snakeCaseToPascalCase singularSub.name}} = {{snakeCaseToPascalCase singularSub.name}};
+            return this;
+        } {{/each}}
+
+        public {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams build() {
+            return new {{snakeCaseToPascalCaseAndSingularize key}}{{../rawOperationName}}InputParams(this);
+        }
+
+        }
     {{/each}}{{/if}}{{/each}}{{~/if}}
 }

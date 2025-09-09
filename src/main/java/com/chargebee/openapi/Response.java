@@ -20,7 +20,9 @@ public class Response {
   public Map<String, Object> templateParams(DataType lang) {
     return Map.of(
         "description",
-        onSuccessSchema.getDescription() != null ? onSuccessSchema.getDescription() : "",
+        onSuccessSchema != null && onSuccessSchema.getDescription() != null
+            ? onSuccessSchema.getDescription()
+            : "",
         "name",
         toCamelCase(actionName) + "Response",
         "parameters",
@@ -45,6 +47,9 @@ public class Response {
   }
 
   protected List<com.chargebee.openapi.parameter.Response> responseParameters() {
+    if (getOnSuccessSchema() == null) {
+      return List.of();
+    }
     var properties = getOnSuccessSchema().getProperties();
     if (properties == null) {
       return List.of();

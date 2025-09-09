@@ -18,6 +18,7 @@ public @Data class OperationRequest {
   private String subDomain;
   private boolean isJsonRequest;
   private Map<String, List<SingularSubResource>> multiSubsForBatch;
+  private Map<String, List<SingularSubResource>> singularSubsForJsonRequest;
   private String rawOperationName;
   private List<SingularSubResource> singularSubs;
   private List<SingularSubResource> multiSubs;

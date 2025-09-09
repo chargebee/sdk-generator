@@ -17,6 +17,7 @@ public class OperationRequest {
   private boolean hasBatch;
   private boolean isJsonRequest;
   private Map<String, List<SingularSubResource>> multiSubsForBatch;
+  private Map<String, List<SingularSubResource>> singularSubsForJsonRequest;
   private String rawOperationName;
 
   public boolean canHide() {
