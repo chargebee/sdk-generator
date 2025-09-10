@@ -43,7 +43,7 @@ module ChargeBee
   class {{name}}Error < APIError
     attr_reader {{#each attributes}} :{{name}}{{#unless @last}},{{/unless}}{{/each}}
     def initialize(http_code=nil, json_obj=nil)
-        super(http_code=nil, json_obj=nil){{#each attributes}}
+        super(http_code, json_obj){{#each attributes}}
             @{{name}}=json_obj[:{{name}}]{{/each}}
     end
   end{{/each}}
