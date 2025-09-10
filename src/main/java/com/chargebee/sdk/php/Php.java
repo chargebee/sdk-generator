@@ -83,7 +83,7 @@ public class Php extends Language {
       var content = error.templateParams(this);
       fileOps.add(
           new FileOp.WriteString(
-              resourcesDirectoryPath, error.name + ".php", resourceTemplate.apply(content)));
+              resourcesDirectoryPath, error.name + "Exception.php", resourceTemplate.apply(content)));
     }
     return fileOps;
   }
