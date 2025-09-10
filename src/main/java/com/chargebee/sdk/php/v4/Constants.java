@@ -22,6 +22,7 @@ public class Constants {
   public static final String CONTENT = "Content";
   public static final String CHARGEBEE = "Chargebee";
   public static final String ACTION = "action";
+  public static final String EXCEPTION = "exception";
 
   public static final String ACTION_CONTRACT = "action_contract";
   public static final String INTERFACE = "Interface";
