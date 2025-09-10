@@ -10,7 +10,7 @@ class {{name}}Exception extends APIError
     {{/each}}
     public function __construct($httpStatusCode, $jsonObject, $responseHeaders){
         parent::__construct($httpStatusCode, $jsonObject, $responseHeaders);{{#each attributes}}
-        $this->{{snakeCaseToCamelCase name}} = isset($jsonObject['{{name}}']) ? $jsonObject['{{name}}'] : null; {{/each}}
+        $this->{{snakeCaseToCamelCase name}} = $jsonObject['{{name}}'] ?? null; {{/each}}
     }
     {{#each attributes}}
     public function get{{snakeCaseToPascalCase name}}()
