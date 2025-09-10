@@ -21,6 +21,11 @@ class PaymentError(APIError):
 class InvalidRequestError(APIError):
     def __init__(self, http_code,json_obj,headers=None):
         APIError.__init__(self, http_code,json_obj,headers)
+
+class OperationFailedError(APIError):
+    def __init__(self, http_code,json_obj,headers=None):
+        APIError.__init__(self, http_code,json_obj,headers)
+
 {{#each this}}
 class {{name}}Error(APIError):
     def __init__(self, http_code, json_obj, headers=None):
