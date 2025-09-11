@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 public class Java extends Language {
 
   public final ApiVersion apiVersion;
+  protected final String[] hiddenOverride = {"omnichannel_one_time_order", "omnichannel_subscription"};
   GenerationMode generationMode;
   JarType jarType;
   Resource activeResource;
