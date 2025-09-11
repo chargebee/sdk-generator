@@ -10,12 +10,18 @@ import com.chargebee.openapi.Resource;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class AttributeParser {
   public static List<String> getAttributesInMultiLine(Resource res, Resource activeResource) {
     List<String> attributesInMultiLine = new ArrayList<>();
+    List<String> contentFilterResource = Arrays.asList("HostedPage", "Event");
     for (Attribute attribute : res.getSortedResourceAttributes()) {
+      if (contentFilterResource.contains(res.name) && attribute.name.equals("content")) {
+        attributesInMultiLine.add("content: Content");
+        continue;
+      }
       attributesInMultiLine.add(
           attribute.name
               + (attribute.isRequired ? "" : "?")

@@ -53,6 +53,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
                 .fileContent
                 .replaceFirst("///<reference path='./../core.d.ts'/>", "")
                 .replaceFirst("///<reference path='./../index.d.ts'/>", "")
+                .replaceFirst("///<reference path='./resources/Content.d.ts' />", "")
                 .trim()
                 .replaceAll("\\s+", "__"))
         .isEqualTo(expectedFileContent);

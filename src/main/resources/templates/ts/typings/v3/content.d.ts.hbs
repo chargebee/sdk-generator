@@ -1,0 +1,10 @@
+///<reference path='./../core.d.ts'/>
+///<reference path='./../index.d.ts'/>
+
+declare module 'chargebee' {
+    export interface Content {
+        {{#each resources}} {{ id }}: {{snakeCaseToPascalCase id}};
+        {{/each}}
+    }
+}
+

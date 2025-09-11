@@ -34,11 +34,12 @@ public class TypeScriptTypings extends Language {
     var createResourcesDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, resourcesDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>(List.of(createResourcesDirectory));
-
     var resources =
         spec.resources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
+    List<String> resourceNamesList = resources.stream().map(r -> r.name).toList();
+    List<String> contentFilterResource = Arrays.asList("HostedPage", "Event");
     List<FileOp> generateResourceTypings =
         generateResourceTypings(outputDirectoryPath + resourcesDirectoryPath, resources);
     fileOps.addAll(generateResourceTypings);
@@ -46,16 +47,37 @@ public class TypeScriptTypings extends Language {
     fileOps.add(generateCoreFile(outputDirectoryPath, spec));
     fileOps.add(generateIndexFile(outputDirectoryPath, resources));
     fileOps.add(generateFilterFile(outputDirectoryPath + resourcesDirectoryPath));
+
+    boolean hasContentFilter = resourceNamesList.stream().anyMatch(contentFilterResource::contains);
+    if (hasContentFilter) {
+      fileOps.add(generateContentFile(outputDirectoryPath + resourcesDirectoryPath, resources));
+    }
     return fileOps;
+  }
+
+  private FileOp generateContentFile(String outputDirectoryPath, List<Resource> resources)
+      throws IOException {
+    List<Map<String, Object>> resourcesMap =
+        resources.stream().map(Resource::templateParams).toList();
+    Map templateParams = Map.of("resources", resourcesMap);
+    Template contentTemplate = getTemplateContent("content");
+    return new FileOp.WriteString(
+        outputDirectoryPath, "Content.d.ts", contentTemplate.apply(templateParams));
   }
 
   @Override
   protected Map<String, String> templatesDefinition() {
     return Map.of(
-        "resource", "/templates/ts/typings/v3/resource.d.ts.hbs",
-        "index", "/templates/ts/typings/v3/index.d.ts.hbs",
-        "core", "/templates/ts/typings/v3/core.d.ts.hbs",
-        "filter", "/templates/ts/typings/v3/filter.d.ts.hbs");
+        "resource",
+        "/templates/ts/typings/v3/resource.d.ts.hbs",
+        "index",
+        "/templates/ts/typings/v3/index.d.ts.hbs",
+        "core",
+        "/templates/ts/typings/v3/core.d.ts.hbs",
+        "filter",
+        "/templates/ts/typings/v3/filter.d.ts.hbs",
+        "content",
+        "/templates/ts/typings/v3/content.d.ts.hbs");
   }
 
   private FileOp generateIndexFile(String outputDirectoryPath, List<Resource> resources)
