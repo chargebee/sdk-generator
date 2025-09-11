@@ -73,9 +73,7 @@ public class Java extends Language {
         new FileOp.CreateDirectory(
             outputDirectoryPath + "/" + Constants.MODELS, "/" + Constants.ENUMS);
     List<com.chargebee.openapi.Error> customErroException =
-        spec.errorResources().stream()
-            .filter(r -> !r.name.matches("\\d+"))
-            .collect(Collectors.toCollection(ArrayList::new));
+        spec.errorResources().stream().collect(Collectors.toCollection(ArrayList::new));
     List<FileOp> fileOps = new ArrayList<>();
 
     fileOps.addAll(List.of(createModelsDirectory, createEnumsDirectory));
@@ -86,9 +84,9 @@ public class Java extends Language {
             resources));
     fileOps.addAll(generateResourceFiles(outputDirectoryPath + "/" + Constants.MODELS, resources));
     fileOps.add(generateResultBaseFile(outputDirectoryPath + "/" + Constants.INTERNAL, resources));
-    fileOps.addAll(
-        generateErrorExceptions(
-            outputDirectoryPath + "/" + Constants.EXCEPTIONS, customErroException));
+    //    fileOps.addAll(
+    //        generateErrorExceptions(
+    //            outputDirectoryPath + "/" + Constants.EXCEPTIONS, customErroException));
     return fileOps;
   }
 

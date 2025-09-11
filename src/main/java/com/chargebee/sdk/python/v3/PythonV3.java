@@ -60,7 +60,7 @@ public class PythonV3 extends Language {
     fileOps.add(generateGlobalEnums(outputDirectoryPath + modelsDirectoryPath, globalEnums));
     fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.add(genMain(outputDirectoryPath, resources));
-    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
+    //    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
 
     return fileOps;
   }

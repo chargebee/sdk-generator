@@ -31,7 +31,7 @@ public class Python extends Language {
     fileOps.add(generateModelsInitFile(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.addAll(generateResourceFiles(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
-    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
+    //    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
 
     return fileOps;
   }

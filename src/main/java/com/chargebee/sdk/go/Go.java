@@ -68,9 +68,7 @@ public class Go extends Language {
         new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>();
     List<com.chargebee.openapi.Error> customErroException =
-        spec.errorResources().stream()
-            .filter(r -> !r.name.matches("\\d+"))
-            .collect(Collectors.toCollection(ArrayList::new));
+        spec.errorResources().stream().collect(Collectors.toCollection(ArrayList::new));
 
     fileOps.addAll(
         List.of(createEnumsDirectory, createActionsDirectoryPath, createModelsDirectory));
@@ -79,7 +77,7 @@ public class Go extends Language {
         generateActionsDirectories(outputDirectoryPath + actionsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
-    fileOps.add(generateErrorExceptions(outputDirectoryPath + "/", exceptionsResources));
+    //    fileOps.add(generateErrorExceptions(outputDirectoryPath + "/", exceptionsResources));
     return fileOps;
   }
 

@@ -94,10 +94,10 @@ public class Spec {
     if (openAPI.getComponents().getSchemas() == null) {
       return List.of();
     }
-
     return openAPI.getComponents().getSchemas().entrySet().stream()
         .filter(entry -> isErrorSchema(entry.getKey(), entry.getValue()))
         .filter(entry -> !superAttributes.contains(entry.getKey()))
+        .filter(entry -> !entry.getKey().matches("\\d+"))
         .map(
             entry -> {
               return new Error(entry.getKey(), entry.getValue());

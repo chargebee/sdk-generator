@@ -29,7 +29,7 @@ public class Ruby extends Language {
     fileOps.add(createModelsDirectory);
     fileOps.addAll(generateResourceFiles(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
-    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
+    //    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
 
     return fileOps;
   }

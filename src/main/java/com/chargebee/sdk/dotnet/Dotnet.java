@@ -51,9 +51,7 @@ public class Dotnet extends Language {
             outputDirectoryPath + "/" + MODELS_DIRECTORY_PATH, "/" + ENUMS_DIRECTORY_PATH);
     List<FileOp> fileOps = new ArrayList<>();
     List<com.chargebee.openapi.Error> customErroException =
-        spec.errorResources().stream()
-            .filter(r -> !r.name.matches("\\d+"))
-            .collect(Collectors.toCollection(ArrayList::new));
+        spec.errorResources().stream().collect(Collectors.toCollection(ArrayList::new));
 
     fileOps.addAll(List.of(createModelsDirectory, createEnumsDirectory));
     fileOps.addAll(
@@ -63,10 +61,10 @@ public class Dotnet extends Language {
     fileOps.addAll(
         generateResourceFiles(outputDirectoryPath + "/" + MODELS_DIRECTORY_PATH, resources));
     fileOps.add(generateResultFile(outputDirectoryPath + "/" + INTERNAL_DIRECTORY_PATH, resources));
-    fileOps.addAll(
-        generateErrorExceptions(
-            outputDirectoryPath + "/" + com.chargebee.sdk.java.Constants.EXCEPTIONS,
-            customErroException));
+    //    fileOps.addAll(
+    //        generateErrorExceptions(
+    //            outputDirectoryPath + "/" + com.chargebee.sdk.java.Constants.EXCEPTIONS,
+    //            customErroException));
 
     return fileOps;
   }

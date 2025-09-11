@@ -88,11 +88,12 @@ public class PHP_V4 extends Language {
     List<FileOp> fileOps = new ArrayList<>();
     Template resourceTemplate = getTemplateContent("exception");
     for (var error : errors) {
-      if (error.name.matches("\\d+")) continue;
       var content = error.templateParams(this);
       fileOps.add(
           new FileOp.WriteString(
-              resourcesDirectoryPath, error.name + "Exception.php", resourceTemplate.apply(content)));
+              resourcesDirectoryPath,
+              error.name + "Exception.php",
+              resourceTemplate.apply(content)));
     }
     return fileOps;
   }
