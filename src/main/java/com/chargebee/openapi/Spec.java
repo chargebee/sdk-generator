@@ -2,7 +2,11 @@ package com.chargebee.openapi;
 
 import com.chargebee.QAModeHandler;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.RequestBody;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -71,6 +75,33 @@ public class Spec {
         .toList();
   }
 
+  public List<Resource> allResources() {
+    if (openAPI.getComponents() == null) {
+      return List.of();
+    }
+    if (openAPI.getComponents().getSchemas() == null) {
+      return List.of();
+    }
+    Map<String, List<Action>> actions = getAllActions(openAPI);
+    return openAPI.getComponents().getSchemas().entrySet().stream()
+        .filter(entry -> Resource.resourceId(entry.getValue()) != null)
+        .map(
+            entry -> {
+              var resourceActions = actions.get(Resource.resourceId(entry.getValue()));
+              if (resourceActions == null) {
+                resourceActions = List.of();
+              }
+              if (QAModeHandler.getInstance().getValue()) {
+                return new Resource(entry.getKey(), entry.getValue(), resourceActions)
+                    .enableForQa();
+              }
+              return new Resource(entry.getKey(), entry.getValue(), resourceActions);
+            })
+        .filter(Resource::isNotThirdPartyResource)
+        .sorted(Comparator.comparing(resource -> resource.name))
+        .toList();
+  }
+
   public List<Resource> pcAwareResources() {
     return resources().stream()
         .filter(
@@ -112,5 +143,75 @@ public class Spec {
       return propertyNames.contains("api_error_code") && propertyNames.contains("message");
     }
     return false;
+  }
+
+  public List<Map<String, String>> extractWebhookInfo() {
+    List<Map<String, String>> result = new ArrayList<>();
+    Map<String, PathItem> webhooks = openAPI.getWebhooks();
+
+    if (webhooks != null) {
+      for (Map.Entry<String, PathItem> entry : webhooks.entrySet()) {
+        String type = entry.getKey();
+        PathItem pathItem = entry.getValue();
+
+        String resourceSchema = null;
+
+        Operation postOp = pathItem.getPost();
+        if (postOp.getDeprecated() == true) {
+          continue;
+        }
+        if (postOp != null && postOp.getRequestBody() != null) {
+          RequestBody requestBody = postOp.getRequestBody();
+
+          if (requestBody.getContent() != null
+              && requestBody.getContent().containsKey("application/json")) {
+
+            MediaType mediaType = requestBody.getContent().get("application/json");
+            Schema<?> schema = mediaType.getSchema();
+            if (schema.getDeprecated() != null && schema.getDeprecated() == true) {
+              continue;
+            }
+
+            if (schema != null && schema.get$ref() != null) {
+              String ref = schema.get$ref();
+              resourceSchema = ref.substring(ref.lastIndexOf("/") + 1);
+            }
+          }
+        }
+        Map<String, String> map = new HashMap<>();
+        map.put("type", type);
+        map.put("resource_schema_name", resourceSchema);
+        result.add(map);
+      }
+    }
+    return result;
+  }
+
+  public List<Map.Entry<String, Schema>> getEventSchemas() {
+    List<Map.Entry<String, Schema>> eventSchema =
+        openAPI.getComponents().getSchemas().entrySet().stream()
+            .filter(entry -> entry.getKey().contains("Event"))
+            .toList();
+    return eventSchema;
+  }
+
+  public List<Resource> resourcesForEvents() {
+    if (openAPI.getComponents() == null || openAPI.getComponents().getSchemas() == null) {
+      return List.of();
+    }
+    Map<String, List<Action>> actions = getAllActions(openAPI);
+    return openAPI.getComponents().getSchemas().entrySet().stream()
+        .filter(entry -> entry.getKey().contains("Event"))
+        .map(
+            entry -> {
+              var resourceId = Resource.resourceId(entry.getValue());
+              var resourceActions = actions.getOrDefault(resourceId, List.of());
+              Resource r = new Resource(entry.getKey(), entry.getValue(), resourceActions);
+              return QAModeHandler.getInstance().getValue() ? r.enableForQa() : r;
+            })
+        .filter(Resource::isNotHiddenFromSDKGeneration)
+        .filter(Resource::isNotThirdPartyResource)
+        .sorted(Comparator.comparing(resource -> resource.name))
+        .toList();
   }
 }

@@ -1,0 +1,49 @@
+///<reference path='./../core.d.ts'/>
+///<reference path='./../index.d.ts'/>
+///<reference path='./filter.d.ts'/>
+
+
+export namespace WebhookContent {
+}
+
+declare module 'chargebee' {
+
+    export enum WebhookContentTypeEnum { {{#each this}}
+        {{snakeCaseToPascalCase type}} = '{{type}}',{{/each}}
+    }
+
+    export type WebhookContentMap = { {{#each this}}
+        [WebhookContentTypeEnum.{{snakeCaseToPascalCase type}}] : {{snakeCaseToPascalCase type}}Content;{{/each}}
+    };
+
+    export type ContentFor<T extends WebhookContentTypeEnum> = WebhookContentMap[T];
+
+    export interface WebhookEvent<T extends WebhookContentTypeEnum = WebhookContentTypeEnum> {
+        content: ContentFor<T>;
+        id:string;
+        occurred_at:number;
+        source:SourceEnum;
+        user?:string;
+        webhook_status:'not_configured' | 'scheduled' | 'succeeded' | 're_scheduled' | 'failed' | 'skipped' | 'not_applicable' | 'disabled';
+        webhook_failure_reason?:string;
+        webhooks?:Event.Webhook[];
+        event_type?:EventTypeEnum;
+        api_version?:ApiVersionEnum;
+        origin_user?:string;
+    }
+    {{#each this }} export type {{snakeCaseToPascalCase type}}Content = { {{#each resource_schemas}}
+        {{pascalCaseToSnakeCase .}}: {{.}};
+    {{/each}}
+    }
+    {{/each}}
+    export type CustomerCreatedEventContent = {
+        customer: Customer;
+        card?: Card;
+    }
+
+    export type SubscriptionCreatedEventContent = {
+        customer: Customer;
+        subscription: Subscription;
+        invoices: Invoice[];
+    }
+}

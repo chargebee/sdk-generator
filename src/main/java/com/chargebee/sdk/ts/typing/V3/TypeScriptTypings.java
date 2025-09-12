@@ -35,7 +35,7 @@ public class TypeScriptTypings extends Language {
         new FileOp.CreateDirectory(outputDirectoryPath, resourcesDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>(List.of(createResourcesDirectory));
     var resources =
-        spec.resources().stream()
+        spec.allResources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
     List<String> resourceNamesList = resources.stream().map(r -> r.name).toList();
@@ -52,7 +52,67 @@ public class TypeScriptTypings extends Language {
     if (hasContentFilter) {
       fileOps.add(generateContentFile(outputDirectoryPath + resourcesDirectoryPath, resources));
     }
+    var webhookInfo = spec.extractWebhookInfo();
+    var eventSchema = spec.resourcesForEvents();
+
+    if (!eventSchema.isEmpty()) {
+      fileOps.add(
+          generateWebhookEventContent(
+              webhookInfo, eventSchema, outputDirectoryPath + resourcesDirectoryPath));
+    }
     return fileOps;
+  }
+
+  private FileOp generateWebhookEventContent(
+      List<Map<String, String>> webhookInfo, List<Resource> eventSchema, String outputDirectoryPath)
+      throws IOException {
+    List<Map<String, Object>> events = new ArrayList<>();
+    Set<String> seenTypes = new HashSet<>();
+
+    for (Map<String, String> info : webhookInfo) {
+      String type = info.get("type");
+
+      if (seenTypes.contains(type)) {
+        continue; // skip duplicate type
+      }
+      seenTypes.add(type);
+
+      String resourceSchemaName = info.get("resource_schema_name");
+      Resource matchedSchema =
+          eventSchema.stream()
+              .filter(schema -> schema.name.equals(resourceSchemaName))
+              .findFirst()
+              .orElse(null);
+
+      Map<String, Object> params =
+          new HashMap<>(
+              Map.of("type", type, "resource_schemas", getEventResourcesForAEvent(matchedSchema)));
+
+      events.add(params);
+    }
+
+    Template contentTemplate = getTemplateContent("webhookContent");
+    return new FileOp.WriteString(
+        outputDirectoryPath, "WebhookContent.d.ts", contentTemplate.apply(events));
+  }
+
+  private List<String> getEventResourcesForAEvent(Resource eventResource) {
+    List<String> resources = new ArrayList<>();
+    for (Attribute attribute : eventResource.attributes()) {
+      if (attribute.name.equals("content")) {
+        attribute
+            .attributes()
+            .forEach(
+                (innerAttribute -> {
+                  String ref = innerAttribute.schema.get$ref();
+                  if (ref != null && ref.contains("/")) {
+                    String schemaName = ref.substring(ref.lastIndexOf("/") + 1);
+                    resources.add(schemaName);
+                  }
+                }));
+      }
+    }
+    return resources;
   }
 
   private FileOp generateContentFile(String outputDirectoryPath, List<Resource> resources)
@@ -77,7 +137,9 @@ public class TypeScriptTypings extends Language {
         "filter",
         "/templates/ts/typings/v3/filter.d.ts.hbs",
         "content",
-        "/templates/ts/typings/v3/content.d.ts.hbs");
+        "/templates/ts/typings/v3/content.d.ts.hbs",
+        "webhookContent",
+        "/templates/ts/typings/v3/webhookContent.d.ts.hbs");
   }
 
   private FileOp generateIndexFile(String outputDirectoryPath, List<Resource> resources)

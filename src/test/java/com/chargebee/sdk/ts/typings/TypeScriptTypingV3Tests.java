@@ -54,6 +54,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
                 .replaceFirst("///<reference path='./../core.d.ts'/>", "")
                 .replaceFirst("///<reference path='./../index.d.ts'/>", "")
                 .replaceFirst("///<reference path='./resources/Content.d.ts' />", "")
+                .replaceFirst("///<reference path='./resources/WebhookContent.d.ts' />", "")
                 .trim()
                 .replaceAll("\\s+", "__"))
         .isEqualTo(expectedFileContent);
@@ -126,7 +127,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(4);
+    assertThat(fileOps).hasSize(5);
   }
 
   @Test
