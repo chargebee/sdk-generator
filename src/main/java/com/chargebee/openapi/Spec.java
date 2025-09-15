@@ -157,7 +157,7 @@ public class Spec {
         String resourceSchema = null;
 
         Operation postOp = pathItem.getPost();
-        if (postOp.getDeprecated() == true) {
+        if (postOp != null && Boolean.TRUE.equals(postOp.getDeprecated())) {
           continue;
         }
         if (postOp != null && postOp.getRequestBody() != null) {
