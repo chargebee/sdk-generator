@@ -54,7 +54,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
                 .replaceFirst("///<reference path='./../core.d.ts'/>", "")
                 .replaceFirst("///<reference path='./../index.d.ts'/>", "")
                 .replaceFirst("///<reference path='./resources/Content.d.ts' />", "")
-                .replaceFirst("///<reference path='./resources/WebhookContent.d.ts' />", "")
+                .replaceFirst("///<reference path='./resources/WebhookEvent.d.ts' />", "")
                 .trim()
                 .replaceAll("\\s+", "__"))
         .isEqualTo(expectedFileContent);

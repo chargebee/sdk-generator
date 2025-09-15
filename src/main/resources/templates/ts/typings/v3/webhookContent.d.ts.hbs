@@ -14,7 +14,7 @@ declare module 'chargebee' {
 
     export type ContentFor<T extends WebhookContentType> = WebhookContentMap[T];
 
-    export interface WebhookContent<T extends WebhookContentType = WebhookContentType> {
+    export interface WebhookEvent<T extends WebhookContentType = WebhookContentType> {
         content: ContentFor<T>;
         id:string;
         occurred_at:number;
