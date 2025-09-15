@@ -1,0 +1,42 @@
+using System;
+using System.Collections.Generic;
+using System.Net;
+
+using ChargeBee.Api;
+using Newtonsoft.Json.Linq;
+
+namespace ChargeBee.Exceptions
+{
+    public class {{clazName}}Exception : ApiException
+    {
+        private JObject ErrorJson;
+    {{#each cols}}
+        public {{returnType}} {{methName}} { get; set;}
+    {{/each}}
+
+        public {{clazName}}Exception(HttpStatusCode httpStatusCode, JObject errorJson)
+            : base(httpStatusCode, errorJson)
+        {
+            this.ErrorJson = errorJson;
+            {{#each cols}}
+            this.{{methName}} = {{{getterCode}}};
+            {{/each}}
+        }
+
+        private T GetValue<T>(string key, bool required = true)
+        {
+            if(ErrorJson[key] == null){
+                return default(T);
+            }
+            return ErrorJson[key].ToObject<T>();
+        }
+
+        private JArray GetJArray(String key, bool required = true)
+        {
+            if(ErrorJson[key] == null) {
+                return null;
+            }
+            return JArray.Parse(ErrorJson[key].ToString());
+        }
+    }
+}

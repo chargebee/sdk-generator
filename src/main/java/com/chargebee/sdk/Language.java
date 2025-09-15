@@ -4,6 +4,7 @@ import com.chargebee.ApiVersionHandler;
 import com.chargebee.QAModeHandler;
 import com.chargebee.handlebar.*;
 import com.chargebee.openapi.ApiVersion;
+import com.chargebee.openapi.Error;
 import com.chargebee.openapi.Resource;
 import com.chargebee.openapi.Spec;
 import com.chargebee.openapi.parameter.Response;
@@ -129,6 +130,15 @@ public abstract class Language implements DataType {
         "isApiV2",
         QAModeHandler.getInstance().getValue()
             && ApiVersionHandler.getInstance().getValue().equals(ApiVersion.V2));
+  }
+
+  protected List<Map<String, Object>> errorSchemas(List<Error> errorList) {
+    List<Map<String, Object>> errorSchemas =
+        errorList.stream()
+            .filter(r -> !r.name.matches("\\d+"))
+            .map(r -> r.templateParams(this))
+            .toList();
+    return errorSchemas;
   }
 
   protected List<Map<String, Object>> listResponses(ResponseHelper responseHelper) {

@@ -1,0 +1,20 @@
+<?php
+
+namespace Chargebee\Exceptions;
+
+use Chargebee\Exceptions\APIError;
+
+class {{name}}Exception extends APIError
+{
+    {{#each attributes}} private ${{snakeCaseToCamelCase name}};
+    {{/each}}
+    public function __construct($httpStatusCode, $jsonObject, $responseHeaders){
+        parent::__construct($httpStatusCode, $jsonObject, $responseHeaders);{{#each attributes}}
+        $this->{{snakeCaseToCamelCase name}} = $jsonObject['{{name}}'] ?? null; {{/each}}
+    }
+    {{#each attributes}}
+    public function get{{snakeCaseToPascalCase name}}()
+    {
+        return $this->{{snakeCaseToCamelCase name}};
+    }{{/each}}
+}

@@ -23,14 +23,26 @@ public class Python extends Language {
             .toList();
     var createModelsDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
+    var exceptionsResources = spec.errorResources();
+
     List<FileOp> fileOps = new ArrayList<>();
 
     fileOps.add(createModelsDirectory);
     fileOps.add(generateModelsInitFile(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.addAll(generateResourceFiles(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
+    //    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
 
     return fileOps;
+  }
+
+  private FileOp generateExeptionFile(
+      String outputDirectoryPath, List<com.chargebee.openapi.Error> errorsResources)
+      throws IOException {
+    Template exceptionTemplate = getTemplateContent("api_errors");
+    var templateParams = errorSchemas(errorsResources);
+    return new FileOp.WriteString(
+        outputDirectoryPath, "api_error.py", exceptionTemplate.apply(templateParams));
   }
 
   @Override
@@ -41,7 +53,9 @@ public class Python extends Language {
         "models.resource",
         "/templates/python/models.resource.py.hbs",
         "result",
-        "/templates/python/result.py.hbs");
+        "/templates/python/result.py.hbs",
+        "api_errors",
+        "/templates/python/api_errors.py.hbs");
   }
 
   private FileOp generateModelsInitFile(String outputDirectoryPath, List<Resource> resources)

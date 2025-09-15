@@ -1,0 +1,20 @@
+/*
+ * Copyright (c) 2011 chargebee.com
+ * All Rights Reserved.
+ */
+
+package com.chargebee.exceptions;
+
+import com.chargebee.APIException;
+import org.json.*;
+import java.util.List;
+import java.util.Map;
+
+
+public class {{clazName}}Exception extends APIException{ {{#each cols}}
+    public final {{javaType}} {{methName}};{{/each}}
+    public {{clazName}}Exception(int httpStatusCode, String message, JSONObject jsonObj, Map<String, List<String>> headers) {
+        super(httpStatusCode, message, jsonObj);{{#each cols}}
+        this.{{methName}}=jsonObj.{{{getterCode}}};{{/each}}
+    }
+}

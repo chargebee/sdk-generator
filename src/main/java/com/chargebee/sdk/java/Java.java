@@ -72,6 +72,8 @@ public class Java extends Language {
     var createEnumsDirectory =
         new FileOp.CreateDirectory(
             outputDirectoryPath + "/" + Constants.MODELS, "/" + Constants.ENUMS);
+    List<com.chargebee.openapi.Error> customErroException =
+        spec.errorResources().stream().collect(Collectors.toCollection(ArrayList::new));
     List<FileOp> fileOps = new ArrayList<>();
 
     fileOps.addAll(List.of(createModelsDirectory, createEnumsDirectory));
@@ -82,7 +84,9 @@ public class Java extends Language {
             resources));
     fileOps.addAll(generateResourceFiles(outputDirectoryPath + "/" + Constants.MODELS, resources));
     fileOps.add(generateResultBaseFile(outputDirectoryPath + "/" + Constants.INTERNAL, resources));
-
+    //    fileOps.addAll(
+    //        generateErrorExceptions(
+    //            outputDirectoryPath + "/" + Constants.EXCEPTIONS, customErroException));
     return fileOps;
   }
 
@@ -94,7 +98,9 @@ public class Java extends Language {
         "models.resources",
         "/templates/java/models.resources.java.hbs",
         "resultBase",
-        "/templates/java/internal.resultBase.java.hbs");
+        "/templates/java/internal.resultBase.java.hbs",
+        "exceptions",
+        "/templates/java/exceptions.java.hbs");
   }
 
   private List<FileOp> generateGlobalEnumFiles(
@@ -193,6 +199,24 @@ public class Java extends Language {
       var content = resourceTemplate.apply(oMapper.convertValue(resource, Map.class));
       String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, res.name);
       fileOps.add(new FileOp.WriteString(outDirectoryPath, fileName + ".java", content));
+    }
+    return fileOps;
+  }
+
+  private List<FileOp> generateErrorExceptions(
+      String outDirectoryPath, List<com.chargebee.openapi.Error> customErroException)
+      throws IOException {
+    List<FileOp> fileOps = new ArrayList<>();
+    Template resourceTemplate = getTemplateContent("exceptions");
+    for (var exception : customErroException) {
+      com.chargebee.sdk.java.models.Resource resource;
+      resource = new com.chargebee.sdk.java.models.Resource();
+      resource.setCols(getExceptionCols(exception));
+      resource.setClazName(exception.name);
+      ObjectMapper oMapper = new ObjectMapper();
+      var content = resourceTemplate.apply(oMapper.convertValue(resource, Map.class));
+      String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, exception.name);
+      fileOps.add(new FileOp.WriteString(outDirectoryPath, fileName + "Exception.java", content));
     }
     return fileOps;
   }
@@ -1185,6 +1209,24 @@ public class Java extends Language {
     List<Column> cols = new ArrayList<>();
     for (Attribute attribute : res.getSortedResourceAttributes()) {
       if (attribute.isContentObjectAttribute()) continue;
+      Column column = new Column();
+      column.setDeprecated(attribute.isDeprecated());
+      column.setJavaType(getColsRetType(attribute));
+      column.setGetterCode(getGetterCode(attribute));
+      column.setSubResource(attribute.isSubResource());
+      column.setMethName(getName(attribute.name));
+      cols.add(column);
+    }
+    return cols;
+  }
+
+  private List<Column> getExceptionCols(com.chargebee.openapi.Error res) {
+    List<Column> cols = new ArrayList<>();
+    List<String> superAttributes =
+        Arrays.asList("message", "error_msg", "type", "error_code", "api_error_code");
+    for (Attribute attribute : res.attributes()) {
+      if (attribute.isContentObjectAttribute()) continue;
+      if (superAttributes.contains(attribute.name)) continue;
       Column column = new Column();
       column.setDeprecated(attribute.isDeprecated());
       column.setJavaType(getColsRetType(attribute));

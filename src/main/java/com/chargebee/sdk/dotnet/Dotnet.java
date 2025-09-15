@@ -50,6 +50,8 @@ public class Dotnet extends Language {
         new FileOp.CreateDirectory(
             outputDirectoryPath + "/" + MODELS_DIRECTORY_PATH, "/" + ENUMS_DIRECTORY_PATH);
     List<FileOp> fileOps = new ArrayList<>();
+    List<com.chargebee.openapi.Error> customErroException =
+        spec.errorResources().stream().collect(Collectors.toCollection(ArrayList::new));
 
     fileOps.addAll(List.of(createModelsDirectory, createEnumsDirectory));
     fileOps.addAll(
@@ -59,6 +61,10 @@ public class Dotnet extends Language {
     fileOps.addAll(
         generateResourceFiles(outputDirectoryPath + "/" + MODELS_DIRECTORY_PATH, resources));
     fileOps.add(generateResultFile(outputDirectoryPath + "/" + INTERNAL_DIRECTORY_PATH, resources));
+    //    fileOps.addAll(
+    //        generateErrorExceptions(
+    //            outputDirectoryPath + "/" + com.chargebee.sdk.java.Constants.EXCEPTIONS,
+    //            customErroException));
 
     return fileOps;
   }
@@ -71,7 +77,9 @@ public class Dotnet extends Language {
         "models.resource",
         "/templates/dotnet/models.resources.cs.hbs",
         "resultBase",
-        "/templates/dotnet/resultBase.cs.hbs");
+        "/templates/dotnet/resultBase.cs.hbs",
+        "exceptions",
+        "/templates/dotnet/exception.cs.hbs");
   }
 
   private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)
@@ -207,6 +215,42 @@ public class Dotnet extends Language {
       visibleEnumEntries.add(visibleEnumEntry);
     }
     return visibleEnumEntries;
+  }
+
+  private List<FileOp> generateErrorExceptions(
+      String outDirectoryPath, List<com.chargebee.openapi.Error> customErroException)
+      throws IOException {
+    List<FileOp> fileOps = new ArrayList<>();
+    Template resourceTemplate = getTemplateContent("exceptions");
+    for (var exception : customErroException) {
+      com.chargebee.sdk.dotnet.models.Resource resource;
+      resource = new com.chargebee.sdk.dotnet.models.Resource();
+      resource.setCols(getExceptionCols(exception));
+      resource.setClazName(exception.name);
+      ObjectMapper oMapper = new ObjectMapper();
+      var content = resourceTemplate.apply(oMapper.convertValue(resource, Map.class));
+      String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, exception.name);
+      fileOps.add(new FileOp.WriteString(outDirectoryPath, fileName + "Exception.cs", content));
+    }
+    return fileOps;
+  }
+
+  private List<com.chargebee.sdk.dotnet.models.Column> getExceptionCols(
+      com.chargebee.openapi.Error res) {
+    List<com.chargebee.sdk.dotnet.models.Column> cols = new ArrayList<>();
+    List<String> superAttributes =
+        Arrays.asList("message", "error_msg", "type", "error_code", "api_error_code");
+    for (Attribute attribute : res.attributes()) {
+      if (superAttributes.contains(attribute.name)) continue;
+      com.chargebee.sdk.dotnet.models.Column column = new com.chargebee.sdk.dotnet.models.Column();
+      column.setDeprecated(attribute.isDeprecated());
+      column.setReturnType(getColsRetType(attribute));
+      column.setGetterCode(getGetterCode(attribute));
+      column.setSubResource(attribute.isSubResource());
+      column.setMethName(getName(attribute.name));
+      cols.add(column);
+    }
+    return cols;
   }
 
   public List<SingularSubResource> getMultiSubs(Action action) {

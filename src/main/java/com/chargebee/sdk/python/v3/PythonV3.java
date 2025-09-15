@@ -49,6 +49,7 @@ public class PythonV3 extends Language {
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
     resourceList = resources;
+    var exceptionsResources = spec.errorResources();
     var createModelsDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>();
@@ -59,8 +60,18 @@ public class PythonV3 extends Language {
     fileOps.add(generateGlobalEnums(outputDirectoryPath + modelsDirectoryPath, globalEnums));
     fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.add(genMain(outputDirectoryPath, resources));
+    //    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
 
     return fileOps;
+  }
+
+  private FileOp generateExeptionFile(
+      String outputDirectoryPath, List<com.chargebee.openapi.Error> errorsResources)
+      throws IOException {
+    Template exceptionTemplate = getTemplateContent("api_errors");
+    var templateParams = errorSchemas(errorsResources);
+    return new FileOp.WriteString(
+        outputDirectoryPath, "api_error.py", exceptionTemplate.apply(templateParams));
   }
 
   private FileOp generateModelsInitFile(
@@ -115,7 +126,9 @@ public class PythonV3 extends Language {
         "resource.response",
         "/templates/python/v3/models.resource.responses.py.hbs",
         "chargebee.main",
-        "/templates/python/v3/main.py.hbs");
+        "/templates/python/v3/main.py.hbs",
+        "api_errors",
+        "/templates/python/v3/api_errors.py.hbs");
   }
 
   private List<FileOp> genModels(String outputDirectoryPath, List<Resource> resources)

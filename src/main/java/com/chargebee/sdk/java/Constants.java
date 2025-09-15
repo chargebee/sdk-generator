@@ -17,7 +17,7 @@ public class Constants {
   public static final String MODELS = "models";
   public static final String ENUMS = "enums";
   public static final String INTERNAL = "internal";
-
+  public static final String EXCEPTIONS = "exceptions";
   public static final String STRING_TYPE = "string";
   public static final String INT_TYPE = "Integer";
   public static final String REQUEST = "Request";

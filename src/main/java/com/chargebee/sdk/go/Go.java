@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Go extends Language {
 
@@ -60,11 +61,14 @@ public class Go extends Language {
             .toList();
     resourceList = resources;
     var createEnumsDirectory = new FileOp.CreateDirectory(outputDirectoryPath, enumsDirectoryPath);
+    var exceptionsResources = spec.errorResources();
     var createActionsDirectoryPath =
         new FileOp.CreateDirectory(outputDirectoryPath, actionsDirectoryPath);
     var createModelsDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>();
+    List<com.chargebee.openapi.Error> customErroException =
+        spec.errorResources().stream().collect(Collectors.toCollection(ArrayList::new));
 
     fileOps.addAll(
         List.of(createEnumsDirectory, createActionsDirectoryPath, createModelsDirectory));
@@ -73,7 +77,17 @@ public class Go extends Language {
         generateActionsDirectories(outputDirectoryPath + actionsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
+    //    fileOps.add(generateErrorExceptions(outputDirectoryPath + "/", exceptionsResources));
     return fileOps;
+  }
+
+  private FileOp generateErrorExceptions(
+      String outDirectoryPath, List<com.chargebee.openapi.Error> errorsResources)
+      throws IOException {
+    Template exceptionTemplate = getTemplateContent("exceptions");
+    var templateParams = errorSchemas(errorsResources);
+    return new FileOp.WriteString(
+        outDirectoryPath, "api_error.go", exceptionTemplate.apply(templateParams));
   }
 
   private boolean hasJSONObjectCols(Resource r) {
@@ -391,7 +405,9 @@ public class Go extends Language {
         "result",
         "/templates/go/result.go.hbs",
         "models",
-        "/templates/go/models.go.hbs");
+        "/templates/go/models.go.hbs",
+        "exceptions",
+        "/templates/go/api_error.go.hbs");
   }
 
   private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)
@@ -1022,6 +1038,47 @@ public class Go extends Language {
         return "SortFilter";
       }
       return filterType(schema);
+    }
+    return "unknown";
+  }
+
+  public String dataType(Schema schema) {
+    if (schema instanceof StringSchema
+        || schema instanceof EmailSchema
+        || schema instanceof PasswordSchema) {
+      return Constants.STRING_TYPE;
+    }
+    if (schema.getExtensions() != null
+        && schema.getExtensions().get(IS_MONEY_COLUMN) != null
+        && schema.getExtensions().get(IS_MONEY_COLUMN).equals("true")) {
+      return Constants.INT_SIXTY_FOUR;
+    }
+    if (schema instanceof NumberSchema || schema instanceof IntegerSchema) {
+      if (schema.getType().equals("integer")) {
+        if (schema.getFormat().equals(Constants.INT_THIRTY_TWO)) {
+          return Constants.INT_THIRTY_TWO;
+        } else if (schema.getFormat().equals(Constants.INT_SIXTY_FOUR)
+            || schema.getFormat().equals(Constants.UNIX_TIME)) {
+          return Constants.INT_SIXTY_FOUR;
+        }
+      }
+      if (schema.getType().equals("number")
+          && (schema.getFormat().equals("decimal") || schema.getFormat().equals("double"))) {
+        return "float64";
+      }
+
+      return Constants.INT_THIRTY_TWO;
+    }
+    if (schema instanceof BooleanSchema) {
+      return "bool";
+    }
+    if (schema instanceof ObjectSchema && GenUtil.hasAdditionalProperties(schema)) {
+      return Constants.JSON_RAW_MESSAGE;
+    }
+    if (schema instanceof ArraySchema
+        && schema.getItems() != null
+        && schema.getItems().getType() == null) {
+      return "[]interface{}";
     }
     return "unknown";
   }

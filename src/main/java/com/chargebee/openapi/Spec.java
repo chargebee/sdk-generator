@@ -2,6 +2,7 @@ package com.chargebee.openapi;
 
 import com.chargebee.QAModeHandler;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.media.Schema;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -82,5 +83,34 @@ public class Spec {
 
   public List<Enum> globalEnums() {
     return Enum.globalEnums(openAPI);
+  }
+
+  public List<Error> errorResources() {
+    List<String> superAttributes =
+        Arrays.asList("message", "error_msg", "type", "error_code", "api_error_code");
+    if (openAPI.getComponents() == null) {
+      return List.of();
+    }
+    if (openAPI.getComponents().getSchemas() == null) {
+      return List.of();
+    }
+    return openAPI.getComponents().getSchemas().entrySet().stream()
+        .filter(entry -> isErrorSchema(entry.getKey(), entry.getValue()))
+        .filter(entry -> !superAttributes.contains(entry.getKey()))
+        .filter(entry -> !entry.getKey().matches("\\d+"))
+        .map(
+            entry -> {
+              return new Error(entry.getKey(), entry.getValue());
+            })
+        .sorted(Comparator.comparing(error -> error.name))
+        .toList();
+  }
+
+  private boolean isErrorSchema(String schemaName, Schema schema) {
+    if (schema.getProperties() != null) {
+      Set<String> propertyNames = schema.getProperties().keySet();
+      return propertyNames.contains("api_error_code") && propertyNames.contains("message");
+    }
+    return false;
   }
 }
