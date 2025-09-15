@@ -96,7 +96,7 @@ public class TypeScriptTypings extends Language {
 
     Template contentTemplate = getTemplateContent("webhookContent");
     return new FileOp.WriteString(
-        outputDirectoryPath, "WebhookContent.d.ts", contentTemplate.apply(events));
+        outputDirectoryPath, "WebhookEvent.d.ts", contentTemplate.apply(events));
   }
 
   private List<String> getEventResourcesForAEvent(Resource eventResource) {

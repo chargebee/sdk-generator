@@ -2,23 +2,19 @@
 ///<reference path='./../index.d.ts'/>
 ///<reference path='./filter.d.ts'/>
 
-
-export namespace WebhookContent {
-}
-
 declare module 'chargebee' {
 
-    export enum WebhookContentTypeEnum { {{#each this}}
+    export enum WebhookContentType { {{#each this}}
         {{snakeCaseToPascalCase type}} = '{{type}}',{{/each}}
     }
 
     export type WebhookContentMap = { {{#each this}}
-        [WebhookContentTypeEnum.{{snakeCaseToPascalCase type}}] : {{snakeCaseToPascalCase type}}Content;{{/each}}
+        [WebhookContentType.{{snakeCaseToPascalCase type}}] : {{snakeCaseToPascalCase type}}Content;{{/each}}
     };
 
-    export type ContentFor<T extends WebhookContentTypeEnum> = WebhookContentMap[T];
+    export type ContentFor<T extends WebhookContentType> = WebhookContentMap[T];
 
-    export interface WebhookEvent<T extends WebhookContentTypeEnum = WebhookContentTypeEnum> {
+    export interface WebhookEvent<T extends WebhookContentType = WebhookContentType> {
         content: ContentFor<T>;
         id:string;
         occurred_at:number;
