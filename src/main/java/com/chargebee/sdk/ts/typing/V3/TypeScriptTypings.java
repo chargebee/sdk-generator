@@ -22,6 +22,10 @@ import java.util.stream.Collectors;
 
 public class TypeScriptTypings extends Language {
   protected final String[] hiddenOverride = {"media"};
+  public static final String HOSTED_PAGE = "HostedPage";
+  public static final String EVENT = "Event";
+  public static final List<String> contentFilterResource = Arrays.asList(HOSTED_PAGE, EVENT);
+  public List<Map<String, String>> webhookInfo = new ArrayList<>();
   Resource activeResource;
 
   boolean forQa = false;
@@ -34,11 +38,12 @@ public class TypeScriptTypings extends Language {
     var createResourcesDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, resourcesDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>(List.of(createResourcesDirectory));
-
+    this.webhookInfo = spec.extractWebhookInfo();
     var resources =
-        spec.resources().stream()
+        spec.allResources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
+    List<String> resourceNamesList = resources.stream().map(r -> r.name).toList();
     List<FileOp> generateResourceTypings =
         generateResourceTypings(outputDirectoryPath + resourcesDirectoryPath, resources);
     fileOps.addAll(generateResourceTypings);
@@ -46,16 +51,98 @@ public class TypeScriptTypings extends Language {
     fileOps.add(generateCoreFile(outputDirectoryPath, spec));
     fileOps.add(generateIndexFile(outputDirectoryPath, resources));
     fileOps.add(generateFilterFile(outputDirectoryPath + resourcesDirectoryPath));
+
+    boolean hasContentFilter = resourceNamesList.stream().anyMatch(contentFilterResource::contains);
+    if (hasContentFilter) {
+      fileOps.add(generateContentFile(outputDirectoryPath + resourcesDirectoryPath, resources));
+    }
+    var eventSchema = spec.resourcesForEvents();
+
+    if (!eventSchema.isEmpty()) {
+      fileOps.add(
+          generateWebhookEventContent(
+              webhookInfo, eventSchema, outputDirectoryPath + resourcesDirectoryPath));
+    }
     return fileOps;
+  }
+
+  private FileOp generateWebhookEventContent(
+      List<Map<String, String>> webhookInfo, List<Resource> eventSchema, String outputDirectoryPath)
+      throws IOException {
+    List<Map<String, Object>> events = new ArrayList<>();
+    Set<String> seenTypes = new HashSet<>();
+
+    for (Map<String, String> info : webhookInfo) {
+      String type = info.get("type");
+
+      if (seenTypes.contains(type)) {
+        continue; // skip duplicate type
+      }
+      seenTypes.add(type);
+
+      String resourceSchemaName = info.get("resource_schema_name");
+      Resource matchedSchema =
+          eventSchema.stream()
+              .filter(schema -> schema.name.equals(resourceSchemaName))
+              .findFirst()
+              .orElse(null);
+
+      Map<String, Object> params =
+          new HashMap<>(
+              Map.of("type", type, "resource_schemas", getEventResourcesForAEvent(matchedSchema)));
+
+      events.add(params);
+    }
+
+    Template contentTemplate = getTemplateContent("webhookContent");
+    return new FileOp.WriteString(
+        outputDirectoryPath, "WebhookContent.d.ts", contentTemplate.apply(events));
+  }
+
+  private List<String> getEventResourcesForAEvent(Resource eventResource) {
+    List<String> resources = new ArrayList<>();
+    for (Attribute attribute : eventResource.attributes()) {
+      if (attribute.name.equals("content")) {
+        attribute
+            .attributes()
+            .forEach(
+                (innerAttribute -> {
+                  String ref = innerAttribute.schema.get$ref();
+                  if (ref != null && ref.contains("/")) {
+                    String schemaName = ref.substring(ref.lastIndexOf("/") + 1);
+                    resources.add(schemaName);
+                  }
+                }));
+      }
+    }
+    return resources;
+  }
+
+  private FileOp generateContentFile(String outputDirectoryPath, List<Resource> resources)
+      throws IOException {
+    List<Map<String, Object>> resourcesMap =
+        resources.stream().map(Resource::templateParams).toList();
+    Map templateParams = Map.of("resources", resourcesMap);
+    Template contentTemplate = getTemplateContent("content");
+    return new FileOp.WriteString(
+        outputDirectoryPath, "Content.d.ts", contentTemplate.apply(templateParams));
   }
 
   @Override
   protected Map<String, String> templatesDefinition() {
     return Map.of(
-        "resource", "/templates/ts/typings/v3/resource.d.ts.hbs",
-        "index", "/templates/ts/typings/v3/index.d.ts.hbs",
-        "core", "/templates/ts/typings/v3/core.d.ts.hbs",
-        "filter", "/templates/ts/typings/v3/filter.d.ts.hbs");
+        "resource",
+        "/templates/ts/typings/v3/resource.d.ts.hbs",
+        "index",
+        "/templates/ts/typings/v3/index.d.ts.hbs",
+        "core",
+        "/templates/ts/typings/v3/core.d.ts.hbs",
+        "filter",
+        "/templates/ts/typings/v3/filter.d.ts.hbs",
+        "content",
+        "/templates/ts/typings/v3/content.d.ts.hbs",
+        "webhookContent",
+        "/templates/ts/typings/v3/webhookContent.d.ts.hbs");
   }
 
   private FileOp generateIndexFile(String outputDirectoryPath, List<Resource> resources)
@@ -193,7 +280,7 @@ public class TypeScriptTypings extends Language {
     com.chargebee.sdk.ts.typing.V3.models.Resource resource;
     resource = new com.chargebee.sdk.ts.typing.V3.models.Resource();
     resource.setOperRequestInterfaces(getOperRequestInterfaces(res, activeResource));
-    resource.setAttributesInMultiLine(getAttributesInMultiLine(res, activeResource));
+    resource.setAttributesInMultiLine(getAttributesInMultiLine(res, activeResource, webhookInfo));
     ObjectMapper oMapper = new ObjectMapper();
     return oMapper.convertValue(resource, Map.class);
   }
