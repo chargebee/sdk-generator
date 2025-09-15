@@ -22,6 +22,10 @@ import java.util.stream.Collectors;
 
 public class TypeScriptTypings extends Language {
   protected final String[] hiddenOverride = {"media"};
+  public static final String HOSTED_PAGE = "HostedPage";
+  public static final String EVENT = "Event";
+  public static final List<String> contentFilterResource = Arrays.asList(HOSTED_PAGE, EVENT);
+  public List<Map<String, String>> webhookInfo = new ArrayList<>();
   Resource activeResource;
 
   boolean forQa = false;
@@ -34,12 +38,12 @@ public class TypeScriptTypings extends Language {
     var createResourcesDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, resourcesDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>(List.of(createResourcesDirectory));
+    this.webhookInfo = spec.extractWebhookInfo();
     var resources =
         spec.allResources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
     List<String> resourceNamesList = resources.stream().map(r -> r.name).toList();
-    List<String> contentFilterResource = Arrays.asList("HostedPage", "Event");
     List<FileOp> generateResourceTypings =
         generateResourceTypings(outputDirectoryPath + resourcesDirectoryPath, resources);
     fileOps.addAll(generateResourceTypings);
@@ -52,7 +56,6 @@ public class TypeScriptTypings extends Language {
     if (hasContentFilter) {
       fileOps.add(generateContentFile(outputDirectoryPath + resourcesDirectoryPath, resources));
     }
-    var webhookInfo = spec.extractWebhookInfo();
     var eventSchema = spec.resourcesForEvents();
 
     if (!eventSchema.isEmpty()) {
@@ -277,7 +280,7 @@ public class TypeScriptTypings extends Language {
     com.chargebee.sdk.ts.typing.V3.models.Resource resource;
     resource = new com.chargebee.sdk.ts.typing.V3.models.Resource();
     resource.setOperRequestInterfaces(getOperRequestInterfaces(res, activeResource));
-    resource.setAttributesInMultiLine(getAttributesInMultiLine(res, activeResource));
+    resource.setAttributesInMultiLine(getAttributesInMultiLine(res, activeResource, webhookInfo));
     ObjectMapper oMapper = new ObjectMapper();
     return oMapper.convertValue(resource, Map.class);
   }

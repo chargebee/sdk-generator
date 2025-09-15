@@ -36,14 +36,4 @@ declare module 'chargebee' {
     {{/each}}
     }
     {{/each}}
-    export type CustomerCreatedEventContent = {
-        customer: Customer;
-        card?: Card;
-    }
-
-    export type SubscriptionCreatedEventContent = {
-        customer: Customer;
-        subscription: Subscription;
-        invoices: Invoice[];
-    }
 }

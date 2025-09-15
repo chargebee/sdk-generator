@@ -1,8 +1,10 @@
 package com.chargebee.sdk.ts.typing.V3;
 
 import static com.chargebee.GenUtil.singularize;
+import static com.chargebee.GenUtil.toCamelCase;
 import static com.chargebee.openapi.Extension.SDK_ENUM_API_NAME;
 import static com.chargebee.openapi.Resource.*;
+import static com.chargebee.sdk.ts.typing.V3.TypeScriptTypings.*;
 import static com.chargebee.sdk.ts.typing.V3.Utils.getClazName;
 
 import com.chargebee.openapi.Attribute;
@@ -10,16 +12,35 @@ import com.chargebee.openapi.Resource;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class AttributeParser {
-  public static List<String> getAttributesInMultiLine(Resource res, Resource activeResource) {
+  public static List<String> getAttributesInMultiLine(
+      Resource res, Resource activeResource, List<Map<String, String>> webhookInfo) {
     List<String> attributesInMultiLine = new ArrayList<>();
-    List<String> contentFilterResource = Arrays.asList("HostedPage", "Event");
     for (Attribute attribute : res.getSortedResourceAttributes()) {
-      if (contentFilterResource.contains(res.name) && attribute.name.equals("content")) {
+      if (res.name.equals(HOSTED_PAGE) && attribute.name.equals("content")) {
         attributesInMultiLine.add("content: Content");
+        continue;
+      }
+      if (res.name.equals(EVENT) && attribute.name.equals("content")) {
+        StringBuilder contentType = new StringBuilder();
+
+        webhookInfo.forEach(
+            var -> {
+              String type = var.get("type");
+
+              if (type != null) {
+                if (contentType.length() > 0) {
+                  contentType.append(" & "); // delimiter
+                }
+                contentType.append(toCamelCase(type) + "Content");
+              }
+            });
+
+        String finalContentType = contentType.toString();
+        attributesInMultiLine.add(String.format("content: %s", finalContentType));
         continue;
       }
       attributesInMultiLine.add(
