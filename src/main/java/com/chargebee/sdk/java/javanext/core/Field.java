@@ -25,6 +25,7 @@ public class Field {
   private boolean subModelField;
 
   public String getName() {
+    if (name == null) return null;
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name);
   }
 
@@ -79,7 +80,9 @@ public class Field {
     if (type instanceof ListType listType) {
       var schema = listType.schema();
       if (schema == null) return null;
-      ArraySchema arraySchema = (ArraySchema) schema;
+      if (!(schema instanceof ArraySchema arraySchema)) {
+        return null;
+      }
       Schema<?> items = arraySchema.getItems();
       
       // Check if items has a $ref (reference to another schema)
@@ -104,19 +107,21 @@ public class Field {
     if (type instanceof ListType listType) {
       var schema = listType.schema();
       if (schema == null) return false;
-      ArraySchema arraySchema = (ArraySchema) schema;
+      if (!(schema instanceof ArraySchema arraySchema)) {
+        return false;
+      }
       Schema<?> items = arraySchema.getItems();
       
       // Check if items has a $ref (reference to another schema) OR has non-empty properties (inline object)
       return items != null
           && (items.get$ref() != null
-              || (items.getProperties() != null && !items.getProperties().isEmpty())
-              || ("object".equals(items.getType()) && (items.getProperties() == null || items.getProperties().isEmpty())));
+              || (items.getProperties() != null && !items.getProperties().isEmpty()));
     }
     return false;
   }
 
   public String getGetterName() {
+    if (name == null) return "get";
     return "get" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name);
   }
 
@@ -124,10 +129,12 @@ public class Field {
     if (subModel != null && subModel.getName() != null) {
       return subModel.getName() + "Params";
     }
+    if (name == null) return null;
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name) + "Params";
   }
 
   public String getSortBuilderType() {
+    if (name == null) return null;
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name) + "SortBuilder";
   }
 }
