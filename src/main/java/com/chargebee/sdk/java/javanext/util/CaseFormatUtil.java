@@ -42,6 +42,64 @@ public final class CaseFormatUtil {
     return CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, s);
   }
 
+  /**
+   * Convert any of: camelCase, PascalCase, snake_case, UPPER_SNAKE, kebab-case, dotted.case,
+   * spaced words, or mixed forms into lower_snake_case safely.
+   */
+  public static String toSnakeCaseSafe(String input) {
+    if (input == null) return "";
+    String trimmed = input.trim();
+    if (trimmed.isEmpty()) return "";
+
+    String normalized =
+        trimmed.replace('-', '_').replace(' ', '_').replace('.', '_').replace('/', '_');
+
+    StringBuilder result = new StringBuilder();
+    for (int i = 0; i < normalized.length(); i++) {
+      char ch = normalized.charAt(i);
+
+      if (ch == '_') {
+        if (result.length() > 0 && result.charAt(result.length() - 1) != '_') {
+          result.append('_');
+        }
+        continue;
+      }
+
+      char last = result.length() > 0 ? result.charAt(result.length() - 1) : '\0';
+
+      if (Character.isUpperCase(ch)) {
+        if (result.length() > 0
+            && last != '_'
+            && (Character.isLowerCase(last) || Character.isDigit(last))) {
+          result.append('_');
+        }
+        result.append(Character.toLowerCase(ch));
+      } else if (Character.isDigit(ch)) {
+        if (result.length() > 0 && last != '_' && Character.isLetter(last)) {
+          result.append('_');
+        }
+        result.append(ch);
+      } else {
+        if (result.length() > 0 && last != '_' && Character.isDigit(last)) {
+          result.append('_');
+        }
+        result.append(ch);
+      }
+    }
+
+    String snake = result.toString().replaceAll("__+", "_");
+    snake = snake.replaceAll("^_+|_+$", "");
+    return snake;
+  }
+
+  /** Convert any supported format into lowerCamelCase safely. */
+  public static String toLowerCamelSafe(String input) {
+    if (input == null) return null;
+    String upperCamel = toUpperCamelSafe(input);
+    if (upperCamel == null || upperCamel.isEmpty()) return upperCamel;
+    return Character.toLowerCase(upperCamel.charAt(0)) + upperCamel.substring(1);
+  }
+
   private static boolean containsUpperCase(String s) {
     for (int i = 0; i < s.length(); i++) {
       if (Character.isUpperCase(s.charAt(i))) {
