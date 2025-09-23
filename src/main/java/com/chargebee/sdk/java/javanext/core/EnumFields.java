@@ -1,7 +1,7 @@
 package com.chargebee.sdk.java.javanext.core;
 
-import com.google.common.base.CaseFormat;
 import com.chargebee.sdk.java.javanext.util.CaseFormatUtil;
+import com.google.common.base.CaseFormat;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,10 +18,7 @@ public class EnumFields {
 
   public List<AbstractMap.SimpleEntry<String, String>> getValues() {
     return enums.stream()
-        .map(
-            value ->
-                new AbstractMap.SimpleEntry<>(
-                    CaseFormatUtil.toUpperCamelSafe(value), value))
+        .map(value -> new AbstractMap.SimpleEntry<>(CaseFormatUtil.toUpperCamelSafe(value), value))
         .collect(Collectors.toList());
   }
 }

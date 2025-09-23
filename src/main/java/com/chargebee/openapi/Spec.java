@@ -215,7 +215,7 @@ public class Spec {
         .toList();
   }
 
-    public OpenAPI openAPI() {
-        return openAPI;
-    }
+  public OpenAPI openAPI() {
+    return openAPI;
+  }
 }

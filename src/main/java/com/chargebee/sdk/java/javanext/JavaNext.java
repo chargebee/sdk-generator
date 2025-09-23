@@ -18,9 +18,12 @@ public class JavaNext extends Language {
             .withOutputDirectoryPath(outputDirectoryPath)
             .withTemplate(getTemplateContent("core.models"))
             .build(spec.openAPI());
-    return List.of(
-            coreModelFiles)
-        .stream()
+    List<FileOp> paramsBuilderFiles =
+        new PostRequestParamsBuilder()
+            .withOutputDirectoryPath(outputDirectoryPath)
+            .withTemplate(getTemplateContent("core.post.params.builder"))
+            .build(spec.openAPI());
+    return List.of(coreModelFiles, paramsBuilderFiles).stream()
         .flatMap(List::stream)
         .collect(Collectors.toList());
   }
@@ -28,7 +31,10 @@ public class JavaNext extends Language {
   @Override
   protected Map<String, String> templatesDefinition() {
     return Map.of(
-        "core.models", "/templates/java/next/core.models.hbs");
+        "core.models",
+        "/templates/java/next/core.models.hbs",
+        "core.post.params.builder",
+        "/templates/java/next/core.post.params.builder.hbs");
   }
 
   @Override

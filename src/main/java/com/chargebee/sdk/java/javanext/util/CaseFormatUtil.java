@@ -2,13 +2,16 @@ package com.chargebee.sdk.java.javanext.util;
 
 import com.google.common.base.CaseFormat;
 
-/** Utility for safely converting strings to UpperCamel without assuming a single source format. */
+/**
+ * Utility for safely converting strings between cases without assuming a single source format.
+ * All methods return an empty string for null or blank inputs.
+ */
 public final class CaseFormatUtil {
   private CaseFormatUtil() {}
 
   public static String toUpperCamelSafe(String input) {
     if (input == null) {
-      return null;
+      return "";
     }
     String s = input.trim();
     if (s.isEmpty()) {
@@ -30,7 +33,8 @@ public final class CaseFormatUtil {
     }
 
     if (hasLower && hasUpper) {
-      CaseFormat src = Character.isUpperCase(s.charAt(0)) ? CaseFormat.UPPER_CAMEL : CaseFormat.LOWER_CAMEL;
+      CaseFormat src =
+          Character.isUpperCase(s.charAt(0)) ? CaseFormat.UPPER_CAMEL : CaseFormat.LOWER_CAMEL;
       return src.to(CaseFormat.UPPER_CAMEL, s);
     }
 
@@ -39,6 +43,64 @@ public final class CaseFormatUtil {
     }
 
     return CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, s);
+  }
+
+  /**
+   * Convert any of: camelCase, PascalCase, snake_case, UPPER_SNAKE, kebab-case, dotted.case,
+   * spaced words, or mixed forms into lower_snake_case safely.
+   */
+  public static String toSnakeCaseSafe(String input) {
+    if (input == null) return "";
+    String trimmed = input.trim();
+    if (trimmed.isEmpty()) return "";
+
+    String normalized =
+        trimmed.replace('-', '_').replace(' ', '_').replace('.', '_').replace('/', '_');
+
+    StringBuilder result = new StringBuilder();
+    for (int i = 0; i < normalized.length(); i++) {
+      char ch = normalized.charAt(i);
+
+      if (ch == '_') {
+        if (result.length() > 0 && result.charAt(result.length() - 1) != '_') {
+          result.append('_');
+        }
+        continue;
+      }
+
+      char last = result.length() > 0 ? result.charAt(result.length() - 1) : '\0';
+
+      if (Character.isUpperCase(ch)) {
+        if (result.length() > 0
+            && last != '_'
+            && (Character.isLowerCase(last) || Character.isDigit(last))) {
+          result.append('_');
+        }
+        result.append(Character.toLowerCase(ch));
+      } else if (Character.isDigit(ch)) {
+        if (result.length() > 0 && last != '_' && Character.isLetter(last)) {
+          result.append('_');
+        }
+        result.append(ch);
+      } else {
+        if (result.length() > 0 && last != '_' && Character.isDigit(last)) {
+          result.append('_');
+        }
+        result.append(ch);
+      }
+    }
+
+    String snake = result.toString().replaceAll("__+", "_");
+    snake = snake.replaceAll("^_+|_+$", "");
+    return snake;
+  }
+
+  /** Convert any supported format into lowerCamelCase safely. */
+  public static String toLowerCamelSafe(String input) {
+    if (input == null) return "";
+    String upperCamel = toUpperCamelSafe(input);
+    if (upperCamel.isEmpty()) return upperCamel;
+    return Character.toLowerCase(upperCamel.charAt(0)) + upperCamel.substring(1);
   }
 
   private static boolean containsUpperCase(String s) {
@@ -59,5 +121,3 @@ public final class CaseFormatUtil {
     return false;
   }
 }
-
-
