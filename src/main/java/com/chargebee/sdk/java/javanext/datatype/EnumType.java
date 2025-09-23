@@ -1,13 +1,13 @@
 package com.chargebee.sdk.java.javanext.datatype;
 
-import com.google.common.base.CaseFormat;
+import com.chargebee.sdk.java.javanext.util.CaseFormatUtil;
 import org.jetbrains.annotations.NotNull;
 
 // ===== Enum =====
 public record EnumType(String fieldName) implements FieldType {
   @Override
   public String display() {
-    return CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, fieldName);
+    return CaseFormatUtil.toUpperCamelSafe(fieldName);
   }
 
   @Override
