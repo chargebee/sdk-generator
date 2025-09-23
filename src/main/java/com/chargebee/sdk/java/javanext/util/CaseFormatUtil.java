@@ -2,13 +2,16 @@ package com.chargebee.sdk.java.javanext.util;
 
 import com.google.common.base.CaseFormat;
 
-/** Utility for safely converting strings to UpperCamel without assuming a single source format. */
+/**
+ * Utility for safely converting strings between cases without assuming a single source format.
+ * All methods return an empty string for null or blank inputs.
+ */
 public final class CaseFormatUtil {
   private CaseFormatUtil() {}
 
   public static String toUpperCamelSafe(String input) {
     if (input == null) {
-      return null;
+      return "";
     }
     String s = input.trim();
     if (s.isEmpty()) {
@@ -94,9 +97,9 @@ public final class CaseFormatUtil {
 
   /** Convert any supported format into lowerCamelCase safely. */
   public static String toLowerCamelSafe(String input) {
-    if (input == null) return null;
+    if (input == null) return "";
     String upperCamel = toUpperCamelSafe(input);
-    if (upperCamel == null || upperCamel.isEmpty()) return upperCamel;
+    if (upperCamel.isEmpty()) return upperCamel;
     return Character.toLowerCase(upperCamel.charAt(0)) + upperCamel.substring(1);
   }
 
