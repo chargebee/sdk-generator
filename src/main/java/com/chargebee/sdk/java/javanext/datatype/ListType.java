@@ -9,8 +9,14 @@ import org.jetbrains.annotations.NotNull;
 public record ListType(String fieldName, Schema schema) implements FieldType {
   @Override
   public String display() {
+    if (!(schema instanceof ArraySchema)) {
+      return "List<Object>";
+    }
     ArraySchema arraySchema = (ArraySchema) schema;
     Schema<?> items = arraySchema.getItems();
+    if (items == null) {
+      return "List<Object>";
+    }
     
     // Check if items has a $ref (reference to another schema)
     if (items.get$ref() != null) {
