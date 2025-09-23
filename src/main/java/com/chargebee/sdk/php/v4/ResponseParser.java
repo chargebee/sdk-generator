@@ -14,6 +14,15 @@ public class ResponseParser {
   public static com.chargebee.sdk.php.v4.models.Resource actionResponses(
       Action action, Resource res) {
     Schema<?> successSchema = action.getOnSuccessSchema();
+    if (successSchema == null) {
+      com.chargebee.sdk.php.v4.models.Resource response =
+          new com.chargebee.sdk.php.v4.models.Resource();
+      response.setClazName(toCamelCase(action.name) + res.name + "Response");
+      response.setNamespace(RESPONSE_NAMESPACE + toCamelCase(res.name) + "Response");
+      response.setCols(new ArrayList<>());
+      response.setImports(collectImports(response.getCols()));
+      return response;
+    }
     if (successSchema.getProperties() == null) {
       return null;
     }
