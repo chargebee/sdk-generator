@@ -84,16 +84,13 @@ public class Field {
         return null;
       }
       Schema<?> items = arraySchema.getItems();
-      
-      // Check if items has a $ref (reference to another schema)
+
       if (items != null && items.get$ref() != null) {
         return items.get$ref().substring(items.get$ref().lastIndexOf("/") + 1);
       }
-      // For inline object definitions, if properties are present, use an Item model name
       if (items != null && items.getProperties() != null && !items.getProperties().isEmpty()) {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, listType.fieldName());
       }
-      // If item is an object but without properties, treat as generic Object
       if (items != null && "object".equals(items.getType())) {
         return "Object";
       }
@@ -111,8 +108,7 @@ public class Field {
         return false;
       }
       Schema<?> items = arraySchema.getItems();
-      
-      // Check if items has a $ref (reference to another schema) OR has non-empty properties (inline object)
+
       return items != null
           && (items.get$ref() != null
               || (items.getProperties() != null && !items.getProperties().isEmpty()));

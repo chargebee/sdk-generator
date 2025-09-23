@@ -30,7 +30,8 @@ public final class CaseFormatUtil {
     }
 
     if (hasLower && hasUpper) {
-      CaseFormat src = Character.isUpperCase(s.charAt(0)) ? CaseFormat.UPPER_CAMEL : CaseFormat.LOWER_CAMEL;
+      CaseFormat src =
+          Character.isUpperCase(s.charAt(0)) ? CaseFormat.UPPER_CAMEL : CaseFormat.LOWER_CAMEL;
       return src.to(CaseFormat.UPPER_CAMEL, s);
     }
 
@@ -59,5 +60,3 @@ public final class CaseFormatUtil {
     return false;
   }
 }
-
-

@@ -17,23 +17,20 @@ public record ListType(String fieldName, Schema schema) implements FieldType {
     if (items == null) {
       return "List<Object>";
     }
-    
-    // Check if items has a $ref (reference to another schema)
+
     if (items.get$ref() != null) {
       String refName = items.get$ref().substring(items.get$ref().lastIndexOf("/") + 1);
       return "List<" + refName + ">";
     }
-    
-    // If items is an object
+
     if ("object".equals(items.getType())) {
       // Inline object definition with properties present
       if (items.getProperties() != null && !items.getProperties().isEmpty()) {
         return "List<" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, fieldName) + ">";
       }
-      // Object without a defined schema -> generic Object
       return "List<Object>";
     }
-    
+
     // Default to List<String> for primitive arrays
     return "List<String>";
   }
