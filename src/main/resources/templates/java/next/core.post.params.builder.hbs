@@ -55,11 +55,13 @@ public final class {{name}}Params {
 
         {{#each fields}}
         {{#if subModelField}}
+        {{#if deprecated}}@Deprecated{{/if}}
         public {{../name}}Builder {{name}}({{subModelParamsType}} value) {
             formData.put("{{curlName}}", value);
             return this;
         }
         {{else}}
+        {{#if deprecated}}@Deprecated{{/if}}
         public {{../name}}Builder {{name}}({{{type}}} value) {
             formData.put("{{curlName}}", value);
             return this;

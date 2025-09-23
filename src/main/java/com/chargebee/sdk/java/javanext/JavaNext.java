@@ -19,7 +19,7 @@ public class JavaNext extends Language {
             .withTemplate(getTemplateContent("core.models"))
             .build(spec.openAPI());
     List<FileOp> paramsBuilderFiles =
-        new PostRequestPramsBuilder()
+        new PostRequestParamsBuilder()
             .withOutputDirectoryPath(outputDirectoryPath)
             .withTemplate(getTemplateContent("core.post.params.builder"))
             .build(spec.openAPI());

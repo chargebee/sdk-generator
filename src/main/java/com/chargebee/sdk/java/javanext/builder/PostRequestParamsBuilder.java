@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class PostRequestPramsBuilder {
+public class PostRequestParamsBuilder {
 
   private Template template;
   private String outputDirectoryPath;
@@ -29,13 +29,13 @@ public class PostRequestPramsBuilder {
 
   private final List<FileOp> fileOps = new ArrayList<>();
 
-  public PostRequestPramsBuilder withOutputDirectoryPath(String outputDirectoryPath) {
+  public PostRequestParamsBuilder withOutputDirectoryPath(String outputDirectoryPath) {
     this.outputDirectoryPath = outputDirectoryPath + "/core/models";
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }
 
-  public PostRequestPramsBuilder withTemplate(Template template) {
+  public PostRequestParamsBuilder withTemplate(Template template) {
     this.template = template;
     return this;
   }
@@ -55,25 +55,61 @@ public class PostRequestPramsBuilder {
           var operation = pathItem.getPost();
 
           var postAction = new PostAction();
-          postAction.setOperationId(
-              operation.getExtensions().get(Extension.OPERATION_METHOD_NAME).toString());
-          postAction.setModule(operation.getExtensions().get(Extension.RESOURCE_ID).toString());
+          // Safely read extensions
+          var extensions = operation.getExtensions();
+          String opId = null;
+          String module = null;
+          if (extensions != null) {
+            Object opNameExt = extensions.get(Extension.OPERATION_METHOD_NAME);
+            if (opNameExt != null) opId = opNameExt.toString();
+            Object moduleExt = extensions.get(Extension.RESOURCE_ID);
+            if (moduleExt != null) module = moduleExt.toString();
+          }
+          // Fallbacks
+          if (opId == null && operation.getOperationId() != null) {
+            opId = operation.getOperationId();
+          }
+          if (module == null) {
+            // Derive module from path as last non-empty segment
+            String p = entry.getKey();
+            if (p != null) {
+              String[] parts = p.split("/");
+              for (int i = parts.length - 1; i >= 0; i--) {
+                if (parts[i] != null && !parts[i].isBlank() && !parts[i].startsWith("{")) {
+                  module = parts[i];
+                  break;
+                }
+              }
+            }
+            if (module == null) module = "unknown";
+          }
+          postAction.setOperationId(opId != null ? opId : "post");
+          postAction.setModule(module);
           postAction.setPath(entry.getKey());
 
-          if (operation.getRequestBody() != null) {
-            // Has requestBody - generate params with fields
-            var schema =
-                operation
-                    .getRequestBody()
-                    .getContent()
-                    .get("application/x-www-form-urlencoded")
-                    .getSchema();
-            postAction.setFields(getFields(schema, null));
-            postAction.setEnumFields(getEnumFields(schema));
-            var subModels = getSubModels(schema, null);
-            // Conditionally prefix only duplicate sub-model names
-            dedupeAndPrefixSubModels(postAction.getModule(), subModels, postAction.getFields());
-            postAction.setSubModels(subModels);
+          var requestBody = operation.getRequestBody();
+          if (requestBody != null && requestBody.getContent() != null) {
+            var content = requestBody.getContent();
+            var media = content.get("application/x-www-form-urlencoded");
+            if (media == null) {
+              media = content.get("application/json");
+            }
+            if (media == null && !content.isEmpty()) {
+              media = content.values().iterator().next();
+            }
+            if (media != null && media.getSchema() != null) {
+              var schema = media.getSchema();
+              postAction.setFields(getFields(schema, null));
+              postAction.setEnumFields(getEnumFields(schema));
+              var subModels = getSubModels(schema, null);
+              // Conditionally prefix only duplicate sub-model names
+              dedupeAndPrefixSubModels(postAction.getModule(), subModels, postAction.getFields());
+              postAction.setSubModels(subModels);
+            } else {
+              postAction.setFields(new ArrayList<>());
+              postAction.setEnumFields(new ArrayList<>());
+              postAction.setSubModels(new ArrayList<>());
+            }
           } else {
             // No requestBody - generate empty params class
             postAction.setFields(new ArrayList<>());
