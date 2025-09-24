@@ -1676,7 +1676,7 @@ public class PythonV3Tests extends LanguageTests {
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
     assertResourceOperationContents(
         writeStringFileOp,
-        "\n"
+        "from enum import Enum\n\n"
             + "@dataclass\n"
             + "class Customer:\n"
             + "\n"

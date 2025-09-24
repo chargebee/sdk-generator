@@ -11,7 +11,9 @@ import com.chargebee.openapi.Attribute;
 import com.chargebee.openapi.Resource;
 import com.chargebee.sdk.Language;
 import com.chargebee.sdk.common.model.OperationResponse;
+import com.chargebee.sdk.go.SchemaLessEnumParser;
 import com.chargebee.sdk.python.v3.model.ResponseParser;
+import com.google.common.base.CaseFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,6 +47,7 @@ public class Imports {
             + "\nfrom typing import TypedDict, Required, NotRequired, Dict, List, Any, cast";
 
     if (!resource.enums().isEmpty()
+        || !SchemaLessEnumParser.getSchemalessEnum(resource, resourceList).isEmpty()
         || resource.subResources().stream().anyMatch(subResource -> !subResource.enums().isEmpty())
         || resource.name.equalsIgnoreCase("Estimate")) {
       imports += "\nfrom enum import Enum";
@@ -88,7 +91,12 @@ public class Imports {
         var refModelName = singularize(dr.name);
         if (dr.isDependentAttribute()
             && resourceList.stream().noneMatch(r -> r.id.contains(singularize(dr.name)))) {
-          refModelName = refModelName.replace("_" + resource.id, "");
+          if (dr.subResourceName() != null) {
+            refModelName = dr.subResourceName();
+            refModelName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, refModelName);
+          } else {
+            refModelName = refModelName.replace("_" + resource.id, "");
+          }
         }
         if (imports.contains("from chargebee.models import")) {
           imports += ", " + refModelName;
@@ -137,7 +145,12 @@ public class Imports {
         var refModelName = singularize(dr.name);
         if (dr.isDependentAttribute()
             && resourceList.stream().noneMatch(r -> r.id.contains(singularize(dr.name)))) {
-          refModelName = refModelName.replace("_" + resource.id, "");
+          if (dr.subResourceName() != null) {
+            refModelName = dr.subResourceName();
+            refModelName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, refModelName);
+          } else {
+            refModelName = refModelName.replace("_" + resource.id, "");
+          }
         }
         if (imports.contains("from chargebee.models import")) {
           imports += ", " + refModelName;
