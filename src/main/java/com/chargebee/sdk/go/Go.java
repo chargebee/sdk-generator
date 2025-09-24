@@ -184,7 +184,11 @@ public class Go extends Language {
         var refModelName = singularize(dr.name.replace("_", ""));
         if (dr.isDependentAttribute()
             && resourceList.stream().noneMatch(r -> r.id.contains(singularize(dr.name)))) {
-          refModelName = refModelName.replace(activeResource.id, "");
+          if (dr.subResourceName() != null) {
+            refModelName = dr.subResourceName().toLowerCase();
+          } else {
+            refModelName = refModelName.replace(activeResource.id, "");
+          }
         }
         buf.add("\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
       }
@@ -809,7 +813,7 @@ public class Go extends Language {
                     + String.join(
                         delimiter,
                         toCamelCase(a.name),
-                        dataTypeCustomLogic(dataType(a.schema, a.subResourceName())),
+                        dataType(a.schema, a.subResourceName()),
                         getJsonVal(a, true)));
           }
         } else {
@@ -846,15 +850,6 @@ public class Go extends Language {
             CaseFormat.UPPER_CAMEL,
             singularize((String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME)))
         + "Type";
-  }
-
-  private String dataTypeCustomLogic(String colsRetType) {
-    if (colsRetType != null) {
-      colsRetType =
-          colsRetType.replace(
-              "*omnichanneltransaction.OmnichannelTransaction", "OmnichannelTransaction");
-    }
-    return colsRetType;
   }
 
   public String getSubResourceCols(Resource subResource) {
@@ -1014,6 +1009,9 @@ public class Go extends Language {
     if (isSubResourceSchema(schema)) {
       String dep = "";
       if (!getDependentResource(activeResource).isEmpty()) {
+        if (schemaNamespaceIsLocal(schema)) {
+          return toCamelCase(attributeName);
+        }
         dep = toCamelCase(attributeName).toLowerCase() + ".";
         return "*" + dep + toCamelCase(attributeName);
       }
@@ -1170,6 +1168,22 @@ public class Go extends Language {
     Template resultTemplate = getTemplateContent("result");
     return new FileOp.WriteString(
         outputDirectory, "result.go", resultTemplate.apply(templateParams));
+  }
+
+  public boolean isDependedAttribute(Schema schema) {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_DEPENDENT_ATTRIBUTE) != null
+        && ((boolean) schema.getExtensions().get(IS_DEPENDENT_ATTRIBUTE));
+  }
+
+  public boolean isGobalResourceReference(Schema schema) {
+    return schema.getExtensions() != null
+        || schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
+            && ((boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE));
+  }
+
+  public boolean schemaNamespaceIsLocal(Schema schema) {
+    return !isDependedAttribute(schema) && !isGobalResourceReference(schema);
   }
 
   @Override
