@@ -1178,7 +1178,7 @@ public class Go extends Language {
 
   public boolean isGobalResourceReference(Schema schema) {
     return schema.getExtensions() != null
-        || schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
+        && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
             && ((boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE));
   }
 
