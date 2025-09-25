@@ -131,7 +131,7 @@ public class ListResponseBuilder {
     // Collect imports per response to avoid cross-operation leakage
     var importsCollector = new ArrayList<Imports>();
     listResponse.setFields(getResponseFields(schema, module, methodName, importsCollector));
-    listResponse.setSubModels(getSubModels(schema, module, methodName));
+    listResponse.setSubModels(getSubModels(schema, module, methodName, importsCollector));
 
     // Set pagination-specific fields
     setPaginationFields(listResponse, schema);
@@ -207,7 +207,8 @@ public class ListResponseBuilder {
     }
   }
 
-  private List<Model> getSubModels(Schema<?> schema, String module, String methodName) {
+  private List<Model> getSubModels(
+      Schema<?> schema, String module, String methodName, List<Imports> importsCollector) {
     var subModels = new ArrayList<Model>();
     if (schema.getProperties() == null) {
       return subModels;
@@ -219,7 +220,7 @@ public class ListResponseBuilder {
         if (schemaDefn.getProperties() == null || schemaDefn.getProperties().isEmpty()) {
           continue;
         }
-        subModels.add(createSubModel(fieldName, schemaDefn, module, methodName));
+        subModels.add(createSubModel(fieldName, schemaDefn, module, methodName, importsCollector));
       } else if (fieldType instanceof ListType) {
         var listSchema = schemaDefn.getItems();
         if (listSchema == null
@@ -228,18 +229,19 @@ public class ListResponseBuilder {
           continue;
         }
         subModels.add(
-            createSubModel(module + "_" + methodName + "_Item", listSchema, module, methodName));
+            createSubModel(
+                module + "_" + methodName + "_Item", listSchema, module, methodName, importsCollector));
       }
     }
     return subModels;
   }
 
   private Model createSubModel(
-      String fieldName, Schema<?> schema, String module, String methodName) {
+      String fieldName, Schema<?> schema, String module, String methodName, List<Imports> importsCollector) {
     var subModel = new Model();
     subModel.setName(fieldName);
-    subModel.setFields(getResponseFields(schema, module, methodName, new ArrayList<>()));
-    subModel.setSubModels(getSubModels(schema, module, methodName));
+    subModel.setFields(getResponseFields(schema, module, methodName, importsCollector));
+    subModel.setSubModels(getSubModels(schema, module, methodName, importsCollector));
     return subModel;
   }
 
