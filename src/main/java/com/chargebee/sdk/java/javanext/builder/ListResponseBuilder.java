@@ -16,8 +16,11 @@ import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.Schema;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -26,13 +29,26 @@ import java.util.stream.Collectors;
  */
 public class ListResponseBuilder {
 
+  // ------------------------------------------------------------
+  // Constants
+  // ------------------------------------------------------------
+  private static final String HTTP_OK = "200";
+  private static final String CONTENT_TYPE_JSON = "application/json";
+  private static final String PROP_LIST = "list";
+  private static final String PROP_NEXT_OFFSET = "next_offset";
+
+  // ------------------------------------------------------------
+  // State
+  // ------------------------------------------------------------
   private Template template;
   private String outputDirectoryPath;
   private OpenAPI openApi;
-  private List<Imports> modelImports = new ArrayList<>();
 
   private final List<FileOp> fileOps = new ArrayList<>();
 
+  // ------------------------------------------------------------
+  // Fluent configuration API
+  // ------------------------------------------------------------
   public ListResponseBuilder withOutputDirectoryPath(String outputDirectoryPath) {
     this.outputDirectoryPath = outputDirectoryPath;
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
@@ -44,30 +60,49 @@ public class ListResponseBuilder {
     return this;
   }
 
+  /**
+   * Generates file operations for all paginated list responses discovered in the provided OpenAPI.
+   *
+   * @param openApi the OpenAPI model to read paths, operations and schemas from
+   * @return ordered list of file operations to create the generated sources
+   * @throws IllegalStateException if the builder is not fully configured
+   */
   public List<FileOp> build(OpenAPI openApi) {
+    validateConfiguration(openApi);
     this.openApi = openApi;
     generateListResponses();
     return fileOps;
   }
 
+  // ------------------------------------------------------------
+  // Orchestration
+  // ------------------------------------------------------------
   private void generateListResponses() {
     var operations = getOperations();
     for (var pathEntry : operations.entrySet()) {
       var pathItem = pathEntry.getValue();
 
-      if (pathItem.getGet() != null) {
+      if (pathItem != null && pathItem.getGet() != null) {
         var operation = pathItem.getGet();
 
+        if (operation.getExtensions() == null
+            || !operation.getExtensions().containsKey(Extension.OPERATION_METHOD_NAME)
+            || !operation.getExtensions().containsKey(Extension.RESOURCE_ID)
+            || operation.getResponses() == null) {
+          // Skip operations that are not fully annotated for generation
+          continue;
+        }
+
         var originalMethodName =
-            operation.getExtensions().get(Extension.OPERATION_METHOD_NAME).toString();
+            String.valueOf(operation.getExtensions().get(Extension.OPERATION_METHOD_NAME));
         var methodName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, originalMethodName);
-        var module = operation.getExtensions().get(Extension.RESOURCE_ID).toString();
+        var module = String.valueOf(operation.getExtensions().get(Extension.RESOURCE_ID));
 
-        var response = operation.getResponses().get("200");
-        if (response == null) continue;
+        var response = operation.getResponses().get(HTTP_OK);
+        if (response == null || response.getContent() == null) continue;
 
-        var jsonContent = response.getContent().get("application/json");
-        if (jsonContent == null) continue;
+        var jsonContent = response.getContent().get(CONTENT_TYPE_JSON);
+        if (jsonContent == null || jsonContent.getSchema() == null) continue;
 
         var schema = jsonContent.getSchema();
 
@@ -83,18 +118,24 @@ public class ListResponseBuilder {
     }
   }
 
+  /**
+   * Creates the in-memory model for a single list response based on the schema and path context.
+   */
   private ListResponse createListResponse(
       String methodName, String module, Schema<?> schema, String path, String originalMethodName) {
     var listResponse = new ListResponse();
     listResponse.setName(methodName);
     listResponse.setOriginalMethodName(originalMethodName);
     listResponse.setModule(module);
-    listResponse.setFields(getResponseFields(schema, module, methodName));
+
+    // Collect imports per response to avoid cross-operation leakage
+    var importsCollector = new ArrayList<Imports>();
+    listResponse.setFields(getResponseFields(schema, module, methodName, importsCollector));
     listResponse.setSubModels(getSubModels(schema, module, methodName));
 
     // Set pagination-specific fields
     setPaginationFields(listResponse, schema);
-    listResponse.setImports(getImports(schema));
+    listResponse.setImports(deduplicateImports(importsCollector));
 
     // Path parameter handling for nextPage()/service calls
     boolean hasPathParams = path != null && path.contains("{");
@@ -115,6 +156,9 @@ public class ListResponseBuilder {
   }
 
   private void setPaginationFields(ListResponse listResponse, Schema<?> schema) {
+    if (schema == null || schema.getProperties() == null) {
+      return;
+    }
     var properties = schema.getProperties();
 
     // Find the list field
@@ -122,7 +166,7 @@ public class ListResponseBuilder {
       var fieldName = entry.getKey().toString();
       var fieldSchema = (Schema<?>) entry.getValue();
 
-      if ("list".equals(fieldName) && fieldSchema.getType().equals("array")) {
+      if (PROP_LIST.equals(fieldName) && "array".equals(fieldSchema.getType())) {
         listResponse.setListFieldName(fieldName);
 
         // Get the item type from the array items (defensive checks)
@@ -143,7 +187,7 @@ public class ListResponseBuilder {
     }
 
     // Set next offset field name
-    if (properties.containsKey("next_offset")) {
+    if (properties.containsKey(PROP_NEXT_OFFSET)) {
       listResponse.setNextOffsetField("nextOffset");
     }
   }
@@ -194,22 +238,24 @@ public class ListResponseBuilder {
       String fieldName, Schema<?> schema, String module, String methodName) {
     var subModel = new Model();
     subModel.setName(fieldName);
-    subModel.setFields(getResponseFields(schema, module, methodName));
+    subModel.setFields(getResponseFields(schema, module, methodName, new ArrayList<>()));
     subModel.setSubModels(getSubModels(schema, module, methodName));
     return subModel;
   }
 
-  private List<Imports> getImports(Schema<?> schema) {
-    var imports = new ArrayList<Imports>();
-    for (var importObj : modelImports) {
-      imports.add(importObj);
-    }
+  // ------------------------------------------------------------
+  // Schema parsing helpers
+  // ------------------------------------------------------------
 
-    return imports;
-  }
-
-  private List<Field> getResponseFields(Schema<?> schema, String module, String methodName) {
+  /**
+   * Extracts fields for the response model and collects any referenced imports.
+   */
+  private List<Field> getResponseFields(
+      Schema<?> schema, String module, String methodName, List<Imports> importsCollector) {
     var fields = new ArrayList<Field>();
+    if (schema == null || schema.getProperties() == null) {
+      return fields;
+    }
     for (var key : schema.getProperties().keySet()) {
       var fieldName = key.toString();
       var fieldSchema = (Schema<?>) schema.getProperties().get(fieldName);
@@ -228,10 +274,10 @@ public class ListResponseBuilder {
           importObj.setPackageName(
               "com.chargebee.core.models."
                   + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, refModelName));
-          modelImports.add(importObj);
+          importsCollector.add(importObj);
           // fieldType is already correctly set by TypeMapper
         } else {
-          // For inline object definitions, use the old logic
+          // For inline object definitions, use the old logic (list schema context)
           fieldType = TypeMapper.getJavaType(module + "_" + methodName + "_Item", fieldSchema);
         }
       } else if (fieldSchema.get$ref() != null) {
@@ -243,7 +289,7 @@ public class ListResponseBuilder {
         importObj.setPackageName(
             "com.chargebee.core.models."
                 + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, refModelName));
-        modelImports.add(importObj);
+        importsCollector.add(importObj);
         fieldType = TypeMapper.getJavaType(refModelName, schema);
       }
       field.setType(fieldType);
@@ -253,20 +299,57 @@ public class ListResponseBuilder {
   }
 
   private boolean isPaginatedListOperation(Schema<?> schema) {
+    if (schema == null || schema.getProperties() == null) {
+      return false;
+    }
     var properties = schema.getProperties();
-    return properties.containsKey("list") && properties.containsKey("next_offset");
+    return properties.containsKey(PROP_LIST) && properties.containsKey(PROP_NEXT_OFFSET);
   }
 
   private Map<String, PathItem> getOperations() {
+    if (openApi == null || openApi.getPaths() == null) {
+      return Collections.emptyMap();
+    }
     var paths = openApi.getPaths();
     return paths.entrySet().stream()
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
+  // ------------------------------------------------------------
+  // Utility methods
+  // ------------------------------------------------------------
+
+  private void validateConfiguration(OpenAPI openApi) {
+    Objects.requireNonNull(template, "Template must be provided via withTemplate()");
+    Objects.requireNonNull(outputDirectoryPath, "Output directory path must be provided");
+    Objects.requireNonNull(openApi, "OpenAPI must not be null");
+  }
+
+  private List<Imports> deduplicateImports(List<Imports> imports) {
+    if (imports == null || imports.isEmpty()) {
+      return Collections.emptyList();
+    }
+    Map<String, Imports> unique = new LinkedHashMap<>();
+    for (Imports imp : imports) {
+      if (imp == null) continue;
+      String key =
+          (imp.getPackageName() == null ? "" : imp.getPackageName())
+              + "#"
+              + (imp.getName() == null ? "" : imp.getName());
+      unique.putIfAbsent(key, imp);
+    }
+    return new ArrayList<>(unique.values());
+  }
+
   @lombok.Data
   private static class Imports {
+    @SuppressWarnings("unused")
     private String name;
+
+    @SuppressWarnings("unused")
     private String packageName;
+
+    @SuppressWarnings("unused")
     private String moduleName;
 
     public String getModuleName() {
@@ -276,15 +359,27 @@ public class ListResponseBuilder {
 
   @lombok.Data
   private static class ListResponse {
+    @SuppressWarnings("unused")
     private String name;
+
+    @SuppressWarnings("unused")
     private String originalMethodName;
+
+    @SuppressWarnings("unused")
     private String module;
+
     private List<Field> fields;
     private List<Imports> imports;
     private List<Model> subModels;
+
+    @SuppressWarnings("unused")
     private String serviceName;
+
     private String listFieldName;
+
+    @SuppressWarnings("unused")
     private String itemType;
+
     private String nextOffsetField;
     private boolean hasPathParams;
     private String pathParamName;
@@ -336,6 +431,7 @@ public class ListResponseBuilder {
       return nextOffsetField != null ? nextOffsetField : "nextOffset";
     }
 
+    @SuppressWarnings("unused")
     public String getOperationMethodName() {
       return originalMethodName;
     }
