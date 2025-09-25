@@ -23,7 +23,12 @@ public class JavaNext extends Language {
             .withOutputDirectoryPath(outputDirectoryPath)
             .withTemplate(getTemplateContent("core.post.params.builder"))
             .build(spec.openAPI());
-    return List.of(coreModelFiles, paramsBuilderFiles).stream()
+    List<FileOp> getParamsBuilderFiles =
+        new GetRequestParamsBuilder()
+            .withOutputDirectoryPath(outputDirectoryPath)
+            .withTemplate(getTemplateContent("core.get.params.builder"))
+            .build(spec.openAPI());
+    return List.of(coreModelFiles, paramsBuilderFiles, getParamsBuilderFiles).stream()
         .flatMap(List::stream)
         .collect(Collectors.toList());
   }
@@ -34,7 +39,9 @@ public class JavaNext extends Language {
         "core.models",
         "/templates/java/next/core.models.hbs",
         "core.post.params.builder",
-        "/templates/java/next/core.post.params.builder.hbs");
+        "/templates/java/next/core.post.params.builder.hbs",
+        "core.get.params.builder",
+        "/templates/java/next/core.get.params.builder.hbs");
   }
 
   @Override

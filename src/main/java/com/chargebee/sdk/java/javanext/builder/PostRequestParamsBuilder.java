@@ -13,11 +13,11 @@ import com.chargebee.sdk.java.javanext.datatype.ObjectType;
 import com.chargebee.sdk.java.javanext.util.CaseFormatUtil;
 import com.github.jknack.handlebars.Template;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.RequestBody;
-import io.swagger.v3.oas.models.Operation;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -199,9 +199,8 @@ public class PostRequestParamsBuilder {
         var enumField = new EnumFields();
         enumField.setName(fieldName.toString());
         java.util.List<String> enumStrings =
-            ((java.util.List<?>) schemaDefn.getEnum()).stream()
-                .map(String::valueOf)
-                .collect(java.util.stream.Collectors.toList());
+            ((java.util.List<?>) schemaDefn.getEnum())
+                .stream().map(String::valueOf).collect(java.util.stream.Collectors.toList());
         enumField.setEnums(enumStrings);
         enumFields.add(enumField);
       }
