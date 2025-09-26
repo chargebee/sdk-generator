@@ -1,0 +1,139 @@
+package com.chargebee.core.responses.{{module}};
+
+{{#each imports}}
+import {{packageName}}.{{name}};
+{{/each}}
+import com.chargebee.internal.JsonUtil;
+import java.util.List;
+import java.sql.Timestamp;
+
+/**
+ * Immutable response object for {{name}} operation.
+ * Contains the response data from a single resource get operation.
+ */
+public final class {{name}}Response {
+    {{#each fields}}
+    private final {{{type}}} {{name}};
+    {{/each}}
+
+    private {{name}}Response({{#each fields}}{{{type}}} {{name}}{{#unless @last}}, {{/unless}}{{/each}}) {
+        {{#each fields}}
+        this.{{name}} = {{name}};
+        {{/each}}
+    }
+
+    /**
+     * Parse JSON response into {{name}}Response object.
+     */
+    public static {{name}}Response fromJson(String json) {
+        try {
+            {{#each fields}}
+            {{#if isComplexObjectType}}
+            String __{{name}}Json = JsonUtil.getObject(json, "{{name}}");
+            {{{type}}} {{name}} = __{{name}}Json != null ? {{{type}}}.fromJson(__{{name}}Json) : null;
+            {{else if isEnumType}}
+            {{{type}}} {{name}} = {{{type}}}.fromString(JsonUtil.getString(json, "{{name}}"));
+            {{else if isListOfObjects}}
+              {{#if listElementType}}
+                {{#unless (eq listElementType "Object")}}
+                {{{type}}} {{name}} =
+                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}"))
+                        .stream()
+                        .map({{listElementType}}::fromJson)
+                        .collect(java.util.stream.Collectors.toList());
+                {{else}}
+                {{{type}}} {{name}} =
+                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}"))
+                        .stream()
+                        .collect(java.util.stream.Collectors.toList());
+                {{/unless}}
+              {{else}}
+              {{{type}}} {{name}} =
+                  JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{name}}"));
+              {{/if}}
+            {{else if isListOfPrimitives}}
+            {{{type}}} {{name}} =
+                JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{name}}"));
+            {{else if isObjectType}}
+            {{#unless (eq type "Object")}}
+            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{name}}"));
+            {{else}}
+            {{{type}}} {{name}} = JsonUtil.getObject(json, "{{name}}");
+            {{/unless}}
+            {{else}}
+            {{{type}}} {{name}} = JsonUtil.get{{{type}}}(json, "{{name}}");
+            {{/if}}
+            {{/each}}
+            
+            return new {{name}}Response({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse {{name}}Response from JSON", e);
+        }
+    }
+
+    {{#each fields}}
+    /** Get the {{name}} from the response. */
+    public {{{type}}} {{getterName}}() {
+        return {{name}};
+    }
+    {{/each}}
+
+    {{#each subModels}}
+    public static class {{name}} {
+        {{#each fields}}
+        private {{{type}}} {{name}};
+        {{/each}}
+    
+        {{#each fields}}
+        public {{{type}}} {{getterName}}() {
+            return {{name}};
+        }
+        {{/each}}
+
+        public static {{name}} fromJson(String json) {
+            {{name}} item = new {{name}}();
+            {{#each fields}}
+            {{#if isComplexObjectType}}
+            String __{{name}}Json = JsonUtil.getObject(json, "{{name}}");
+            if (__{{name}}Json != null) {
+            item.{{name}} = {{{type}}}.fromJson(__{{name}}Json);
+            }
+            {{else if isEnumType}}
+            item.{{name}} = {{{type}}}.fromString(JsonUtil.getString(json, "{{name}}"));
+            {{else if isListOfObjects}}
+              {{#if listElementType}}
+                {{#unless (eq listElementType "Object")}}
+                item.{{name}} =
+                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}"))
+                        .stream()
+                        .map({{listElementType}}::fromJson)
+                        .collect(java.util.stream.Collectors.toList());
+                {{else}}
+                item.{{name}} =
+                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}"))
+                        .stream()
+                        .collect(java.util.stream.Collectors.toList());
+                {{/unless}}
+              {{else}}
+              item.{{name}} =
+                  JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{name}}"));
+              {{/if}}
+            {{else if isListOfPrimitives}}
+            item.{{name}} =
+                JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{name}}"));
+            {{else if isObjectType}}
+            {{#unless (eq type "Object")}}
+            item.{{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{name}}"));
+            {{else}}
+            item.{{name}} = JsonUtil.getObject(json, "{{name}}");
+            {{/unless}}
+            {{else}}
+            item.{{name}} = JsonUtil.get{{{type}}}(json, "{{name}}");
+            {{/if}}
+            {{/each}}
+            return item;
+        }
+    }
+    {{/each}}
+  
+}
