@@ -180,7 +180,7 @@ public class PostRequestParamsBuilder {
     // packageName holds full path for disambiguation; name holds the simple leaf name
     subModel.setPackageName(fullPathSnake);
     subModel.setName(simpleNameSnake);
-    
+
     // For composite array patterns, generate fields with single values instead of lists
     boolean isCompositeArray = isCompositeArrayPattern(schema);
     subModel.setFields(getFields(schema, fullPathSnake, isCompositeArray));
@@ -193,7 +193,7 @@ public class PostRequestParamsBuilder {
   private List<EnumFields> getEnumFields(Schema<?> schema) {
     return getEnumFields(schema, false);
   }
-  
+
   /** Collect enum fields with option to handle composite array patterns. */
   private List<EnumFields> getEnumFields(Schema<?> schema, boolean isCompositeArraySubModel) {
     var enumFields = new ArrayList<EnumFields>();
@@ -204,12 +204,14 @@ public class PostRequestParamsBuilder {
     for (var fieldName : properties.keySet()) {
       Schema<?> schemaDefn = properties.get(fieldName);
       Schema<?> enumSchema = schemaDefn;
-      
+
       // For composite array sub-models, check if this is an array with enum items
-      if (isCompositeArraySubModel && "array".equals(schemaDefn.getType()) && schemaDefn.getItems() != null) {
+      if (isCompositeArraySubModel
+          && "array".equals(schemaDefn.getType())
+          && schemaDefn.getItems() != null) {
         enumSchema = schemaDefn.getItems();
       }
-      
+
       if (enumSchema.getEnum() != null) {
         var enumField = new EnumFields();
         enumField.setName(fieldName.toString());
@@ -227,16 +229,17 @@ public class PostRequestParamsBuilder {
   private List<Field> getFields(Schema<?> schema, String parentPath) {
     return getFields(schema, parentPath, false);
   }
-  
+
   /** Collect immediate field definitions for the given schema, with option to handle composite arrays. */
-  private List<Field> getFields(Schema<?> schema, String parentPath, boolean isCompositeArraySubModel) {
+  private List<Field> getFields(
+      Schema<?> schema, String parentPath, boolean isCompositeArraySubModel) {
     var fields = new ArrayList<Field>();
     Map<String, Schema<?>> parameters = safeProperties(schema);
     if (parameters == null) return fields;
     for (var entry : parameters.entrySet()) {
       var field = new Field();
       field.setName(entry.getKey());
-      
+
       // For composite array sub-models, convert array types to their element types
       Schema<?> fieldSchema = entry.getValue();
       if (isCompositeArraySubModel && "array".equals(fieldSchema.getType())) {
@@ -246,13 +249,13 @@ public class PostRequestParamsBuilder {
       } else {
         field.setType(TypeMapper.getJavaType(entry.getKey(), fieldSchema));
       }
-      
+
       field.setDeprecated(
           entry.getValue().getDeprecated() != null && entry.getValue().getDeprecated());
-      
+
       Schema<?> schemaDefn = entry.getValue();
       FieldType fieldType = TypeMapper.getJavaType(entry.getKey(), schemaDefn);
-      
+
       // Check if this is a composite array pattern
       if (isCompositeArrayPattern(schemaDefn)) {
         field.setCompositeArrayField(true);
@@ -459,7 +462,7 @@ public class PostRequestParamsBuilder {
     return (Map<String, Schema<?>>) raw;
   }
 
-  /** 
+  /**
    * Determines if a schema represents a composite array request body pattern.
    * This pattern is characterized by:
    * - Being an object type
@@ -470,19 +473,19 @@ public class PostRequestParamsBuilder {
     if (schema == null || !"object".equals(schema.getType())) {
       return false;
     }
-    
+
     Map<String, Schema<?>> properties = safeProperties(schema);
     if (properties == null || properties.isEmpty()) {
       return false;
     }
-    
+
     // Check if ALL properties are arrays
     for (Schema<?> propertySchema : properties.values()) {
       if (!"array".equals(propertySchema.getType())) {
         return false;
       }
     }
-    
+
     return true;
   }
 

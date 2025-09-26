@@ -69,44 +69,44 @@ public final class {{name}}Response implements Iterable<{{#unless (eq itemType "
         try {
             {{#each fields}}
             {{#if isComplexObjectType}}
-            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{name}}"));
+            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
             {{else if isEnumType}}
-            {{{type}}} {{name}} = {{{type}}}.fromString(JsonUtil.getString(json, "{{name}}"));
+            {{{type}}} {{name}} = {{{type}}}.fromString(JsonUtil.getString(json, "{{curlName}}"));
             {{else if isListOfObjects}}
               {{#if listElementType}}
                 {{#unless (eq listElementType "Object")}}
                 {{{type}}} {{name}} =
-                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}"))
+                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}"))
                         .stream()
                         .map({{listElementType}}::fromJson)
                         .collect(java.util.stream.Collectors.toList());
                 {{else}}
                 {{{type}}} {{name}} =
-                    new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}")));
+                    new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
                 {{/unless}}
               {{else}}
               {{{type}}} {{name}} =
-                  JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{name}}"));
+                  JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
               {{/if}}
             {{else if isListOfPrimitives}}
             {{{type}}} {{name}} =
-                JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{name}}"));
+                JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
             {{{type}}} {{name}} =
-                new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}")));
+                new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
             {{else}}
             {{{type}}} {{name}} =
-                JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{name}}"));
+                JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
             {{/if}}
             {{else if isObjectType}}
             {{#unless (eq type "Object")}}
-            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{name}}"));
+            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
             {{else}}
-            {{{type}}} {{name}} = JsonUtil.getObject(json, "{{name}}");
+            {{{type}}} {{name}} = JsonUtil.getObject(json, "{{curlName}}");
             {{/unless}}
             {{else}}
-            {{{type}}} {{name}} = JsonUtil.get{{{type}}}(json, "{{name}}");
+            {{{type}}} {{name}} = JsonUtil.get{{{type}}}(json, "{{curlName}}");
             {{/if}}
             {{/each}}
 
@@ -124,44 +124,44 @@ public final class {{name}}Response implements Iterable<{{#unless (eq itemType "
         try {
             {{#each fields}}
             {{#if isComplexObjectType}}
-            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{name}}"));
+            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
             {{else if isEnumType}}
-            {{{type}}} {{name}} = {{{type}}}.fromString(JsonUtil.getString(json, "{{name}}"));
+            {{{type}}} {{name}} = {{{type}}}.fromString(JsonUtil.getString(json, "{{curlName}}"));
             {{else if isListOfObjects}}
               {{#if listElementType}}
                 {{#unless (eq listElementType "Object")}}
                 {{{type}}} {{name}} =
-                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}"))
+                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}"))
                         .stream()
                         .map({{listElementType}}::fromJson)
                         .collect(java.util.stream.Collectors.toList());
                 {{else}}
                 {{{type}}} {{name}} =
-                    new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}")));
+                    new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
                 {{/unless}}
               {{else}}
               {{{type}}} {{name}} =
-                  JsonUtil.parseStringArray(JsonUtil.getArray(json, "{{name}}"));
+                  JsonUtil.parseStringArray(JsonUtil.getArray(json, "{{curlName}}"));
               {{/if}}
             {{else if isListOfPrimitives}}
             {{{type}}} {{name}} =
-                JsonUtil.parseStringArray(JsonUtil.getArray(json, "{{name}}"));
+                JsonUtil.parseStringArray(JsonUtil.getArray(json, "{{curlName}}"));
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
             {{{type}}} {{name}} =
-                new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}")));
+                new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
             {{else}}
             {{{type}}} {{name}} =
-                JsonUtil.parseStringArray(JsonUtil.getArray(json, "{{name}}"));
+                JsonUtil.parseStringArray(JsonUtil.getArray(json, "{{curlName}}"));
             {{/if}}
             {{else if isObjectType}}
             {{#unless (eq type "Object")}}
-            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{name}}"));
+            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
             {{else}}
-            {{{type}}} {{name}} = JsonUtil.getObject(json, "{{name}}");
+            {{{type}}} {{name}} = JsonUtil.getObject(json, "{{curlName}}");
             {{/unless}}
             {{else}}
-            {{{type}}} {{name}} = JsonUtil.get{{{type}}}(json, "{{name}}");
+            {{{type}}} {{name}} = JsonUtil.get{{{type}}}(json, "{{curlName}}");
             {{/if}}
             {{/each}}
 

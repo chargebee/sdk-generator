@@ -30,35 +30,35 @@ public final class {{name}}Response {
             Builder builder = builder();
             {{#each fields}}
             {{#if isComplexObjectType}}
-            String __{{name}}Json = JsonUtil.getObject(json, "{{name}}");
+            String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
             if (__{{name}}Json != null) {
             builder.{{name}}({{{type}}}.fromJson(__{{name}}Json));
             }
             {{else if isEnumType}}
-            builder.{{name}}({{{type}}}.fromString(JsonUtil.getString(json, "{{name}}")));
+            builder.{{name}}({{{type}}}.fromString(JsonUtil.getString(json, "{{curlName}}")));
             {{else if isListOfObjects}}
             {{#if listElementType}}
             {{#unless (eq listElementType "Object")}}
-            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}")).stream().map({{listElementType}}::fromJson).collect(java.util.stream.Collectors.toList()));
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")).stream().map({{listElementType}}::fromJson).collect(java.util.stream.Collectors.toList()));
             {{else}}
-            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}")));
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
             {{/unless}}
             {{else}}
-            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}")));
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
             {{/if}}
             {{else if isListType}}
-            builder.{{name}}(JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{name}}")));
+            builder.{{name}}(JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}")));
             {{else if isObjectType}}
             {{#if (eq type "Object")}}
-            builder.{{name}}(JsonUtil.getObject(json, "{{name}}"));
+            builder.{{name}}(JsonUtil.getObject(json, "{{curlName}}"));
             {{else}}
-            String __{{name}}Json = JsonUtil.getObject(json, "{{name}}");
+            String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
             if (__{{name}}Json != null) {
             builder.{{name}}({{{type}}}.fromJson(__{{name}}Json));
             }
             {{/if}}
             {{else}}
-            builder.{{name}}(JsonUtil.get{{{type}}}(json, "{{name}}"));
+            builder.{{name}}(JsonUtil.get{{{type}}}(json, "{{curlName}}"));
             {{/if}}
             {{/each}}
             
