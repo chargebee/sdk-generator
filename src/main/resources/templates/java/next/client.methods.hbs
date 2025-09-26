@@ -1,0 +1,21 @@
+package com.chargebee.client;
+
+{{#each imports}}
+import {{this}};
+{{/each}}
+
+/**
+ * Auto-generated interface defining all service access methods.
+ * ChargebeeClient implements this interface to provide type-safe access to all services.
+ */
+public interface ClientMethods {
+{{#each services}}
+    
+    /**
+     * Access {{resourceName}}-related operations.
+     * 
+     * @return {{className}} instance for fluent API access
+     */
+    {{className}} {{methodName}}();
+{{/each}}
+}

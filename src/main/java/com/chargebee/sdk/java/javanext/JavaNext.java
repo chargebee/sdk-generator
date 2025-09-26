@@ -39,12 +39,31 @@ public class JavaNext extends Language {
             .withOutputDirectoryPath(outputDirectoryPath)
             .withTemplate(getTemplateContent("core.post.response"))
             .build(spec.openAPI());
+    List<FileOp> serviceFiles =
+        new ServiceBuilder()
+            .withOutputDirectoryPath(outputDirectoryPath)
+            .withTemplate(getTemplateContent("core.services"))
+            .build(spec.openAPI());
+    List<FileOp> clientMethodsFiles =
+        new ClientMethodsBuilder()
+            .withOutputDirectoryPath(outputDirectoryPath)
+            .withClientMethodsTemplate(getTemplateContent("client.methods"))
+            .withClientMethodsImplTemplate(getTemplateContent("client.methods.impl"))
+            .build(spec.openAPI());
+    List<FileOp> serviceRegistryFiles =
+        new ServiceRegistryBuilder()
+            .withOutputDirectoryPath(outputDirectoryPath)
+            .withTemplate(getTemplateContent("core.service.registry"))
+            .build(spec.openAPI());
     return List.of(
             coreModelFiles,
             paramsBuilderFiles,
             getParamsBuilderFiles,
             getResponseFiles,
-            postResponseFiles)
+            postResponseFiles,
+            serviceFiles,
+            clientMethodsFiles,
+            serviceRegistryFiles)
         .stream()
         .flatMap(List::stream)
         .collect(Collectors.toList());
@@ -64,7 +83,15 @@ public class JavaNext extends Language {
         "core.get.response.list",
         "/templates/java/next/core.get.response.list.hbs",
         "core.post.response",
-        "/templates/java/next/core.post.response.hbs");
+        "/templates/java/next/core.post.response.hbs",
+        "core.services",
+        "/templates/java/next/core.services.hbs",
+        "core.service.registry",
+        "/templates/java/next/core.service.registry.hbs",
+        "client.methods",
+        "/templates/java/next/client.methods.hbs",
+        "client.methods.impl",
+        "/templates/java/next/client.methods.impl.hbs");
   }
 
   @Override
