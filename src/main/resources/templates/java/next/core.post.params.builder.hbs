@@ -55,11 +55,37 @@ public final class {{name}}Params {
 
         {{#each fields}}
         {{#if subModelField}}
+        {{#if compositeArrayField}}
+        {{#if deprecated}}@Deprecated{{/if}}
+        public {{../name}}Builder {{name}}(List<{{subModelParamsType}}> value) {
+            // Convert list of individual subscription items into composite array format
+            if (value != null && !value.isEmpty()) {
+                // Create arrays for each property
+                Map<String, List<Object>> arrays = new LinkedHashMap<>();
+                
+                for ({{subModelParamsType}} item : value) {
+                    if (item != null) {
+                        Map<String, Object> itemData = item.toFormData();
+                        for (Map.Entry<String, Object> entry : itemData.entrySet()) {
+                            arrays.computeIfAbsent(entry.getKey(), k -> new java.util.ArrayList<>()).add(entry.getValue());
+                        }
+                    }
+                }
+                
+                // Put arrays into form data with proper prefixes
+                for (Map.Entry<String, List<Object>> entry : arrays.entrySet()) {
+                    formData.put("{{curlName}}[" + entry.getKey() + "]", entry.getValue());
+                }
+            }
+            return this;
+        }
+        {{else}}
         {{#if deprecated}}@Deprecated{{/if}}
         public {{../name}}Builder {{name}}({{subModelParamsType}} value) {
             formData.put("{{curlName}}", value);
             return this;
         }
+        {{/if}}
         {{else}}
         {{#if deprecated}}@Deprecated{{/if}}
         public {{../name}}Builder {{name}}({{{type}}} value) {

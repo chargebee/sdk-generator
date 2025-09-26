@@ -23,6 +23,7 @@ public class Field {
   private boolean isSort;
   private List<String> sortableFields = new ArrayList<>();
   private boolean subModelField;
+  private boolean compositeArrayField;
 
   public String getName() {
     if (name == null) return null;
