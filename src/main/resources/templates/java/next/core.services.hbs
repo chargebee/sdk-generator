@@ -64,7 +64,15 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}, {{paramsClassName}} params) throws Exception {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return get(path, params.toQueryParams());
+        return get(path, params != null ? params.toQueryParams() : null);
+    }
+
+    /**
+     * {{methodName}} a {{../packageName}} without params (executes immediately) - returns raw Response.
+     */
+    Response {{methodName}}Raw(String {{pathParamName}}) throws Exception {
+        String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
+        return get(path, null);
     }
 
     /**
@@ -78,6 +86,11 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     public {{returnType}} {{methodName}}(String {{pathParamName}}, {{paramsClassName}} params) throws Exception {
         Response response = {{methodName}}Raw({{pathParamName}}, params);
         return {{returnType}}.fromJson(response.getBodyAsString(), this, params, {{pathParamName}});
+    }
+
+    public {{returnType}} {{methodName}}(String {{pathParamName}}) throws Exception {
+        Response response = {{methodName}}Raw({{pathParamName}});
+        return {{returnType}}.fromJson(response.getBodyAsString(), this, null, {{pathParamName}});
     }
 
     {{else}}
@@ -132,11 +145,24 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw({{paramsClassName}} params) throws Exception {
         {{#if (eq httpMethod "post")}}
-        return post("{{path}}", params.toFormData());
+        return post("{{path}}", params != null ? params.toFormData() : null);
         {{else}}
-        return get("{{path}}", params.toQueryParams());
+        return get("{{path}}", params != null ? params.toQueryParams() : null);
         {{/if}}
     }
+
+    {{#if isListResponse}}
+    /**
+     * {{methodName}} a {{../packageName}} without params (executes immediately) - returns raw Response.
+     */
+    Response {{methodName}}Raw() throws Exception {
+        {{#if (eq httpMethod "post")}}
+        return post("{{path}}", null);
+        {{else}}
+        return get("{{path}}", null);
+        {{/if}}
+    }
+    {{/if}}
 
     /**
      * {{methodName}} a {{../packageName}} using raw JSON payload (executes immediately) - returns raw Response.
@@ -157,6 +183,13 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         return parseResponse(response, {{returnType}}.class);
         {{/if}}
     }
+
+    {{#if isListResponse}}
+    public {{returnType}} {{methodName}}() throws Exception {
+        Response response = {{methodName}}Raw();
+        return {{returnType}}.fromJson(response.getBodyAsString(), this, null);
+    }
+    {{/if}}
 
     {{/if}}
     {{/each}}
