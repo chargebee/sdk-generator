@@ -230,14 +230,22 @@ public class ListResponseBuilder {
         }
         subModels.add(
             createSubModel(
-                module + "_" + methodName + "_Item", listSchema, module, methodName, importsCollector));
+                module + "_" + methodName + "_Item",
+                listSchema,
+                module,
+                methodName,
+                importsCollector));
       }
     }
     return subModels;
   }
 
   private Model createSubModel(
-      String fieldName, Schema<?> schema, String module, String methodName, List<Imports> importsCollector) {
+      String fieldName,
+      Schema<?> schema,
+      String module,
+      String methodName,
+      List<Imports> importsCollector) {
     var subModel = new Model();
     subModel.setName(fieldName);
     subModel.setFields(getResponseFields(schema, module, methodName, importsCollector));

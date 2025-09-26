@@ -1,0 +1,109 @@
+package com.chargebee.core.responses.{{module}};
+
+import java.util.List;
+{{#each imports}}
+import com.chargebee.core.models.{{moduleName}}.{{name}};
+{{/each}}
+import com.chargebee.internal.JsonUtil;
+import java.sql.Timestamp;
+
+/**
+ * Immutable response object for {{name}} operation.
+ * Contains the response data from the API.
+ */
+public final class {{name}}Response {
+    {{#each fields}}
+    private final {{{type}}} {{name}};
+    {{/each}}
+
+    private {{name}}Response(Builder builder) {
+        {{#each fields}}
+        this.{{name}} = builder.{{name}};
+        {{/each}}
+    }
+
+    /**
+     * Parse JSON response into {{name}}Response object.
+     */
+    public static {{name}}Response fromJson(String json) {
+        try {
+            Builder builder = builder();
+            {{#each fields}}
+            {{#if isComplexObjectType}}
+            String __{{name}}Json = JsonUtil.getObject(json, "{{name}}");
+            if (__{{name}}Json != null) {
+            builder.{{name}}({{{type}}}.fromJson(__{{name}}Json));
+            }
+            {{else if isEnumType}}
+            builder.{{name}}({{{type}}}.fromString(JsonUtil.getString(json, "{{name}}")));
+            {{else if isListOfObjects}}
+            {{#if listElementType}}
+            {{#unless (eq listElementType "Object")}}
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}")).stream().map({{listElementType}}::fromJson).collect(java.util.stream.Collectors.toList()));
+            {{else}}
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}")));
+            {{/unless}}
+            {{else}}
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{name}}")));
+            {{/if}}
+            {{else if isListType}}
+            builder.{{name}}(JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{name}}")));
+            {{else if isObjectType}}
+            {{#if (eq type "Object")}}
+            builder.{{name}}(JsonUtil.getObject(json, "{{name}}"));
+            {{else}}
+            String __{{name}}Json = JsonUtil.getObject(json, "{{name}}");
+            if (__{{name}}Json != null) {
+            builder.{{name}}({{{type}}}.fromJson(__{{name}}Json));
+            }
+            {{/if}}
+            {{else}}
+            builder.{{name}}(JsonUtil.get{{{type}}}(json, "{{name}}"));
+            {{/if}}
+            {{/each}}
+            
+            return builder.build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse {{name}}Response from JSON", e);
+        }
+    }
+
+    /**
+     * Create a new builder for {{name}}Response.
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Builder for {{name}}Response.
+     */
+    public static class Builder {
+        {{#each fields}}
+        private {{{type}}} {{name}};
+        {{/each}}
+
+        private Builder() {}
+
+        {{#each fields}}
+        public Builder {{name}}({{{type}}} {{name}}) {
+            this.{{name}} = {{name}};
+            return this;
+        }
+
+        {{/each}}
+        public {{name}}Response build() {
+            return new {{name}}Response(this);
+        }
+    }
+
+    {{#each fields}}
+    /**
+     * Get the {{name}} from the response.
+     */
+    public {{{type}}} {{getterName}}() {
+        return {{name}};
+    }
+
+    {{/each}}
+}
