@@ -269,6 +269,11 @@ public class ServiceBuilder {
       return false;
     }
 
+    /** Returns true if the operation defines a request body. */
+    public boolean hasRequestBody() {
+      return operation != null && operation.getRequestBody() != null;
+    }
+
     private boolean isPaginatedListResponse(io.swagger.v3.oas.models.media.Schema<?> schema) {
       if (schema == null || schema.getProperties() == null) {
         return false;
