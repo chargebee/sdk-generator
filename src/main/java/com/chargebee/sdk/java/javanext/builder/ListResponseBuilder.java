@@ -282,7 +282,7 @@ public class ListResponseBuilder {
           var importObj = new Imports();
           importObj.setName(refModelName);
           importObj.setPackageName(
-              "com.chargebee.core.models."
+              "com.chargebee.v4.core.models."
                   + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, refModelName));
           importsCollector.add(importObj);
           // fieldType is already correctly set by TypeMapper
@@ -297,7 +297,7 @@ public class ListResponseBuilder {
         var importObj = new Imports();
         importObj.setName(refModelName);
         importObj.setPackageName(
-            "com.chargebee.core.models."
+            "com.chargebee.v4.core.models."
                 + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, refModelName));
         importsCollector.add(importObj);
         fieldType = TypeMapper.getJavaType(refModelName, schema);

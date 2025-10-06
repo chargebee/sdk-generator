@@ -120,7 +120,7 @@ public class ModelBuilder {
       String ref = schema.get$ref();
       String refName = ref.substring(ref.lastIndexOf('/') + 1);
       String refPkg = toLowerCamel(refName);
-      fqns.add("com.chargebee.core.models." + refPkg + "." + refName);
+      fqns.add("com.chargebee.v4.core.models." + refPkg + "." + refName);
       return;
     }
     // Arrays

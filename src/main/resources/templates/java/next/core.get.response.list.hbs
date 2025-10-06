@@ -1,4 +1,4 @@
-package com.chargebee.core.responses.{{module}};
+package com.chargebee.v4.core.responses.{{module}};
 
 import java.util.List;
 import java.util.ArrayList;
@@ -7,9 +7,9 @@ import java.sql.Timestamp;
 {{#each imports}}
 import {{packageName}}.{{name}};
 {{/each}}
-import com.chargebee.internal.JsonUtil;
-import com.chargebee.core.services.{{serviceName}};
-import com.chargebee.core.models.{{module}}.params.{{name}}Params;
+import com.chargebee.v4.internal.JsonUtil;
+import com.chargebee.v4.core.services.{{serviceName}};
+import com.chargebee.v4.core.models.{{module}}.params.{{name}}Params;
 
 /**
  * Immutable response object for {{name}} operation.

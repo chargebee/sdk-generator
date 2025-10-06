@@ -157,7 +157,7 @@ public class ClientMethodsBuilder {
 
   private Set<String> deriveImports(List<ServiceInfo> services) {
     return services.stream()
-        .map(service -> "com.chargebee.core.services." + service.getClassName())
+        .map(service -> "com.chargebee.v4.core.services." + service.getClassName())
         .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 

@@ -42,7 +42,7 @@ public class SimpleGetResponseBuilder {
   private static final String CONTENT_TYPE_JSON = "application/json";
   private static final String PROP_LIST = "list";
   private static final String PROP_NEXT_OFFSET = "next_offset";
-  private static final String CORE_MODELS_PACKAGE_PREFIX = "com.chargebee.core.models.";
+  private static final String CORE_MODELS_PACKAGE_PREFIX = "com.chargebee.v4.core.models.";
 
   /**
    * Configure the output directory where generated response classes will be written.
