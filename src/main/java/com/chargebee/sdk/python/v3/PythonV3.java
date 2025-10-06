@@ -1,8 +1,7 @@
 package com.chargebee.sdk.python.v3;
 
 import static com.chargebee.GenUtil.*;
-import static com.chargebee.openapi.Extension.IS_MONEY_COLUMN;
-import static com.chargebee.openapi.Extension.SDK_ENUM_API_NAME;
+import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.openapi.Resource.isListOfSubResourceSchema;
 import static com.chargebee.openapi.Resource.isSubResourceSchema;
 import static com.chargebee.sdk.common.Constant.DEBUG_RESOURCE;
@@ -654,6 +653,9 @@ public class PythonV3 extends Language {
     if (isSubResourceSchema(schema)) {
       String dep = "";
       if (!getDependentResource(activeResource).isEmpty()) {
+        if(schemaNamespaceIsLocal(schema)){
+          return toCamelCase(attributeName);
+        }
         dep = getSnakeClazName(attributeName) + ".";
         return dep + pluralize(toCamelCase(attributeName));
       }
@@ -771,6 +773,22 @@ public class PythonV3 extends Language {
       return Constants.JSON_ARRAY_TYPE;
     }
     return Constants.ANY_TYPE;
+  }
+
+  public boolean isDependedAttribute(Schema schema) {
+    return schema.getExtensions() != null
+            && schema.getExtensions().get(IS_DEPENDENT_ATTRIBUTE) != null
+            && ((boolean) schema.getExtensions().get(IS_DEPENDENT_ATTRIBUTE));
+  }
+
+  public boolean isGobalResourceReference(Schema schema) {
+    return schema.getExtensions() != null
+            && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
+            && ((boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE));
+  }
+
+  public boolean schemaNamespaceIsLocal(Schema schema) {
+    return !isDependedAttribute(schema) && !isGobalResourceReference(schema);
   }
 
   @Override
