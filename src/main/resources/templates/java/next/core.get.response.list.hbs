@@ -2,8 +2,6 @@ package com.chargebee.core.responses.{{module}};
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.sql.Timestamp;
 
 {{#each imports}}
@@ -15,9 +13,9 @@ import com.chargebee.core.models.{{module}}.params.{{name}}Params;
 
 /**
  * Immutable response object for {{name}} operation.
- * Contains paginated list data with auto-pagination support.
+ * Contains paginated list data.
  */
-public final class {{name}}Response implements Iterable<{{#unless (eq itemType "Object")}}{{name}}Response.{{/unless}}{{itemType}}> {
+public final class {{name}}Response {
     {{#each fields}}
     private final {{{type}}} {{name}};
     {{/each}}
@@ -26,7 +24,7 @@ public final class {{name}}Response implements Iterable<{{#unless (eq itemType "
     {{/if}}
     private final {{serviceName}} service;
     private final {{name}}Params originalParams;
-    private final boolean isAutoPaginate;
+    
 
     private {{name}}Response(
         {{#each fields}}{{{type}}} {{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#if hasPathParams}}, String {{pathParamName}}{{/if}},
@@ -41,25 +39,10 @@ public final class {{name}}Response implements Iterable<{{#unless (eq itemType "
         {{/if}}
         this.service = service;
         this.originalParams = originalParams;
-        this.isAutoPaginate = false;
+        
     }
 
-    private {{name}}Response(
-        {{#each fields}}{{{type}}} {{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#if hasPathParams}}, String {{pathParamName}}{{/if}},
-        {{serviceName}} service,
-        {{name}}Params originalParams,
-        boolean isAutoPaginate
-    ) {
-        {{#each fields}}
-        this.{{name}} = {{name}};
-        {{/each}}
-        {{#if hasPathParams}}
-        this.{{pathParamName}} = {{pathParamName}};
-        {{/if}}
-        this.service = service;
-        this.originalParams = originalParams;
-        this.isAutoPaginate = isAutoPaginate;
-    }
+    
 
     /**
      * Parse JSON response into {{name}}Response object (no service context).
@@ -118,7 +101,7 @@ public final class {{name}}Response implements Iterable<{{#unless (eq itemType "
 
     /**
      * Parse JSON response into {{name}}Response object with service context
-     * for pagination (enables nextPage(), autoPaginate()).
+     * for pagination (enables nextPage()).
      */
     public static {{name}}Response fromJson(String json, {{serviceName}} service, {{name}}Params originalParams{{#if hasPathParams}}, String {{pathParamName}}{{/if}}) {
         try {
@@ -208,62 +191,7 @@ public final class {{name}}Response implements Iterable<{{#unless (eq itemType "
         return service.{{operationMethodName}}({{#if hasPathParams}}{{pathParamName}}, {{/if}}nextParams);
     }
 
-    /**
-     * Enable auto-pagination for this response.
-     * Returns a new response that will automatically iterate through all pages.
-     */
-    public {{name}}Response autoPaginate() {
-        return new {{name}}Response(
-            {{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#if hasPathParams}}, {{pathParamName}}{{/if}},
-            service,
-            originalParams,
-            true
-        );
-    }
-
-    /** Iterator implementation for auto-pagination support. */
-    @Override
-    public Iterator<{{itemType}}> iterator() {
-        if (isAutoPaginate) {
-            return new AutoPaginateIterator();
-        } else {
-            return {{listFieldName}}.iterator();
-        }
-    }
-
-    /** Internal iterator class for auto-pagination. */
-    private class AutoPaginateIterator implements Iterator<{{itemType}}> {
-        private {{name}}Response currentPage = {{name}}Response.this;
-        private Iterator<{{itemType}}> currentIterator = currentPage.{{listFieldName}}.iterator();
-
-        @Override
-        public boolean hasNext() {
-            if (currentIterator.hasNext()) {
-                return true;
-            }
-
-            // Try to load next page if available
-            if (currentPage.hasNextPage()) {
-                try {
-                    currentPage = currentPage.nextPage();
-                    currentIterator = currentPage.{{listFieldName}}.iterator();
-                    return currentIterator.hasNext();
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to fetch next page", e);
-                }
-            }
-
-            return false;
-        }
-
-        @Override
-        public {{itemType}} next() {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
-            }
-            return currentIterator.next();
-        }
-    }
+    
 
     {{#each subModels}}
     public static class {{name}} {
