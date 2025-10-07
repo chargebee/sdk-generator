@@ -269,6 +269,9 @@ public class Java extends Language {
   private List<SubResource> getSubResrouces(Resource res) {
     List<SubResource> subResources = new ArrayList<>();
     for (Attribute attribute : res.getSortedResourceAttributes()) {
+      if(attribute.name.equals("reference_transactions")){
+        continue;
+      }
       if (attribute.isSubResource()
           && !attribute.isDependentAttribute()
           && !Resource.isGlobalResourceReference(attribute.schema)) {
@@ -1208,6 +1211,7 @@ public class Java extends Language {
   private List<Column> getResourceCols(Resource res) {
     List<Column> cols = new ArrayList<>();
     for (Attribute attribute : res.getSortedResourceAttributes()) {
+      if(attribute.name.equals("reference_transactions")) continue;
       if (attribute.isContentObjectAttribute()) continue;
       Column column = new Column();
       column.setDeprecated(attribute.isDeprecated());
