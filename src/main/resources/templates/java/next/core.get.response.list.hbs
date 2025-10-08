@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import {{packageName}}.{{name}};
 {{/each}}
 import com.chargebee.v4.internal.JsonUtil;
+import com.chargebee.v4.transport.Response;
 import com.chargebee.v4.core.services.{{serviceName}};
 import com.chargebee.v4.core.models.{{module}}.params.{{name}}Params;
 
@@ -24,12 +25,13 @@ public final class {{name}}Response {
     {{/if}}
     private final {{serviceName}} service;
     private final {{name}}Params originalParams;
-    
+    private final Response httpResponse;
 
     private {{name}}Response(
         {{#each fields}}{{{type}}} {{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#if hasPathParams}}, String {{pathParamName}}{{/if}},
         {{serviceName}} service,
-        {{name}}Params originalParams
+        {{name}}Params originalParams,
+        Response httpResponse
     ) {
         {{#each fields}}
         this.{{name}} = {{name}};
@@ -39,7 +41,7 @@ public final class {{name}}Response {
         {{/if}}
         this.service = service;
         this.originalParams = originalParams;
-        
+        this.httpResponse = httpResponse;
     }
 
     
@@ -93,7 +95,7 @@ public final class {{name}}Response {
             {{/if}}
             {{/each}}
 
-            return new {{name}}Response({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#if hasPathParams}}, null{{/if}}, null, null);
+            return new {{name}}Response({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#if hasPathParams}}, null{{/if}}, null, null, null);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse {{name}}Response from JSON", e);
         }
@@ -103,7 +105,7 @@ public final class {{name}}Response {
      * Parse JSON response into {{name}}Response object with service context
      * for pagination (enables nextPage()).
      */
-    public static {{name}}Response fromJson(String json, {{serviceName}} service, {{name}}Params originalParams{{#if hasPathParams}}, String {{pathParamName}}{{/if}}) {
+    public static {{name}}Response fromJson(String json, {{serviceName}} service, {{name}}Params originalParams{{#if hasPathParams}}, String {{pathParamName}}{{/if}}, Response httpResponse) {
         try {
             {{#each fields}}
             {{#if isComplexObjectType}}
@@ -148,7 +150,7 @@ public final class {{name}}Response {
             {{/if}}
             {{/each}}
 
-            return new {{name}}Response({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#if hasPathParams}}, {{pathParamName}}{{/if}}, service, originalParams);
+            return new {{name}}Response({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#if hasPathParams}}, {{pathParamName}}{{/if}}, service, originalParams, httpResponse);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse {{name}}Response from JSON", e);
         }
@@ -179,19 +181,50 @@ public final class {{name}}Response {
         if (!hasNextPage()) {
             throw new IllegalStateException("No more pages available");
         }
-        if (service == null || originalParams == null) {
-            throw new UnsupportedOperationException("nextPage() requires service context. Use fromJson(json, service, originalParams).");
+        if (service == null) {
+            throw new UnsupportedOperationException("nextPage() requires service context. Use fromJson(json, service, originalParams, httpResponse).");
         }
 
         // Create new params with the next offset
-        {{name}}Params nextParams = originalParams.toBuilder()
+        {{name}}Params nextParams = (originalParams != null ? originalParams.toBuilder() : {{name}}Params.builder())
             .offset({{nextOffsetField}})
             .build();
 
         return service.{{operationMethodName}}({{#if hasPathParams}}{{pathParamName}}, {{/if}}nextParams);
     }
 
-    
+    /**
+     * Get the raw response payload as JSON string.
+     */
+    public String responsePayload() {
+        return httpResponse != null ? httpResponse.getBodyAsString() : null;
+    }
+
+    /**
+     * Get the HTTP status code.
+     */
+    public int httpStatus() {
+        return httpResponse != null ? httpResponse.getStatusCode() : 0;
+    }
+
+    /**
+     * Get response headers.
+     */
+    public java.util.Map<String, java.util.List<String>> headers() {
+        return httpResponse != null ? httpResponse.getHeaders() : java.util.Collections.emptyMap();
+    }
+
+    /**
+     * Get a specific header value.
+     */
+    public java.util.List<String> header(String name) {
+        if (httpResponse == null) return null;
+        return httpResponse.getHeaders().entrySet().stream()
+            .filter(e -> e.getKey().equalsIgnoreCase(name))
+            .map(java.util.Map.Entry::getValue)
+            .findFirst()
+            .orElse(null);
+    }
 
     {{#each subModels}}
     public static class {{name}} {

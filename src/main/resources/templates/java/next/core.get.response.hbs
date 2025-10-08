@@ -4,6 +4,7 @@ package com.chargebee.v4.core.responses.{{module}};
 import {{packageName}}.{{name}};
 {{/each}}
 import com.chargebee.v4.internal.JsonUtil;
+import com.chargebee.v4.transport.Response;
 import java.util.List;
 import java.sql.Timestamp;
 
@@ -15,17 +16,26 @@ public final class {{name}}Response {
     {{#each fields}}
     private final {{{type}}} {{name}};
     {{/each}}
+    private final Response httpResponse;
 
-    private {{name}}Response({{#each fields}}{{{type}}} {{name}}{{#unless @last}}, {{/unless}}{{/each}}) {
+    private {{name}}Response({{#each fields}}{{{type}}} {{name}}, {{/each}}Response httpResponse) {
         {{#each fields}}
         this.{{name}} = {{name}};
         {{/each}}
+        this.httpResponse = httpResponse;
     }
 
     /**
      * Parse JSON response into {{name}}Response object.
      */
     public static {{name}}Response fromJson(String json) {
+        return fromJson(json, null);
+    }
+
+    /**
+     * Parse JSON response into {{name}}Response object with HTTP response.
+     */
+    public static {{name}}Response fromJson(String json, Response httpResponse) {
         try {
             {{#each fields}}
             {{#if isComplexObjectType}}
@@ -65,7 +75,7 @@ public final class {{name}}Response {
             {{/if}}
             {{/each}}
             
-            return new {{name}}Response({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+            return new {{name}}Response({{#each fields}}{{name}}, {{/each}}httpResponse);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse {{name}}Response from JSON", e);
         }
@@ -77,6 +87,39 @@ public final class {{name}}Response {
         return {{name}};
     }
     {{/each}}
+
+    /**
+     * Get the raw response payload as JSON string.
+     */
+    public String responsePayload() {
+        return httpResponse != null ? httpResponse.getBodyAsString() : null;
+    }
+
+    /**
+     * Get the HTTP status code.
+     */
+    public int httpStatus() {
+        return httpResponse != null ? httpResponse.getStatusCode() : 0;
+    }
+
+    /**
+     * Get response headers.
+     */
+    public java.util.Map<String, java.util.List<String>> headers() {
+        return httpResponse != null ? httpResponse.getHeaders() : java.util.Collections.emptyMap();
+    }
+
+    /**
+     * Get a specific header value.
+     */
+    public java.util.List<String> header(String name) {
+        if (httpResponse == null) return null;
+        return httpResponse.getHeaders().entrySet().stream()
+            .filter(e -> e.getKey().equalsIgnoreCase(name))
+            .map(java.util.Map.Entry::getValue)
+            .findFirst()
+            .orElse(null);
+    }
 
     {{#each subModels}}
     public static class {{name}} {

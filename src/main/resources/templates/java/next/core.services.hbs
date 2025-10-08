@@ -85,12 +85,12 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
 
     public {{returnType}} {{methodName}}(String {{pathParamName}}, {{paramsClassName}} params) throws Exception {
         Response response = {{methodName}}Raw({{pathParamName}}, params);
-        return {{returnType}}.fromJson(response.getBodyAsString(), this, params, {{pathParamName}});
+        return {{returnType}}.fromJson(response.getBodyAsString(), this, params, {{pathParamName}}, response);
     }
 
     public {{returnType}} {{methodName}}(String {{pathParamName}}) throws Exception {
         Response response = {{methodName}}Raw({{pathParamName}});
-        return {{returnType}}.fromJson(response.getBodyAsString(), this, null, {{pathParamName}});
+        return {{returnType}}.fromJson(response.getBodyAsString(), this, null, {{pathParamName}}, response);
     }
 
     {{else}}
@@ -126,14 +126,14 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
 
     public {{returnType}} {{methodName}}(String {{pathParamName}}, {{paramsClassName}} params) throws Exception {
         Response response = {{methodName}}Raw({{pathParamName}}, params);
-        return parseResponse(response, {{returnType}}.class);
+        return {{returnType}}.fromJson(response.getBodyAsString(), response);
     }
     {{/if}}
 
     {{#unless (and (eq httpMethod "post") hasRequestBody)}}
     public {{returnType}} {{methodName}}(String {{pathParamName}}) throws Exception {
         Response response = {{methodName}}Raw({{pathParamName}});
-        return parseResponse(response, {{returnType}}.class);
+        return {{returnType}}.fromJson(response.getBodyAsString(), response);
     }
     {{/unless}}
 
@@ -178,16 +178,16 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     public {{returnType}} {{methodName}}({{paramsClassName}} params) throws Exception {
         Response response = {{methodName}}Raw(params);
         {{#if isListResponse}}
-        return {{returnType}}.fromJson(response.getBodyAsString(), this, params);
+        return {{returnType}}.fromJson(response.getBodyAsString(), this, params, response);
         {{else}}
-        return parseResponse(response, {{returnType}}.class);
+        return {{returnType}}.fromJson(response.getBodyAsString(), response);
         {{/if}}
     }
 
     {{#if isListResponse}}
     public {{returnType}} {{methodName}}() throws Exception {
         Response response = {{methodName}}Raw();
-        return {{returnType}}.fromJson(response.getBodyAsString(), this, null);
+        return {{returnType}}.fromJson(response.getBodyAsString(), this, null, response);
     }
     {{/if}}
 
