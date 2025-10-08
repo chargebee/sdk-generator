@@ -57,7 +57,7 @@ public class GetRequestParamsBuilder {
    * Output structure: <base>/core/models/<module>/params
    */
   public GetRequestParamsBuilder withOutputDirectoryPath(String outputDirectoryPath) {
-    this.outputDirectoryPath = outputDirectoryPath + "/core/models";
+    this.outputDirectoryPath = outputDirectoryPath + "/v4/core/models";
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }

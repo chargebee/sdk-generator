@@ -43,7 +43,7 @@ public class PostRequestParamsBuilder {
   private final List<FileOp> fileOps = new ArrayList<>();
 
   public PostRequestParamsBuilder withOutputDirectoryPath(String outputDirectoryPath) {
-    this.outputDirectoryPath = outputDirectoryPath + "/core/models";
+    this.outputDirectoryPath = outputDirectoryPath + "/v4/core/models";
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }

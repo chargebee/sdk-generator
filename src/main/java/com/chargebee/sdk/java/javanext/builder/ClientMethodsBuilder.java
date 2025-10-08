@@ -27,7 +27,7 @@ public class ClientMethodsBuilder {
   // Constants
   // --------------------------------------------------------------------------------------
 
-  private static final String CLIENT_SUBDIR = "/client";
+  private static final String CLIENT_SUBDIR = "/v4/client";
   private static final String KEY_SERVICES = "services";
   private static final String KEY_IMPORTS = "imports";
   private static final String CB_RESOURCE_ID_EXT = "x-cb-resource-id";

@@ -49,7 +49,7 @@ public class PostResponseBuilder {
   private static final String CODE_200 = "200";
   private static final String CODE_202 = "202";
   private static final String CODE_204 = "204";
-  private static final String RESPONSES_DIR_SUFFIX = "/core/responses";
+  private static final String RESPONSES_DIR_SUFFIX = "/v4/core/responses";
 
   private Template template;
   private String outputDirectoryPath;

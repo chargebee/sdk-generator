@@ -56,7 +56,7 @@ public class ServiceBuilder {
    */
   public ServiceBuilder withOutputDirectoryPath(@NonNull String outputDirectoryPath) {
     Objects.requireNonNull(outputDirectoryPath, "outputDirectoryPath must not be null");
-    this.outputDirectoryPath = outputDirectoryPath + "/core/services";
+    this.outputDirectoryPath = outputDirectoryPath + "/v4/core/services";
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }

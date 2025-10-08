@@ -25,7 +25,7 @@ public class ServiceRegistryBuilder {
   // Constants & Logger
   // ---------------------------------------------------------------------------------------------
   private static final Logger LOGGER = Logger.getLogger(ServiceRegistryBuilder.class.getName());
-  private static final String CLIENT_DIR_SUFFIX = "/client";
+  private static final String CLIENT_DIR_SUFFIX = "/v4/client";
 
   // ---------------------------------------------------------------------------------------------
   // State
