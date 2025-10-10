@@ -34,6 +34,16 @@ public class Response {
   }
 
   public List<OperationResponse> responseParameters(DataType lang) {
+
+    if (getOnSuccessSchema() != null
+        && getOnSuccessSchema().getProperties() != null
+        && getOnSuccessSchema().getProperties().containsKey("list")
+        && getOnSuccessSchema().getProperties().get("list") instanceof ArraySchema) {
+      var schema = ((ArraySchema) onSuccessSchema.getProperties().get("list")).getItems();
+      return List.of(
+          new OperationResponse(
+              "list", null, true, true, new Response(actionName, schema).responseParameters(lang)));
+    }
     return responseParameters().stream()
         .map(
             response ->
