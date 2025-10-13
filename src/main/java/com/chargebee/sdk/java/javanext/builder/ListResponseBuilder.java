@@ -423,14 +423,18 @@ public class ListResponseBuilder {
         for (Field f : fields) {
           if (effectiveListField.equals(f.getName())) {
             String elementType = f.getListElementType();
-            if ("Object".equals(elementType)) {
-              return "Object";
+            if (elementType == null || elementType.isEmpty()) {
+              break;
             }
-            break;
+            if ("Object".equals(elementType) || "java.util.Map<String, Object>".equals(elementType)) {
+              return "java.util.Map<String, Object>";
+            }
+            return elementType;
           }
         }
       }
-      return getName() + "Item";
+      // Default to map for safety when unknown
+      return "java.util.Map<String, Object>";
     }
 
     public String getListFieldName() {

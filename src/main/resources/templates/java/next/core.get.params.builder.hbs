@@ -87,7 +87,6 @@ public final class {{name}}Params {
             return new {{name}}Params(this);
         }
 
-        // Field-specific filter classes for fluent API
         {{#each fields}}
         {{#if isFilter}}
         public static final class {{filterType}} {
@@ -177,7 +176,6 @@ public final class {{name}}Params {
         {{/if}}
         {{/each}}
 
-        // Sort builder classes for fluent API
         {{#each fields}}
         {{#if isSort}}
         public static final class {{sortBuilderType}} {

@@ -57,7 +57,23 @@ public final class {{name}}Response {
             builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
             {{/if}}
             {{else if isListType}}
+            {{#if (eq listElementType "Object")}}
+            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}});");
+            if (__{{name}}Json != null) {
+            builder.{{name}}(JsonUtil.parseObjectArray(__{{name}}Json).stream()
+                .map(JsonUtil::parseJsonObjectToMap)
+                .collect(java.util.stream.Collectors.toList()));
+            }
+            {{else if (eq listElementType "java.util.Map<String, Object>")}}
+            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}});");
+            if (__{{name}}Json != null) {
+            builder.{{name}}(JsonUtil.parseObjectArray(__{{name}}Json).stream()
+                .map(JsonUtil::parseJsonObjectToMap)
+                .collect(java.util.stream.Collectors.toList()));
+            }
+            {{else}}
             builder.{{name}}(JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}")));
+            {{/if}}
             {{else if isObjectType}}
             {{#if (eq type "Object")}}
             builder.{{name}}(JsonUtil.getObject(json, "{{curlName}}"));

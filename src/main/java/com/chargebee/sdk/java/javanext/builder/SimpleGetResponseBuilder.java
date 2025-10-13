@@ -90,6 +90,7 @@ public class SimpleGetResponseBuilder {
       if (pathItem.getGet() != null) {
         var operation = pathItem.getGet();
         var extensions = operation.getExtensions();
+
         var methodExt = extensions != null ? extensions.get(Extension.OPERATION_METHOD_NAME) : null;
         var moduleExt = extensions != null ? extensions.get(Extension.RESOURCE_ID) : null;
         var methodName = methodExt != null ? methodExt.toString() : null;
@@ -227,13 +228,17 @@ public class SimpleGetResponseBuilder {
           var refModelName = lastSegmentOfRef(itemsSchema.get$ref());
           accumulateImport(importsAccumulator, refModelName);
           // fieldType is already correctly set by TypeMapper
-        } else {
-          // For inline object definitions, use the old logic
-          if (itemsSchema != null) {
-            fieldType =
-                TypeMapper.getJavaType(module + "_" + fieldName + "_Item", (Schema<?>) itemsSchema);
-          }
+        } else if (itemsSchema != null
+            && itemsSchema.getType() != null
+            && "object".equals(itemsSchema.getType())
+            && itemsSchema.getProperties() != null
+            && !itemsSchema.getProperties().isEmpty()) {
+          // For inline object definitions with properties, use the old logic
+          fieldType =
+              TypeMapper.getJavaType(module + "_" + fieldName + "_Item", (Schema<?>) itemsSchema);
         }
+        // Otherwise, keep the ListType as-is (it will be List<Object> for arrays with no item
+        // schema)
       } else if (fieldSchema.get$ref() != null) {
         field.setName(fieldName);
         var refModelName = lastSegmentOfRef(fieldSchema.get$ref());

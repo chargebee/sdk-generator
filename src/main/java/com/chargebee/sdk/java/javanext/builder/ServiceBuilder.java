@@ -160,17 +160,28 @@ public class ServiceBuilder {
   }
 
   private boolean hasRequiredExtensions(Operation operation) {
-    return operation != null
-        && operation.getExtensions() != null
-        && operation.getExtensions().containsKey(Extension.RESOURCE_ID)
-        && operation.getExtensions().containsKey(Extension.OPERATION_METHOD_NAME);
+    if (operation == null
+        || operation.getExtensions() == null
+        || !operation.getExtensions().containsKey(Extension.RESOURCE_ID)
+        || !operation.getExtensions().containsKey(Extension.OPERATION_METHOD_NAME)) {
+      return false;
+    }
+
+    return true;
   }
 
   private ServiceOperation createServiceOperation(
       String path, String httpMethod, String resourceName, Operation operation) {
     var serviceOp = new ServiceOperation();
-    serviceOp.setOperationId(
-        operation.getExtensions().get(Extension.OPERATION_METHOD_NAME).toString());
+
+    String operationId = operation.getExtensions().get(Extension.OPERATION_METHOD_NAME).toString();
+
+    // Prefix batch operations to avoid method name collisions
+    if (path.startsWith("/batch/")) {
+      operationId = "batch" + operationId.substring(0, 1).toUpperCase() + operationId.substring(1);
+    }
+
+    serviceOp.setOperationId(operationId);
     serviceOp.setModule(resourceName);
     serviceOp.setPath(path);
     serviceOp.setHttpMethod(httpMethod);
