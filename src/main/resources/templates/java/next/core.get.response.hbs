@@ -38,7 +38,10 @@ public final class {{name}}Response {
     public static {{name}}Response fromJson(String json, Response httpResponse) {
         try {
             {{#each fields}}
-            {{#if isComplexObjectType}}
+            {{#if isMapType}}
+            String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
+            {{{type}}} {{name}} = __{{name}}Json != null ? JsonUtil.parseJsonObjectToMap(__{{name}}Json) : new java.util.HashMap<>();
+            {{else if isComplexObjectType}}
             String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
             {{{type}}} {{name}} = __{{name}}Json != null ? {{{type}}}.fromJson(__{{name}}Json) : null;
             {{else if isEnumType}}
@@ -64,12 +67,17 @@ public final class {{name}}Response {
             {{else if isListOfPrimitives}}
             {{{type}}} {{name}} =
                 JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
+            {{else if isListType}}
+            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
+            {{{type}}} {{name}} = __{{name}}Json != null ?
+                JsonUtil.parseObjectArray(__{{name}}Json).stream()
+                    .collect(java.util.stream.Collectors.toList()) : null;
             {{else if isObjectType}}
-            {{#unless (eq type "Object")}}
-            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
-            {{else}}
+            {{#if (eq type "Object")}}
             {{{type}}} {{name}} = JsonUtil.getObject(json, "{{curlName}}");
-            {{/unless}}
+            {{else}}
+            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
+            {{/if}}
             {{else}}
             {{{type}}} {{name}} = JsonUtil.get{{{type}}}(json, "{{curlName}}");
             {{/if}}
@@ -136,7 +144,10 @@ public final class {{name}}Response {
         public static {{name}} fromJson(String json) {
             {{name}} item = new {{name}}();
             {{#each fields}}
-            {{#if isComplexObjectType}}
+            {{#if isMapType}}
+            String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
+            item.{{name}} = __{{name}}Json != null ? JsonUtil.parseJsonObjectToMap(__{{name}}Json) : new java.util.HashMap<>();
+            {{else if isComplexObjectType}}
             String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
             if (__{{name}}Json != null) {
             item.{{name}} = {{{type}}}.fromJson(__{{name}}Json);
@@ -164,12 +175,17 @@ public final class {{name}}Response {
             {{else if isListOfPrimitives}}
             item.{{name}} =
                 JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
+            {{else if isListType}}
+            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
+            item.{{name}} = __{{name}}Json != null ?
+                JsonUtil.parseObjectArray(__{{name}}Json).stream()
+                    .collect(java.util.stream.Collectors.toList()) : null;
             {{else if isObjectType}}
-            {{#unless (eq type "Object")}}
-            item.{{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
-            {{else}}
+            {{#if (eq type "Object")}}
             item.{{name}} = JsonUtil.getObject(json, "{{curlName}}");
-            {{/unless}}
+            {{else}}
+            item.{{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
+            {{/if}}
             {{else}}
             item.{{name}} = JsonUtil.get{{{type}}}(json, "{{curlName}}");
             {{/if}}

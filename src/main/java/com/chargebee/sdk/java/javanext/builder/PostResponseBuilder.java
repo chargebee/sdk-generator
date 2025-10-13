@@ -114,6 +114,7 @@ public class PostResponseBuilder {
     try {
       var operations = getOperations();
       for (var entry : operations.entrySet()) {
+        String path = entry.getKey();
         PathItem pathItem = entry.getValue();
         if (pathItem == null || pathItem.getPost() == null) continue;
 
@@ -121,7 +122,7 @@ public class PostResponseBuilder {
         var successResponse = findSuccessResponse(operation);
         if (successResponse == null) continue;
 
-        var responseAction = createResponseAction(operation, successResponse);
+        var responseAction = createResponseAction(path, operation, successResponse);
         if (responseAction == null) continue;
 
         var formattedContent = applyTemplate(responseAction);
@@ -138,7 +139,8 @@ public class PostResponseBuilder {
    *
    * @return model for templating, or null when schema is not an object
    */
-  private PostResponse createResponseAction(Operation operation, ApiResponse response) {
+  private PostResponse createResponseAction(
+      String path, Operation operation, ApiResponse response) {
     var postResponse = new PostResponse();
 
     String methodName = getExtensionOrNull(operation, Extension.OPERATION_METHOD_NAME);
@@ -150,6 +152,12 @@ public class PostResponseBuilder {
           operation.getOperationId());
       return null;
     }
+
+    // Prefix batch operations to avoid method name collisions
+    if (path.startsWith("/batch/")) {
+      methodName = "batch" + methodName.substring(0, 1).toUpperCase() + methodName.substring(1);
+    }
+
     postResponse.setOperationId(methodName);
     postResponse.setModule(moduleName);
 

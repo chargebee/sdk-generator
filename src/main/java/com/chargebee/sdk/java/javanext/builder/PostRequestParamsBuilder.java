@@ -90,6 +90,12 @@ public class PostRequestParamsBuilder {
           if (opId == null && operation.getOperationId() != null) {
             opId = operation.getOperationId();
           }
+
+          // Prefix batch operations to avoid method name collisions
+          if (entry.getKey().startsWith("/batch/") && opId != null) {
+            opId = "batch" + opId.substring(0, 1).toUpperCase() + opId.substring(1);
+          }
+
           String module = resolveModuleName(entry.getKey(), operation);
           postAction.setOperationId(opId != null ? opId : "post");
           postAction.setModule(module);

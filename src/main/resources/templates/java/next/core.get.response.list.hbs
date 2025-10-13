@@ -79,7 +79,16 @@ public final class {{name}}Response {
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
             {{{type}}} {{name}} =
-                new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
+                JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}"))
+                    .stream()
+                    .map(JsonUtil::parseJsonObjectToMap)
+                    .collect(java.util.stream.Collectors.toList());
+            {{else if (eq listElementType "java.util.Map<String, Object>")}}
+            {{{type}}} {{name}} =
+                JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}"))
+                    .stream()
+                    .map(JsonUtil::parseJsonObjectToMap)
+                    .collect(java.util.stream.Collectors.toList());
             {{else}}
             {{{type}}} {{name}} =
                 JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
@@ -134,7 +143,16 @@ public final class {{name}}Response {
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
             {{{type}}} {{name}} =
-                new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
+                JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}"))
+                    .stream()
+                    .map(JsonUtil::parseJsonObjectToMap)
+                    .collect(java.util.stream.Collectors.toList());
+            {{else if (eq listElementType "java.util.Map<String, Object>")}}
+            {{{type}}} {{name}} =
+                JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}"))
+                    .stream()
+                    .map(JsonUtil::parseJsonObjectToMap)
+                    .collect(java.util.stream.Collectors.toList());
             {{else}}
             {{{type}}} {{name}} =
                 JsonUtil.parseStringArray(JsonUtil.getArray(json, "{{curlName}}"));
@@ -164,7 +182,7 @@ public final class {{name}}Response {
     {{/each}}
 
     /** Get the list of items in this page (alias). */
-    public List<{{itemType}}> items() {
+    public List<{{{itemType}}}> items() {
         return {{listFieldName}};
     }
 
@@ -185,7 +203,6 @@ public final class {{name}}Response {
             throw new UnsupportedOperationException("nextPage() requires service context. Use fromJson(json, service, originalParams, httpResponse).");
         }
 
-        // Create new params with the next offset
         {{name}}Params nextParams = (originalParams != null ? originalParams.toBuilder() : {{name}}Params.builder())
             .offset({{nextOffsetField}})
             .build();
@@ -242,7 +259,10 @@ public final class {{name}}Response {
     public static {{name}} fromJson(String json) {
         {{name}} item = new {{name}}();
         {{#each fields}}
-        {{#if isComplexObjectType}}
+        {{#if isMapType}}
+        String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
+        item.{{name}} = __{{name}}Json != null ? JsonUtil.parseJsonObjectToMap(__{{name}}Json) : new java.util.HashMap<>();
+        {{else if isComplexObjectType}}
         String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
         if (__{{name}}Json != null) {
         item.{{name}} = {{{type}}}.fromJson(__{{name}}Json);

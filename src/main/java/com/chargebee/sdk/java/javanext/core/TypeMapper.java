@@ -6,18 +6,36 @@ import io.swagger.v3.oas.models.media.*;
 public class TypeMapper {
 
   public static FieldType getJavaType(String fieldName, Schema<?> schema) {
+    // Handle null schema
+    if (schema == null) {
+      return new ObjectType(fieldName, null);
+    }
+
     // Handle direct $ref to another schema as typed object
-    if (schema != null && schema.get$ref() != null) {
+    if (schema.get$ref() != null) {
       String refName = schema.get$ref().substring(schema.get$ref().lastIndexOf('/') + 1);
       String lowerUnderscore =
           com.google.common.base.CaseFormat.UPPER_CAMEL.to(
               com.google.common.base.CaseFormat.LOWER_UNDERSCORE, refName);
       return new ObjectType(lowerUnderscore, null);
     }
+
     FieldType fieldType = primitiveType(fieldName, schema);
     if (fieldType == null) {
       fieldType = complexType(fieldName, schema);
     }
+
+    // If both primitive and complex type return null, use Object as fallback
+    if (fieldType == null) {
+      System.err.println(
+          "Warning: Unable to determine type for field '"
+              + fieldName
+              + "', schema type: "
+              + (schema.getType() != null ? schema.getType() : "null")
+              + ". Using Object as fallback.");
+      return new ObjectType(fieldName, schema);
+    }
+
     return fieldType;
   }
 

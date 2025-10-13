@@ -8,6 +8,17 @@ public record ObjectType(String fieldName, Schema schema) implements FieldType {
   @Override
   public String display() {
     if (schema != null && (schema.getProperties() == null || schema.getProperties().isEmpty())) {
+      // Check if this is a free-form object with additionalProperties
+      if (schema.getAdditionalProperties() != null) {
+        // additionalProperties can be Boolean or Schema
+        Object additionalProps = schema.getAdditionalProperties();
+        if (additionalProps instanceof Boolean && (Boolean) additionalProps) {
+          return "java.util.Map<String, Object>";
+        }
+        if (additionalProps instanceof Schema) {
+          return "java.util.Map<String, Object>";
+        }
+      }
       return "Object";
     }
     String name = fieldName == null ? "" : fieldName;

@@ -27,7 +27,9 @@ public class Field {
 
   public String getName() {
     if (name == null) return null;
-    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name);
+    // Replace dots with underscores to handle field names like "card.copy_billing_info"
+    String normalizedName = name.replace('.', '_');
+    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, normalizedName);
   }
 
   public String getCurlName() {
@@ -64,7 +66,46 @@ public class Field {
   public boolean isPlainObjectType() {
     if (type instanceof ObjectType objectType) {
       var schema = objectType.schema();
-      return schema != null && (schema.getProperties() == null || schema.getProperties().isEmpty());
+      if (schema != null && (schema.getProperties() == null || schema.getProperties().isEmpty())) {
+        // If it has additionalProperties, it's a Map type, not a plain object
+        if (schema.getAdditionalProperties() != null) {
+          return false;
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Getter for Handlebars template (maps to isMapType).
+   */
+  public boolean getMapType() {
+    return isMapType();
+  }
+
+  /**
+   * True when this field is a Map type (object with additionalProperties but no defined properties).
+   * In such cases, we should return Map<String, Object>.
+   */
+  public boolean isMapType() {
+    // First check if the type string indicates it's a Map
+    if (type != null && type.display() != null && type.display().startsWith("java.util.Map")) {
+      return true;
+    }
+
+    // Then check the schema for additionalProperties
+    if (type instanceof ObjectType objectType) {
+      var schema = objectType.schema();
+      if (schema != null && (schema.getProperties() == null || schema.getProperties().isEmpty())) {
+        Object additionalProps = schema.getAdditionalProperties();
+        if (additionalProps instanceof Boolean && (Boolean) additionalProps) {
+          return true;
+        }
+        if (additionalProps instanceof Schema) {
+          return true;
+        }
+      }
     }
     return false;
   }
@@ -93,10 +134,25 @@ public class Field {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, listType.fieldName());
       }
       if (items != null && "object".equals(items.getType())) {
-        return "Object";
+        // If it's a free-form object (no properties), treat as Map
+        if (items.getProperties() == null || items.getProperties().isEmpty()) {
+          return "java.util.Map<String, Object>";
+        }
+        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, listType.fieldName());
       }
-      // Default for primitive arrays
-      return "String";
+
+      // Check if items has no type specified (generic array)
+      if (items == null || items.getType() == null || items.getType().isEmpty()) {
+        return "java.util.Map<String, Object>";
+      }
+
+      // For primitive types like string, integer, etc.
+      if ("string".equals(items.getType())) {
+        return "String";
+      }
+
+      // Default for unspecified or other types
+      return "Object";
     }
     return null;
   }
@@ -119,7 +175,9 @@ public class Field {
 
   public String getGetterName() {
     if (name == null) return "get";
-    return "get" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name);
+    // Replace dots with underscores to handle field names like "card.copy_billing_info"
+    String normalizedName = name.replace('.', '_');
+    return "get" + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, normalizedName);
   }
 
   public String getSubModelParamsType() {
@@ -127,11 +185,15 @@ public class Field {
       return subModel.getName() + "Params";
     }
     if (name == null) return null;
-    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name) + "Params";
+    // Replace dots with underscores to handle field names like "card.copy_billing_info"
+    String normalizedName = name.replace('.', '_');
+    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, normalizedName) + "Params";
   }
 
   public String getSortBuilderType() {
     if (name == null) return null;
-    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name) + "SortBuilder";
+    // Replace dots with underscores to handle field names like "card.copy_billing_info"
+    String normalizedName = name.replace('.', '_');
+    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, normalizedName) + "SortBuilder";
   }
 }

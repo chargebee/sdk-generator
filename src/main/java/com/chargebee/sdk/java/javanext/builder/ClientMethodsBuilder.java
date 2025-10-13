@@ -145,6 +145,7 @@ public class ClientMethodsBuilder {
         if (operation == null || operation.getExtensions() == null) {
           continue;
         }
+
         Object resourceIdObj = operation.getExtensions().get(CB_RESOURCE_ID_EXT);
         if (resourceIdObj != null) {
           resourcesWithOperations.add(resourceIdObj.toString());
