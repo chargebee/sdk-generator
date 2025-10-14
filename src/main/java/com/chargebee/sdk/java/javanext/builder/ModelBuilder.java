@@ -40,35 +40,31 @@ public class ModelBuilder {
     return this;
   }
 
-  public List<FileOp> build(OpenAPI openApi) {
+  public List<FileOp> build(OpenAPI openApi) throws IOException {
     this.openApi = openApi;
     generateModels();
     return fileOps;
   }
 
-  private void generateModels() {
-    try {
-      var models = getModels();
-      for (var entry : models.entrySet()) {
-        Model model = new Model();
-        model.setPackageName(entry.getKey());
-        model.setName(entry.getKey());
-        model.setFields(getFields(entry.getValue()));
-        model.setImports(getImports(entry.getValue()));
-        model.setEnumFields(getEnumFields(entry.getValue()));
-        model.setSubModels(getSubModels(entry.getValue()));
-        var content = template.apply(model);
-        var formattedContent = JavaFormatter.formatSafely(content);
-        String packageDirName = toLowerCamel(entry.getKey());
-        fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, packageDirName));
-        fileOps.add(
-            new FileOp.WriteString(
-                this.outputDirectoryPath + "/" + packageDirName,
-                model.getName() + ".java",
-                formattedContent));
-      }
-    } catch (IOException e) {
-      System.err.println("Error generating models: " + e.getMessage());
+  private void generateModels() throws IOException {
+    var models = getModels();
+    for (var entry : models.entrySet()) {
+      Model model = new Model();
+      model.setPackageName(entry.getKey());
+      model.setName(entry.getKey());
+      model.setFields(getFields(entry.getValue()));
+      model.setImports(getImports(entry.getValue()));
+      model.setEnumFields(getEnumFields(entry.getValue()));
+      model.setSubModels(getSubModels(entry.getValue()));
+      var content = template.apply(model);
+      var formattedContent = JavaFormatter.formatSafely(content);
+      String packageDirName = toLowerCamel(entry.getKey());
+      fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, packageDirName));
+      fileOps.add(
+          new FileOp.WriteString(
+              this.outputDirectoryPath + "/" + packageDirName,
+              model.getName() + ".java",
+              formattedContent));
     }
   }
 
@@ -84,9 +80,6 @@ public class ModelBuilder {
 
   private List<Model> getSubModels(Schema schema) {
     var subModels = new ArrayList<Model>();
-    if (schema.getProperties() == null) {
-      return subModels;
-    }
     for (var fieldName : schema.getProperties().keySet()) {
       Schema schemaDefn = (Schema) schema.getProperties().get(fieldName);
       FieldType fieldType = TypeMapper.getJavaType(fieldName.toString(), schemaDefn);
@@ -158,9 +151,6 @@ public class ModelBuilder {
 
   private List<Field> getFields(Schema schema) {
     var fields = new ArrayList<Field>();
-    if (schema.getProperties() == null) {
-      return fields;
-    }
     for (var fieldName : schema.getProperties().keySet()) {
       Schema schemaDefn = (Schema) schema.getProperties().get(fieldName);
       var field = new Field();
@@ -174,9 +164,6 @@ public class ModelBuilder {
 
   private List<EnumFields> getEnumFields(Schema schema) {
     var enumFields = new ArrayList<EnumFields>();
-    if (schema.getProperties() == null) {
-      return enumFields;
-    }
     for (var fieldName : schema.getProperties().keySet()) {
       Schema schemaDefn = (Schema) schema.getProperties().get(fieldName);
       if (schemaDefn.getEnum() != null) {
@@ -191,7 +178,13 @@ public class ModelBuilder {
 
   private Map<String, Schema> getModels() {
     var components = openApi.getComponents();
+    if (components == null) {
+      return Map.of();
+    }
     var schemas = components.getSchemas();
+    if (schemas == null) {
+      return Map.of();
+    }
     return schemas.entrySet().stream()
         .filter(entry -> entry.getValue().getProperties() != null)
         .filter(entry -> !entry.getKey().startsWith("4") && !entry.getKey().startsWith("5"))

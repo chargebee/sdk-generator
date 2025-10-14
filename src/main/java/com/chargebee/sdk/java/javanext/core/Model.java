@@ -14,7 +14,7 @@ public class Model {
   private List<String> imports;
 
   public String getPackageName() {
-    if (packageName == null) return null;
+    if (packageName == null || packageName.isEmpty()) return packageName;
     if (packageName.contains("_")) {
       return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, packageName);
     }
@@ -25,7 +25,7 @@ public class Model {
   }
 
   public String getName() {
-    if (name == null) return null;
+    if (name == null || name.isEmpty()) return name;
     if (name.contains("_")) {
       // snake_case -> UpperCamel
       return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name);

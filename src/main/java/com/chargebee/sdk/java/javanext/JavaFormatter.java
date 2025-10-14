@@ -25,12 +25,12 @@ public class JavaFormatter {
     } catch (FormatterException e) {
       System.err.println("Warning: Failed to format Java code: " + e.getMessage());
       return sourceCode;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       System.err.println("Warning: Failed to remove unused imports: " + e.getMessage());
       // Fallback to just formatting without removing imports
       try {
         return formatter.formatSource(sourceCode);
-      } catch (FormatterException fe) {
+      } catch (Throwable fe) {
         System.err.println("Warning: Failed to format Java code: " + fe.getMessage());
         return sourceCode;
       }
