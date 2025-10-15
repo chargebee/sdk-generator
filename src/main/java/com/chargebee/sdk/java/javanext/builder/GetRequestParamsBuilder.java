@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -36,12 +34,13 @@ import java.util.stream.Collectors;
 public class GetRequestParamsBuilder {
 
   // ---------------------------------------------------------------------------------------------
-  // Constants & Logger
+  // Constants
   // ---------------------------------------------------------------------------------------------
-  private static final Logger LOGGER = Logger.getLogger(GetRequestParamsBuilder.class.getName());
   private static final String QUERY = "query";
   private static final String OBJECT = "object";
   private static final String SORT_BY = "sort_by";
+  private static final String ASC = "asc";
+  private static final String DESC = "desc";
 
   private Template template;
   private String outputDirectoryPath;
@@ -69,7 +68,7 @@ public class GetRequestParamsBuilder {
   }
 
   /** Builds all GET request param classes and returns pending file operations. */
-  public List<FileOp> build(OpenAPI openApi) {
+  public List<FileOp> build(OpenAPI openApi) throws IOException {
     this.openApi = openApi;
     generateParams();
     return fileOps;
@@ -78,19 +77,24 @@ public class GetRequestParamsBuilder {
   // ---------------------------------------------------------------------------------------------
   // Core generation flow
   // ---------------------------------------------------------------------------------------------
-  private void generateParams() {
-    try {
+  private void generateParams() throws IOException {
       var operations = getOperations();
       for (var entry : operations.entrySet()) {
         PathItem pathItem = entry.getValue();
-        if (pathItem == null || pathItem.getGet() == null) continue;
+        if (pathItem.getGet() == null) continue;
 
         var operation = pathItem.getGet();
         if (operation.getParameters() == null || operation.getParameters().isEmpty()) continue;
 
         var getAction = new GetAction();
-        getAction.setOperationId(readExtension(operation, Extension.OPERATION_METHOD_NAME));
-        getAction.setModule(readExtension(operation, Extension.RESOURCE_ID));
+        var operationId = readExtension(operation, Extension.OPERATION_METHOD_NAME);
+        var module = readExtension(operation, Extension.RESOURCE_ID);
+        
+        // Skip operations without required extensions
+        if (operationId == null || module == null) continue;
+        
+        getAction.setOperationId(operationId);
+        getAction.setModule(module);
         getAction.setPath(entry.getKey());
         getAction.setFields(getFilterFields(operation));
         getAction.setEnumFields(getEnumFields(operation));
@@ -99,18 +103,15 @@ public class GetRequestParamsBuilder {
         var content = template.apply(getAction);
         var formattedContent = JavaFormatter.formatSafely(content);
         fileOps.add(
-            new FileOp.CreateDirectory(
-                this.outputDirectoryPath + "/" + getAction.getModule(), "params"));
+                new FileOp.CreateDirectory(
+                        this.outputDirectoryPath + "/" + getAction.getModule(), "params"));
 
         fileOps.add(
-            new FileOp.WriteString(
-                this.outputDirectoryPath + "/" + getAction.getModule() + "/params",
-                getAction.getName() + "Params.java",
-                formattedContent));
+                new FileOp.WriteString(
+                        this.outputDirectoryPath + "/" + getAction.getModule() + "/params",
+                        getAction.getName() + "Params.java",
+                        formattedContent));
       }
-    } catch (IOException e) {
-      LOGGER.log(Level.SEVERE, "Error generating GET params", e);
-    }
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -118,8 +119,6 @@ public class GetRequestParamsBuilder {
   // ---------------------------------------------------------------------------------------------
   private List<Field> getFilterFields(Operation operation) {
     var fields = new ArrayList<Field>();
-    if (operation.getParameters() == null) return fields;
-
     for (Parameter param : operation.getParameters()) {
       if (isQueryParamWithSchema(param)) {
         var field = new Field();
@@ -127,23 +126,19 @@ public class GetRequestParamsBuilder {
         field.setType(TypeMapper.getJavaType(param.getName(), param.getSchema()));
         field.setDeprecated(param.getDeprecated() != null && param.getDeprecated());
 
-        // Check if this is a filter parameter, sort parameter, or submodel
         @SuppressWarnings("unchecked")
         Schema<Object> schema = (Schema<Object>) param.getSchema();
         if (OBJECT.equals(schema.getType()) && schema.getProperties() != null) {
           if (isSortParameter(param.getName(), schema)) {
-            // Sort parameter (like sort_by)
             field.setSort(true);
             field.setSortableFields(getSortableFields(schema));
           } else if (isDirectFilterParameter(schema)) {
-            // Direct filter parameter (like id, email)
             field.setFilter(true);
             String filterTypeName =
                 CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, param.getName()) + "Filter";
             field.setFilterType(filterTypeName);
             field.setSupportedOperations(getSupportedOperations(schema));
           } else {
-            // Submodel parameter (like relationship) - will be handled separately by getSubModels()
             field.setSubModelField(true);
           }
         }
@@ -155,22 +150,14 @@ public class GetRequestParamsBuilder {
   }
 
   private List<String> getSupportedOperations(Schema<Object> schema) {
-    var props = schema.getProperties();
-    if (props == null) {
-      return new ArrayList<>();
-    }
-    return new ArrayList<>(props.keySet());
+    return new ArrayList<>(schema.getProperties().keySet());
   }
 
   private boolean isDirectFilterParameter(Schema<Object> schema) {
     var props = schema.getProperties();
-    if (props == null || props.isEmpty()) {
+    if (props.isEmpty()) {
       return false;
     }
-
-    // Check if the schema has filter operation properties directly
-    // Filter operations include: is, is_not, starts_with, in, not_in, is_present, after, before,
-    // on, between, asc, desc
     var filterOperations =
         Set.of(
             "is",
@@ -183,39 +170,30 @@ public class GetRequestParamsBuilder {
             "before",
             "on",
             "between",
-            "asc",
-            "desc");
+            ASC,
+            DESC);
 
-    // If any property is a filter operation, this is a direct filter
     for (String propName : props.keySet()) {
       if (filterOperations.contains(propName)) {
         return true;
       }
     }
 
-    // Otherwise, it's a submodel (properties are business fields, not filter operations)
     return false;
   }
 
   private boolean isSortParameter(String paramName, Schema<Object> schema) {
-    // Check if this is a sort_by parameter
     return SORT_BY.equals(paramName)
-        && schema.getProperties() != null
-        && (schema.getProperties().containsKey("asc")
-            || schema.getProperties().containsKey("desc"));
+        && (schema.getProperties().containsKey(ASC)
+            || schema.getProperties().containsKey(DESC));
   }
 
   private List<String> getSortableFields(Schema<Object> schema) {
     var sortableFields = new ArrayList<String>();
     var props = schema.getProperties();
-    if (props == null) {
-      return sortableFields;
-    }
 
-    // For sort_by parameters, look for asc/desc properties that contain enum values
-    // The enum values are the sortable field names
     for (var entry : props.entrySet()) {
-      if ("asc".equals(entry.getKey()) || "desc".equals(entry.getKey())) {
+      if (ASC.equals(entry.getKey()) || DESC.equals(entry.getKey())) {
         @SuppressWarnings("unchecked")
         Schema<Object> directionSchema = (Schema<Object>) entry.getValue();
         if (directionSchema.getEnum() != null) {
@@ -234,18 +212,14 @@ public class GetRequestParamsBuilder {
 
   private List<EnumFields> getEnumFields(Operation operation) {
     var enumFields = new ArrayList<EnumFields>();
-    if (operation.getParameters() == null) return enumFields;
-
     for (Parameter param : operation.getParameters()) {
       if (isQueryParamWithSchema(param)) {
         @SuppressWarnings("unchecked")
         Schema<Object> schema = (Schema<Object>) param.getSchema();
 
-        // Check for direct enum parameters (like hierarchy_operation_type)
         if (schema.getEnum() != null) {
           var enumField = new EnumFields();
           enumField.setName(param.getName());
-          // Convert enum values to strings
           List<String> enumValues =
               schema.getEnum().stream()
                   .map(Object::toString)
@@ -253,16 +227,13 @@ public class GetRequestParamsBuilder {
           enumField.setEnums(enumValues);
           enumFields.add(enumField);
         }
-        // Also check for enums inside object properties (existing logic)
         else if (OBJECT.equals(schema.getType()) && schema.getProperties() != null) {
-          // Check if any property in the filter object has enums
           for (var prop : schema.getProperties().entrySet()) {
             @SuppressWarnings("unchecked")
             Schema<Object> propSchema = (Schema<Object>) prop.getValue();
             if (propSchema.getEnum() != null) {
               var enumField = new EnumFields();
               enumField.setName(param.getName() + "_" + prop.getKey());
-              // Convert enum values to strings
               List<String> enumValues =
                   propSchema.getEnum().stream()
                       .map(Object::toString)
@@ -279,14 +250,11 @@ public class GetRequestParamsBuilder {
 
   private List<Model> getSubModels(Operation operation) {
     var subModels = new ArrayList<Model>();
-    if (operation.getParameters() == null) return subModels;
-
     for (Parameter param : operation.getParameters()) {
       if (isQueryParamWithSchema(param)) {
         @SuppressWarnings("unchecked")
         Schema<Object> schema = (Schema<Object>) param.getSchema();
         if (OBJECT.equals(schema.getType()) && schema.getProperties() != null) {
-          // Only create submodels for non-direct filter parameters (like relationship)
           if (!isDirectFilterParameter(schema)) {
             subModels.add(createFilterModel(param.getName(), schema));
           }
@@ -307,7 +275,6 @@ public class GetRequestParamsBuilder {
 
   private List<Field> getFilterFieldsFromSchema(Schema<Object> schema) {
     var fields = new ArrayList<Field>();
-    if (schema.getProperties() == null) return fields;
 
     for (var entry : schema.getProperties().entrySet()) {
       var field = new Field();
@@ -317,8 +284,7 @@ public class GetRequestParamsBuilder {
       field.setType(TypeMapper.getJavaType(entry.getKey(), propSchema));
       field.setDeprecated(propSchema.getDeprecated() != null && propSchema.getDeprecated());
 
-      // Check if this nested property is a filter (has filter operations)
-      if (OBJECT.equals(propSchema.getType()) && propSchema.getProperties() != null) {
+      if (OBJECT.equals(propSchema.getType())) {
         if (isDirectFilterParameter(propSchema)) {
           field.setFilter(true);
           String filterTypeName =
@@ -335,7 +301,6 @@ public class GetRequestParamsBuilder {
 
   private List<EnumFields> getEnumFieldsFromSchema(Schema<Object> schema) {
     var enumFields = new ArrayList<EnumFields>();
-    if (schema.getProperties() == null) return enumFields;
 
     for (var entry : schema.getProperties().entrySet()) {
       @SuppressWarnings("unchecked")
@@ -343,7 +308,6 @@ public class GetRequestParamsBuilder {
       if (propSchema.getEnum() != null) {
         var enumField = new EnumFields();
         enumField.setName(entry.getKey());
-        // Convert enum values to strings
         List<String> enumValues =
             propSchema.getEnum().stream()
                 .map(Object::toString)
@@ -362,13 +326,15 @@ public class GetRequestParamsBuilder {
     var paths = openApi != null ? openApi.getPaths() : null;
     if (paths == null || paths.isEmpty()) return Collections.emptyMap();
     return paths.entrySet().stream()
+        .filter(entry -> entry.getValue() != null)
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private String readExtension(Operation operation, String extensionKey) {
-    if (operation == null || operation.getExtensions() == null) return null;
-    Object value = operation.getExtensions().get(extensionKey);
-    return value != null ? Objects.toString(value) : null;
+    var extensions = operation.getExtensions();
+    return (extensions != null && extensions.get(extensionKey) != null) 
+        ? Objects.toString(extensions.get(extensionKey)) 
+        : null;
   }
 
   private boolean isQueryParamWithSchema(Parameter parameter) {
@@ -386,9 +352,8 @@ public class GetRequestParamsBuilder {
 
     public String getName() {
       var operationId = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
-      // Normalize module to snake_case to preserve token boundaries (handles lowerCamel inputs)
       var moduleSnake =
-          module != null && module.contains("_")
+          module.contains("_")
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
       var actionName = moduleSnake + "_" + operationId;
