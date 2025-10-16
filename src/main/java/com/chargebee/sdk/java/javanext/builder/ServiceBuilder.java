@@ -1,5 +1,6 @@
 package com.chargebee.sdk.java.javanext.builder;
 
+import com.chargebee.GenUtil;
 import com.chargebee.openapi.Extension;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.java.javanext.JavaFormatter;
@@ -174,7 +175,11 @@ public class ServiceBuilder {
       String path, String httpMethod, String resourceName, Operation operation) {
     var serviceOp = new ServiceOperation();
 
-    String operationId = operation.getExtensions().get(Extension.OPERATION_METHOD_NAME).toString();
+    String rawOperationId =
+        operation.getExtensions().get(Extension.OPERATION_METHOD_NAME).toString();
+
+    // Normalize to proper camelCase: replace underscores and capitalize next char
+    String operationId = GenUtil.normalizeToLowerCamelCase(rawOperationId);
 
     // Prefix batch operations to avoid method name collisions
     if (path.startsWith("/batch/")) {

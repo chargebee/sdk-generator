@@ -27,7 +27,8 @@ class ModelBuilderTest {
 
     Handlebars handlebars =
         new Handlebars(
-            new com.github.jknack.handlebars.io.ClassPathTemplateLoader("/templates/java/next", ""));
+            new com.github.jknack.handlebars.io.ClassPathTemplateLoader(
+                "/templates/java/next", ""));
     HandlebarsUtil.registerAllHelpers(handlebars);
     mockTemplate = handlebars.compile("core.models.hbs");
   }
@@ -159,7 +160,9 @@ class ModelBuilderTest {
 
     @Test
     void shouldCreateProperDirectoryStructure() throws IOException {
-      openAPI.getComponents().addSchemas("Customer", new ObjectSchema().addProperty("name", new StringSchema()));
+      openAPI
+          .getComponents()
+          .addSchemas("Customer", new ObjectSchema().addProperty("name", new StringSchema()));
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = modelBuilder.build(openAPI);
@@ -180,7 +183,8 @@ class ModelBuilderTest {
     void shouldGenerateEnumFields() throws IOException {
       Schema<?> customerSchema =
           new ObjectSchema()
-              .addProperty("status", new StringSchema()._enum(List.of("active", "inactive", "cancelled")));
+              .addProperty(
+                  "status", new StringSchema()._enum(List.of("active", "inactive", "cancelled")));
 
       openAPI.getComponents().addSchemas("Customer", customerSchema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -199,7 +203,8 @@ class ModelBuilderTest {
       Schema<?> subscriptionSchema =
           new ObjectSchema()
               .addProperty("status", new StringSchema()._enum(List.of("active", "cancelled")))
-              .addProperty("billing_period", new StringSchema()._enum(List.of("monthly", "yearly")));
+              .addProperty(
+                  "billing_period", new StringSchema()._enum(List.of("monthly", "yearly")));
 
       openAPI.getComponents().addSchemas("Subscription", subscriptionSchema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -640,7 +645,10 @@ class ModelBuilderTest {
 
     @Test
     void shouldConvertUpperCamelToLowerCamel() throws IOException {
-      openAPI.getComponents().addSchemas("CustomerAccount", new ObjectSchema().addProperty("name", new StringSchema()));
+      openAPI
+          .getComponents()
+          .addSchemas(
+              "CustomerAccount", new ObjectSchema().addProperty("name", new StringSchema()));
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = modelBuilder.build(openAPI);
@@ -669,7 +677,9 @@ class ModelBuilderTest {
 
     @Test
     void shouldKeepLowerCamelUnchanged() throws IOException {
-      openAPI.getComponents().addSchemas("paymentMethod", new ObjectSchema().addProperty("name", new StringSchema()));
+      openAPI
+          .getComponents()
+          .addSchemas("paymentMethod", new ObjectSchema().addProperty("name", new StringSchema()));
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = modelBuilder.build(openAPI);
@@ -754,9 +764,7 @@ class ModelBuilderTest {
       field.setDeprecated(false);
 
       Schema<?> schema =
-          new ObjectSchema()
-              .addProperty("name", new StringSchema())
-              .addProperty("field", field);
+          new ObjectSchema().addProperty("name", new StringSchema()).addProperty("field", field);
 
       openAPI.getComponents().addSchemas("Test", schema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -772,9 +780,7 @@ class ModelBuilderTest {
       field.setDeprecated(null);
 
       Schema<?> schema =
-          new ObjectSchema()
-              .addProperty("name", new StringSchema())
-              .addProperty("field", field);
+          new ObjectSchema().addProperty("name", new StringSchema()).addProperty("field", field);
 
       openAPI.getComponents().addSchemas("Test", schema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -789,9 +795,7 @@ class ModelBuilderTest {
       StringSchema field = new StringSchema();
 
       Schema<?> schema =
-          new ObjectSchema()
-              .addProperty("name", new StringSchema())
-              .addProperty("field", field);
+          new ObjectSchema().addProperty("name", new StringSchema()).addProperty("field", field);
 
       openAPI.getComponents().addSchemas("Test", schema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -937,13 +941,17 @@ class ModelBuilderTest {
   private void assertFileExists(List<FileOp> fileOps, String fileName) {
     assertThat(fileOps)
         .anyMatch(
-            op -> op instanceof FileOp.WriteString && ((FileOp.WriteString) op).fileName.equals(fileName));
+            op ->
+                op instanceof FileOp.WriteString
+                    && ((FileOp.WriteString) op).fileName.equals(fileName));
   }
 
   private void assertFileNotExists(List<FileOp> fileOps, String fileName) {
     assertThat(fileOps)
         .noneMatch(
-            op -> op instanceof FileOp.WriteString && ((FileOp.WriteString) op).fileName.equals(fileName));
+            op ->
+                op instanceof FileOp.WriteString
+                    && ((FileOp.WriteString) op).fileName.equals(fileName));
   }
 
   private void assertDirectoryExists(List<FileOp> fileOps, String directoryName) {

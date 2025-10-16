@@ -26,11 +26,20 @@ public class HandlebarsUtil {
     handlebars.registerHelper("toUpperCase", NameFormatHelpers.TO_UPPER_CASE);
     handlebars.registerHelper("camelCase", NameFormatHelpers.CAMEL_CASE);
     handlebars.registerHelper("pascalCase", NameFormatHelpers.TO_PASCAL);
-    handlebars.registerHelper("operationNameToPascalCase", NameFormatHelpers.OPERATION_NAME_TO_PASCAL_CASE);
-    handlebars.registerHelper("snakeCaseToPascalCaseAndSingularize", NameFormatHelpers.SNAKE_CASE_TO_PASCAL_CASE_AND_SINGULARIZE);
-    handlebars.registerHelper("snakeCaseToCamelCaseAndSingularize", NameFormatHelpers.SNAKE_CASE_TO_CAMEL_CASE_AND_SINGULARIZE);
-    handlebars.registerHelper("pascalCaseToCamelCaseAndPluralize", NameFormatHelpers.PASCAL_CASE_TO_CAMEL_CASE_AND_PLURALIZE);
-    handlebars.registerHelper("pascalCaseToSnakeCaseAndPluralize", NameFormatHelpers.PASCAL_CASE_TO_SNAKE_CASE_AND_PLURALIZE);
+    handlebars.registerHelper(
+        "operationNameToPascalCase", NameFormatHelpers.OPERATION_NAME_TO_PASCAL_CASE);
+    handlebars.registerHelper(
+        "snakeCaseToPascalCaseAndSingularize",
+        NameFormatHelpers.SNAKE_CASE_TO_PASCAL_CASE_AND_SINGULARIZE);
+    handlebars.registerHelper(
+        "snakeCaseToCamelCaseAndSingularize",
+        NameFormatHelpers.SNAKE_CASE_TO_CAMEL_CASE_AND_SINGULARIZE);
+    handlebars.registerHelper(
+        "pascalCaseToCamelCaseAndPluralize",
+        NameFormatHelpers.PASCAL_CASE_TO_CAMEL_CASE_AND_PLURALIZE);
+    handlebars.registerHelper(
+        "pascalCaseToSnakeCaseAndPluralize",
+        NameFormatHelpers.PASCAL_CASE_TO_SNAKE_CASE_AND_PLURALIZE);
     handlebars.registerHelper("pluralize", NameFormatHelpers.PLURALIZE);
     handlebars.registerHelper("singularize", NameFormatHelpers.SINGULARIZE);
     handlebars.registerHelper("in", ArrayHelpers.IN);
@@ -39,4 +48,3 @@ public class HandlebarsUtil {
     handlebars.registerHelper("includeFile", IncludeFileHelpers.INCLUDE_FILE);
   }
 }
-

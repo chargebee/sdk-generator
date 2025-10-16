@@ -93,11 +93,13 @@ public class SimpleGetResponseBuilder {
 
         var methodExt = extensions != null ? extensions.get(Extension.OPERATION_METHOD_NAME) : null;
         var moduleExt = extensions != null ? extensions.get(Extension.RESOURCE_ID) : null;
-        var methodName = methodExt != null ? methodExt.toString() : null;
+        var rawMethodName = methodExt != null ? methodExt.toString() : null;
         var module = moduleExt != null ? moduleExt.toString() : null;
-        if (methodName == null || module == null) {
+        if (rawMethodName == null || module == null) {
           continue; // Missing required extensions; skip gracefully
         }
+        // Normalize to proper camelCase
+        var methodName = com.chargebee.GenUtil.normalizeToLowerCamelCase(rawMethodName);
 
         var responses = operation.getResponses();
         if (responses == null) continue;

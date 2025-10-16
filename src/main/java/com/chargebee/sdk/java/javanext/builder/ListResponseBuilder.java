@@ -93,9 +93,12 @@ public class ListResponseBuilder {
           continue;
         }
 
-        var originalMethodName =
+        var rawMethodName =
             String.valueOf(operation.getExtensions().get(Extension.OPERATION_METHOD_NAME));
-        var methodName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, originalMethodName);
+        // Normalize to proper camelCase first
+        var normalizedMethodName = com.chargebee.GenUtil.normalizeToLowerCamelCase(rawMethodName);
+        var methodName =
+            CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, normalizedMethodName);
         var module = String.valueOf(operation.getExtensions().get(Extension.RESOURCE_ID));
 
         var response = operation.getResponses().get(HTTP_OK);
@@ -112,7 +115,8 @@ public class ListResponseBuilder {
         }
 
         var listResponse =
-            createListResponse(methodName, module, schema, pathEntry.getKey(), originalMethodName);
+            createListResponse(
+                methodName, module, schema, pathEntry.getKey(), normalizedMethodName);
         generateListResponseFile(listResponse);
       }
     }
@@ -426,7 +430,8 @@ public class ListResponseBuilder {
             if (elementType == null || elementType.isEmpty()) {
               break;
             }
-            if ("Object".equals(elementType) || "java.util.Map<String, Object>".equals(elementType)) {
+            if ("Object".equals(elementType)
+                || "java.util.Map<String, Object>".equals(elementType)) {
               return "java.util.Map<String, Object>";
             }
             return elementType;

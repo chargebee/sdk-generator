@@ -8,6 +8,7 @@
 package com.chargebee.v4.core.models.{{packageName}};
 
 import com.chargebee.v4.internal.JsonUtil;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
 {{#each imports}}
@@ -19,10 +20,12 @@ public class {{name}} {
 }
 
 {{#*inline "modelContent"}}
-{{#each fields}}  private {{{type}}} {{name}};
-{{/each}}
+{{#each fields}}{{#if deprecated}}@Deprecated{{/if}}
+private {{{type}}} {{name}};{{/each}}
 {{#each fields}}
-public {{{type}}} {{getterName}}() {
+{{#if deprecated}}
+@Deprecated
+{{/if}}  public {{{type}}} {{getterName}}() {
   return {{name}};
 }
 {{/each}}

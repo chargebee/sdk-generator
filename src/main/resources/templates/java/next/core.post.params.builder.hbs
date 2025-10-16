@@ -9,6 +9,7 @@ package com.chargebee.v4.core.models.{{module}}.params;
 import com.chargebee.v4.internal.Recommended;
 import com.chargebee.v4.internal.JsonUtil;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -76,7 +77,13 @@ public final class {{name}}Params {
         {{else}}
         {{#if deprecated}}@Deprecated{{/if}}
         public {{../name}}Builder {{name}}({{subModelParamsType}} value) {
-            formData.put("{{curlName}}", value);
+            if (value != null) {
+                Map<String, Object> nestedData = value.toFormData();
+                for (Map.Entry<String, Object> entry : nestedData.entrySet()) {
+                    String nestedKey = "{{curlName}}[" + entry.getKey() + "]";
+                    formData.put(nestedKey, entry.getValue());
+                }
+            }
             return this;
         }
         {{/if}}

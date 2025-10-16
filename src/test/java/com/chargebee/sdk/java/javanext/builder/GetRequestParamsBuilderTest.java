@@ -114,7 +114,8 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public final class CustomerListParams");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder firstName(String value)");
+      assertThat(writeOp.fileContent)
+          .contains("public CustomerListBuilder firstName(String value)");
       assertThat(writeOp.fileContent).contains("public CustomerListBuilder lastName(String value)");
     }
 
@@ -206,8 +207,7 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public FirstNameFilter firstName()");
-      assertThat(writeOp.fileContent)
-          .contains("public static final class FirstNameFilter");
+      assertThat(writeOp.fileContent).contains("public static final class FirstNameFilter");
       assertThat(writeOp.fileContent).contains("public CustomerListBuilder is(String value)");
       assertThat(writeOp.fileContent).contains("public CustomerListBuilder isNot(String value)");
       assertThat(writeOp.fileContent)
@@ -226,8 +226,7 @@ class GetRequestParamsBuilderTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
-      assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder in(String... values)");
+      assertThat(writeOp.fileContent).contains("public CustomerListBuilder in(String... values)");
       assertThat(writeOp.fileContent)
           .contains("public CustomerListBuilder notIn(String... values)");
     }
@@ -236,8 +235,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should generate string filter with presence operator (is_present)")
     void shouldGenerateStringFilterWithPresenceOperator() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      addStringFilterParam(
-          getOperation, "first_name", List.of("is", "is_not", "is_present"));
+      addStringFilterParam(getOperation, "first_name", List.of("is", "is_not", "is_present"));
 
       addPathWithOperation("/customers", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -250,7 +248,8 @@ class GetRequestParamsBuilderTest {
     }
 
     @Test
-    @DisplayName("Should generate timestamp filter with date operations (after, before, on, between)")
+    @DisplayName(
+        "Should generate timestamp filter with date operations (after, before, on, between)")
     void shouldGenerateTimestampFilterParameter() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
       addTimestampFilterParam(getOperation, "created_at");
@@ -266,8 +265,7 @@ class GetRequestParamsBuilderTest {
           .contains("public CustomerListBuilder after(String timestamp)");
       assertThat(writeOp.fileContent)
           .contains("public CustomerListBuilder before(String timestamp)");
-      assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder on(String timestamp)");
+      assertThat(writeOp.fileContent).contains("public CustomerListBuilder on(String timestamp)");
       assertThat(writeOp.fileContent)
           .contains("public CustomerListBuilder between(String start, String end)");
     }
@@ -284,7 +282,8 @@ class GetRequestParamsBuilderTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
-      assertThat(writeOp.fileContent).contains("public AutoCloseInvoicesFilter autoCloseInvoices()");
+      assertThat(writeOp.fileContent)
+          .contains("public AutoCloseInvoicesFilter autoCloseInvoices()");
       assertThat(writeOp.fileContent).contains("public CustomerListBuilder is(String value)");
     }
 
@@ -320,7 +319,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should recognize all standard string filter operations")
     void shouldRecognizeAllStringFilterOperations() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema filterSchema = new ObjectSchema();
       filterSchema.setType("object");
       filterSchema.addProperty("is", new StringSchema());
@@ -346,17 +345,20 @@ class GetRequestParamsBuilderTest {
       assertThat(writeOp.fileContent).contains("public static final class EmailFilter");
       assertThat(writeOp.fileContent).contains("public CustomerListBuilder is(String value)");
       assertThat(writeOp.fileContent).contains("public CustomerListBuilder isNot(String value)");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder startsWith(String value)");
+      assertThat(writeOp.fileContent)
+          .contains("public CustomerListBuilder startsWith(String value)");
       assertThat(writeOp.fileContent).contains("public CustomerListBuilder in(String... values)");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder notIn(String... values)");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder isPresent(boolean value)");
+      assertThat(writeOp.fileContent)
+          .contains("public CustomerListBuilder notIn(String... values)");
+      assertThat(writeOp.fileContent)
+          .contains("public CustomerListBuilder isPresent(boolean value)");
     }
 
     @Test
     @DisplayName("Should recognize date filter operations (after, before, on, between)")
     void shouldRecognizeAfterBeforeOnBetweenAsFilterOperations() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema dateFilterSchema = new ObjectSchema();
       dateFilterSchema.setType("object");
       dateFilterSchema.addProperty("after", new IntegerSchema());
@@ -388,7 +390,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should not treat non-filter properties as filter")
     void shouldNotTreatNonFilterPropertiesAsFilter() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema nonFilterSchema = new ObjectSchema();
       nonFilterSchema.setType("object");
       nonFilterSchema.addProperty("custom_field", new StringSchema());
@@ -407,7 +409,8 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       // Should generate submodel, not filter
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder options(OptionsParams value)");
+      assertThat(writeOp.fileContent)
+          .contains("public CustomerListBuilder options(OptionsParams value)");
       assertThat(writeOp.fileContent).contains("public static final class OptionsParams");
       assertThat(writeOp.fileContent).doesNotContain("OptionsFilter");
     }
@@ -416,7 +419,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should treat object with mixed filter and non-filter properties as filter")
     void shouldHandleMixedFilterAndNonFilterProperties() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema mixedSchema = new ObjectSchema();
       mixedSchema.setType("object");
       mixedSchema.addProperty("is", new StringSchema()); // filter operation
@@ -443,7 +446,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should not create filter for object without filter operations")
     void shouldNotCreateFilterForObjectWithoutFilterOperations() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema objectSchema = new ObjectSchema();
       objectSchema.setType("object");
       objectSchema.addProperty("street", new StringSchema());
@@ -463,14 +466,15 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).doesNotContain("AddressFilter");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder address(AddressParams value)");
+      assertThat(writeOp.fileContent)
+          .contains("public CustomerListBuilder address(AddressParams value)");
     }
 
     @Test
     @DisplayName("Should return false for empty properties map")
     void shouldReturnFalseForEmptyProperties() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema filterSchema = new ObjectSchema();
       filterSchema.setType("object");
       filterSchema.setProperties(Map.of()); // Empty properties
@@ -494,7 +498,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle asc/desc properties in non-sort_by parameter as filter")
     void shouldHandleAscDescInNonSortParameter() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema schema = new ObjectSchema();
       schema.setType("object");
       schema.addProperty("asc", new StringSchema());
@@ -521,16 +525,16 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should recognize nested filter inside submodel")
     void shouldRecognizeNestedFilterInsideSubmodel() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       // Create a nested filter object
       java.util.Map<String, Schema> filterProps = new java.util.LinkedHashMap<>();
       filterProps.put("is", new IntegerSchema());
       filterProps.put("is_not", new IntegerSchema());
-      
+
       ObjectSchema amountFilterSchema = new ObjectSchema();
       amountFilterSchema.setType("object");
       amountFilterSchema.setProperties(filterProps);
-      
+
       // Create parent submodel
       ObjectSchema submodelSchema = new ObjectSchema();
       submodelSchema.setType("object");
@@ -560,17 +564,17 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle nested object without filter operations in submodel")
     void shouldHandleNestedObjectWithoutFilterOperationsInSubmodel() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema addressSchema = new ObjectSchema();
       addressSchema.setType("object");
       addressSchema.addProperty("street", new StringSchema());
       addressSchema.addProperty("city", new StringSchema());
-      
+
       ObjectSchema parentSchema = new ObjectSchema();
       parentSchema.setType("object");
       parentSchema.addProperty("name", new StringSchema());
       parentSchema.addProperty("address", addressSchema);
-      
+
       Parameter param = new Parameter();
       param.setName("billing");
       param.setIn("query");
@@ -611,8 +615,7 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public SortBySortBuilder sortBy()");
-      assertThat(writeOp.fileContent)
-          .contains("public static final class SortBySortBuilder");
+      assertThat(writeOp.fileContent).contains("public static final class SortBySortBuilder");
       assertThat(writeOp.fileContent).contains("public SortDirection created_at()");
       assertThat(writeOp.fileContent).contains("public SortDirection updated_at()");
       assertThat(writeOp.fileContent).contains("public SortDirection id()");
@@ -630,8 +633,7 @@ class GetRequestParamsBuilderTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
-      assertThat(writeOp.fileContent)
-          .contains("public static final class SortDirection");
+      assertThat(writeOp.fileContent).contains("public static final class SortDirection");
       assertThat(writeOp.fileContent).contains("public CustomerListBuilder asc()");
       assertThat(writeOp.fileContent).contains("public CustomerListBuilder desc()");
     }
@@ -655,7 +657,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle sort parameter with only asc property")
     void shouldHandleSortParameterWithOnlyAsc() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema sortSchema = new ObjectSchema();
       sortSchema.setType("object");
       StringSchema ascSchema = new StringSchema();
@@ -680,7 +682,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle sort parameter with only desc property")
     void shouldHandleSortParameterWithOnlyDesc() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema sortSchema = new ObjectSchema();
       sortSchema.setType("object");
       StringSchema descSchema = new StringSchema();
@@ -708,14 +710,14 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle sort parameter with both asc and desc properties")
     void shouldHandleSortParameterWithBothAscAndDesc() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema sortSchema = new ObjectSchema();
       sortSchema.setType("object");
-      
+
       StringSchema ascSchema = new StringSchema();
       ascSchema.setEnum(List.of("name", "id"));
       sortSchema.addProperty("asc", ascSchema);
-      
+
       StringSchema descSchema = new StringSchema();
       descSchema.setEnum(List.of("created_at", "updated_at"));
       sortSchema.addProperty("desc", descSchema);
@@ -742,10 +744,10 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should ignore non-asc/desc properties in sort parameter")
     void shouldIgnoreNonAscDescPropertiesInSortParameter() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema sortSchema = new ObjectSchema();
       sortSchema.setType("object");
-      
+
       StringSchema ascSchema = new StringSchema();
       ascSchema.setEnum(List.of("name"));
       sortSchema.addProperty("asc", ascSchema);
@@ -771,7 +773,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should not treat sort_by without asc/desc as sort parameter")
     void shouldNotTreatSortByWithoutAscDescAsSort() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema sortSchema = new ObjectSchema();
       sortSchema.setType("object");
       sortSchema.addProperty("field1", new StringSchema());
@@ -797,14 +799,14 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle duplicate sortable fields in asc and desc")
     void shouldHandleDuplicateSortableFields() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema sortSchema = new ObjectSchema();
       sortSchema.setType("object");
-      
+
       StringSchema ascSchema = new StringSchema();
       ascSchema.setEnum(List.of("created_at", "id"));
       sortSchema.addProperty("asc", ascSchema);
-      
+
       StringSchema descSchema = new StringSchema();
       descSchema.setEnum(List.of("created_at", "id")); // Duplicates
       sortSchema.addProperty("desc", descSchema);
@@ -827,7 +829,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle sort field with null enum list")
     void shouldHandleSortFieldWithNullEnum() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema sortSchema = new ObjectSchema();
       sortSchema.setType("object");
       StringSchema ascSchema = new StringSchema();
@@ -880,8 +882,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should generate enum inside filter parameter")
     void shouldGenerateEnumInsideFilterParameter() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      addEnumFilterParam(
-          getOperation, "auto_collection", List.of("on", "off"));
+      addEnumFilterParam(getOperation, "auto_collection", List.of("on", "off"));
 
       addPathWithOperation("/customers", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -963,14 +964,13 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should generate submodel with nested filter parameter")
     void shouldGenerateSubmodelWithFilterParameter() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema parentIdFilter = new ObjectSchema();
       parentIdFilter.setType("object");
       parentIdFilter.addProperty("is", new StringSchema());
       parentIdFilter.addProperty("is_not", new StringSchema());
 
-      addSubmodelParam(
-          getOperation, "relationship", Map.of("parent_id", parentIdFilter));
+      addSubmodelParam(getOperation, "relationship", Map.of("parent_id", parentIdFilter));
 
       addPathWithOperation("/customers", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -980,18 +980,17 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public static final class RelationshipParams");
       assertThat(writeOp.fileContent).contains("public ParentIdFilter parentId()");
-      assertThat(writeOp.fileContent)
-          .contains("public static final class ParentIdFilter");
+      assertThat(writeOp.fileContent).contains("public static final class ParentIdFilter");
     }
 
     @Test
     @DisplayName("Should generate enum inside submodel")
     void shouldGenerateEnumInsideSubmodel() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       StringSchema statusEnum = new StringSchema();
       statusEnum.setEnum(List.of("active", "inactive", "pending"));
-      
+
       addSubmodelParam(
           getOperation,
           "relationship",
@@ -1037,7 +1036,7 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should skip submodel with null properties")
     void shouldHandleSubmodelWithNullProperties() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       ObjectSchema submodelSchema = new ObjectSchema();
       submodelSchema.setType("object");
       submodelSchema.setProperties(null);
@@ -1396,7 +1395,7 @@ class GetRequestParamsBuilderTest {
       Operation getOperation = createGetOperation("customer", "list");
       ObjectSchema objectSchema = new ObjectSchema();
       objectSchema.setType("object");
-      
+
       Parameter param = new Parameter();
       param.setName("metadata");
       param.setIn("query");
@@ -1547,14 +1546,11 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle submodel field with deprecated=false")
     void shouldHandleFieldWithDeprecatedFalseInSubmodel() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       StringSchema fieldSchema = new StringSchema();
       fieldSchema.setDeprecated(false);
-      
-      addSubmodelParam(
-          getOperation,
-          "relationship",
-          Map.of("parent_id", fieldSchema));
+
+      addSubmodelParam(getOperation, "relationship", Map.of("parent_id", fieldSchema));
 
       addPathWithOperation("/customers", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -1568,14 +1564,11 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle submodel field with deprecated=true")
     void shouldHandleFieldWithDeprecatedTrueInSubmodel() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       StringSchema fieldSchema = new StringSchema();
       fieldSchema.setDeprecated(true);
-      
-      addSubmodelParam(
-          getOperation,
-          "relationship",
-          Map.of("old_field", fieldSchema));
+
+      addSubmodelParam(getOperation, "relationship", Map.of("old_field", fieldSchema));
 
       addPathWithOperation("/customers", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -1589,13 +1582,10 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle submodel field with deprecated=null")
     void shouldHandleFieldWithNullDeprecatedInSubmodel() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       StringSchema fieldSchema = new StringSchema();
-      
-      addSubmodelParam(
-          getOperation,
-          "relationship",
-          Map.of("normal_field", fieldSchema));
+
+      addSubmodelParam(getOperation, "relationship", Map.of("normal_field", fieldSchema));
 
       addPathWithOperation("/customers", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -1618,25 +1608,24 @@ class GetRequestParamsBuilderTest {
     @DisplayName("Should handle operation with all feature combinations")
     void shouldHandleOperationWithAllFeatureCombinations() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
-      
+
       // String filter
       addStringFilterParam(getOperation, "first_name", List.of("is", "starts_with", "is_present"));
-      
+
       // Timestamp filter
       addTimestampFilterParam(getOperation, "created_at");
-      
+
       // Boolean filter
       addBooleanFilterParam(getOperation, "auto_collection");
-      
+
       // Sort
       addSortByParam(getOperation, List.of("created_at", "updated_at"));
-      
+
       // Enum
       addEnumQueryParam(getOperation, "status", List.of("active", "inactive"));
-      
+
       // Submodel
-      addSubmodelParam(
-          getOperation, "relationship", Map.of("parent_id", new StringSchema()));
+      addSubmodelParam(getOperation, "relationship", Map.of("parent_id", new StringSchema()));
 
       addPathWithOperation("/customers", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);

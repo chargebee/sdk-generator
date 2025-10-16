@@ -63,6 +63,8 @@ public class TypeMapper {
         if ("decimal".equals(fmt)) return new BigDecimalType();
         return new IntegerType();
       case "number":
+        String numFmt = schema.getFormat();
+        if ("decimal".equals(numFmt)) return new BigDecimalType();
         return new NumberType();
       default:
         return null;

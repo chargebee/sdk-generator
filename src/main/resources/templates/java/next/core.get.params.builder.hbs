@@ -9,6 +9,7 @@ package com.chargebee.v4.core.models.{{module}}.params;
 
 import com.chargebee.v4.internal.Recommended;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -61,22 +62,26 @@ public final class {{name}}Params {
 
         private {{../name}}Builder() {}
 
-        {{#each fields}}
-        {{#if isFilter}}
-        public {{filterType}} {{name}}() {
+        {{#each fields~}}
+        {{#if isFilter}}{{#if deprecated}}
+        @Deprecated
+{{/if}}        public {{filterType}} {{name}}() {
             return new {{filterType}}("{{curlName}}", this);
         }
-        {{else}}{{#if isSort}}
-        public {{sortBuilderType}} {{name}}() {
+        {{else}}{{#if isSort}}{{#if deprecated}}
+        @Deprecated
+{{/if}}        public {{sortBuilderType}} {{name}}() {
             return new {{sortBuilderType}}("{{curlName}}", this);
         }
-        {{else}}{{#if subModelField}}
-        public {{../name}}Builder {{name}}({{subModelParamsType}} value) {
+        {{else}}{{#if subModelField}}{{#if deprecated}}
+        @Deprecated
+{{/if}}        public {{../name}}Builder {{name}}({{subModelParamsType}} value) {
             queryParams.put("{{curlName}}", value);
             return this;
         }
-        {{else}}
-        public {{../name}}Builder {{name}}({{{type}}} value) {
+        {{else}}{{#if deprecated}}
+        @Deprecated
+{{/if}}        public {{../name}}Builder {{name}}({{{type}}} value) {
             queryParams.put("{{curlName}}", value);
             return this;
         }

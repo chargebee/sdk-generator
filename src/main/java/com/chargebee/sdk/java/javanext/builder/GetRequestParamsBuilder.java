@@ -78,40 +78,43 @@ public class GetRequestParamsBuilder {
   // Core generation flow
   // ---------------------------------------------------------------------------------------------
   private void generateParams() throws IOException {
-      var operations = getOperations();
-      for (var entry : operations.entrySet()) {
-        PathItem pathItem = entry.getValue();
-        if (pathItem.getGet() == null) continue;
+    var operations = getOperations();
+    for (var entry : operations.entrySet()) {
+      PathItem pathItem = entry.getValue();
+      if (pathItem.getGet() == null) continue;
 
-        var operation = pathItem.getGet();
-        if (operation.getParameters() == null || operation.getParameters().isEmpty()) continue;
+      var operation = pathItem.getGet();
+      if (operation.getParameters() == null || operation.getParameters().isEmpty()) continue;
 
-        var getAction = new GetAction();
-        var operationId = readExtension(operation, Extension.OPERATION_METHOD_NAME);
-        var module = readExtension(operation, Extension.RESOURCE_ID);
-        
-        // Skip operations without required extensions
-        if (operationId == null || module == null) continue;
-        
-        getAction.setOperationId(operationId);
-        getAction.setModule(module);
-        getAction.setPath(entry.getKey());
-        getAction.setFields(getFilterFields(operation));
-        getAction.setEnumFields(getEnumFields(operation));
-        getAction.setSubModels(getSubModels(operation));
+      var getAction = new GetAction();
+      var rawOperationId = readExtension(operation, Extension.OPERATION_METHOD_NAME);
+      var module = readExtension(operation, Extension.RESOURCE_ID);
 
-        var content = template.apply(getAction);
-        var formattedContent = JavaFormatter.formatSafely(content);
-        fileOps.add(
-                new FileOp.CreateDirectory(
-                        this.outputDirectoryPath + "/" + getAction.getModule(), "params"));
+      // Skip operations without required extensions
+      if (rawOperationId == null || module == null) continue;
 
-        fileOps.add(
-                new FileOp.WriteString(
-                        this.outputDirectoryPath + "/" + getAction.getModule() + "/params",
-                        getAction.getName() + "Params.java",
-                        formattedContent));
-      }
+      // Normalize operation ID to proper camelCase
+      var operationId = com.chargebee.GenUtil.normalizeToLowerCamelCase(rawOperationId);
+
+      getAction.setOperationId(operationId);
+      getAction.setModule(module);
+      getAction.setPath(entry.getKey());
+      getAction.setFields(getFilterFields(operation));
+      getAction.setEnumFields(getEnumFields(operation));
+      getAction.setSubModels(getSubModels(operation));
+
+      var content = template.apply(getAction);
+      var formattedContent = JavaFormatter.formatSafely(content);
+      fileOps.add(
+          new FileOp.CreateDirectory(
+              this.outputDirectoryPath + "/" + getAction.getModule(), "params"));
+
+      fileOps.add(
+          new FileOp.WriteString(
+              this.outputDirectoryPath + "/" + getAction.getModule() + "/params",
+              getAction.getName() + "Params.java",
+              formattedContent));
+    }
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -184,8 +187,7 @@ public class GetRequestParamsBuilder {
 
   private boolean isSortParameter(String paramName, Schema<Object> schema) {
     return SORT_BY.equals(paramName)
-        && (schema.getProperties().containsKey(ASC)
-            || schema.getProperties().containsKey(DESC));
+        && (schema.getProperties().containsKey(ASC) || schema.getProperties().containsKey(DESC));
   }
 
   private List<String> getSortableFields(Schema<Object> schema) {
@@ -226,8 +228,7 @@ public class GetRequestParamsBuilder {
                   .collect(java.util.stream.Collectors.toList());
           enumField.setEnums(enumValues);
           enumFields.add(enumField);
-        }
-        else if (OBJECT.equals(schema.getType()) && schema.getProperties() != null) {
+        } else if (OBJECT.equals(schema.getType()) && schema.getProperties() != null) {
           for (var prop : schema.getProperties().entrySet()) {
             @SuppressWarnings("unchecked")
             Schema<Object> propSchema = (Schema<Object>) prop.getValue();
@@ -332,8 +333,8 @@ public class GetRequestParamsBuilder {
 
   private String readExtension(Operation operation, String extensionKey) {
     var extensions = operation.getExtensions();
-    return (extensions != null && extensions.get(extensionKey) != null) 
-        ? Objects.toString(extensions.get(extensionKey)) 
+    return (extensions != null && extensions.get(extensionKey) != null)
+        ? Objects.toString(extensions.get(extensionKey))
         : null;
   }
 

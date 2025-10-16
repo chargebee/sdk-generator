@@ -5,6 +5,7 @@ import {{packageName}}.{{name}};
 {{/each}}
 import com.chargebee.v4.internal.JsonUtil;
 import com.chargebee.v4.transport.Response;
+import java.math.BigDecimal;
 import java.util.List;
 import java.sql.Timestamp;
 
@@ -13,8 +14,10 @@ import java.sql.Timestamp;
  * Contains the response data from a single resource get operation.
  */
 public final class {{name}}Response {
-    {{#each fields}}
-    private final {{{type}}} {{name}};
+    {{#each fields~}}
+{{#if deprecated}}    @Deprecated
+{{/if}}    private final {{{type}}} {{name}};
+
     {{/each}}
     private final Response httpResponse;
 
@@ -89,11 +92,13 @@ public final class {{name}}Response {
         }
     }
 
-    {{#each fields}}
-    /** Get the {{name}} from the response. */
+    {{#each fields~}}
+{{#if deprecated}}    @Deprecated
+{{/if}}    /** Get the {{name}} from the response. */
     public {{{type}}} {{getterName}}() {
         return {{name}};
     }
+
     {{/each}}
 
     /**
@@ -131,14 +136,18 @@ public final class {{name}}Response {
 
     {{#each subModels}}
     public static class {{name}} {
-        {{#each fields}}
-        private {{{type}}} {{name}};
+        {{#each fields~}}
+{{#if deprecated}}        @Deprecated
+{{/if}}        private {{{type}}} {{name}};
+
         {{/each}}
     
-        {{#each fields}}
-        public {{{type}}} {{getterName}}() {
+        {{#each fields~}}
+{{#if deprecated}}        @Deprecated
+{{/if}}        public {{{type}}} {{getterName}}() {
             return {{name}};
         }
+
         {{/each}}
 
         public static {{name}} fromJson(String json) {

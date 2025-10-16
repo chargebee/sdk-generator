@@ -80,6 +80,7 @@ public class ModelBuilder {
 
   private List<Model> getSubModels(Schema schema) {
     var subModels = new ArrayList<Model>();
+    if (schema.getProperties() == null) return subModels;
     for (var fieldName : schema.getProperties().keySet()) {
       Schema schemaDefn = (Schema) schema.getProperties().get(fieldName);
       FieldType fieldType = TypeMapper.getJavaType(fieldName.toString(), schemaDefn);
@@ -151,6 +152,7 @@ public class ModelBuilder {
 
   private List<Field> getFields(Schema schema) {
     var fields = new ArrayList<Field>();
+    if (schema.getProperties() == null) return fields;
     for (var fieldName : schema.getProperties().keySet()) {
       Schema schemaDefn = (Schema) schema.getProperties().get(fieldName);
       var field = new Field();
@@ -164,6 +166,7 @@ public class ModelBuilder {
 
   private List<EnumFields> getEnumFields(Schema schema) {
     var enumFields = new ArrayList<EnumFields>();
+    if (schema.getProperties() == null) return enumFields;
     for (var fieldName : schema.getProperties().keySet()) {
       Schema schemaDefn = (Schema) schema.getProperties().get(fieldName);
       if (schemaDefn.getEnum() != null) {
@@ -178,16 +181,114 @@ public class ModelBuilder {
 
   private Map<String, Schema> getModels() {
     var components = openApi.getComponents();
-    if (components == null) {
-      return Map.of();
-    }
     var schemas = components.getSchemas();
-    if (schemas == null) {
-      return Map.of();
-    }
+    var referencedModels = collectReferencedModels();
+
     return schemas.entrySet().stream()
-        .filter(entry -> entry.getValue().getProperties() != null)
         .filter(entry -> !entry.getKey().startsWith("4") && !entry.getKey().startsWith("5"))
+        .filter(
+            entry ->
+                entry.getValue().getProperties() != null
+                    || referencedModels.contains(entry.getKey()))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  /**
+   * Collects all model names that are referenced anywhere (operations, other models, etc).
+   */
+  private java.util.Set<String> collectReferencedModels() {
+    java.util.Set<String> referenced = new java.util.HashSet<>();
+    var components = openApi.getComponents();
+
+    // First, collect models referenced in operations
+    if (openApi.getPaths() != null) {
+      for (var pathEntry : openApi.getPaths().entrySet()) {
+        var pathItem = pathEntry.getValue();
+        if (pathItem == null) continue;
+
+        var operations =
+            java.util.Arrays.asList(
+                pathItem.getGet(),
+                pathItem.getPost(),
+                pathItem.getPut(),
+                pathItem.getDelete(),
+                pathItem.getPatch());
+
+        for (var operation : operations) {
+          if (operation == null) continue;
+
+          // Check response schemas
+          if (operation.getResponses() != null) {
+            for (var response : operation.getResponses().values()) {
+              if (response != null && response.getContent() != null) {
+                var jsonContent = response.getContent().get("application/json");
+                if (jsonContent != null && jsonContent.getSchema() != null) {
+                  collectReferencedModelsFromSchema(jsonContent.getSchema(), referenced);
+                }
+              }
+            }
+          }
+
+          // Check request body schemas
+          if (operation.getRequestBody() != null
+              && operation.getRequestBody().getContent() != null) {
+            var jsonContent = operation.getRequestBody().getContent().get("application/json");
+            if (jsonContent != null && jsonContent.getSchema() != null) {
+              collectReferencedModelsFromSchema(jsonContent.getSchema(), referenced);
+            }
+          }
+        }
+      }
+    }
+
+    // Also check models referenced by other models (transitive references)
+    if (components != null && components.getSchemas() != null) {
+      for (var schemaEntry : components.getSchemas().entrySet()) {
+        var schema = schemaEntry.getValue();
+        if (schema != null && schema.getProperties() != null) {
+          // This model has properties, so check what it references
+          collectReferencedModelsFromSchema(schema, referenced);
+        }
+      }
+    }
+
+    return referenced;
+  }
+
+  /**
+   * Recursively collects referenced model names from a schema.
+   */
+  private void collectReferencedModelsFromSchema(
+      io.swagger.v3.oas.models.media.Schema<?> schema, java.util.Set<String> referenced) {
+    if (schema == null) return;
+
+    // Check if this schema has a $ref
+    if (schema.get$ref() != null) {
+      String refName = schema.get$ref().substring(schema.get$ref().lastIndexOf("/") + 1);
+      referenced.add(refName);
+    }
+
+    // Check properties
+    if (schema.getProperties() != null) {
+      for (var property : schema.getProperties().values()) {
+        collectReferencedModelsFromSchema(
+            (io.swagger.v3.oas.models.media.Schema<?>) property, referenced);
+      }
+    }
+
+    // Check array items
+    if (schema instanceof io.swagger.v3.oas.models.media.ArraySchema) {
+      io.swagger.v3.oas.models.media.ArraySchema arraySchema =
+          (io.swagger.v3.oas.models.media.ArraySchema) schema;
+      if (arraySchema.getItems() != null) {
+        collectReferencedModelsFromSchema(arraySchema.getItems(), referenced);
+      }
+    }
+
+    // Check additionalProperties if it's a schema
+    if (schema.getAdditionalProperties() instanceof io.swagger.v3.oas.models.media.Schema) {
+      collectReferencedModelsFromSchema(
+          (io.swagger.v3.oas.models.media.Schema<?>) schema.getAdditionalProperties(), referenced);
+    }
   }
 }

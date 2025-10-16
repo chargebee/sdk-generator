@@ -143,15 +143,18 @@ public class PostResponseBuilder {
       String path, Operation operation, ApiResponse response) {
     var postResponse = new PostResponse();
 
-    String methodName = getExtensionOrNull(operation, Extension.OPERATION_METHOD_NAME);
+    String rawMethodName = getExtensionOrNull(operation, Extension.OPERATION_METHOD_NAME);
     String moduleName = getExtensionOrNull(operation, Extension.RESOURCE_ID);
-    if (methodName == null || moduleName == null) {
+    if (rawMethodName == null || moduleName == null) {
       LOG.log(
           Level.WARNING,
           "Skipping operation due to missing required extensions: {0}",
           operation.getOperationId());
       return null;
     }
+
+    // Normalize to proper camelCase
+    String methodName = com.chargebee.GenUtil.normalizeToLowerCamelCase(rawMethodName);
 
     // Prefix batch operations to avoid method name collisions
     if (path.startsWith("/batch/")) {
