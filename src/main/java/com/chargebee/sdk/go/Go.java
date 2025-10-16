@@ -865,13 +865,16 @@ public class Go extends Language {
           type = activeResource.name + Constants.ENUM_DOT + attribute.name;
         } else {
           if (attribute.isExternalEnum()) {
-            //            if (attribute.getEnumApiName() == null ||
-            // attribute.getEnumApiName().equalsIgnoreCase(attribute.name))
-            //            else {
-            //              type = firstCharLower(attribute.name);
-            //              type = type.replace(".", Constants.ENUM_DOT);
-            //            }
-            type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+            if (attribute.getEnumApiName() == null
+                || attribute.getEnumApiName().equalsIgnoreCase(attribute.name)) {
+              type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+            } else {
+              type = firstCharLower(attribute.getEnumApiName());
+              type =
+                  type.contains(".")
+                      ? type.replace(".", Constants.ENUM_DOT)
+                      : Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+            }
             type = enumTypeCustomLogic(type);
           } else {
             type =
@@ -1179,7 +1182,7 @@ public class Go extends Language {
   public boolean isGobalResourceReference(Schema schema) {
     return schema.getExtensions() != null
         && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
-            && ((boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE));
+        && ((boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE));
   }
 
   public boolean schemaNamespaceIsLocal(Schema schema) {
