@@ -72,6 +72,9 @@ public class ResultBase {
     @Override
     public String toString() {
         try {
+            if(jsonObj == null){
+                return null;
+            }
             return jsonObj.toString(2);
         } catch (JSONException ex) {
             throw new RuntimeException(ex);
