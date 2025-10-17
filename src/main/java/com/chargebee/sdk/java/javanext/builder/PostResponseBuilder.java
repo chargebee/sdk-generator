@@ -157,7 +157,7 @@ public class PostResponseBuilder {
     String methodName = com.chargebee.GenUtil.normalizeToLowerCamelCase(rawMethodName);
 
     // Prefix batch operations to avoid method name collisions
-    if (path.startsWith("/batch/")) {
+    if (path.startsWith("/batch/") && !methodName.startsWith("batch")) {
       methodName = "batch" + methodName.substring(0, 1).toUpperCase() + methodName.substring(1);
     }
 
