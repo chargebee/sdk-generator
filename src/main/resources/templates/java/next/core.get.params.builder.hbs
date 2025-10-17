@@ -194,27 +194,29 @@ public final class {{name}}Params {
 
             {{#each sortableFields}}
             public SortDirection {{this}}() {
-                return new SortDirection(fieldName + "[{{this}}]", builder);
+                return new SortDirection(fieldName, "{{this}}", builder);
             }
             {{/each}}
         }
 
         public static final class SortDirection {
-            private final String paramName;
+            private final String fieldName;
+            private final String selectedField;
             private final {{../name}}Builder builder;
 
-            SortDirection(String paramName, {{../name}}Builder builder) {
-                this.paramName = paramName;
+            SortDirection(String fieldName, String selectedField, {{../name}}Builder builder) {
+                this.fieldName = fieldName;
+                this.selectedField = selectedField;
                 this.builder = builder;
             }
 
             public {{../name}}Builder asc() {
-                builder.queryParams.put(paramName + "[asc]", "true");
+                builder.queryParams.put(fieldName + "[asc]", selectedField);
                 return builder;
             }
 
             public {{../name}}Builder desc() {
-                builder.queryParams.put(paramName + "[desc]", "true");
+                builder.queryParams.put(fieldName + "[desc]", selectedField);
                 return builder;
             }
         }

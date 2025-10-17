@@ -158,7 +158,7 @@ public class GetRequestParamsBuilder {
 
   private boolean isDirectFilterParameter(Schema<Object> schema) {
     var props = schema.getProperties();
-    if (props.isEmpty()) {
+    if (props == null || props.isEmpty()) {
       return false;
     }
     var filterOperations =

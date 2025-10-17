@@ -14,6 +14,8 @@ import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.ComposedSchema;
+import io.swagger.v3.oas.models.media.ObjectSchema;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -110,6 +112,8 @@ public class SimpleGetResponseBuilder {
         if (jsonContent == null) continue;
 
         var schema = jsonContent.getSchema();
+        // Resolve top-level $ref and unwrap composed schemas (allOf/anyOf/oneOf) to access properties
+        schema = resolveEffectiveSchema(schema);
         if (schema == null) continue;
 
         // Only process if this is NOT a paginated list operation
@@ -163,6 +167,7 @@ public class SimpleGetResponseBuilder {
   // -----------------------------------------------------------------------------
   private List<Model> getSubModels(
       Schema<?> schema, String module, List<Imports> importsAccumulator) {
+    schema = resolveEffectiveSchema(schema);
     var subModels = new ArrayList<Model>();
     if (schema == null || schema.getProperties() == null) {
       return subModels;
@@ -212,8 +217,52 @@ public class SimpleGetResponseBuilder {
 
   private List<Field> getResponseFields(
       Schema<?> schema, String module, List<Imports> importsAccumulator) {
+    schema = resolveEffectiveSchema(schema);
     var fields = new ArrayList<Field>();
-    if (schema == null || schema.getProperties() == null) {
+    if (schema == null || schema.getProperties() == null || schema.getProperties().isEmpty()) {
+      // Fallback: some external specs omit properties but mark required ["<resource>"]
+      // Infer a single field named after the resource id and reference the corresponding model.
+      if (openApi != null
+          && openApi.getComponents() != null
+          && openApi.getComponents().getSchemas() != null
+          && module != null
+          && !module.isEmpty()) {
+        String refModelName =
+            com.google.common.base.CaseFormat.LOWER_UNDERSCORE.to(
+                com.google.common.base.CaseFormat.UPPER_CAMEL, module);
+        if (openApi.getComponents().getSchemas().containsKey(refModelName)) {
+          // Create a $ref schema to drive typing/imports
+          io.swagger.v3.oas.models.media.Schema<?> refSchema =
+              new io.swagger.v3.oas.models.media.Schema<>().$ref("#/components/schemas/" + refModelName);
+
+          var field = new Field();
+          field.setName(module); // e.g., "full_export" -> getter getFullExport()
+          field.setType(TypeMapper.getJavaType(module, refSchema));
+          accumulateImport(importsAccumulator, refModelName);
+          fields.add(field);
+          return fields;
+        }
+      }
+      // Second fallback: use required property names as Object fields
+      if (schema != null && schema.getRequired() != null && !schema.getRequired().isEmpty()) {
+        for (String prop : schema.getRequired()) {
+          var valueSchema = new io.swagger.v3.oas.models.media.Schema<>().type("object");
+          var field = new Field();
+          field.setName(prop);
+          field.setType(TypeMapper.getJavaType(prop, valueSchema));
+          fields.add(field);
+        }
+        return fields;
+      }
+      // Final fallback: synthesize a single object field using the resource id
+      if (module != null && !module.isEmpty()) {
+        var valueSchema = new io.swagger.v3.oas.models.media.Schema<>().type("object");
+        var field = new Field();
+        field.setName(module);
+        field.setType(TypeMapper.getJavaType(module, valueSchema));
+        fields.add(field);
+        return fields;
+      }
       return fields;
     }
     for (var key : schema.getProperties().keySet()) {
@@ -255,6 +304,7 @@ public class SimpleGetResponseBuilder {
   }
 
   private boolean isPaginatedListOperation(Schema<?> schema) {
+    schema = resolveEffectiveSchema(schema);
     var properties = schema != null ? schema.getProperties() : null;
     return properties != null
         && properties.containsKey(PROP_LIST)
@@ -288,6 +338,57 @@ public class SimpleGetResponseBuilder {
     importObj.setName(refModelName);
     importObj.setPackageName(toModelPackage(refModelName));
     importsAccumulator.add(importObj);
+  }
+
+  // Resolve schema to an object schema with accessible properties:
+  // - Follow top-level $ref into components
+  // - Flatten composed schemas (allOf) by merging properties
+  private Schema<?> resolveEffectiveSchema(Schema<?> schema) {
+    if (schema == null) return null;
+
+    // Follow $ref chain
+    Schema<?> current = schema;
+    int guard = 0;
+    while (current.get$ref() != null && openApi != null && openApi.getComponents() != null) {
+      String refName = lastSegmentOfRef(current.get$ref());
+      Schema<?> target = openApi.getComponents().getSchemas() != null
+          ? openApi.getComponents().getSchemas().get(refName)
+          : null;
+      if (target == null || target == current) break;
+      current = target;
+      if (++guard > 50) break; // guard against cycles
+    }
+
+    // Unwrap composed schemas (prefer allOf aggregation)
+    if (current instanceof ComposedSchema composed) {
+      Map<String, Schema<?>> mergedProps = new java.util.LinkedHashMap<>();
+      if (composed.getAllOf() != null) {
+        for (Schema<?> part : composed.getAllOf()) {
+          Schema<?> resolvedPart = resolveEffectiveSchema(part);
+          if (resolvedPart != null && resolvedPart.getProperties() != null) {
+            for (var e : resolvedPart.getProperties().entrySet()) {
+              mergedProps.putIfAbsent(e.getKey(), (Schema<?>) e.getValue());
+            }
+          }
+        }
+      }
+      if (mergedProps.isEmpty() && current.getProperties() != null) {
+        for (var e : current.getProperties().entrySet()) {
+          mergedProps.putIfAbsent(e.getKey(), (Schema<?>) e.getValue());
+        }
+      }
+      ObjectSchema aggregated = new ObjectSchema();
+      // Cast needed due to OpenAPI generics; safe because keys and values are Schema<?>
+      @SuppressWarnings("unchecked")
+      Map<String, Schema<?>> castProps = (Map<String, Schema<?>>) (Map) mergedProps;
+      // setProperties expects Map<String, Schema> (raw), cast to that type for compatibility
+      @SuppressWarnings("unchecked")
+      Map<String, Schema> rawProps = (Map<String, Schema>) (Map) castProps;
+      aggregated.setProperties(rawProps);
+      return aggregated;
+    }
+
+    return current;
   }
 
   @lombok.Data

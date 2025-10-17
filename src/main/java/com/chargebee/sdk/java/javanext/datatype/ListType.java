@@ -32,10 +32,9 @@ public record ListType(String fieldName, Schema schema) implements FieldType {
       return "List<" + refName + ">";
     }
 
-    // Check if items has no type - treat as free-form object
     String itemType = items.getType();
     if (itemType == null || itemType.isEmpty()) {
-      return "List<java.util.Map<String, Object>>";
+      return "List<Object>";
     }
 
     if ("object".equals(itemType)) {
@@ -65,7 +64,6 @@ public record ListType(String fieldName, Schema schema) implements FieldType {
       return "List<Boolean>";
     }
 
-    // Default fallback
     return "List<Object>";
   }
 

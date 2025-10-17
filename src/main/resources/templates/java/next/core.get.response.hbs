@@ -76,7 +76,7 @@ public final class {{name}}Response {
                 JsonUtil.parseObjectArray(__{{name}}Json).stream()
                     .collect(java.util.stream.Collectors.toList()) : null;
             {{else if isObjectType}}
-            {{#if (eq type "Object")}}
+            {{#if isPlainObjectType}}
             {{{type}}} {{name}} = JsonUtil.getObject(json, "{{curlName}}");
             {{else}}
             {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
