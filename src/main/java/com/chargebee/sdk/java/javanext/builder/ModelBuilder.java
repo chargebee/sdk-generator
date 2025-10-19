@@ -56,6 +56,7 @@ public class ModelBuilder {
       model.setImports(getImports(entry.getValue()));
       model.setEnumFields(getEnumFields(entry.getValue()));
       model.setSubModels(getSubModels(entry.getValue()));
+      model.setCustomFieldsSupported(isCustomFieldsSupported(entry.getValue()));
       var content = template.apply(model);
       var formattedContent = JavaFormatter.formatSafely(content);
       String packageDirName = toLowerCamel(entry.getKey());
@@ -177,6 +178,15 @@ public class ModelBuilder {
       }
     }
     return enumFields;
+  }
+
+  private boolean isCustomFieldsSupported(Schema schema) {
+    if (schema == null || schema.getExtensions() == null) return false;
+    Object customFieldsExt = schema.getExtensions().get("x-cb-is-custom-fields-supported");
+    if (customFieldsExt instanceof Boolean) {
+      return (Boolean) customFieldsExt;
+    }
+    return false;
   }
 
   private Map<String, Schema> getModels() {

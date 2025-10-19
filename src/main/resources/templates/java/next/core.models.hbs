@@ -22,6 +22,8 @@ public class {{name}} {
 {{#*inline "modelContent"}}
 {{#each fields}}{{#if deprecated}}@Deprecated{{/if}}
 private {{{type}}} {{name}};{{/each}}
+{{#if customFieldsSupported}}
+private java.util.Map<String, Object> customFields = new java.util.HashMap<>();{{/if}}
 {{#each fields}}
 {{#if deprecated}}
 @Deprecated
@@ -29,6 +31,27 @@ private {{{type}}} {{name}};{{/each}}
   return {{name}};
 }
 {{/each}}
+{{#if customFieldsSupported}}
+  /**
+   * Returns a map of custom fields. Custom fields are dynamic properties that
+   * follow the pattern cf_* (e.g., cf_custom_field_name).
+   *
+   * @return map containing all custom fields
+   */
+  public java.util.Map<String, Object> getCustomFields() {
+    return customFields;
+  }
+
+  /**
+   * Returns the value of a specific custom field.
+   *
+   * @param fieldName the name of the custom field (e.g., "cf_custom_field_name")
+   * @return the value of the custom field, or null if not present
+   */
+  public Object getCustomField(String fieldName) {
+    return customFields.get(fieldName);
+  }
+{{/if}}
 {{#each enumFields}}
   public enum {{name}} {
     {{#each values}}
@@ -62,6 +85,14 @@ private {{{type}}} {{name}};{{/each}}
 {{/each}}
  public static {{name}} fromJson(String json) {
   {{name}} obj = new {{name}}();
+  {{#if customFieldsSupported}}
+  // Parse JSON to extract all keys
+  java.util.Set<String> knownFields = new java.util.HashSet<>();
+  {{#each fields}}
+  knownFields.add("{{curlName}}");
+  {{/each}}
+
+  {{/if}}
   {{#each fields}}
   {{#if isMapType}}
   String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
@@ -104,8 +135,42 @@ private {{{type}}} {{name}};{{/each}}
   obj.{{name}} = JsonUtil.get{{type}}(json, "{{curlName}}");
   {{/if}}
   {{/each}}
+  {{#if customFieldsSupported}}
+  // Extract custom fields (fields starting with cf_)
+  obj.customFields = extractCustomFields(json, knownFields);
+  {{/if}}
   return obj;
  }
+{{#if customFieldsSupported}}
+
+ /**
+  * Helper method to extract custom fields from JSON.
+  * Custom fields are fields that start with "cf_" and are not in the known fields set.
+  *
+  * @param json JSON string to parse
+  * @param knownFields set of known field names
+  * @return map of custom fields
+  */
+ private static java.util.Map<String, Object> extractCustomFields(String json, java.util.Set<String> knownFields) {
+  java.util.Map<String, Object> customFields = new java.util.HashMap<>();
+  try {
+    // Parse the entire JSON as a map
+    java.util.Map<String, Object> allFields = JsonUtil.parseJsonObjectToMap(json);
+    if (allFields != null) {
+      for (java.util.Map.Entry<String, Object> entry : allFields.entrySet()) {
+        String key = entry.getKey();
+        // Include fields that start with "cf_" and are not in knownFields
+        if (key != null && key.startsWith("cf_") && !knownFields.contains(key)) {
+          customFields.put(key, entry.getValue());
+        }
+      }
+    }
+  } catch (Exception e) {
+    // If parsing fails, return empty map
+  }
+  return customFields;
+ }
+{{/if}}
 
 {{#each subModels}}
   public static class {{name}} {

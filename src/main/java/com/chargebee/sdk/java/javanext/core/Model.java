@@ -12,6 +12,7 @@ public class Model {
   private List<EnumFields> enumFields;
   private List<Model> subModels;
   private List<String> imports;
+  private boolean customFieldsSupported;
 
   public String getPackageName() {
     if (packageName == null || packageName.isEmpty()) return packageName;

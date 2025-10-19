@@ -886,6 +886,141 @@ class ModelBuilderTest {
   }
 
   @Nested
+  @DisplayName("Custom Fields Support")
+  class CustomFieldsSupportTests {
+
+    @Test
+    void shouldAddCustomFieldsMapToModelsWithCustomFieldsExtension() throws IOException {
+      ObjectSchema customerSchema = new ObjectSchema();
+      customerSchema.addProperty("id", new StringSchema());
+      customerSchema.addProperty("first_name", new StringSchema());
+      customerSchema.setAdditionalProperties(true);
+      customerSchema.addExtension("x-cb-is-custom-fields-supported", true);
+
+      openAPI.getComponents().addSchemas("Customer", customerSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Customer.java");
+      assertThat(writeOp.fileContent).contains("public class Customer");
+      assertThat(writeOp.fileContent)
+          .contains("private java.util.Map<String, Object> customFields");
+      assertThat(writeOp.fileContent).contains("public java.util.Map<String, Object> getCustomFields()");
+      assertThat(writeOp.fileContent).contains("public Object getCustomField(String fieldName)");
+    }
+
+    @Test
+    void shouldNotAddCustomFieldsMapToModelsWithoutExtension() throws IOException {
+      ObjectSchema addressSchema = new ObjectSchema();
+      addressSchema.addProperty("street", new StringSchema());
+      addressSchema.addProperty("city", new StringSchema());
+
+      openAPI.getComponents().addSchemas("Address", addressSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Address.java");
+      assertThat(writeOp.fileContent).contains("public class Address");
+      assertThat(writeOp.fileContent).doesNotContain("customFields");
+      assertThat(writeOp.fileContent).doesNotContain("getCustomFields()");
+    }
+
+    @Test
+    void shouldIncludeExtractCustomFieldsHelperMethodWhenCustomFieldsSupported() throws IOException {
+      ObjectSchema invoiceSchema = new ObjectSchema();
+      invoiceSchema.addProperty("id", new StringSchema());
+      invoiceSchema.addProperty("amount", new IntegerSchema());
+      invoiceSchema.setAdditionalProperties(true);
+      invoiceSchema.addExtension("x-cb-is-custom-fields-supported", true);
+
+      openAPI.getComponents().addSchemas("Invoice", invoiceSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Invoice.java");
+      assertThat(writeOp.fileContent)
+          .contains("private static java.util.Map<String, Object> extractCustomFields");
+      assertThat(writeOp.fileContent).contains("obj.customFields = extractCustomFields(json, knownFields)");
+      assertThat(writeOp.fileContent).contains("key.startsWith(\"cf_\")");
+    }
+
+    @Test
+    void shouldHandleCustomFieldsWithAllSupportedModels() throws IOException {
+      List<String> supportedModels =
+          List.of(
+              "Addon",
+              "Coupon",
+              "CreditNote",
+              "Customer",
+              "Feature",
+              "Invoice",
+              "Item",
+              "ItemFamily",
+              "ItemPrice",
+              "Plan",
+              "Quote",
+              "Subscription");
+
+      for (String modelName : supportedModels) {
+        ObjectSchema schema = new ObjectSchema();
+        schema.addProperty("id", new StringSchema());
+        schema.setAdditionalProperties(true);
+        schema.addExtension("x-cb-is-custom-fields-supported", true);
+        openAPI.getComponents().addSchemas(modelName, schema);
+      }
+
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      for (String modelName : supportedModels) {
+        FileOp.WriteString writeOp = findWriteOp(fileOps, modelName + ".java");
+        assertThat(writeOp.fileContent).contains("private java.util.Map<String, Object> customFields");
+      }
+    }
+
+    @Test
+    void shouldHandleCustomFieldsExtensionSetToFalse() throws IOException {
+      ObjectSchema schema = new ObjectSchema();
+      schema.addProperty("id", new StringSchema());
+      schema.setAdditionalProperties(true);
+      schema.addExtension("x-cb-is-custom-fields-supported", false);
+
+      openAPI.getComponents().addSchemas("TestModel", schema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "TestModel.java");
+      assertThat(writeOp.fileContent).doesNotContain("customFields");
+    }
+
+    @Test
+    void shouldIncludeKnownFieldsSetInFromJsonWhenCustomFieldsSupported() throws IOException {
+      ObjectSchema subscriptionSchema = new ObjectSchema();
+      subscriptionSchema.addProperty("id", new StringSchema());
+      subscriptionSchema.addProperty("plan_id", new StringSchema());
+      subscriptionSchema.addProperty("status", new StringSchema());
+      subscriptionSchema.setAdditionalProperties(true);
+      subscriptionSchema.addExtension("x-cb-is-custom-fields-supported", true);
+
+      openAPI.getComponents().addSchemas("Subscription", subscriptionSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Subscription.java");
+      assertThat(writeOp.fileContent).contains("java.util.Set<String> knownFields");
+      assertThat(writeOp.fileContent).contains("knownFields.add(\"id\")");
+      assertThat(writeOp.fileContent).contains("knownFields.add(\"plan_id\")");
+      assertThat(writeOp.fileContent).contains("knownFields.add(\"status\")");
+    }
+  }
+
+  @Nested
   @DisplayName("Complex Scenarios")
   class ComplexScenariosTests {
 
