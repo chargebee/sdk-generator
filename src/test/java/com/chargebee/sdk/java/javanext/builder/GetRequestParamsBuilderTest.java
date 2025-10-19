@@ -54,9 +54,7 @@ class GetRequestParamsBuilderTest {
     mockTemplate = handlebars.compile("core.get.params.builder.hbs");
   }
 
-  // ======================================================================================
   // BUILDER CONFIGURATION TESTS
-  // ======================================================================================
 
   @Nested
   @DisplayName("Builder Configuration")
@@ -92,9 +90,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // BASIC PARAMETER GENERATION TESTS
-  // ======================================================================================
 
   @Nested
   @DisplayName("Basic Parameter Generation")
@@ -186,9 +182,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // FILTER PARAMETERS - CORE FUNCTIONALITY
-  // ======================================================================================
 
   @Nested
   @DisplayName("Filter Parameters - Core Functionality")
@@ -262,12 +256,36 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public CreatedAtFilter createdAt()");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder after(String timestamp)");
+          .contains("public CustomerListBuilder after(Timestamp timestamp)");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder before(String timestamp)");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder on(String timestamp)");
+          .contains("public CustomerListBuilder before(Timestamp timestamp)");
+      assertThat(writeOp.fileContent).contains("public CustomerListBuilder on(Timestamp timestamp)");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder between(String start, String end)");
+          .contains("public CustomerListBuilder between(Timestamp start, Timestamp end)");
+    }
+
+    @Test
+    @DisplayName("Should generate between filter with Timestamp parameters for timestamp fields")
+    void shouldGenerateBetweenFilterWithTimestampParameters() throws IOException {
+      Operation getOperation = createGetOperation("subscription", "list");
+      addTimestampFilterParam(getOperation, "created_at");
+
+      addPathWithOperation("/subscriptions", getOperation);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "SubscriptionListParams.java");
+      // Verify that between method accepts Timestamp start and Timestamp end parameters
+      assertThat(writeOp.fileContent)
+          .contains("public SubscriptionListBuilder between(Timestamp start, Timestamp end)");
+      // Verify the implementation converts Timestamp to Unix time in query params
+      assertThat(writeOp.fileContent)
+          .contains("builder.queryParams.put(fieldName + \"[between]\", \"[\" + (start.getTime() / 1000) + \",\" + (end.getTime() / 1000) + \"]\")");
+      // Also verify other timestamp operations use Timestamp
+      assertThat(writeOp.fileContent).contains("public SubscriptionListBuilder after(Timestamp timestamp)");
+      assertThat(writeOp.fileContent).contains("public SubscriptionListBuilder before(Timestamp timestamp)");
+      assertThat(writeOp.fileContent).contains("public SubscriptionListBuilder on(Timestamp timestamp)");
     }
 
     @Test
@@ -307,9 +325,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // FILTER PARAMETERS - OPERATION DETECTION
-  // ======================================================================================
 
   @Nested
   @DisplayName("Filter Parameters - Operation Detection")
@@ -594,9 +610,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // SORT PARAMETERS
-  // ======================================================================================
 
   @Nested
   @DisplayName("Sort Parameters")
@@ -851,9 +865,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // ENUM PARAMETERS
-  // ======================================================================================
 
   @Nested
   @DisplayName("Enum Parameters")
@@ -929,9 +941,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // SUBMODEL PARAMETERS
-  // ======================================================================================
 
   @Nested
   @DisplayName("Submodel Parameters")
@@ -1058,9 +1068,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // MODULE AND PACKAGE NAME CONVERSION
-  // ======================================================================================
 
   @Nested
   @DisplayName("Module and Package Name Conversion")
@@ -1156,9 +1164,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // NULL AND EMPTY INPUT HANDLING
-  // ======================================================================================
 
   @Nested
   @DisplayName("Null and Empty Input Handling")
@@ -1322,9 +1328,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // SCHEMA AND PARAMETER VALIDATION
-  // ======================================================================================
 
   @Nested
   @DisplayName("Schema and Parameter Validation")
@@ -1478,9 +1482,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // DEPRECATION HANDLING
-  // ======================================================================================
 
   @Nested
   @DisplayName("Deprecation Handling")
@@ -1596,9 +1598,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // COMPLEX INTEGRATION TESTS
-  // ======================================================================================
 
   @Nested
   @DisplayName("Complex Integration Tests")
@@ -1642,9 +1642,7 @@ class GetRequestParamsBuilderTest {
     }
   }
 
-  // ======================================================================================
   // HELPER METHODS
-  // ======================================================================================
 
   /**
    * Creates a GET operation with required extensions for testing.

@@ -38,6 +38,7 @@ public class JavaNext extends Language {
         new PostResponseBuilder()
             .withOutputDirectoryPath(outputDirectoryPath)
             .withTemplate(getTemplateContent("core.post.response"))
+            .withBaseResponseTemplate(getTemplateContent("core.base.response"))
             .build(spec.openAPI());
     List<FileOp> serviceFiles =
         new ServiceBuilder()

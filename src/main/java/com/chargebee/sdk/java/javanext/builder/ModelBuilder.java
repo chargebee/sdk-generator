@@ -9,6 +9,7 @@ import com.chargebee.sdk.java.javanext.core.TypeMapper;
 import com.chargebee.sdk.java.javanext.datatype.FieldType;
 import com.chargebee.sdk.java.javanext.datatype.ListType;
 import com.chargebee.sdk.java.javanext.datatype.ObjectType;
+import com.chargebee.sdk.java.javanext.util.SchemaUtil;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -56,7 +57,7 @@ public class ModelBuilder {
       model.setImports(getImports(entry.getValue()));
       model.setEnumFields(getEnumFields(entry.getValue()));
       model.setSubModels(getSubModels(entry.getValue()));
-      model.setCustomFieldsSupported(isCustomFieldsSupported(entry.getValue()));
+      model.setCustomFieldsSupported(SchemaUtil.isCustomFieldsSupported(entry.getValue()));
       var content = template.apply(model);
       var formattedContent = JavaFormatter.formatSafely(content);
       String packageDirName = toLowerCamel(entry.getKey());
@@ -178,15 +179,6 @@ public class ModelBuilder {
       }
     }
     return enumFields;
-  }
-
-  private boolean isCustomFieldsSupported(Schema schema) {
-    if (schema == null || schema.getExtensions() == null) return false;
-    Object customFieldsExt = schema.getExtensions().get("x-cb-is-custom-fields-supported");
-    if (customFieldsExt instanceof Boolean) {
-      return (Boolean) customFieldsExt;
-    }
-    return false;
   }
 
   private Map<String, Schema> getModels() {

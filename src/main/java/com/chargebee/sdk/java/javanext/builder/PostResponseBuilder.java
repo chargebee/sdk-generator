@@ -52,6 +52,7 @@ public class PostResponseBuilder {
   private static final String RESPONSES_DIR_SUFFIX = "/v4/core/responses";
 
   private Template template;
+  private Template baseResponseTemplate;
   private String outputDirectoryPath;
   private OpenAPI openApi;
 
@@ -86,6 +87,17 @@ public class PostResponseBuilder {
   }
 
   /**
+   * Sets the Handlebars template used to render the BaseResponse class.
+   *
+   * @param baseResponseTemplate non-null template instance
+   * @return this builder instance
+   */
+  public PostResponseBuilder withBaseResponseTemplate(Template baseResponseTemplate) {
+    this.baseResponseTemplate = baseResponseTemplate;
+    return this;
+  }
+
+  /**
    * Generates file operations for all POST responses found in the given OpenAPI
    * specification.
    *
@@ -102,8 +114,29 @@ public class PostResponseBuilder {
       throw new IllegalStateException(
           "Output directory not set. Call withOutputDirectoryPath(...) before build().");
     }
+    // Generate BaseResponse class if template is provided
+    if (this.baseResponseTemplate != null) {
+      generateBaseResponse();
+    }
     generateResponses();
     return fileOps;
+  }
+
+  /**
+   * Generates the BaseResponse abstract class that all response classes extend.
+   */
+  private void generateBaseResponse() {
+    try {
+      String content = baseResponseTemplate.apply(null);
+      String formattedContent = JavaFormatter.formatSafely(content);
+      fileOps.add(
+          new FileOp.WriteString(
+              this.outputDirectoryPath,
+              "BaseResponse.java",
+              formattedContent));
+    } catch (IOException e) {
+      LOG.log(Level.WARNING, "Failed to generate BaseResponse class", e);
+    }
   }
 
   /**

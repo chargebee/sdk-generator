@@ -11,6 +11,7 @@ import com.chargebee.sdk.java.javanext.datatype.FieldType;
 import com.chargebee.sdk.java.javanext.datatype.ListType;
 import com.chargebee.sdk.java.javanext.datatype.ObjectType;
 import com.chargebee.sdk.java.javanext.util.CaseFormatUtil;
+import com.chargebee.sdk.java.javanext.util.SchemaUtil;
 import com.github.jknack.handlebars.Template;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -114,11 +115,13 @@ public class PostRequestParamsBuilder {
             // Conditionally prefix only duplicate sub-model names
             dedupeAndPrefixSubModels(postAction.getModule(), subModels, postAction.getFields());
             postAction.setSubModels(subModels);
+            postAction.setCustomFieldsSupported(SchemaUtil.isCustomFieldsSupported(requestSchema));
           } else {
             // No usable request schema - generate empty params class
             postAction.setFields(new ArrayList<>());
             postAction.setEnumFields(new ArrayList<>());
             postAction.setSubModels(new ArrayList<>());
+            postAction.setCustomFieldsSupported(false);
           }
 
           var content = template.apply(postAction);
@@ -508,6 +511,7 @@ public class PostRequestParamsBuilder {
     private List<Field> fields;
     private List<EnumFields> enumFields;
     private List<Model> subModels;
+    private boolean customFieldsSupported;
 
     public String getName() {
       String opSnake = CaseFormatUtil.toSnakeCaseSafe(getOperationId());
