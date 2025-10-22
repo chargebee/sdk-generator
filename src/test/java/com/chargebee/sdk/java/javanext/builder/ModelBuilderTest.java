@@ -193,9 +193,9 @@ class ModelBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "Customer.java");
       assertThat(writeOp.fileContent).contains("enum Status");
-      assertThat(writeOp.fileContent).contains("Active");
-      assertThat(writeOp.fileContent).contains("Inactive");
-      assertThat(writeOp.fileContent).contains("Cancelled");
+      assertThat(writeOp.fileContent).contains("ACTIVE");
+      assertThat(writeOp.fileContent).contains("INACTIVE");
+      assertThat(writeOp.fileContent).contains("CANCELLED");
     }
 
     @Test

@@ -18,7 +18,7 @@ public class EnumFields {
 
   public List<AbstractMap.SimpleEntry<String, String>> getValues() {
     return enums.stream()
-        .map(value -> new AbstractMap.SimpleEntry<>(CaseFormatUtil.toUpperCamelSafe(value), value))
+        .map(value -> new AbstractMap.SimpleEntry<>(CaseFormatUtil.toUpperUnderscoreSafe(value), value))
         .collect(Collectors.toList());
   }
 }

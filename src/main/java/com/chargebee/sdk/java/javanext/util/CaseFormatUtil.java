@@ -103,6 +103,12 @@ public final class CaseFormatUtil {
     return Character.toLowerCase(upperCamel.charAt(0)) + upperCamel.substring(1);
   }
 
+  public static String toUpperUnderscoreSafe(String input) {
+    if (input == null) return "";
+    String snake = toSnakeCaseSafe(input);
+    return snake.toUpperCase(java.util.Locale.ROOT);
+  }
+
   private static boolean containsUpperCase(String s) {
     for (int i = 0; i < s.length(); i++) {
       if (Character.isUpperCase(s.charAt(i))) {

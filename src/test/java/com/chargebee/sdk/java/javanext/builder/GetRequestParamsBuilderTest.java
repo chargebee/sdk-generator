@@ -885,8 +885,8 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerHierarchyParams.java");
       assertThat(writeOp.fileContent).contains("public enum HierarchyOperationType");
-      assertThat(writeOp.fileContent).contains("CompleteHierarchy(\"complete_hierarchy\")");
-      assertThat(writeOp.fileContent).contains("Subordinates(\"subordinates\")");
+      assertThat(writeOp.fileContent).contains("COMPLETE_HIERARCHY(\"complete_hierarchy\")");
+      assertThat(writeOp.fileContent).contains("SUBORDINATES(\"subordinates\")");
       assertThat(writeOp.fileContent).contains("_UNKNOWN");
     }
 
@@ -903,8 +903,8 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public enum AutoCollectionIs");
-      assertThat(writeOp.fileContent).contains("On(\"on\")");
-      assertThat(writeOp.fileContent).contains("Off(\"off\")");
+      assertThat(writeOp.fileContent).contains("ON(\"on\")");
+      assertThat(writeOp.fileContent).contains("OFF(\"off\")");
     }
 
     @Test
@@ -1018,9 +1018,9 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public static final class RelationshipParams");
       assertThat(writeOp.fileContent).contains("public enum Status");
-      assertThat(writeOp.fileContent).contains("Active(\"active\")");
-      assertThat(writeOp.fileContent).contains("Inactive(\"inactive\")");
-      assertThat(writeOp.fileContent).contains("Pending(\"pending\")");
+      assertThat(writeOp.fileContent).contains("ACTIVE(\"active\")");
+      assertThat(writeOp.fileContent).contains("INACTIVE(\"inactive\")");
+      assertThat(writeOp.fileContent).contains("PENDING(\"pending\")");
     }
 
     @Test
