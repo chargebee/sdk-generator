@@ -38,6 +38,20 @@ public class ResponseFileGenerator implements FileGenerator {
     return fileOps;
   }
 
+  private boolean isPostActionWithListResponse(Action action) {
+    if (action.getOnSuccessSchema() == null) {
+      return false;
+    }
+    var schema = action.getOnSuccessSchema();
+    boolean isPostActionWithListResponse =
+        schema.get$ref() == null
+            && schema.getProperties() != null
+            && schema.getProperties().size() == 1
+            && schema.getProperties().containsKey("list");
+
+    return isPostActionWithListResponse;
+  }
+
   private List<FileOp> generateRegularResponses(String outputPath, List<Resource> resources)
       throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
@@ -47,6 +61,7 @@ public class ResponseFileGenerator implements FileGenerator {
 
       for (Action action : resource.actions) {
         if (!action.isNotHiddenFromSDK() || action.isListResourceAction()) continue;
+        if (isPostActionWithListResponse(action)) continue;
 
         var responseResource = ResponseParser.actionResponses(action, resource);
         if (responseResource == null) continue;
@@ -66,7 +81,8 @@ public class ResponseFileGenerator implements FileGenerator {
 
     for (Resource resource : resources) {
       for (Action action : resource.actions) {
-        if (!action.isNotHiddenFromSDK() || !action.isListResourceAction()) continue;
+        if (!action.isNotHiddenFromSDK()) continue;
+        if (!action.isListResourceAction() && !isPostActionWithListResponse(action)) continue;
 
         var responseResource = ListResponseParser.actionResponses(action, resource);
         if (responseResource == null) continue;

@@ -653,7 +653,7 @@ public class PythonV3 extends Language {
     if (isSubResourceSchema(schema)) {
       String dep = "";
       if (!getDependentResource(activeResource).isEmpty()) {
-        if(schemaNamespaceIsLocal(schema)){
+        if (schemaNamespaceIsLocal(schema)) {
           return toCamelCase(attributeName);
         }
         dep = getSnakeClazName(attributeName) + ".";
@@ -777,14 +777,14 @@ public class PythonV3 extends Language {
 
   public boolean isDependedAttribute(Schema schema) {
     return schema.getExtensions() != null
-            && schema.getExtensions().get(IS_DEPENDENT_ATTRIBUTE) != null
-            && ((boolean) schema.getExtensions().get(IS_DEPENDENT_ATTRIBUTE));
+        && schema.getExtensions().get(IS_DEPENDENT_ATTRIBUTE) != null
+        && ((boolean) schema.getExtensions().get(IS_DEPENDENT_ATTRIBUTE));
   }
 
   public boolean isGobalResourceReference(Schema schema) {
     return schema.getExtensions() != null
-            && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
-            && ((boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE));
+        && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
+        && ((boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE));
   }
 
   public boolean schemaNamespaceIsLocal(Schema schema) {

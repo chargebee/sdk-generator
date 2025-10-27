@@ -162,11 +162,18 @@ public class Dotnet extends Language {
     ResourceAssist resourceAssist = new ResourceAssist().setResource(activeResource);
     List<SubResource> subResources = new ArrayList<>();
     for (Attribute attribute : resourceAssist.subResource()) {
-      SubResource subResource = new SubResource();
-      subResource.setClazName(
+
+      String clazName =
           attribute.schema instanceof ArraySchema
               ? singularize(toClazName(attribute.name))
-              : attribute.subResourceName());
+              : attribute.subResourceName();
+
+      boolean alreadyExists =
+          subResources.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
+      if (alreadyExists) continue;
+
+      SubResource subResource = new SubResource();
+      subResource.setClazName(clazName);
       subResource.setEnumCols(getSubResourceEnum(attribute));
       subResource.setCols(getSubResourceCols(attribute));
       subResource.setSchemaLessEnum(
