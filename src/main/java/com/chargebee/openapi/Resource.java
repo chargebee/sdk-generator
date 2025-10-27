@@ -13,6 +13,7 @@ import com.google.common.collect.Streams;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Resource {
@@ -189,6 +190,14 @@ public class Resource {
                     subResourceName(e.getKey(), e.getValue()),
                     e.getValue() instanceof ArraySchema ? e.getValue().getItems() : e.getValue(),
                     sortOrder(e.getValue())))
+        .collect(
+            Collectors.toMap(
+                Resource::subResourceName,
+                Function.identity(),
+                (existing, duplicate) -> existing,
+                LinkedHashMap::new))
+        .values()
+        .stream()
         .toList();
   }
 

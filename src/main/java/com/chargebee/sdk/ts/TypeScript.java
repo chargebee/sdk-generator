@@ -223,11 +223,15 @@ public class TypeScript extends Language {
       if (attribute.isSubResource()
           && !attribute.isDependentAttribute()
           && !Resource.isGlobalResourceReference(attribute.schema)) {
-        SubResource subResource = new SubResource();
-        subResource.setClazName(
+        String clazName =
             attribute.schema instanceof ArraySchema
                 ? getClazName(attribute)
-                : attribute.subResourceName());
+                : attribute.subResourceName();
+        boolean alreadyExists =
+            subResources.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
+        if (alreadyExists) continue;
+        SubResource subResource = new SubResource();
+        subResource.setClazName(clazName);
         subResource.setCols(getSubResourceCols(attribute));
         subResources.add(subResource);
       }

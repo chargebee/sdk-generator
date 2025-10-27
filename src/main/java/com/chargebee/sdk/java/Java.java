@@ -272,6 +272,15 @@ public class Java extends Language {
       if (attribute.isSubResource()
           && !attribute.isDependentAttribute()
           && !Resource.isGlobalResourceReference(attribute.schema)) {
+        String clazName =
+            (attribute.schema instanceof ArraySchema)
+                ? singularize(toClazName(attribute.name))
+                : attribute.subResourceName();
+
+        boolean alreadyExists =
+            subResources.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
+        if (alreadyExists) continue;
+
         SubResource subResource = new SubResource();
         subResource.setClazName(
             attribute.schema instanceof ArraySchema

@@ -493,8 +493,12 @@ public class Go extends Language {
 
       List<SubResource> subResourceList = new ArrayList<>();
       for (Resource subResource : activeResource.subResources()) {
+        String clazName = singularize(subResource.name);
+        boolean alreadyExists =
+            subResourceList.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
+        if (alreadyExists) continue;
         SubResource sr = new SubResource();
-        sr.setClazName(singularize(subResource.name));
+        sr.setClazName(clazName);
         sr.setCols(getSubResourceCols(subResource));
         subResourceList.add(sr);
       }
