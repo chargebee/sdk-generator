@@ -182,11 +182,6 @@ public final class {{name}}Response {
     }
     {{/each}}
 
-    /** Get the list of items in this page (alias). */
-    public List<{{{itemType}}}> items() {
-        return {{listFieldName}};
-    }
-
     /** Check if there are more pages available. */
     public boolean hasNextPage() {
         return {{nextOffsetField}} != null && !{{nextOffsetField}}.isEmpty();
