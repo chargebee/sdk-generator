@@ -1,8 +1,7 @@
 package com.chargebee.sdk.dotnet;
 
 import static com.chargebee.GenUtil.*;
-import static com.chargebee.openapi.Extension.IS_MONEY_COLUMN;
-import static com.chargebee.openapi.Extension.SDK_ENUM_API_NAME;
+import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.sdk.common.Constant.DEBUG_RESOURCE;
 import static com.chargebee.sdk.common.Constant.SDK_DEBUG;
 import static com.chargebee.sdk.dotnet.Constants.*;
@@ -707,6 +706,12 @@ public class Dotnet extends Language {
       return activeResource.name + toClazName(attribute.subResourceName());
     }
     if (attribute.isSubResource() && attribute.subResourceName() != null) {
+      if (attribute.schema instanceof ArraySchema
+          && attribute.schema.getItems() != null
+          && attribute.schema.getItems().getExtensions() != null
+          && attribute.schema.getItems().getExtensions().get(SUB_RESOURCE_PARENT_NAME) != null) {
+        return activeResource.name + toClazName(singularize(attribute.name));
+      }
       return toClazName(attribute.subResourceName());
     }
     return null;

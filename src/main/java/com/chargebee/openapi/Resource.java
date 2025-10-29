@@ -13,7 +13,6 @@ import com.google.common.collect.Streams;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Resource {
@@ -183,18 +182,18 @@ public class Resource {
     return schema.getProperties().entrySet().stream()
         .filter(e -> isSubResourceSchema(e.getValue()) && !isGlobalResourceReference(e.getValue()))
         .filter(e -> isNotHiddenFromSDKGeneration(e.getValue()))
-        .map(
-            e ->
-                new Resource(
-                    e.getKey(),
-                    subResourceName(e.getKey(), e.getValue()),
-                    e.getValue() instanceof ArraySchema ? e.getValue().getItems() : e.getValue(),
-                    sortOrder(e.getValue())))
         .collect(
             Collectors.toMap(
-                Resource::subResourceName,
-                Function.identity(),
-                (existing, duplicate) -> existing,
+                e -> subResourceName(e.getKey(), e.getValue()),
+                e ->
+                    new Resource(
+                        e.getKey(),
+                        subResourceName(e.getKey(), e.getValue()),
+                        e.getValue() instanceof ArraySchema
+                            ? e.getValue().getItems()
+                            : e.getValue(),
+                        sortOrder(e.getValue())),
+                (existing, duplicate) -> duplicate,
                 LinkedHashMap::new))
         .values()
         .stream()
