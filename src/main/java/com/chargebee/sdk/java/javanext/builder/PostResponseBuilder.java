@@ -307,11 +307,62 @@ public class PostResponseBuilder {
       if (propertySchema.get$ref() != null) {
         field.setType(createRefFieldType(propertySchema.get$ref()));
       } else {
-        field.setType(TypeMapper.getJavaType(fieldName, propertySchema));
+        FieldType fieldType = unwrapArrayIfNeeded(fieldName, propertySchema);
+        field.setType(fieldType);
       }
       fields.add(field);
     }
     return fields;
+  }
+
+  /**
+   * Unwraps array fields that contain single-property wrapper objects with a $ref.
+   * Example: array of {entitlement_override: $ref} becomes List<EntitlementOverride>
+   */
+  private FieldType unwrapArrayIfNeeded(String fieldName, Schema<?> propertySchema) {
+    // Check if this is an array
+    if (!"array".equals(propertySchema.getType()) 
+        && !(propertySchema instanceof ArraySchema)) {
+      return TypeMapper.getJavaType(fieldName, propertySchema);
+    }
+
+    Schema<?> items = propertySchema instanceof ArraySchema 
+        ? ((ArraySchema) propertySchema).getItems() 
+        : propertySchema.getItems();
+
+    // Check if items is an object with a single property that's a $ref
+    if (items != null 
+        && "object".equals(items.getType())
+        && items.getProperties() != null 
+        && items.getProperties().size() == 1) {
+      
+      Object singleProp = items.getProperties().values().iterator().next();
+      if (singleProp instanceof Schema) {
+        Schema<?> propSchema = (Schema<?>) singleProp;
+        if (propSchema.get$ref() != null && !propSchema.get$ref().isEmpty()) {
+          // Extract the type name from the $ref and return List<Type>
+          String refName = extractTypeFromRef(propSchema.get$ref());
+          return new com.chargebee.sdk.java.javanext.datatype.ListType(
+              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, refName), 
+              createArraySchemaWithRef(propSchema.get$ref())
+          );
+        }
+      }
+    }
+
+    // No unwrapping needed, use normal type mapping
+    return TypeMapper.getJavaType(fieldName, propertySchema);
+  }
+
+  /**
+   * Creates an ArraySchema with a direct $ref to the given type (for unwrapped arrays).
+   */
+  private ArraySchema createArraySchemaWithRef(String ref) {
+    ArraySchema arraySchema = new ArraySchema();
+    Schema<?> refSchema = new Schema<>();
+    refSchema.set$ref(ref);
+    arraySchema.setItems(refSchema);
+    return arraySchema;
   }
 
   /**

@@ -146,37 +146,37 @@ public final class {{name}}Params {
         public {{name}}Params build() {
             return new {{name}}Params(this);
         }
-
-        {{#each enumFields}}
-        public enum {{name}} {
-            {{#each values}}
-            {{this.key}}("{{this.value}}"),
-            {{/each}}
-            /**
-                * An enum member indicating that {{name}} was instantiated with an unknown
-                * value.
-                */
-            _UNKNOWN(null);
-            private final String value;
-
-            {{name}}(String value) {
-                this.value = value;
-            }
-
-            public String getValue() {
-                return value;
-            }
-
-            public static {{name}} fromString(String value) {
-                if (value == null) return _UNKNOWN;
-                for ({{name}} enumValue : {{name}}.values()) {
-                    if (enumValue.value != null && enumValue.value.equals(value)) {
-                        return enumValue;
-                    }
-                }
-                return _UNKNOWN;
-            }
-        }
-        {{/each}}
     }
+
+    {{#each enumFields}}
+    public enum {{name}} {
+        {{#each values}}
+        {{this.key}}("{{this.value}}"),
+        {{/each}}
+        /**
+            * An enum member indicating that {{name}} was instantiated with an unknown
+            * value.
+            */
+        _UNKNOWN(null);
+        private final String value;
+
+        {{name}}(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public static {{name}} fromString(String value) {
+            if (value == null) return _UNKNOWN;
+            for ({{name}} enumValue : {{name}}.values()) {
+                if (enumValue.value != null && enumValue.value.equals(value)) {
+                    return enumValue;
+                }
+            }
+            return _UNKNOWN;
+        }
+    }
+    {{/each}}
 {{/inline}}
