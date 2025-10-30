@@ -1,0 +1,39 @@
+package com.chargebee.v4.client;
+
+{{#each services}}
+import com.chargebee.v4.core.services.{{className}};
+{{/each}}
+
+/**
+ * Auto-generated service registry for lazy initialization of all Chargebee services.
+ * This class handles the thread-safe lazy loading of service instances.
+ */
+final class ServiceRegistry {
+    private final ChargebeeClient client;
+    
+    {{#each services}}
+    private volatile {{className}} {{fieldName}};
+    {{/each}}
+    
+    ServiceRegistry(ChargebeeClient client) {
+        this.client = client;
+    }
+    
+    {{#each services}}
+    /**
+     * Get or create the {{className}} instance.
+     * Thread-safe lazy initialization using double-checked locking.
+     */
+    {{className}} {{methodName}}() {
+        if ({{fieldName}} == null) {
+            synchronized (this) {
+                if ({{fieldName}} == null) {
+                    {{fieldName}} = new {{className}}(client);
+                }
+            }
+        }
+        return {{fieldName}};
+    }
+    
+    {{/each}}
+}

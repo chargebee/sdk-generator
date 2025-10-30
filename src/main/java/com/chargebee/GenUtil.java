@@ -83,6 +83,39 @@ public class GenUtil {
     return buf.toString();
   }
 
+  /**
+   * Normalizes a string to proper lowerCamelCase by removing underscores
+   * and capitalizing the character after each underscore.
+   * This handles hybrid formats like "payment_vouchersForCustomer".
+   */
+  public static String normalizeToLowerCamelCase(String input) {
+    if (input == null || input.isEmpty()) {
+      return input;
+    }
+
+    StringBuilder result = new StringBuilder();
+    boolean capitalizeNext = false;
+
+    for (int i = 0; i < input.length(); i++) {
+      char c = input.charAt(i);
+      if (c == '_') {
+        capitalizeNext = true;
+      } else if (capitalizeNext) {
+        result.append(Character.toUpperCase(c));
+        capitalizeNext = false;
+      } else {
+        result.append(c);
+      }
+    }
+
+    // Ensure first character is lowercase
+    if (result.length() > 0 && Character.isUpperCase(result.charAt(0))) {
+      result.setCharAt(0, Character.toLowerCase(result.charAt(0)));
+    }
+
+    return result.toString();
+  }
+
   public static boolean hasAdditionalProperties(Schema schema) {
     var additionalProperties = schema.getAdditionalProperties();
     if (additionalProperties == null) {

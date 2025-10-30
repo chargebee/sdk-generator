@@ -1,0 +1,147 @@
+package com.chargebee.v4.core.responses.{{module}};
+
+import java.util.List;
+{{#each imports}}
+import com.chargebee.v4.core.models.{{moduleName}}.{{name}};
+{{/each}}
+import com.chargebee.v4.core.responses.BaseResponse;
+import com.chargebee.v4.internal.JsonUtil;
+import com.chargebee.v4.transport.Response;
+import java.math.BigDecimal;
+import java.sql.Timestamp;
+
+/**
+ * Immutable response object for {{name}} operation.
+ * Contains the response data from the API.
+ */
+public final class {{name}}Response extends BaseResponse {
+    {{#each fields~}}
+{{#if deprecated}}    @Deprecated
+{{/if}}    private final {{{type}}} {{name}};
+
+    {{/each}}
+
+    private {{name}}Response(Builder builder) {
+        super(builder.httpResponse);
+        {{#each fields}}
+        this.{{name}} = builder.{{name}};
+        {{/each}}
+    }
+
+    /**
+     * Parse JSON response into {{name}}Response object.
+     */
+    public static {{name}}Response fromJson(String json) {
+        return fromJson(json, null);
+    }
+
+    /**
+     * Parse JSON response into {{name}}Response object with HTTP response.
+     */
+    public static {{name}}Response fromJson(String json, Response httpResponse) {
+        try {
+            Builder builder = builder();
+            {{#each fields}}
+            {{#if isComplexObjectType}}
+            String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
+            if (__{{name}}Json != null) {
+            builder.{{name}}({{{type}}}.fromJson(__{{name}}Json));
+            }
+            {{else if isEnumType}}
+            builder.{{name}}({{{type}}}.fromString(JsonUtil.getString(json, "{{curlName}}")));
+            {{else if isListOfObjects}}
+            {{#if listElementType}}
+            {{#unless (eq listElementType "Object")}}
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")).stream().map({{listElementType}}::fromJson).collect(java.util.stream.Collectors.toList()));
+            {{else}}
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
+            {{/unless}}
+            {{else}}
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
+            {{/if}}
+            {{else if isListType}}
+            {{#if (eq listElementType "Object")}}
+            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}});");
+            if (__{{name}}Json != null) {
+            builder.{{name}}(JsonUtil.parseObjectArray(__{{name}}Json).stream()
+                .map(JsonUtil::parseJsonObjectToMap)
+                .collect(java.util.stream.Collectors.toList()));
+            }
+            {{else if (eq listElementType "java.util.Map<String, Object>")}}
+            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}});");
+            if (__{{name}}Json != null) {
+            builder.{{name}}(JsonUtil.parseObjectArray(__{{name}}Json).stream()
+                .map(JsonUtil::parseJsonObjectToMap)
+                .collect(java.util.stream.Collectors.toList()));
+            }
+            {{else}}
+            builder.{{name}}(JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}")));
+            {{/if}}
+            {{else if isObjectType}}
+            {{#if (eq type "Object")}}
+            builder.{{name}}(JsonUtil.getObject(json, "{{curlName}}"));
+            {{else}}
+            String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
+            if (__{{name}}Json != null) {
+            builder.{{name}}({{{type}}}.fromJson(__{{name}}Json));
+            }
+            {{/if}}
+            {{else}}
+            builder.{{name}}(JsonUtil.get{{{type}}}(json, "{{curlName}}"));
+            {{/if}}
+            {{/each}}
+            
+            builder.httpResponse(httpResponse);
+            return builder.build();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse {{name}}Response from JSON", e);
+        }
+    }
+
+    /**
+     * Create a new builder for {{name}}Response.
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Builder for {{name}}Response.
+     */
+    public static class Builder {
+        {{#each fields}}
+        private {{{type}}} {{name}};
+        {{/each}}
+        private Response httpResponse;
+
+        private Builder() {}
+
+        {{#each fields~}}
+{{#if deprecated}}        @Deprecated
+{{/if}}        public Builder {{name}}({{{type}}} {{name}}) {
+            this.{{name}} = {{name}};
+            return this;
+        }
+
+        {{/each}}
+        public Builder httpResponse(Response httpResponse) {
+            this.httpResponse = httpResponse;
+            return this;
+        }
+
+        public {{name}}Response build() {
+            return new {{name}}Response(this);
+        }
+    }
+
+    {{#each fields~}}
+{{#if deprecated}}    @Deprecated
+{{/if}}    /**
+     * Get the {{name}} from the response.
+     */
+    public {{{type}}} {{getterName}}() {
+        return {{name}};
+    }
+
+    {{/each}}
+}

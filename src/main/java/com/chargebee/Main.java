@@ -9,6 +9,7 @@ import com.chargebee.sdk.go.Go;
 import com.chargebee.sdk.java.GenerationMode;
 import com.chargebee.sdk.java.JarType;
 import com.chargebee.sdk.java.Java;
+import com.chargebee.sdk.java.javanext.JavaNext;
 import com.chargebee.sdk.node.Node;
 import com.chargebee.sdk.node.NodeV3;
 import com.chargebee.sdk.php.Php;
@@ -100,6 +101,7 @@ enum Lang {
   RUBY,
   TYPESCRIPT,
   JAVA,
+  JAVA_NEXT,
   DOTNET,
   GO,
   JAVA_INTERNAL_INT,
@@ -137,6 +139,9 @@ enum Lang {
     }
     if (lang == Lang.JAVA) {
       return new Java(GenerationMode.EXTERNAL, ApiVersion.V2, JarType.HVC);
+    }
+    if (lang == Lang.JAVA_NEXT) {
+      return new JavaNext();
     }
     if (lang == Lang.JAVA_INTERNAL_INT) {
       return new Java(GenerationMode.INTERNAL, ApiVersion.V1, JarType.INT);
