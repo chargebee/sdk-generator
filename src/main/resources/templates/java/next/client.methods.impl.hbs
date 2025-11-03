@@ -1,0 +1,21 @@
+package com.chargebee.v4.client;
+
+{{#each imports}}
+import {{this}};
+{{/each}}
+
+/**
+ * Auto-generated implementation of ClientMethods interface.
+ * This class provides the actual service method implementations that delegate to ServiceRegistry.
+ */
+abstract class ClientMethodsImpl implements ClientMethods {
+    
+    protected abstract ServiceRegistry getServiceRegistry();
+{{#each services}}
+    
+    @Override
+    public {{className}} {{methodName}}() {
+        return getServiceRegistry().{{methodName}}();
+    }
+{{/each}}
+}

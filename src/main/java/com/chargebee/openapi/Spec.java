@@ -214,4 +214,8 @@ public class Spec {
         .sorted(Comparator.comparing(resource -> resource.name))
         .toList();
   }
+
+  public OpenAPI openAPI() {
+    return openAPI;
+  }
 }
