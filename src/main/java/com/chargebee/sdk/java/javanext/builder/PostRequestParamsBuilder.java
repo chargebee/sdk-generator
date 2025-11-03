@@ -98,7 +98,7 @@ public class PostRequestParamsBuilder {
           }
 
           // Prefix batch operations to avoid method name collisions
-          if (entry.getKey().startsWith("/batch/") && opId != null && !opId.startsWith("batch")) {
+          if (entry.getKey().startsWith("/batch/") && opId != null && !opId.isEmpty() && !opId.startsWith("batch")) {
             opId = "batch" + opId.substring(0, 1).toUpperCase() + opId.substring(1);
           }
 

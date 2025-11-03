@@ -182,7 +182,7 @@ public class ServiceBuilder {
     String operationId = GenUtil.normalizeToLowerCamelCase(rawOperationId);
 
     // Prefix batch operations to avoid method name collisions
-    if (path.startsWith("/batch/") && !operationId.startsWith("batch")) {
+    if (operationId != null && !operationId.isEmpty() && path.startsWith("/batch/") && !operationId.startsWith("batch")) {
       operationId = "batch" + operationId.substring(0, 1).toUpperCase() + operationId.substring(1);
     }
 
