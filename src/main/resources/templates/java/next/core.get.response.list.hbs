@@ -136,11 +136,11 @@ public final class {{name}}Response {
                 {{/unless}}
               {{else}}
               {{{type}}} {{name}} =
-                  JsonUtil.parseStringArray(JsonUtil.getArray(json, "{{curlName}}"));
+                  JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
               {{/if}}
             {{else if isListOfPrimitives}}
             {{{type}}} {{name}} =
-                JsonUtil.parseStringArray(JsonUtil.getArray(json, "{{curlName}}"));
+                JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
             {{{type}}} {{name}} =
@@ -156,7 +156,7 @@ public final class {{name}}Response {
                     .collect(java.util.stream.Collectors.toList());
             {{else}}
             {{{type}}} {{name}} =
-                JsonUtil.parseStringArray(JsonUtil.getArray(json, "{{curlName}}"));
+                JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
             {{/if}}
             {{else if isObjectType}}
             {{#unless (eq type "Object")}}
