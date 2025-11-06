@@ -1,0 +1,109 @@
+package webhook
+
+import (
+	"encoding/json"
+	"time"
+{{#each this}}
+{{#each resource_schemas}}
+	"github.com/chargebee/chargebee-go/v3/models/{{snakeCaseToLowerCaseNoUnderscore (pascalCaseToSnakeCase .)}}"
+{{/each}}
+{{/each}}
+)
+
+// WebhookContentType represents the type of webhook event content
+type WebhookContentType string
+
+const (
+{{#each this}}
+	WebhookContentType{{snakeCaseToPascalCase type}} WebhookContentType = "{{type}}"
+{{/each}}
+)
+
+// WebhookEvent represents a Chargebee webhook event with typed content
+type WebhookEvent[T WebhookContentType] struct {
+	Id                   string          `json:"id"`
+	OccurredAt           int64           `json:"occurred_at"`
+	Source               string          `json:"source"`
+	User                 string          `json:"user"`
+	WebhookStatus        string          `json:"webhook_status"`
+	WebhookFailureReason string          `json:"webhook_failure_reason"`
+	EventType            string          `json:"event_type"`
+	ApiVersion           string          `json:"api_version"`
+	Content              json.RawMessage `json:"content"`
+	OriginUser           string          `json:"origin_user"`
+	Object               string          `json:"object"`
+}
+
+// GetOccurredAtTime returns the occurred_at timestamp as a time.Time
+func (e *WebhookEvent[T]) GetOccurredAtTime() time.Time {
+	return time.Unix(e.OccurredAt, 0)
+}
+
+// Event content structures for each webhook type
+{{#each this}}
+type {{snakeCaseToPascalCase type}}Content struct {
+{{#each resource_schemas}}
+	{{snakeCaseToPascalCase (pascalCaseToSnakeCase .)}} *{{snakeCaseToLowerCaseNoUnderscore (pascalCaseToSnakeCase .)}}.{{.}} `json:"{{pascalCaseToSnakeCase .}},omitempty"`
+{{/each}}
+}
+
+{{/each}}
+
+// TypedWebhookEvent represents a webhook event with parsed typed content
+type TypedWebhookEvent struct {
+	*WebhookEvent[WebhookContentType]
+	TypedContent interface{}
+}
+
+// ParseWebhookEvent parses a webhook event and returns a TypedWebhookEvent with appropriate content type
+func ParseWebhookEvent(rawEvent []byte) (*TypedWebhookEvent, error) {
+	var event WebhookEvent[WebhookContentType]
+	if err := json.Unmarshal(rawEvent, &event); err != nil {
+		return nil, err
+	}
+
+	typedEvent := &TypedWebhookEvent{
+		WebhookEvent: &event,
+	}
+
+	// Parse content based on event type
+	var err error
+	switch WebhookContentType(event.EventType) {
+{{#each this}}
+	case WebhookContentType{{snakeCaseToPascalCase type}}:
+		var content {{snakeCaseToPascalCase type}}Content
+		err = json.Unmarshal(event.Content, &content)
+		typedEvent.TypedContent = &content
+{{/each}}
+	default:
+		// For unsupported event types, store raw content
+		var content map[string]interface{}
+		err = json.Unmarshal(event.Content, &content)
+		typedEvent.TypedContent = content
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return typedEvent, nil
+}
+
+// Helper methods for type-safe content access
+{{#each this}}
+func (te *TypedWebhookEvent) Get{{snakeCaseToPascalCase type}}Content() *{{snakeCaseToPascalCase type}}Content {
+	if content, ok := te.TypedContent.(*{{snakeCaseToPascalCase type}}Content); ok {
+		return content
+	}
+	return nil
+}
+
+{{/each}}
+
+// GetGenericContent returns the content as a generic map for unsupported event types
+func (te *TypedWebhookEvent) GetGenericContent() map[string]interface{} {
+	if content, ok := te.TypedContent.(map[string]interface{}); ok {
+		return content
+	}
+	return nil
+}
