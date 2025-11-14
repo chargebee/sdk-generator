@@ -22,6 +22,7 @@ import com.chargebee.sdk.dotnet.models.OperationRequest;
 import com.chargebee.sdk.dotnet.models.OperationRequestParameter;
 import com.chargebee.sdk.go.model.InputSubResParam;
 import com.chargebee.sdk.go.model.SubResource;
+import com.chargebee.sdk.go.webhook.WebhookGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
@@ -30,7 +31,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class Go extends Language {
 
@@ -61,22 +61,33 @@ public class Go extends Language {
             .toList();
     resourceList = resources;
     var createEnumsDirectory = new FileOp.CreateDirectory(outputDirectoryPath, enumsDirectoryPath);
-    var exceptionsResources = spec.errorResources();
     var createActionsDirectoryPath =
         new FileOp.CreateDirectory(outputDirectoryPath, actionsDirectoryPath);
     var createModelsDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>();
-    List<com.chargebee.openapi.Error> customErroException =
-        spec.errorResources().stream().collect(Collectors.toCollection(ArrayList::new));
 
     fileOps.addAll(
-        List.of(createEnumsDirectory, createActionsDirectoryPath, createModelsDirectory));
+        List.of(
+            createEnumsDirectory,
+            createActionsDirectoryPath,
+            createModelsDirectory));
     fileOps.addAll(generateGlobalEnumFiles(outputDirectoryPath + enumsDirectoryPath, globalEnums));
     fileOps.addAll(
         generateActionsDirectories(outputDirectoryPath + actionsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
+
+    // Generate webhook files (parser, content, handler)
+    {
+      Template parserTemplate = getTemplateContent("webhook");
+      Template contentTemplate = getTemplateContent("webhookContent");
+      Template handlerTemplate = getTemplateContent("webhookHandler");
+      fileOps.addAll(
+          WebhookGenerator.generate(
+              outputDirectoryPath, spec, parserTemplate, contentTemplate, handlerTemplate));
+    }
+
     //    fileOps.add(generateErrorExceptions(outputDirectoryPath + "/", exceptionsResources));
     return fileOps;
   }
@@ -411,7 +422,13 @@ public class Go extends Language {
         "models",
         "/templates/go/models.go.hbs",
         "exceptions",
-        "/templates/go/api_error.go.hbs");
+        "/templates/go/api_error.go.hbs",
+        "webhook",
+        "/templates/go/webhook.go.hbs",
+        "webhookContent",
+        "/templates/go/webhookContent.go.hbs",
+        "webhookHandler",
+        "/templates/go/webhookHandler.go.hbs");
   }
 
   private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)

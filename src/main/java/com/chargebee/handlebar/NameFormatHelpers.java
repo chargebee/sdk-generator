@@ -84,6 +84,13 @@ public enum NameFormatHelpers implements Helper<Object> {
     }
   },
 
+  SNAKE_CASE_TO_LOWERCASE_NO_UNDERSCORE {
+    @Override
+    public CharSequence apply(final Object value, final Options options) {
+      return value.toString().toLowerCase().replace("_", "");
+    }
+  },
+
   PLURALIZE {
     @Override
     public CharSequence apply(final Object value, final Options options) {

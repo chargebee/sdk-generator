@@ -1,0 +1,72 @@
+package webhook
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+
+	"github.com/chargebee/chargebee-go/v3/enum"
+)
+
+type WebhookHandler struct {
+	RequestValidator func(*http.Request) error
+	OnError          func(http.ResponseWriter, *http.Request, error)
+{{#each events}}
+	On{{snakeCaseToPascalCase type}} func({{snakeCaseToPascalCase type}}Event) error
+{{/each}}
+}
+
+func (h *WebhookHandler) HTTPHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if h == nil {
+			http.Error(w, "webhook handler not configured", http.StatusInternalServerError)
+			return
+		}
+		if h.RequestValidator != nil {
+			if err := h.RequestValidator(r); err != nil {
+				h.handleError(w, r, err)
+				return
+			}
+		}
+		defer r.Body.Close()
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			h.handleError(w, r, err)
+			return
+		}
+		eventType, err := ParseEventType(body)
+		if err != nil {
+			h.handleError(w, r, err)
+			return
+		}
+		switch eventType {
+{{#each events}}
+		case enum.EventType{{snakeCaseToPascalCase type}}:
+			if h.On{{snakeCaseToPascalCase type}} != nil {
+				var e {{snakeCaseToPascalCase type}}Event
+				if err := json.Unmarshal(body, &e); err != nil {
+					h.handleError(w, r, err)
+					return
+				}
+				if err := h.On{{snakeCaseToPascalCase type}}(e); err != nil {
+					h.handleError(w, r, err)
+					return
+				}
+			}
+{{/each}}
+		default:
+			// Unknown or unhandled event type; treat as success
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+}
+
+func (h *WebhookHandler) handleError(w http.ResponseWriter, r *http.Request, err error) {
+	if h.OnError != nil {
+		h.OnError(w, r, err)
+		return
+	}
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+
+
