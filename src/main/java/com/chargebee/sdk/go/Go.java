@@ -22,6 +22,7 @@ import com.chargebee.sdk.dotnet.models.OperationRequest;
 import com.chargebee.sdk.dotnet.models.OperationRequestParameter;
 import com.chargebee.sdk.go.model.InputSubResParam;
 import com.chargebee.sdk.go.model.SubResource;
+import com.chargebee.sdk.go.webhook.WebhookGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
@@ -30,7 +31,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class Go extends Language {
 
@@ -53,7 +53,6 @@ public class Go extends Language {
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
     final String enumsDirectoryPath = "/enum";
     final String actionsDirectoryPath = "/actions";
-    final String webhookDirectoryPath = "/webhook";
     String modelsDirectoryPath = "/models";
     var globalEnums = spec.globalEnums();
     var resources =
@@ -62,39 +61,32 @@ public class Go extends Language {
             .toList();
     resourceList = resources;
     var createEnumsDirectory = new FileOp.CreateDirectory(outputDirectoryPath, enumsDirectoryPath);
-    var exceptionsResources = spec.errorResources();
     var createActionsDirectoryPath =
         new FileOp.CreateDirectory(outputDirectoryPath, actionsDirectoryPath);
     var createModelsDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
-    var createWebhookDirectory =
-        new FileOp.CreateDirectory(outputDirectoryPath, webhookDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>();
-    List<com.chargebee.openapi.Error> customErroException =
-        spec.errorResources().stream().collect(Collectors.toCollection(ArrayList::new));
+    // Errors/resources can be generated with generateErrorExceptions if needed in the future
 
     fileOps.addAll(
         List.of(
             createEnumsDirectory,
             createActionsDirectoryPath,
-            createModelsDirectory,
-            createWebhookDirectory));
+            createModelsDirectory));
     fileOps.addAll(generateGlobalEnumFiles(outputDirectoryPath + enumsDirectoryPath, globalEnums));
     fileOps.addAll(
         generateActionsDirectories(outputDirectoryPath + actionsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
 
-    // Generate webhook parser and content types
-    var webhookInfo = spec.extractWebhookInfo();
-    var eventSchema = spec.resourcesForEvents();
-    if (!webhookInfo.isEmpty()) {
-      fileOps.add(generateWebhookParser(outputDirectoryPath + webhookDirectoryPath));
-      if (!eventSchema.isEmpty()) {
-        fileOps.add(
-            generateWebhookEventContent(
-                webhookInfo, eventSchema, outputDirectoryPath + webhookDirectoryPath));
-      }
+    // Generate webhook files (parser, content, handler)
+    {
+      Template parserTemplate = getTemplateContent("webhook");
+      Template contentTemplate = getTemplateContent("webhookContent");
+      Template handlerTemplate = getTemplateContent("webhookHandler");
+      fileOps.addAll(
+          WebhookGenerator.generate(
+              outputDirectoryPath, spec, parserTemplate, contentTemplate, handlerTemplate));
     }
 
     //    fileOps.add(generateErrorExceptions(outputDirectoryPath + "/", exceptionsResources));
@@ -435,7 +427,9 @@ public class Go extends Language {
         "webhook",
         "/templates/go/webhook.go.hbs",
         "webhookContent",
-        "/templates/go/webhookContent.go.hbs");
+        "/templates/go/webhookContent.go.hbs",
+        "webhookHandler",
+        "/templates/go/webhookHandler.go.hbs");
   }
 
   private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)
@@ -1215,63 +1209,9 @@ public class Go extends Language {
 
   public boolean schemaNamespaceIsLocal(Schema schema) {
     return !isDependedAttribute(schema) && !isGobalResourceReference(schema);
-  private FileOp generateWebhookParser(String outputDirectoryPath) throws IOException {
-    Template webhookTemplate = getTemplateContent("webhook");
-    return new FileOp.WriteString(outputDirectoryPath, "parser.go", webhookTemplate.apply(""));
   }
 
-  private FileOp generateWebhookEventContent(
-      List<Map<String, String>> webhookInfo, List<Resource> eventSchema, String outputDirectoryPath)
-      throws IOException {
-    List<Map<String, Object>> events = new ArrayList<>();
-    Set<String> seenTypes = new HashSet<>();
-
-    for (Map<String, String> info : webhookInfo) {
-      String type = info.get("type");
-
-      if (seenTypes.contains(type)) {
-        continue; // skip duplicate type
-      }
-      seenTypes.add(type);
-
-      String resourceSchemaName = info.get("resource_schema_name");
-      Resource matchedSchema =
-          eventSchema.stream()
-              .filter(schema -> schema.name.equals(resourceSchemaName))
-              .findFirst()
-              .orElse(null);
-
-      Map<String, Object> params =
-          new HashMap<>(
-              Map.of("type", type, "resource_schemas", getEventResourcesForAEvent(matchedSchema)));
-
-      events.add(params);
-    }
-
-    Template contentTemplate = getTemplateContent("webhookContent");
-    return new FileOp.WriteString(outputDirectoryPath, "content.go", contentTemplate.apply(events));
-  }
-
-  private List<String> getEventResourcesForAEvent(Resource eventResource) {
-    List<String> resources = new ArrayList<>();
-    if (eventResource != null) {
-      for (Attribute attribute : eventResource.attributes()) {
-        if (attribute.name.equals("content")) {
-          attribute
-              .attributes()
-              .forEach(
-                  (innerAttribute -> {
-                    String ref = innerAttribute.schema.get$ref();
-                    if (ref != null && ref.contains("/")) {
-                      String schemaName = ref.substring(ref.lastIndexOf("/") + 1);
-                      resources.add(schemaName);
-                    }
-                  }));
-        }
-      }
-    }
-    return resources;
-  }
+  // Webhook generation moved to com.chargebee.sdk.go.webhook.WebhookGenerator
 
   @Override
   public boolean cleanDirectoryBeforeGenerate() {
