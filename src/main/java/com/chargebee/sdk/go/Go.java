@@ -66,7 +66,6 @@ public class Go extends Language {
     var createModelsDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>();
-    // Errors/resources can be generated with generateErrorExceptions if needed in the future
 
     fileOps.addAll(
         List.of(
@@ -1210,8 +1209,6 @@ public class Go extends Language {
   public boolean schemaNamespaceIsLocal(Schema schema) {
     return !isDependedAttribute(schema) && !isGobalResourceReference(schema);
   }
-
-  // Webhook generation moved to com.chargebee.sdk.go.webhook.WebhookGenerator
 
   @Override
   public boolean cleanDirectoryBeforeGenerate() {
