@@ -73,6 +73,15 @@ public class Go extends Language {
             createActionsDirectoryPath,
             createModelsDirectory));
     fileOps.addAll(generateGlobalEnumFiles(outputDirectoryPath + enumsDirectoryPath, globalEnums));
+    
+    // Generate webhook event type enum
+    {
+      var webhookInfo = spec.extractWebhookInfo(true);
+      if (!webhookInfo.isEmpty()) {
+        fileOps.add(generateWebhookEventTypeEnum(outputDirectoryPath + enumsDirectoryPath, webhookInfo));
+      }
+    }
+    
     fileOps.addAll(
         generateActionsDirectories(outputDirectoryPath + actionsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
@@ -447,6 +456,39 @@ public class Go extends Language {
 
   private Map<String, Object> globalEnumTemplate(Enum e) {
     return new GlobalEnum(e).template();
+  }
+
+  private FileOp generateWebhookEventTypeEnum(
+      String outDirectoryPath, List<Map<String, String>> webhookInfo) throws IOException {
+    Template globalEnumTemplate = getTemplateContent("globalEnums");
+    
+    // Collect unique event types and sort them
+    Set<String> seenTypes = new HashSet<>();
+    List<Map<String, String>> eventTypes = new ArrayList<>();
+    for (Map<String, String> info : webhookInfo) {
+      String type = info.get("type");
+      if (!seenTypes.contains(type)) {
+        seenTypes.add(type);
+        Map<String, String> eventType = new HashMap<>();
+        eventType.put("name", type);
+        eventTypes.add(eventType);
+      }
+    }
+    eventTypes.sort(Comparator.comparing(e -> e.get("name")));
+    
+    // Create enum structure similar to GlobalEnum
+    Map<String, Object> enumData = new HashMap<>();
+    enumData.put("name", "EventType");
+    List<Map<String, String>> possibleValues = new ArrayList<>();
+    for (Map<String, String> eventType : eventTypes) {
+      Map<String, String> value = new HashMap<>();
+      value.put("name", eventType.get("name"));
+      possibleValues.add(value);
+    }
+    enumData.put("possibleValues", possibleValues);
+    
+    var content = globalEnumTemplate.apply(enumData);
+    return new FileOp.WriteString(outDirectoryPath, "event_type.go", content);
   }
 
   private List<FileOp> generateActionsDirectories(

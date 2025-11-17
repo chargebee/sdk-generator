@@ -2,6 +2,8 @@ package webhook
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -11,9 +13,39 @@ import (
 type WebhookHandler struct {
 	RequestValidator func(*http.Request) error
 	OnError          func(http.ResponseWriter, *http.Request, error)
+	OnUnhandledEvent func(enum.EventType, []byte) error
 {{#each events}}
 	On{{snakeCaseToPascalCase type}} func({{snakeCaseToPascalCase type}}Event) error
 {{/each}}
+}
+
+func (h *WebhookHandler) ParseAndDispatch(body []byte) error {
+	if h == nil {
+		return errors.New("webhook handler not configured")
+	}
+	eventType, err := ParseEventType(body)
+	if err != nil {
+		return err
+	}
+	switch eventType {
+{{#each events}}
+	case enum.EventType{{snakeCaseToPascalCase type}}:
+		if h.On{{snakeCaseToPascalCase type}} != nil {
+			var e {{snakeCaseToPascalCase type}}Event
+			if err := json.Unmarshal(body, &e); err != nil {
+				return err
+			}
+			if err := h.On{{snakeCaseToPascalCase type}}(e); err != nil {
+				return err
+			}
+		} else {
+			return h.handleUnhandledEvent(eventType, body)
+		}
+{{/each}}
+	default:
+		return h.handleUnhandledEvent(eventType, body)
+	}
+	return nil
 }
 
 func (h *WebhookHandler) HTTPHandler() http.Handler {
@@ -34,28 +66,9 @@ func (h *WebhookHandler) HTTPHandler() http.Handler {
 			h.handleError(w, r, err)
 			return
 		}
-		eventType, err := ParseEventType(body)
-		if err != nil {
+		if err := h.ParseAndDispatch(body); err != nil {
 			h.handleError(w, r, err)
 			return
-		}
-		switch eventType {
-{{#each events}}
-		case enum.EventType{{snakeCaseToPascalCase type}}:
-			if h.On{{snakeCaseToPascalCase type}} != nil {
-				var e {{snakeCaseToPascalCase type}}Event
-				if err := json.Unmarshal(body, &e); err != nil {
-					h.handleError(w, r, err)
-					return
-				}
-				if err := h.On{{snakeCaseToPascalCase type}}(e); err != nil {
-					h.handleError(w, r, err)
-					return
-				}
-			}
-{{/each}}
-		default:
-			// Unknown or unhandled event type; treat as success
 		}
 		w.WriteHeader(http.StatusOK)
 	})
@@ -67,6 +80,13 @@ func (h *WebhookHandler) handleError(w http.ResponseWriter, r *http.Request, err
 		return
 	}
 	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+
+func (h *WebhookHandler) handleUnhandledEvent(eventType enum.EventType, body []byte) error {
+	if h.OnUnhandledEvent != nil {
+		return h.OnUnhandledEvent(eventType, body)
+	}
+	return fmt.Errorf("unhandled event type: %s", eventType)
 }
 
 

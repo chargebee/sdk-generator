@@ -44,7 +44,8 @@ public class WebhookGenerator {
     // Ensure webhook directory exists
     fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, webhookDirectoryPath));
 
-    var webhookInfo = spec.extractWebhookInfo();
+    // Include deprecated webhook events (like PCV1) since customers may still receive them
+    var webhookInfo = spec.extractWebhookInfo(true);
     var eventSchema = spec.resourcesForEvents();
 
     if (webhookInfo.isEmpty()) {
@@ -56,8 +57,7 @@ public class WebhookGenerator {
         new FileOp.WriteString(
             outputDirectoryPath + webhookDirectoryPath, "parser.go", parserTemplate.apply("")));
 
-    // content.go (only if event schema is provided)
-    if (!eventSchema.isEmpty()) {
+    {
       List<Map<String, Object>> events = new ArrayList<>();
       Set<String> seenTypes = new HashSet<>();
 
@@ -69,41 +69,43 @@ public class WebhookGenerator {
       // Collect unique imports across all events
       Set<String> uniqueImports = new HashSet<>();
 
-      for (Map<String, String> info : webhookInfo) {
-        String type = info.get("type");
-        if (seenTypes.contains(type)) {
-          continue; // skip duplicate type
-        }
-        seenTypes.add(type);
-
-        String resourceSchemaName = info.get("resource_schema_name");
-        Resource matchedSchema =
-            eventSchema.stream()
-                .filter(schema -> schema.name.equals(resourceSchemaName))
-                .findFirst()
-                .orElse(null);
-
-        List<String> allSchemas = getEventResourcesForAEvent(matchedSchema);
-
-        // Filter schemas by presence of model directory to avoid missing imports
-        List<String> filteredSchemas = new ArrayList<>();
-        for (String schemaName : allSchemas) {
-          // Convert to models directory name: lower_underscore then remove underscores
-          String snake =
-              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, schemaName);
-          String folder = snake.replace("_", "");
-          java.io.File schemaDir = new java.io.File(modelsDir, folder);
-          if (schemaDir.exists() && schemaDir.isDirectory()) {
-            filteredSchemas.add(schemaName);
-            uniqueImports.add(schemaName);
+      if (!eventSchema.isEmpty()) {
+        for (Map<String, String> info : webhookInfo) {
+          String type = info.get("type");
+          if (seenTypes.contains(type)) {
+            continue; // skip duplicate type
           }
-        }
+          seenTypes.add(type);
 
-        Map<String, Object> params = new HashMap<>();
-        params.put("type", type);
-        params.put("resource_schemas", allSchemas);
-        params.put("filtered_resource_schemas", filteredSchemas);
-        events.add(params);
+          String resourceSchemaName = info.get("resource_schema_name");
+          Resource matchedSchema =
+              eventSchema.stream()
+                  .filter(schema -> schema.name.equals(resourceSchemaName))
+                  .findFirst()
+                  .orElse(null);
+
+          List<String> allSchemas = getEventResourcesForAEvent(matchedSchema);
+
+          // Filter schemas by presence of model directory to avoid missing imports
+          List<String> filteredSchemas = new ArrayList<>();
+          for (String schemaName : allSchemas) {
+            // Convert to models directory name: lower_underscore then remove underscores
+            String snake =
+                CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, schemaName);
+            String folder = snake.replace("_", "");
+            java.io.File schemaDir = new java.io.File(modelsDir, folder);
+            if (schemaDir.exists() && schemaDir.isDirectory()) {
+              filteredSchemas.add(schemaName);
+              uniqueImports.add(schemaName);
+            }
+          }
+
+          Map<String, Object> params = new HashMap<>();
+          params.put("type", type);
+          params.put("resource_schemas", allSchemas);
+          params.put("filtered_resource_schemas", filteredSchemas);
+          events.add(params);
+        }
       }
 
       Map<String, Object> ctx = new HashMap<>();
@@ -119,7 +121,6 @@ public class WebhookGenerator {
               contentTemplate.apply(ctx)));
     }
 
-    // handler.go (always, using webhook types list)
     {
       List<Map<String, Object>> events = new ArrayList<>();
       Set<String> seenTypes = new HashSet<>();
