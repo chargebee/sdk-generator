@@ -1,0 +1,86 @@
+import { EventType } from './event_types.js';
+import {
+  {{#each events}}
+  {{snakeCaseToPascalCase type}}Content,
+  {{/each}}
+  WebhookEvent
+} from './content.js';
+
+export interface WebhookHandlers {
+  {{#each events}}
+  on{{snakeCaseToPascalCase type}}?: (event: WebhookEvent & { content: {{snakeCaseToPascalCase type}}Content }) => Promise<void>;
+  {{/each}}
+}
+
+export class WebhookHandler {
+  private _handlers: WebhookHandlers = {};
+  
+  /**
+   * Optional callback for unhandled events.
+   */
+  onUnhandledEvent?: (event: WebhookEvent) => Promise<void>;
+
+  /**
+   * Optional callback for errors during processing.
+   */
+  onError?: (error: any) => void;
+
+  /**
+   * Optional validator for request headers.
+   */
+  requestValidator?: (headers: Record<string, string | string[] | undefined>) => void;
+
+  constructor(handlers: WebhookHandlers = {}) {
+    this._handlers = handlers;
+  }
+
+  {{#each events}}
+  set on{{snakeCaseToPascalCase type}}(handler: ((event: WebhookEvent & { content: {{snakeCaseToPascalCase type}}Content }) => Promise<void>) | undefined) {
+    this._handlers.on{{snakeCaseToPascalCase type}} = handler;
+  }
+  
+  get on{{snakeCaseToPascalCase type}}() {
+    return this._handlers.on{{snakeCaseToPascalCase type}};
+  }
+
+  {{/each}}
+
+  async handle(body: string | object, headers?: Record<string, string | string[] | undefined>): Promise<void> {
+    try {
+      if (this.requestValidator && headers) {
+        this.requestValidator(headers);
+      }
+
+      let event: WebhookEvent;
+      if (typeof body === 'string') {
+        event = JSON.parse(body);
+      } else {
+        event = body as WebhookEvent;
+      }
+
+      const eventType = event.event_type;
+
+      switch (eventType) {
+        {{#each events}}
+        case EventType.{{constantCase type}}:
+          if (this._handlers.on{{snakeCaseToPascalCase type}}) {
+            await this._handlers.on{{snakeCaseToPascalCase type}}(event as WebhookEvent & { content: {{snakeCaseToPascalCase type}}Content });
+            return;
+          }
+          break;
+        {{/each}}
+      }
+
+      if (this.onUnhandledEvent) {
+        await this.onUnhandledEvent(event);
+      }
+    } catch (err) {
+      if (this.onError) {
+        this.onError(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
