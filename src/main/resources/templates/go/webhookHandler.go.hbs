@@ -35,9 +35,7 @@ func (h *WebhookHandler) ParseAndDispatch(body []byte) error {
 			if err := json.Unmarshal(body, &e); err != nil {
 				return err
 			}
-			if err := h.On{{snakeCaseToPascalCase type}}(e); err != nil {
-				return err
-			}
+			return h.On{{snakeCaseToPascalCase type}}(e)
 		} else {
 			return h.handleUnhandledEvent(eventType, body)
 		}
