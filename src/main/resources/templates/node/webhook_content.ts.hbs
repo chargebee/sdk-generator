@@ -1,0 +1,27 @@
+declare module 'chargebee' {
+  {{#each unique_imports}}
+  export interface {{this}} {}
+  {{/each}}
+}
+
+{{#each events}}
+export interface {{snakeCaseToPascalCase type}}Content {
+  {{#each resource_schemas}}
+  {{camelCase this}}: import('chargebee').{{this}};
+  {{/each}}
+}
+
+{{/each}}
+export interface WebhookEvent {
+    id: string;
+    occurred_at: number;
+    source: string;
+    user?: string;
+    webhook_status: string;
+    webhook_failure_reason?: string;
+    webhooks?: any[];
+    event_type: string;
+    api_version: string;
+    content: any; 
+}
+
