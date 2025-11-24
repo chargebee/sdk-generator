@@ -50,6 +50,9 @@ public abstract class Language implements DataType {
     handlebars.registerHelper("pascalCaseToSnakeCase", NameFormatHelpers.PASCAL_CASE_TO_SNAKE_CASE);
     handlebars.registerHelper("pascalCaseToCamelCase", NameFormatHelpers.PASCAL_CASE_TO_CAMEL_CASE);
     handlebars.registerHelper("snakeCaseToPascalCase", NameFormatHelpers.SNAKE_CASE_TO_PASCAL_CASE);
+    handlebars.registerHelper(
+        "snakeCaseToLowerCaseNoUnderscore",
+        NameFormatHelpers.SNAKE_CASE_TO_LOWERCASE_NO_UNDERSCORE);
     handlebars.registerHelper("golangCase", NameFormatHelpers.PASCAL_CASE_TO_GO_CASE);
     handlebars.registerHelper("toUpperCase", NameFormatHelpers.TO_UPPER_CASE);
     handlebars.registerHelper("camelCase", NameFormatHelpers.CAMEL_CASE);
