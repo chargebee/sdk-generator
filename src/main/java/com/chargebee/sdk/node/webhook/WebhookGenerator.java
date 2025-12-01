@@ -34,7 +34,6 @@ public class WebhookGenerator {
   public static List<FileOp> generate(
       String outputDirectoryPath,
       Spec spec,
-      Template eventTypesTemplate,
       Template contentTemplate,
       Template handlerTemplate,
       Template authTemplate)
@@ -56,10 +55,6 @@ public class WebhookGenerator {
     Set<String> seenTypes = new HashSet<>();
     Set<String> uniqueImports = new HashSet<>();
 
-    // Compute models directory by taking parent of webhook output dir
-    java.io.File webhookDir = new java.io.File(outputDirectoryPath + webhookDirectoryPath);
-    java.io.File chargebeeRoot = webhookDir.getParentFile();
-
     for (Map<String, String> info : webhookInfo) {
         String type = info.get("type");
         if (seenTypes.contains(type)) {
@@ -78,8 +73,6 @@ public class WebhookGenerator {
         List<String> schemaImports = new ArrayList<>();
 
         for(String schema : allSchemas) {
-             // In Node we import Resource classes/interfaces. 
-             // Assuming 'Customer' -> 'Customer' in types
              schemaImports.add(schema);
              uniqueImports.add(schema);
         }
@@ -91,19 +84,6 @@ public class WebhookGenerator {
     }
     
     events.sort(Comparator.comparing(e -> e.get("type").toString()));
-
-    // event_types.ts
-    {
-        Map<String, Object> ctx = new HashMap<>();
-        ctx.put("events", events);
-        fileOps.add(
-            new FileOp.WriteString(
-                outputDirectoryPath + webhookDirectoryPath, 
-                "event_types.ts", 
-                eventTypesTemplate.apply(ctx)
-            )
-        );
-    }
 
     // content.ts
     {
@@ -122,15 +102,13 @@ public class WebhookGenerator {
         );
     }
 
-    // handler.ts
+    // handler.ts (static template)
     {
-        Map<String, Object> ctx = new HashMap<>();
-        ctx.put("events", events);
         fileOps.add(
           new FileOp.WriteString(
               outputDirectoryPath + webhookDirectoryPath,
               "handler.ts",
-              handlerTemplate.apply(ctx)
+              handlerTemplate.apply("")
           )
         );
     }

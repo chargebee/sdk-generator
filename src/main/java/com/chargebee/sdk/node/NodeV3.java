@@ -23,9 +23,8 @@ public class NodeV3 extends Language {
     List<FileOp> fileOps = new ArrayList<>();
     fileOps.add(generateApiEndpointsFile(outputDirectoryPath, resources));
     
-    // Generate webhook files (event types, content, handler)
+    // Generate webhook files (content, handler, auth)
     {
-        Template eventTypesTemplate = getTemplateContent("webhookEventTypes");
         Template contentTemplate = getTemplateContent("webhookContent");
         Template handlerTemplate = getTemplateContent("webhookHandler");
         Template authTemplate = getTemplateContent("webhookAuth");
@@ -33,7 +32,6 @@ public class NodeV3 extends Language {
             WebhookGenerator.generate(
                 outputDirectoryPath, 
                 spec, 
-                eventTypesTemplate, 
                 contentTemplate, 
                 handlerTemplate,
                 authTemplate
@@ -48,7 +46,6 @@ public class NodeV3 extends Language {
   protected Map<String, String> templatesDefinition() {
     return Map.of(
         "api_endpoints", "/templates/node/api_endpoints.ts.hbs",
-        "webhookEventTypes", "/templates/node/webhook_event_types.ts.hbs",
         "webhookContent", "/templates/node/webhook_content.ts.hbs",
         "webhookHandler", "/templates/node/webhook_handler.ts.hbs",
         "webhookAuth", "/templates/node/webhook_auth.ts.hbs"

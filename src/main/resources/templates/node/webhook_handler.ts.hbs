@@ -1,86 +1,73 @@
-import { EventType } from './event_types.js';
-import {
-  {{#each events}}
-  {{snakeCaseToPascalCase type}}Content,
-  {{/each}}
-  WebhookEvent
-} from './content.js';
+import { EventEmitter } from 'node:events';
+import { WebhookEvent } from './content.js';
 
-export interface WebhookHandlers {
-  {{#each events}}
-  on{{snakeCaseToPascalCase type}}?: (event: WebhookEvent & { content: {{snakeCaseToPascalCase type}}Content }) => Promise<void>;
-  {{/each}}
+export type EventType = import('chargebee').EventTypeEnum;
+
+export interface WebhookEventMap extends Record<EventType, WebhookEvent> {
+  unhandled_event: WebhookEvent;
+  error: unknown;
 }
 
-export class WebhookHandler {
-  private _handlers: WebhookHandlers = {};
-  
-  /**
-   * Optional callback for unhandled events.
-   */
-  onUnhandledEvent?: (event: WebhookEvent) => Promise<void>;
+export type WebhookEventListener<K extends keyof WebhookEventMap> = (
+  event: WebhookEventMap[K],
+) => Promise<void> | void;
 
-  /**
-   * Optional callback for errors during processing.
-   */
-  onError?: (error: any) => void;
+export class WebhookHandler extends EventEmitter {
+  requestValidator?: (
+    headers: Record<string, string | string[] | undefined>,
+  ) => void;
 
-  /**
-   * Optional validator for request headers.
-   */
-  requestValidator?: (headers: Record<string, string | string[] | undefined>) => void;
-
-  constructor(handlers: WebhookHandlers = {}) {
-    this._handlers = handlers;
+  on<K extends keyof WebhookEventMap>(
+    eventName: K,
+    listener: WebhookEventListener<K>,
+  ): this {
+    return super.on(eventName, listener as (...args: unknown[]) => void);
   }
 
-  {{#each events}}
-  set on{{snakeCaseToPascalCase type}}(handler: ((event: WebhookEvent & { content: {{snakeCaseToPascalCase type}}Content }) => Promise<void>) | undefined) {
-    this._handlers.on{{snakeCaseToPascalCase type}} = handler;
-  }
-  
-  get on{{snakeCaseToPascalCase type}}() {
-    return this._handlers.on{{snakeCaseToPascalCase type}};
+  once<K extends keyof WebhookEventMap>(
+    eventName: K,
+    listener: WebhookEventListener<K>,
+  ): this {
+    return super.once(eventName, listener as (...args: unknown[]) => void);
   }
 
-  {{/each}}
+  off<K extends keyof WebhookEventMap>(
+    eventName: K,
+    listener: WebhookEventListener<K>,
+  ): this {
+    return super.off(eventName, listener as (...args: unknown[]) => void);
+  }
 
-  async handle(body: string | object, headers?: Record<string, string | string[] | undefined>): Promise<void> {
+  emit<K extends keyof WebhookEventMap>(
+    eventName: K,
+    event: WebhookEventMap[K],
+  ): boolean {
+    return super.emit(eventName, event);
+  }
+
+  handle(
+    body: string | object,
+    headers?: Record<string, string | string[] | undefined>,
+  ): void {
     try {
       if (this.requestValidator && headers) {
         this.requestValidator(headers);
       }
 
-      let event: WebhookEvent;
-      if (typeof body === 'string') {
-        event = JSON.parse(body);
-      } else {
-        event = body as WebhookEvent;
-      }
+      const event: WebhookEvent =
+        typeof body === 'string' ? JSON.parse(body) : (body as WebhookEvent);
 
-      const eventType = event.event_type;
+      const eventType = event.event_type as keyof WebhookEventMap;
 
-      switch (eventType) {
-        {{#each events}}
-        case EventType.{{constantCase type}}:
-          if (this._handlers.on{{snakeCaseToPascalCase type}}) {
-            await this._handlers.on{{snakeCaseToPascalCase type}}(event as WebhookEvent & { content: {{snakeCaseToPascalCase type}}Content });
-            return;
-          }
-          break;
-        {{/each}}
-      }
-
-      if (this.onUnhandledEvent) {
-        await this.onUnhandledEvent(event);
+      if (this.listenerCount(eventType) > 0) {
+        this.emit(eventType, event);
+      } else if (this.listenerCount('unhandled_event') > 0) {
+        this.emit('unhandled_event', event);
       }
     } catch (err) {
-      if (this.onError) {
-        this.onError(err);
-      } else {
-        throw err;
-      }
+      this.emit('error', err);
     }
   }
 }
 
+export type { WebhookEvent } from './content.js';
