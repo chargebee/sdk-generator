@@ -70,6 +70,7 @@ public class ListResponseBuilder {
   public List<FileOp> build(OpenAPI openApi) {
     validateConfiguration(openApi);
     this.openApi = openApi;
+    MethodNameDeriver.initialize(openApi);
     generateListResponses();
     return fileOps;
   }
@@ -86,17 +87,15 @@ public class ListResponseBuilder {
         var operation = pathItem.getGet();
 
         if (operation.getExtensions() == null
-            || !operation.getExtensions().containsKey(Extension.OPERATION_METHOD_NAME)
             || !operation.getExtensions().containsKey(Extension.RESOURCE_ID)
             || operation.getResponses() == null) {
           // Skip operations that are not fully annotated for generation
           continue;
         }
 
-        var rawMethodName =
-            String.valueOf(operation.getExtensions().get(Extension.OPERATION_METHOD_NAME));
-        // Normalize to proper camelCase first
-        var normalizedMethodName = com.chargebee.GenUtil.normalizeToLowerCamelCase(rawMethodName);
+        // Derive method name from path using common utility
+        var normalizedMethodName = MethodNameDeriver.deriveMethodName(pathEntry.getKey(), "GET", operation);
+        normalizedMethodName = MethodNameDeriver.applyBatchPrefix(pathEntry.getKey(), normalizedMethodName);
         var methodName =
             CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, normalizedMethodName);
         var module = String.valueOf(operation.getExtensions().get(Extension.RESOURCE_ID));
@@ -201,11 +200,11 @@ public class ListResponseBuilder {
       var fileName = listResponse.getName() + "Response.java";
       var content = template.apply(listResponse);
       var formattedContent = JavaFormatter.formatSafely(content);
-      fileOps.add(
-          new FileOp.CreateDirectory(outputDirectoryPath + "/" + listResponse.getModule(), ""));
-      fileOps.add(
-          new FileOp.WriteString(
-              outputDirectoryPath + "/" + listResponse.getModule(), fileName, formattedContent));
+      var moduleDir = outputDirectoryPath + "/" + listResponse.getModule();
+      var responsesDir = moduleDir + "/responses";
+      fileOps.add(new FileOp.CreateDirectory(moduleDir, ""));
+      fileOps.add(new FileOp.CreateDirectory(responsesDir, ""));
+      fileOps.add(new FileOp.WriteString(responsesDir, fileName, formattedContent));
     } catch (IOException e) {
       throw new RuntimeException("Failed to generate list response file", e);
     }
@@ -286,7 +285,7 @@ public class ListResponseBuilder {
           var importObj = new Imports();
           importObj.setName(refModelName);
           importObj.setPackageName(
-              "com.chargebee.v4.core.models."
+              "com.chargebee.v4.models."
                   + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, refModelName));
           importsCollector.add(importObj);
           // fieldType is already correctly set by TypeMapper
@@ -301,7 +300,7 @@ public class ListResponseBuilder {
         var importObj = new Imports();
         importObj.setName(refModelName);
         importObj.setPackageName(
-            "com.chargebee.v4.core.models."
+            "com.chargebee.v4.models."
                 + CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, refModelName));
         importsCollector.add(importObj);
         fieldType = TypeMapper.getJavaType(refModelName, schema);
@@ -399,13 +398,23 @@ public class ListResponseBuilder {
     private String pathParamName;
 
     public String getName() {
-      var operationId = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name);
+      var operationIdSnake = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name);
       // Normalize module to snake_case to preserve token boundaries (handles lowerCamel inputs)
       var moduleSnake =
           module != null && module.contains("_")
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
-      var actionName = moduleSnake + "_" + operationId;
+
+      // If operationId contains the module name (or its singular/plural variations), don't prefix it
+      var moduleBase = moduleSnake.replaceAll("_", "");
+      var operationBase = operationIdSnake.replaceAll("_", "");
+      if (operationIdSnake.contains(moduleSnake) ||
+          operationBase.contains(moduleBase) ||
+          moduleBase.contains(operationBase)) {
+        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationIdSnake);
+      }
+
+      var actionName = moduleSnake + "_" + operationIdSnake;
       return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, actionName);
     }
 

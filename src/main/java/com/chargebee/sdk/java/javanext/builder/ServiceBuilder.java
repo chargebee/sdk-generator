@@ -57,7 +57,7 @@ public class ServiceBuilder {
    */
   public ServiceBuilder withOutputDirectoryPath(@NonNull String outputDirectoryPath) {
     Objects.requireNonNull(outputDirectoryPath, "outputDirectoryPath must not be null");
-    this.outputDirectoryPath = outputDirectoryPath + "/v4/core/services";
+    this.outputDirectoryPath = outputDirectoryPath + "/com/chargebee/v4/services";
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }
@@ -75,6 +75,7 @@ public class ServiceBuilder {
    */
   public List<FileOp> build(@NonNull OpenAPI openApi) {
     this.openApi = Objects.requireNonNull(openApi, "openApi must not be null");
+    MethodNameDeriver.initialize(openApi);
     validateRequiredState();
     try {
       generateServices();
@@ -163,8 +164,7 @@ public class ServiceBuilder {
   private boolean hasRequiredExtensions(Operation operation) {
     if (operation == null
         || operation.getExtensions() == null
-        || !operation.getExtensions().containsKey(Extension.RESOURCE_ID)
-        || !operation.getExtensions().containsKey(Extension.OPERATION_METHOD_NAME)) {
+        || !operation.getExtensions().containsKey(Extension.RESOURCE_ID)) {
       return false;
     }
 
@@ -175,16 +175,8 @@ public class ServiceBuilder {
       String path, String httpMethod, String resourceName, Operation operation) {
     var serviceOp = new ServiceOperation();
 
-    String rawOperationId =
-        operation.getExtensions().get(Extension.OPERATION_METHOD_NAME).toString();
-
-    // Normalize to proper camelCase: replace underscores and capitalize next char
-    String operationId = GenUtil.normalizeToLowerCamelCase(rawOperationId);
-
-    // Prefix batch operations to avoid method name collisions
-    if (operationId != null && !operationId.isEmpty() && path.startsWith("/batch/") && !operationId.startsWith("batch")) {
-      operationId = "batch" + operationId.substring(0, 1).toUpperCase() + operationId.substring(1);
-    }
+    String operationId = MethodNameDeriver.deriveMethodName(path, httpMethod, operation);
+    operationId = MethodNameDeriver.applyBatchPrefix(path, operationId);
 
     serviceOp.setOperationId(operationId);
     serviceOp.setModule(resourceName);
@@ -255,20 +247,44 @@ public class ServiceBuilder {
           module != null && module.contains("_")
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
-      var actionName = moduleSnake + "_" + operationId;
-      return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, actionName) + "Params";
+
+      // If operationId contains the module name (or its singular/plural variations), don't prefix it
+      var operationSnake = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
+      var moduleBase = moduleSnake.replaceAll("_", "");
+      var operationBase = operationSnake.replaceAll("_", "");
+      boolean shouldSkipPrefix = operationSnake.contains(moduleSnake) ||
+          operationBase.contains(moduleBase) ||
+          moduleBase.contains(operationBase);
+      if (shouldSkipPrefix) {
+        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationId) + "Params";
+      }
+      var prefixedActionName = moduleSnake + "_" + operationId;
+      return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, prefixedActionName) + "Params";
     }
 
     @SuppressWarnings("unused")
     public String getReturnType() {
       // Generate response class name based on operation
       var operationId = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
+
+      // Check if operationId already contains the module name to avoid duplication
       var moduleSnake =
           module != null && module.contains("_")
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
-      var actionName = moduleSnake + "_" + operationId;
-      return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, actionName) + "Response";
+
+      // If operationId contains the module name (or its singular/plural variations), don't prefix it
+      var operationSnake = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
+      var moduleBase = moduleSnake.replaceAll("_", "");
+      var operationBase = operationSnake.replaceAll("_", "");
+      boolean shouldSkipPrefix = operationSnake.contains(moduleSnake) ||
+          operationBase.contains(moduleBase) ||
+          moduleBase.contains(operationBase);
+      if (shouldSkipPrefix) {
+        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationId) + "Response";
+      }
+      var prefixedActionName = moduleSnake + "_" + operationId;
+      return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, prefixedActionName) + "Response";
     }
 
     @SuppressWarnings("unused")

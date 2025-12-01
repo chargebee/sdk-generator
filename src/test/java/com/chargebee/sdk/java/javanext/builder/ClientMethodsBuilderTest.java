@@ -270,11 +270,11 @@ class ClientMethodsBuilderTest {
       FileOp.WriteString implFile = findWriteOp(fileOps, "ClientMethodsImpl.java");
 
       // Should import service classes
-      assertThat(interfaceFile.fileContent).contains("com.chargebee.v4.core.services");
+      assertThat(interfaceFile.fileContent).contains("com.chargebee.v4.services");
       assertThat(interfaceFile.fileContent).containsIgnoringCase("CustomerService");
       assertThat(interfaceFile.fileContent).containsIgnoringCase("InvoiceService");
 
-      assertThat(implFile.fileContent).contains("com.chargebee.v4.core.services");
+      assertThat(implFile.fileContent).contains("com.chargebee.v4.services");
     }
 
     @Test

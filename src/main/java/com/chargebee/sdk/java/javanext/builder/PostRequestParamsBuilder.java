@@ -44,7 +44,7 @@ public class PostRequestParamsBuilder {
   private final List<FileOp> fileOps = new ArrayList<>();
 
   public PostRequestParamsBuilder withOutputDirectoryPath(String outputDirectoryPath) {
-    this.outputDirectoryPath = outputDirectoryPath + "/v4/core/models";
+    this.outputDirectoryPath = outputDirectoryPath + "/com/chargebee/v4/models";
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }
@@ -59,6 +59,7 @@ public class PostRequestParamsBuilder {
    */
   public List<FileOp> build(OpenAPI openApi) {
     this.openApi = openApi;
+    MethodNameDeriver.initialize(openApi);
     generateParams();
     return fileOps;
   }
@@ -80,29 +81,11 @@ public class PostRequestParamsBuilder {
           var operation = pathItem.getPost();
 
           var postAction = new PostAction();
-          // Safely read extensions
-          var extensions = operation.getExtensions();
-          String opId = null;
-          if (extensions != null) {
-            Object opNameExt = extensions.get(Extension.OPERATION_METHOD_NAME);
-            if (opNameExt != null) opId = opNameExt.toString();
-          }
-          // Fallbacks
-          if (opId == null && operation.getOperationId() != null) {
-            opId = operation.getOperationId();
-          }
-
-          // Normalize operation ID to proper camelCase
-          if (opId != null) {
-            opId = com.chargebee.GenUtil.normalizeToLowerCamelCase(opId);
-          }
-
-          // Prefix batch operations to avoid method name collisions
-          if (entry.getKey().startsWith("/batch/") && opId != null && !opId.isEmpty() && !opId.startsWith("batch")) {
-            opId = "batch" + opId.substring(0, 1).toUpperCase() + opId.substring(1);
-          }
-
           String module = resolveModuleName(entry.getKey(), operation);
+
+          // Derive operation ID from path using common utility
+          String opId = MethodNameDeriver.deriveMethodName(entry.getKey(), "POST", operation);
+          opId = MethodNameDeriver.applyBatchPrefix(entry.getKey(), opId);
           postAction.setOperationId(opId != null ? opId : "post");
           postAction.setModule(module);
           postAction.setPath(entry.getKey());
@@ -516,6 +499,18 @@ public class PostRequestParamsBuilder {
     public String getName() {
       String opSnake = CaseFormatUtil.toSnakeCaseSafe(getOperationId());
       String moduleSnake = CaseFormatUtil.toSnakeCaseSafe(module);
+
+      // Check if operationId already contains the module name (e.g., "voidInvoice" contains "invoice")
+      // This happens when reserved keywords are suffixed with the resource name
+      String moduleBase = moduleSnake.replaceAll("_", "");
+      String operationBase = opSnake.replaceAll("_", "");
+      if (opSnake.contains(moduleSnake) ||
+          operationBase.contains(moduleBase) ||
+          moduleBase.contains(operationBase)) {
+        return CaseFormatUtil.toUpperCamelSafe(opSnake);
+      }
+
+      // Prefix with module name for other cases
       String actionSnake = moduleSnake.isEmpty() ? opSnake : moduleSnake + "_" + opSnake;
       return CaseFormatUtil.toUpperCamelSafe(actionSnake);
     }

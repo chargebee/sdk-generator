@@ -4,7 +4,7 @@
  * Reach out to dx@chargebee.com for any questions.
  * Copyright 2025 Chargebee Inc.
  */
-package com.chargebee.v4.core.models.{{module}}.params;
+package com.chargebee.v4.models.{{module}}.params;
 
 import com.chargebee.v4.internal.Recommended;
 import com.chargebee.v4.internal.JsonUtil;
@@ -29,16 +29,82 @@ public final class {{name}}Params {
 }
 
 {{#*inline "paramsContent"}}
-    private final Map<String, Object> formData;
+    {{#each fields}}
+    private final {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{name}};
+    {{/each}}
+    {{#if customFieldsSupported}}
+    private final Map<String, Object> customFields;
+    {{/if}}
 
     private {{name}}Params({{name}}Builder builder) {
-        this.formData = Collections.unmodifiableMap(new LinkedHashMap<>(builder.formData));
+        {{#each fields}}
+        this.{{name}} = builder.{{name}};
+        {{/each}}
+        {{#if customFieldsSupported}}
+        this.customFields = builder.customFields.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.customFields));
+        {{/if}}
     }
+
+    {{#each fields}}
+    public {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{getterName}}() {
+        return {{name}};
+    }
+    {{/each}}
+    {{#if customFieldsSupported}}
+    public Map<String, Object> customFields() {
+        return customFields;
+    }
+    {{/if}}
 
     /**
      * Get the form data for this request.
      */
     public Map<String, Object> toFormData() {
+        Map<String, Object> formData = new LinkedHashMap<>();
+
+        {{#each fields}}
+        if (this.{{name}} != null) {
+            {{#if subModelField}}
+                {{#if compositeArrayField}}
+                // List of objects
+                for (int i = 0; i < this.{{name}}.size(); i++) {
+                    {{subModelParamsType}} item = this.{{name}}.get(i);
+                    if (item != null) {
+                        Map<String, Object> itemData = item.toFormData();
+                        for (Map.Entry<String, Object> entry : itemData.entrySet()) {
+                            String indexedKey = "{{curlName}}[" + entry.getKey() + "][" + i + "]";
+                            formData.put(indexedKey, entry.getValue());
+                        }
+                    }
+                }
+                {{else}}
+                // Single object
+                Map<String, Object> nestedData = this.{{name}}.toFormData();
+                for (Map.Entry<String, Object> entry : nestedData.entrySet()) {
+                    String nestedKey = "{{curlName}}[" + entry.getKey() + "]";
+                    formData.put(nestedKey, entry.getValue());
+                }
+                {{/if}}
+            {{else}}
+                {{#if mapType}}
+                formData.put("{{curlName}}", JsonUtil.toJson(this.{{name}}));
+                {{else if isListType}}
+                    {{#if (or (eq listElementType "Object") (eq listElementType "java.util.Map<String, Object>"))}}
+                    formData.put("{{curlName}}", JsonUtil.toJson(this.{{name}}));
+                    {{else}}
+                    formData.put("{{curlName}}", this.{{name}});
+                    {{/if}}
+                {{else}}
+                formData.put("{{curlName}}", this.{{name}});
+                {{/if}}
+            {{/if}}
+        }
+        {{/each}}
+        
+        {{#if customFieldsSupported}}
+        formData.putAll(customFields);
+        {{/if}}
+
         return formData;
     }
 
@@ -51,59 +117,21 @@ public final class {{name}}Params {
     }
 
     public static final class {{name}}Builder {
-        private final Map<String, Object> formData = new LinkedHashMap<>();
+        {{#each fields}}
+        private {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{name}};
+        {{/each}}
+        {{#if customFieldsSupported}}
+        private Map<String, Object> customFields = new LinkedHashMap<>();
+        {{/if}}
 
-        private {{../name}}Builder() {}
+        private {{name}}Builder() {}
 
         {{#each fields}}
-        {{#if subModelField}}
-        {{#if compositeArrayField}}
         {{#if deprecated}}@Deprecated{{/if}}
-        public {{../name}}Builder {{name}}(List<{{subModelParamsType}}> value) {
-            if (value != null && !value.isEmpty()) {
-                for (int i = 0; i < value.size(); i++) {
-                    {{subModelParamsType}} item = value.get(i);
-                    if (item != null) {
-                        Map<String, Object> itemData = item.toFormData();
-                        for (Map.Entry<String, Object> entry : itemData.entrySet()) {
-                            String indexedKey = "{{curlName}}[" + entry.getKey() + "][" + i + "]";
-                            formData.put(indexedKey, entry.getValue());
-                        }
-                    }
-                }
-            }
+        public {{../name}}Builder {{name}}({{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} value) {
+            this.{{name}} = value;
             return this;
         }
-        {{else}}
-        {{#if deprecated}}@Deprecated{{/if}}
-        public {{../name}}Builder {{name}}({{subModelParamsType}} value) {
-            if (value != null) {
-                Map<String, Object> nestedData = value.toFormData();
-                for (Map.Entry<String, Object> entry : nestedData.entrySet()) {
-                    String nestedKey = "{{curlName}}[" + entry.getKey() + "]";
-                    formData.put(nestedKey, entry.getValue());
-                }
-            }
-            return this;
-        }
-        {{/if}}
-        {{else}}
-        {{#if deprecated}}@Deprecated{{/if}}
-        public {{../name}}Builder {{name}}({{{type}}} value) {
-            {{#if mapType}}
-            formData.put("{{curlName}}", JsonUtil.toJson(value));
-            {{else if isListType}}
-            {{#if (or (eq listElementType "Object") (eq listElementType "java.util.Map<String, Object>"))}}
-            formData.put("{{curlName}}", JsonUtil.toJson(value));
-            {{else}}
-            formData.put("{{curlName}}", value);
-            {{/if}}
-            {{else}}
-            formData.put("{{curlName}}", value);
-            {{/if}}
-            return this;
-        }
-        {{/if}}
         {{/each}}
         {{#if customFieldsSupported}}
 
@@ -119,7 +147,7 @@ public final class {{name}}Params {
             if (fieldName == null || !fieldName.startsWith("cf_")) {
                 throw new IllegalArgumentException("Custom field name must start with 'cf_'");
             }
-            formData.put(fieldName, value);
+            this.customFields.put(fieldName, value);
             return this;
         }
 
@@ -136,7 +164,7 @@ public final class {{name}}Params {
                     if (entry.getKey() == null || !entry.getKey().startsWith("cf_")) {
                         throw new IllegalArgumentException("Custom field name must start with 'cf_': " + entry.getKey());
                     }
-                    formData.put(entry.getKey(), entry.getValue());
+                    this.customFields.put(entry.getKey(), entry.getValue());
                 }
             }
             return this;

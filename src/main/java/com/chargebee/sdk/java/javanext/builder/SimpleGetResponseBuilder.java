@@ -44,7 +44,7 @@ public class SimpleGetResponseBuilder {
   private static final String CONTENT_TYPE_JSON = "application/json";
   private static final String PROP_LIST = "list";
   private static final String PROP_NEXT_OFFSET = "next_offset";
-  private static final String CORE_MODELS_PACKAGE_PREFIX = "com.chargebee.v4.core.models.";
+  private static final String CORE_MODELS_PACKAGE_PREFIX = "com.chargebee.v4.models.";
 
   /**
    * Configure the output directory where generated response classes will be written.
@@ -77,6 +77,7 @@ public class SimpleGetResponseBuilder {
    */
   public List<FileOp> build(@NonNull OpenAPI openApi) {
     this.openApi = openApi;
+    MethodNameDeriver.initialize(openApi);
     generateSimpleGetResponses();
     return fileOps;
   }
@@ -93,15 +94,14 @@ public class SimpleGetResponseBuilder {
         var operation = pathItem.getGet();
         var extensions = operation.getExtensions();
 
-        var methodExt = extensions != null ? extensions.get(Extension.OPERATION_METHOD_NAME) : null;
         var moduleExt = extensions != null ? extensions.get(Extension.RESOURCE_ID) : null;
-        var rawMethodName = methodExt != null ? methodExt.toString() : null;
         var module = moduleExt != null ? moduleExt.toString() : null;
-        if (rawMethodName == null || module == null) {
+        if (module == null) {
           continue; // Missing required extensions; skip gracefully
         }
-        // Normalize to proper camelCase
-        var methodName = com.chargebee.GenUtil.normalizeToLowerCamelCase(rawMethodName);
+        // Derive method name from path using common utility
+        var methodName = MethodNameDeriver.deriveMethodName(pathEntry.getKey(), "GET", operation);
+        methodName = MethodNameDeriver.applyBatchPrefix(pathEntry.getKey(), methodName);
 
         var responses = operation.getResponses();
         if (responses == null) continue;
@@ -149,14 +149,11 @@ public class SimpleGetResponseBuilder {
       var fileName = simpleGetResponse.getName() + "Response.java";
       var content = template.apply(simpleGetResponse);
       var formattedContent = JavaFormatter.formatSafely(content);
-      fileOps.add(
-          new FileOp.CreateDirectory(
-              outputDirectoryPath + "/" + simpleGetResponse.getModule(), ""));
-      fileOps.add(
-          new FileOp.WriteString(
-              outputDirectoryPath + "/" + simpleGetResponse.getModule(),
-              fileName,
-              formattedContent));
+      var moduleDir = outputDirectoryPath + "/" + simpleGetResponse.getModule();
+      var responsesDir = moduleDir + "/responses";
+      fileOps.add(new FileOp.CreateDirectory(moduleDir, ""));
+      fileOps.add(new FileOp.CreateDirectory(responsesDir, ""));
+      fileOps.add(new FileOp.WriteString(responsesDir, fileName, formattedContent));
     } catch (IOException e) {
       throw new RuntimeException("Failed to generate simple get response file", e);
     }
@@ -411,13 +408,23 @@ public class SimpleGetResponseBuilder {
     private List<Model> subModels;
 
     public String getName() {
-      var operationId = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name);
+      var operationIdSnake = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, name);
       // Normalize module to snake_case to preserve token boundaries (handles lowerCamel inputs)
       var moduleSnake =
           module != null && module.contains("_")
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
-      var actionName = moduleSnake + "_" + operationId;
+
+      // If operationId contains the module name (or its singular/plural variations), don't prefix it
+      var moduleBase = moduleSnake.replaceAll("_", "");
+      var operationBase = operationIdSnake.replaceAll("_", "");
+      if (operationIdSnake.contains(moduleSnake) ||
+          operationBase.contains(moduleBase) ||
+          moduleBase.contains(operationBase)) {
+        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationIdSnake);
+      }
+
+      var actionName = moduleSnake + "_" + operationIdSnake;
       return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, actionName);
     }
 

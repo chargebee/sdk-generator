@@ -86,7 +86,7 @@ class GetRequestParamsBuilderTest {
       assertThat(fileOps).isNotEmpty();
       assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
       FileOp.CreateDirectory dirOp = (FileOp.CreateDirectory) fileOps.get(0);
-      assertThat(dirOp.basePath).endsWith("/v4/core/models");
+      assertThat(dirOp.basePath).endsWith("/v4/models");
     }
   }
 
@@ -878,12 +878,14 @@ class GetRequestParamsBuilderTest {
       addEnumQueryParam(
           getOperation, "hierarchy_operation_type", List.of("complete_hierarchy", "subordinates"));
 
+      // Path with {id} and action derives to hierarchyForCustomer
+      // hierarchyForCustomer contains "customer", so prefix is skipped
       addPathWithOperation("/customers/{customer-id}/hierarchy", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerHierarchyParams.java");
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "HierarchyForCustomerParams.java");
       assertThat(writeOp.fileContent).contains("public enum HierarchyOperationType");
       assertThat(writeOp.fileContent).contains("COMPLETE_HIERARCHY(\"complete_hierarchy\")");
       assertThat(writeOp.fileContent).contains("SUBORDINATES(\"subordinates\")");
@@ -1088,7 +1090,7 @@ class GetRequestParamsBuilderTest {
       assertModuleDirectoryExists(fileOps, "paymentMethod");
       FileOp.WriteString writeOp = findWriteOp(fileOps, "PaymentMethodListParams.java");
       assertThat(writeOp.fileContent)
-          .contains("package com.chargebee.v4.core.models.paymentMethod.params");
+          .contains("package com.chargebee.v4.models.paymentMethod.params");
     }
 
     @Test
@@ -1127,12 +1129,14 @@ class GetRequestParamsBuilderTest {
       Operation getOperation = createGetOperation("customer", "changeEstimate");
       addStringQueryParam(getOperation, "subscription_id");
 
+      // Path with {id} and action derives to changeEstimateForCustomer
       addPathWithOperation("/customers/{customer-id}/change_estimate", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      assertFileExists(fileOps, "CustomerChangeEstimateParams.java");
+      // changeEstimateForCustomer contains "customer", so prefix is skipped
+      assertFileExists(fileOps, "ChangeEstimateForCustomerParams.java");
     }
 
     @Test
@@ -1292,11 +1296,12 @@ class GetRequestParamsBuilderTest {
     }
 
     @Test
-    @DisplayName("Should skip operation missing OPERATION_METHOD_NAME extension")
-    void shouldSkipOperationWithMissingOperationId() throws IOException {
+    @DisplayName("Should derive method name from path when OPERATION_METHOD_NAME extension is missing")
+    void shouldDeriveMethodNameFromPathWhenExtensionMissing() throws IOException {
       Operation getOperation = new Operation();
       Map<String, Object> extensions = new java.util.HashMap<>();
       extensions.put(Extension.RESOURCE_ID, "customer");
+      extensions.put(Extension.IS_OPERATION_LIST, true);
       getOperation.setExtensions(extensions);
       addStringQueryParam(getOperation, "test_param");
 
@@ -1305,17 +1310,17 @@ class GetRequestParamsBuilderTest {
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      assertThat(fileOps).hasSize(1);
-      assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
+      // Should generate a file with method name derived from path (list for GET on /customers)
+      assertThat(fileOps).hasSizeGreaterThan(1);
+      boolean hasWriteOp = fileOps.stream().anyMatch(op -> op instanceof FileOp.WriteString);
+      assertThat(hasWriteOp).isTrue();
     }
 
     @Test
     @DisplayName("Should skip operation missing RESOURCE_ID extension")
     void shouldSkipOperationWithMissingModule() throws IOException {
       Operation getOperation = new Operation();
-      Map<String, Object> extensions = new java.util.HashMap<>();
-      extensions.put(Extension.OPERATION_METHOD_NAME, "list");
-      getOperation.setExtensions(extensions);
+      // No extensions at all - should be skipped
       addStringQueryParam(getOperation, "test_param");
 
       addPathWithOperation("/customers", getOperation);
@@ -1655,7 +1660,10 @@ class GetRequestParamsBuilderTest {
     Operation operation = new Operation();
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
-    extensions.put(Extension.OPERATION_METHOD_NAME, methodName);
+    // Set IS_OPERATION_LIST for list operations so path-based derivation works correctly
+    if ("list".equals(methodName)) {
+      extensions.put(Extension.IS_OPERATION_LIST, true);
+    }
     operation.setExtensions(extensions);
     return operation;
   }

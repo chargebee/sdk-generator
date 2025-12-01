@@ -1,4 +1,4 @@
-package com.chargebee.v4.core.responses.{{module}};
+package com.chargebee.v4.models.{{module}}.responses;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -10,8 +10,8 @@ import {{packageName}}.{{name}};
 {{/each}}
 import com.chargebee.v4.internal.JsonUtil;
 import com.chargebee.v4.transport.Response;
-import com.chargebee.v4.core.services.{{serviceName}};
-import com.chargebee.v4.core.models.{{module}}.params.{{name}}Params;
+import com.chargebee.v4.services.{{serviceName}};
+import com.chargebee.v4.models.{{module}}.params.{{name}}Params;
 
 /**
  * Immutable response object for {{name}} operation.

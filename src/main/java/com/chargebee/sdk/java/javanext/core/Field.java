@@ -32,6 +32,13 @@ public class Field {
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, normalizedName);
   }
 
+  public String getCapitalizedName() {
+    if (name == null) return null;
+    // Replace dots with underscores to handle field names like "card.copy_billing_info"
+    String normalizedName = name.replace('.', '_');
+    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, normalizedName);
+  }
+
   public String getCurlName() {
     return name;
   }

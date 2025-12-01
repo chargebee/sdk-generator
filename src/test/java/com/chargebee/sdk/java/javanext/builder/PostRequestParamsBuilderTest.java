@@ -152,13 +152,15 @@ class PostRequestParamsBuilderTest {
       requestSchema.addProperty("billing_day_of_week", billingDayEnum);
 
       Operation postOp = createPostOperation("customer", "changeBillingDate", requestSchema);
+      // Path with {id} and action derives to changeBillingDateForCustomer
+      // changeBillingDateForCustomer contains "customer", so prefix is skipped
       addPathWithPostOperation("/customers/{customer-id}/change_billing_date", postOp);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       FileOp.WriteString writeOp =
-          findWriteOp(fileOps, "CustomerChangeBillingDateParams.java");
+          findWriteOp(fileOps, "ChangeBillingDateForCustomerParams.java");
       assertThat(writeOp.fileContent).contains("BillingDayOfWeek");
       assertThat(writeOp.fileContent).containsIgnoringCase("sunday");
       assertThat(writeOp.fileContent).containsIgnoringCase("monday");
@@ -450,7 +452,8 @@ class PostRequestParamsBuilderTest {
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      FileOp.WriteString writeOp = findWriteOp(fileOps, "InvoiceImportInvoiceParams.java");
+      // importInvoice contains "invoice", so no prefix is added
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "ImportInvoiceParams.java");
       // Should contain EntityType enum
       assertThat(writeOp.fileContent).contains("EntityType");
     }
@@ -470,7 +473,7 @@ class PostRequestParamsBuilderTest {
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      // Only creates base directory structure (/v4/core/models)
+      // Only creates base directory structure (/v4/models)
       assertThat(fileOps).hasSizeGreaterThanOrEqualTo(1);
       assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
     }
@@ -479,8 +482,8 @@ class PostRequestParamsBuilderTest {
     @DisplayName("Should generate params file even for operation without request body")
     void shouldGenerateParamsFileEvenWithoutRequestBody() throws IOException {
       // PostRequestParamsBuilder generates params files even if there's no request body
+      // Path with {id} and POST method derives to "update"
       Operation postOp = new Operation();
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "delete");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
 
       addPathWithPostOperation("/customers/{customer-id}", postOp);
@@ -551,7 +554,7 @@ class PostRequestParamsBuilderTest {
     Operation operation = new Operation();
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
-    extensions.put(Extension.OPERATION_METHOD_NAME, methodName);
+    // OPERATION_METHOD_NAME is no longer used - method name is derived from path
     operation.setExtensions(extensions);
     operation.setRequestBody(requestBody);
     return operation;

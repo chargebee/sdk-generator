@@ -1,10 +1,10 @@
-package com.chargebee.v4.core.responses.{{module}};
+package com.chargebee.v4.models.{{module}}.responses;
 
 import java.util.List;
 {{#each imports}}
-import com.chargebee.v4.core.models.{{moduleName}}.{{name}};
+import com.chargebee.v4.models.{{moduleName}}.{{name}};
 {{/each}}
-import com.chargebee.v4.core.responses.BaseResponse;
+import com.chargebee.v4.models.BaseResponse;
 import com.chargebee.v4.internal.JsonUtil;
 import com.chargebee.v4.transport.Response;
 import java.math.BigDecimal;

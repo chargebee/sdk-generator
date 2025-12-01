@@ -111,7 +111,7 @@ class ServiceBuilderTest {
       assertThat(fileOps).isNotEmpty();
       assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
       FileOp.CreateDirectory dirOp = (FileOp.CreateDirectory) fileOps.get(0);
-      assertThat(dirOp.basePath).endsWith("/v4/core/services");
+      assertThat(dirOp.basePath).endsWith("/com/chargebee/v4/services");
     }
   }
 
@@ -168,16 +168,16 @@ class ServiceBuilderTest {
     }
 
     @Test
-    @DisplayName("Should distinguish GET, POST, PUT, DELETE HTTP methods")
+    @DisplayName("Should distinguish GET, POST HTTP methods")
     void shouldHandleDifferentHttpMethods() throws IOException {
       // Mirrors: shouldHaveHttpMethodInReturnStatement (JavaTests.java:997)
       Operation createOp = createPostOperationWithRequestBody("customer", "create");
       Operation updateOp = createPostOperationWithRequestBody("customer", "update");
-      Operation deleteOp = createOperation("customer", "delete");
+      Operation retrieveOp = createGetOperation("customer", "retrieve");
 
       addPathWithOperation("/customers", PathItem.HttpMethod.POST, createOp);
       addPathWithOperation("/customers/{customer-id}/update", PathItem.HttpMethod.POST, updateOp);
-      addPathWithOperation("/customers/{customer-id}", PathItem.HttpMethod.DELETE, deleteOp);
+      addPathWithOperation("/customers/{customer-id}", PathItem.HttpMethod.GET, retrieveOp);
       serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
@@ -186,7 +186,7 @@ class ServiceBuilderTest {
       // Should contain all three operations
       assertThat(writeOp.fileContent).containsIgnoringCase("create");
       assertThat(writeOp.fileContent).containsIgnoringCase("update");
-      assertThat(writeOp.fileContent).containsIgnoringCase("delete");
+      assertThat(writeOp.fileContent).containsIgnoringCase("retrieve");
     }
 
     @Test
@@ -305,8 +305,8 @@ class ServiceBuilderTest {
     }
 
     @Test
-    @DisplayName("Should skip operations missing OPERATION_METHOD_NAME extension")
-    void shouldSkipOperationsMissingMethodName() throws IOException {
+    @DisplayName("Should derive method name from path when OPERATION_METHOD_NAME extension is missing")
+    void shouldDeriveMethodNameFromPathWhenExtensionMissing() throws IOException {
       Operation op = new Operation();
       op.addExtension(Extension.RESOURCE_ID, "customer");
       addPathWithOperation("/customers", PathItem.HttpMethod.POST, op);
@@ -314,7 +314,10 @@ class ServiceBuilderTest {
 
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
-      assertThat(fileOps).hasSize(1); // Only directory
+      assertFileExists(fileOps, "CustomerService.java");
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      // Should derive "create" from POST to /customers
+      assertThat(writeOp.fileContent).containsIgnoringCase("create");
     }
   }
 
