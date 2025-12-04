@@ -1,9 +1,10 @@
-func WaitForTimeTravelCompletion(tm timemachine.TimeMachine) (timemachine.TimeMachine, error) {
+func WaitForTimeTravelCompletion(tm TimeMachine) (TimeMachine, error) {
     return WaitForTimeTravelCompletionWithEnv(tm, chargebee.DefaultConfig())
 }
-func WaitForTimeTravelCompletionWithEnv(tm timemachine.TimeMachine, env chargebee.Environment) (timemachine.TimeMachine, error) {
+
+func WaitForTimeTravelCompletionWithEnv(tm TimeMachine, env chargebee.Environment) (TimeMachine, error) {
     count := 0
-    for tm.TimeTravelStatus == timeMachineEnum.TimeTravelStatusInProgress {
+    for tm.TimeTravelStatus == TimeTravelStatusInProgress {
         if count > 30 {
             panic(errors.New("time travel is taking too much time"))
         }
@@ -15,7 +16,7 @@ func WaitForTimeTravelCompletionWithEnv(tm timemachine.TimeMachine, env chargebe
         }
         tm = *result.TimeMachine
     }
-    if tm.TimeTravelStatus == timeMachineEnum.TimeTravelStatusFailed {
+    if tm.TimeTravelStatus == TimeTravelStatusFailed {
         error := &chargebee.Error{}
         err := json.Unmarshal([]byte(tm.ErrorJson), &error)
         if err != nil {
@@ -23,7 +24,7 @@ func WaitForTimeTravelCompletionWithEnv(tm timemachine.TimeMachine, env chargebe
         }
         return tm, error
     }
-    if tm.TimeTravelStatus != timeMachineEnum.TimeTravelStatusInProgress && tm.TimeTravelStatus != timeMachineEnum.TimeTravelStatusSucceeded && tm.TimeTravelStatus != timeMachineEnum.TimeTravelStatusFailed {
+    if tm.TimeTravelStatus != TimeTravelStatusInProgress && tm.TimeTravelStatus != TimeTravelStatusSucceeded && tm.TimeTravelStatus != TimeTravelStatusFailed {
         return tm, errors.New("time travel state is in wrong state  \"" + string(tm.TimeTravelStatus) + "\"")
     }
     return tm, nil

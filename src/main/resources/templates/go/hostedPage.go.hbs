@@ -1,4 +1,4 @@
-func Content(page hostedpage.HostedPage) *chargebee.Result {
+func Content(page HostedPage) *chargebee.Result {
     content := &chargebee.Result{}
     err1 := json.Unmarshal(page.Content, content)
     if err1 != nil {

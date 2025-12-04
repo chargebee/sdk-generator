@@ -12,7 +12,7 @@ type {{clazName}} struct {
 {{{cols}}}
 }{{/each}}
 {{~#each operRequestClasses}}{{#if hasInputParams}}
-type {{clazName}}Params struct {
+type {{clazName}} struct {
 {{~#if inputParams}}
 {{{inputParams}}}
 {{~/if}}
@@ -20,9 +20,9 @@ type {{clazName}}Params struct {
 {{~/if}}
 {{~#each inputSubResParams}}
 {{~#if multi}}
-type {{methodName}}{{camelSingularResName}}Params struct {
+type {{methodName}}{{camelSingularResName}} struct {
 {{~else}}
-type {{methodName}}{{camelResName}}Params struct {
+type {{methodName}}{{camelResName}} struct {
 {{~/if}}
 {{{subParams}}}
 }

@@ -22,6 +22,15 @@ function _gradlew() {
     ./gradlew run --args="${args[*]}"
 }
 
+function _format() {
+    local lang="$1"
+    local dir="$2"
+    case "$lang" in
+        go) pushd "$dir" && go fmt ./... && popd;;
+        *) echo "Formatter not available for $lang";;
+    esac
+}
+
 function setup() {
     # Checkout the required repos
     local langs="${@:-"$LANGS"}"
@@ -45,6 +54,11 @@ function generate() {
     local sdk_langs="${@:?"No language specified, pass a list of languages to generate the SDK"}"
     for lang in $sdk_langs; do
         _gradlew $lang
+    done
+
+    for lang in $sdk_langs; do
+    
+        _format $lang "${BASE_DIR}/chargebee-${lang}"
     done
 }
 
