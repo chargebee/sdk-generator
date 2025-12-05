@@ -178,7 +178,7 @@ public class Go extends Language {
             refModelName = refModelName.replace(activeResource.id, "");
           }
         }
-        buf.add("\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
+        buf.add("\t\"github.com/chargebee/chargebee-go/v3/" + refModelName + "\"");
       }
     }
     if (!getSubResource(activeResource).isEmpty()) {
@@ -192,23 +192,30 @@ public class Go extends Language {
                                 && attr.name != "error_detail")) // error detail is handled below
                 .toList()) {
           buf.add(
-              "\t\"github.com/chargebee/chargebee-go/v3/models/"
+              "\t\"github.com/chargebee/chargebee-go/v3/"
                   + singularize(nestedSubRes.name.replace("_", "").toLowerCase())
                   + "\"");
         }
       }
     }
     if (activeResource.name.equalsIgnoreCase("PaymentIntent")) {
-      buf.add("\t\"github.com/chargebee/chargebee-go/v3/models/gatewayerrordetail\"");
+      buf.add("\t\"github.com/chargebee/chargebee-go/v3/gatewayerrordetail\"");
     }
+    String currentPkg =
+        CaseFormat.UPPER_CAMEL
+            .to(CaseFormat.LOWER_UNDERSCORE, activeResource.name)
+            .replace("_", "");
     consolidatedEnum.forEach(
-        a ->
+        a -> {
+          if (!getCamelClazName(a).toLowerCase().equals(currentPkg)) {
             buf.add(
                 "\t"
                     + getCamelClazName(a)
                     + Constants.ENUM_MODEL_IMPORT
                     + getCamelClazName(a).toLowerCase()
-                    + Constants.ENUM));
+                    + Constants.ENUM);
+          }
+        });
     if (buf.toString().isEmpty()) {
       return "";
     } else {
@@ -584,7 +591,7 @@ public class Go extends Language {
         && !ResponseParser.isGoDataType(type)) {
       if (!type.equalsIgnoreCase(activeResourceName)) {
         String pkg = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, type).toLowerCase();
-        imports.add("github.com/chargebee/chargebee-go/v3/models/" + pkg);
+        imports.add("github.com/chargebee/chargebee-go/v3/" + pkg);
       }
     }
     if (r.isListResponse() && r.getListResponse() != null) {
@@ -769,6 +776,9 @@ public class Go extends Language {
                   + toClazName(attribute.name);
         }
         addEnumImport(type);
+        if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
+          type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
+        }
         buf.add(
             "\t"
                 + String.join(
@@ -855,6 +865,9 @@ public class Go extends Language {
                   + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
         }
         addEnumImport(type);
+        if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
+          type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
+        }
         buf.add("\t" + String.join(delimiter, toCamelCase(a.name), type, getJsonVal(a, true)));
       } else {
         if (a.isSubResource() && a.subResourceName() != null) {
@@ -980,6 +993,9 @@ public class Go extends Language {
               };
         }
         addEnumImport(type);
+        if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
+          type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
+        }
         buf.add(
             "\t"
                 + String.join(
