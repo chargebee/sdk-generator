@@ -10,5 +10,6 @@ public class Resource {
   private String clazName;
   private String cols;
   private List<SubResource> subResources;
-  private List<OperationRequest> operRequestClasses;
+  private List<Operation> operations;
+  private String responseImports;
 }

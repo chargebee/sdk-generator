@@ -21,6 +21,7 @@ import com.chargebee.sdk.common.ResourceAssist;
 import com.chargebee.sdk.dotnet.models.OperationRequest;
 import com.chargebee.sdk.dotnet.models.OperationRequestParameter;
 import com.chargebee.sdk.go.model.InputSubResParam;
+import com.chargebee.sdk.go.model.ResponseParser;
 import com.chargebee.sdk.go.model.SubResource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Template;
@@ -459,14 +460,6 @@ public class Go extends Language {
   private List<FileOp> genModels(String outputDirectoryPath, List<Resource> resources)
       throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
-    
-    // Map<String, Object> responses = this.resourceResponses(resources);
-    // List<Map<String, Object>> responseMap = (List<Map<String, Object>>) responses.get("responses");
-    // List<Map<String, Object>> listResourceMap = (List<Map<String, Object>>) responses.get("listResponses");
-    // List<String> jsonResponses = (List<String>) responses.get("jsonResponses");
-    // boolean isApiV1 = (boolean) responses.get("isApiV1");
-    // boolean isApiV2 = (boolean) responses.get("isApiV2");
-    // System.out.println(jsonResponses);
 
     Template resourceTemplate = getTemplateContent("models");
     Template responseTemplate = getTemplateContent("responses");
@@ -504,14 +497,27 @@ public class Go extends Language {
       }
       goRes.setSubResources(subResourceList);
 
-      List<com.chargebee.sdk.go.model.OperationRequest> operationRequests = new ArrayList<>();
+      List<com.chargebee.sdk.go.model.Operation> operations = new ArrayList<>();
       for (Action action : activeResource.getSortedAction()) {
-        com.chargebee.sdk.go.model.OperationRequest opRequest =
-            new com.chargebee.sdk.go.model.OperationRequest();
+        com.chargebee.sdk.go.model.Operation operation =
+            new com.chargebee.sdk.go.model.Operation();
         List<InputSubResParam> inputSubResParamList = new ArrayList<>();
-        opRequest.setClazName(toClazName(action.name, "Request"));
-        opRequest.setHasInputParams(hasInputParams(action));
-        opRequest.setInputParams(inputParams(action));
+        operation.setClazName(toClazName(action.name, "Request"));
+        operation.setHasInputParams(hasInputParams(action));
+        operation.setInputParams(inputParams(action));
+        operation.setHttpRequestType(action.httpRequestType.toString());
+
+        ResponseParser goOperationResponse =
+            new ResponseParser(
+                action, activeResource.name, action.response().responseParameters(this));
+        com.chargebee.sdk.go.model.Response goResponse =
+            new com.chargebee.sdk.go.model.Response();
+        goResponse.setClassName(goOperationResponse.className());
+        goResponse.setResponseParams(goOperationResponse.actionResponseParams());
+        goResponse.setSubResponseClassName(goOperationResponse.subResponseClassName());
+        goResponse.setSubResponseParams(goOperationResponse.subResponseParams());
+        operation.setOperationResponses(goResponse);
+
         ActionAssist actionAssist =
             ActionAssist.of(action)
                 .withFlatMultiAttribute(false)
@@ -526,19 +532,66 @@ public class Go extends Language {
           inputSubResParam.setSubParams(subParams(subResource));
           inputSubResParamList.add(inputSubResParam);
         }
-        opRequest.setInputSubResParams(inputSubResParamList);
-        operationRequests.add(opRequest);
+        operation.setInputSubResParams(inputSubResParamList);
+        operations.add(operation);
       }
-      goRes.setOperRequestClasses(operationRequests);
+      goRes.setOperations(operations);
       goRes.setImportFiles(getImportFiles());
+      goRes.setResponseImports(getResponseImports(res));
       ObjectMapper oMapper = new ObjectMapper();
       var content = resourceTemplate.apply(oMapper.convertValue(goRes, Map.class));
       String modelFileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name);
       fileOps.add(
           new FileOp.WriteString(
               outputDirectoryPath + "/" + resourceDirName, modelFileName + ".go", content));
+
+      if (!goRes.getOperations().isEmpty()) {
+        var responseContent = responseTemplate.apply(oMapper.convertValue(goRes, Map.class));
+        fileOps.add(
+            new FileOp.WriteString(
+                outputDirectoryPath + "/" + resourceDirName, modelFileName + "_response.go",
+                responseContent));
+      }
     }
     return fileOps;
+  }
+
+  private String getResponseImports(Resource res) {
+    Set<String> imports = new HashSet<>();
+    for (Action action : res.getSortedAction()) {
+      for (com.chargebee.sdk.common.model.OperationResponse r :
+          action.response().responseParameters(this)) {
+        extractImports(r, res.name, imports);
+      }
+    }
+    StringJoiner buf = new StringJoiner("\n");
+    for (String imp : imports) {
+      buf.add("\t\"" + imp + "\"");
+    }
+    if (buf.length() > 0) {
+      return "\nimport (\n" + buf.toString() + "\n)";
+    }
+    return "";
+  }
+
+  private void extractImports(
+      com.chargebee.sdk.common.model.OperationResponse r, String activeResourceName,
+      Set<String> imports) {
+    String type = r.getType();
+    if (type != null
+        && !type.equals("Any")
+        && !type.equals("unknown")
+        && !ResponseParser.isGoDataType(type)) {
+      if (!type.equalsIgnoreCase(activeResourceName)) {
+        String pkg = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, type).toLowerCase();
+        imports.add("github.com/chargebee/chargebee-go/v3/models/" + pkg);
+      }
+    }
+    if (r.isListResponse() && r.getListResponse() != null) {
+      for (com.chargebee.sdk.common.model.OperationResponse sub : r.getListResponse()) {
+        extractImports(sub, activeResourceName, imports);
+      }
+    }
   }
 
   private String subParams(Attribute subParam) {

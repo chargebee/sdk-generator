@@ -4,9 +4,12 @@ import java.util.List;
 import lombok.Data;
 
 @Data
-public class OperationRequest {
+public class Operation {
   private boolean hasInputParams;
   private String clazName;
   private String inputParams;
   private List<InputSubResParam> inputSubResParams;
+  private Response operationResponses;
+  private String httpRequestType;
 }
+

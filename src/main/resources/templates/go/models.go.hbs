@@ -11,7 +11,7 @@ type {{clazName}} struct {
 type {{clazName}} struct {
 {{{cols}}}
 }{{/each}}
-{{~#each operRequestClasses}}{{#if hasInputParams}}
+{{~#each operations}}{{#if hasInputParams}}
 type {{clazName}} struct {
 {{~#if inputParams}}
 {{{inputParams}}}
