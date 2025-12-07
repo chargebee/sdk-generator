@@ -17,7 +17,8 @@ import ({{#if isEvent}}
     exportEnum "github.com/chargebee/chargebee-go/v3/models/export/enum"
     "time"{{/if}}
 )
-{{#each actions}}
+{{#each actions}}{{#if isDeprecated}}
+// Deprecated: This function is deprecated.{{/if}}
 func {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}params *{{golangCase ../name}}.{{camelCaseToPascalCase goParamName}}RequestParams{{/or}}) chargebee.{{#if isListResourceAction}}List{{/if}}Request {
     return chargebee.Send{{#if isOperationNeedsJsonInput}}JsonRequest{{/if}}{{#if isListResourceAction}}List{{/if}}("{{httpRequestType}}", fmt.Sprintf("/{{urlPrefix}}{{#if hasPathParameters}}/%v{{/if}}{{#if urlSuffix}}/{{urlSuffix}}{{/if}}"{{#if hasPathParameters}}, url.PathEscape(id){{/if}}), {{#or hasRequestBodyParameters hasQueryParameters}}params{{else}}nil{{/or}}){{#if subDomain}}.SetSubDomain("{{subDomain}}"){{/if}}{{#if options.isIdempotent}}.SetIdempotency({{options.isIdempotent}}){{/if}}
 }{{/each}}{{#if isExport}}{{{includeFile "src/main/resources/templates/go/export.go.hbs"}}}{{/if}}{{#if isTimeMachine}}
@@ -29,7 +30,7 @@ func {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestB
 func Payment_vouchersForInvoice(id string, params *paymentvoucher.PaymentVouchersForInvoiceRequestParams) chargebee.ListRequest {
     return chargebee.SendList("GET", fmt.Sprintf("/invoices/%v/payment_vouchers", url.PathEscape(id)), params)
 }
-// Deprecated: This function is deprecated. Please use PaymentVouchersForCustomer instead. 
+// Deprecated: This function is deprecated. Please use PaymentVouchersForCustomer instead.
 func Payment_vouchersForCustomer(id string, params *paymentvoucher.PaymentVouchersForCustomerRequestParams) chargebee.ListRequest {
     return chargebee.SendList("GET", fmt.Sprintf("/customers/%v/payment_vouchers", url.PathEscape(id)), params)
 }

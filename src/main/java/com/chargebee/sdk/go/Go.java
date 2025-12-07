@@ -786,6 +786,9 @@ public class Go extends Language {
     String type = "";
     List<Attribute> attributes = activeResource.getSortedResourceAttributes();
     for (Attribute a : attributes) {
+      if (a.isDeprecated()) {
+        buf.add("\t//Deprecated: this field is deprecated");
+      }
       if (a.isEnumAttribute()) {
         if (a.isListOfEnum()) {
           type = "[]" + Constants.ENUM_WITH_DELIMITER + getListOfEnumTypeForAttribute(a);
@@ -862,6 +865,9 @@ public class Go extends Language {
     List<Attribute> attributes =
         subResource.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList();
     for (Attribute attribute : attributes) {
+      if (attribute.isDeprecated()) {
+        buf.add("\t//Deprecated: this field is deprecated");
+      }
       if (attribute.isEnumAttribute()) {
         if (attribute.isGenSeparate()) {
           type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
