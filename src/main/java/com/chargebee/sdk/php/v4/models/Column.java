@@ -19,4 +19,5 @@ public @Data class Column {
   private String subResourceName;
   private List<Column> childCols;
   private boolean hasChildCols;
+  private boolean isDeprecated;
 }
