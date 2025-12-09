@@ -83,4 +83,47 @@ declare module 'chargebee' {
     {{#each resources}}{{#if hasActions}} {{snakeCaseToCamelCaseAndSingularize id}}: {{name}}.{{name}}Resource;
     {{/if}}{{/each}}
   }
+
+  // Webhook Handler
+  export type WebhookEventType = EventTypeEnum | 'unhandled_event';
+  export type WebhookContentTypeValue = `${WebhookContentType}`;
+  export type WebhookEventListener<T extends WebhookContentType = WebhookContentType> = (event: WebhookEvent<T>) => Promise<void> | void;
+  export type WebhookErrorListener = (error: Error) => Promise<void> | void;
+
+  // Helper type to map string literal to enum member
+  type StringToWebhookContentType<S extends WebhookContentTypeValue> = {
+    [K in WebhookContentType]: `${K}` extends S ? K : never
+  }[WebhookContentType];
+
+  export class WebhookHandler {
+    on<T extends WebhookContentType>(eventName: T, listener: WebhookEventListener<T>): this;
+    on<S extends WebhookContentTypeValue>(eventName: S, listener: WebhookEventListener<StringToWebhookContentType<S>>): this;
+    on(eventName: 'unhandled_event', listener: WebhookEventListener): this;
+    on(eventName: 'error', listener: WebhookErrorListener): this;
+    once<T extends WebhookContentType>(eventName: T, listener: WebhookEventListener<T>): this;
+    once<S extends WebhookContentTypeValue>(eventName: S, listener: WebhookEventListener<StringToWebhookContentType<S>>): this;
+    once(eventName: 'unhandled_event', listener: WebhookEventListener): this;
+    once(eventName: 'error', listener: WebhookErrorListener): this;
+    off<T extends WebhookContentType>(eventName: T, listener: WebhookEventListener<T>): this;
+    off<S extends WebhookContentTypeValue>(eventName: S, listener: WebhookEventListener<StringToWebhookContentType<S>>): this;
+    off(eventName: 'unhandled_event', listener: WebhookEventListener): this;
+    off(eventName: 'error', listener: WebhookErrorListener): this;
+    handle(
+      body: string | object,
+      headers?: Record<string, string | string[] | undefined>,
+    ): void;
+    onError?: (error: any) => void;
+    requestValidator?: (
+      headers: Record<string, string | string[] | undefined>,
+    ) => void;
+  }
+
+  // Webhook Auth
+  export function basicAuthValidator(
+    validateCredentials: (username: string, password: string) => boolean,
+  ): (headers: Record<string, string | string[] | undefined>) => void;
+
+  // Default webhook handler instance
+  export const webhook: WebhookHandler;
+
 }
