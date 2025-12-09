@@ -1,7 +1,9 @@
-package enum
+package chargebee
 
+{{#each globalEnums}}
 type {{ name }} string
 
 const ({{#each possibleValues}}
     {{ ../name }}{{ snakeCaseToPascalCase name }} {{ ../name }} = "{{ name }}"{{/each}}
 )
+{{/each}}

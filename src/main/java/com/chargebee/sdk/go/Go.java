@@ -61,11 +61,11 @@ public class Go extends Language {
     List<FileOp> fileOps = new ArrayList<>();
 
     fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, ""));
-    fileOps.addAll(generateGlobalEnumFiles(outputDirectoryPath + "/enum", globalEnums));
-    fileOps.addAll(
-        generateActionsDirectories(outputDirectoryPath, resources));
-    // fileOps.add(generateResultFile(outputDirectoryPath, resources));
-    fileOps.addAll(genModels(outputDirectoryPath, resources));
+    fileOps.add(generateGlobalEnumFiles(outputDirectoryPath, globalEnums));
+    // fileOps.addAll(
+    //     generateActionsDirectories(outputDirectoryPath, resources));
+    // // fileOps.add(generateResultFile(outputDirectoryPath, resources));
+    // fileOps.addAll(genModels(outputDirectoryPath, resources));
     return fileOps;
   }
 
@@ -411,18 +411,13 @@ public class Go extends Language {
         "/templates/go/api_error.go.hbs");
   }
 
-  private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)
-      throws IOException {
-    List<FileOp> fileOps = new ArrayList<>();
-
+  private FileOp generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums) throws IOException {
     Template globalEnumTemplate = getTemplateContent("globalEnums");
-    globalEnums = globalEnums.stream().sorted(Comparator.comparing(e -> e.name)).toList();
-    for (var _enum : globalEnums) {
-      var content = globalEnumTemplate.apply(globalEnumTemplate(_enum, "enum"));
-      String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, _enum.name);
-      fileOps.add(new FileOp.WriteString(outDirectoryPath, fileName + ".go", content));
-    }
-    return fileOps;
+    List<Map<String, Object>> enumList = globalEnums.stream()
+      .sorted(Comparator.comparing(e -> e.name))
+      .map(e -> globalEnumTemplate(e, "chargebee")).toList();
+    var content = globalEnumTemplate.apply(Map.of("globalEnums", enumList));
+    return new FileOp.WriteString(outDirectoryPath, "types.go", content);
   }
 
   private Map<String, Object> globalEnumTemplate(Enum e, String packageName) {
