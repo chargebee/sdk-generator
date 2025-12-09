@@ -1,6 +1,3 @@
-package {{pkgName}}
-{{#if responseImports}}{{{responseImports}}}{{/if}}
-
 {{#each operations}}
 {{#if operationResponses.subResponseClassName}}
 type {{ operationResponses.subResponseClassName }} struct {

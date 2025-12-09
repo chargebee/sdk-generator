@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import com.fasterxml.jackson.databind.SerializationFeature;
 
 public class Go extends Language {
 
@@ -62,20 +61,10 @@ public class Go extends Language {
 
     fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, ""));
     fileOps.add(generateGlobalEnumFiles(outputDirectoryPath, globalEnums));
-    // fileOps.addAll(
-    //     generateActionsDirectories(outputDirectoryPath, resources));
+    fileOps.addAll(generateServices(outputDirectoryPath, resources));
     // // fileOps.add(generateResultFile(outputDirectoryPath, resources));
-    // fileOps.addAll(genModels(outputDirectoryPath, resources));
+    fileOps.addAll(genModels(outputDirectoryPath, resources));
     return fileOps;
-  }
-
-  private FileOp generateErrorExceptions(
-      String outDirectoryPath, List<com.chargebee.openapi.Error> errorsResources)
-      throws IOException {
-    Template exceptionTemplate = getTemplateContent("exceptions");
-    var templateParams = errorSchemas(errorsResources);
-    return new FileOp.WriteString(
-        outDirectoryPath, "api_error.go", exceptionTemplate.apply(templateParams));
   }
 
   private boolean hasJSONObjectCols(Resource r) {
@@ -415,18 +404,16 @@ public class Go extends Language {
     Template globalEnumTemplate = getTemplateContent("globalEnums");
     List<Map<String, Object>> enumList = globalEnums.stream()
       .sorted(Comparator.comparing(e -> e.name))
-      .map(e -> globalEnumTemplate(e, "chargebee")).toList();
+      .map(this::globalEnumTemplate).toList();
     var content = globalEnumTemplate.apply(Map.of("globalEnums", enumList));
     return new FileOp.WriteString(outDirectoryPath, "types.go", content);
   }
 
-  private Map<String, Object> globalEnumTemplate(Enum e, String packageName) {
-    var globalEnum = new GlobalEnum(e);
-    globalEnum.setPackageName(packageName);
-    return globalEnum.template();
+  private Map<String, Object> globalEnumTemplate(Enum e) {
+    return new GlobalEnum(e).template();
   }
 
-  private List<FileOp> generateActionsDirectories(
+  private List<FileOp> generateServices(
       String outputDirectoryPath, List<Resource> resources) throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
 
@@ -451,9 +438,8 @@ public class Go extends Language {
         String dirName =
             CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name).replace("_", "");
         String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name);
-        fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, dirName));
         fileOps.add(
-            new FileOp.WriteString(outputDirectoryPath + "/" + dirName, fileName + "_service.go", content));
+            new FileOp.WriteString(outputDirectoryPath, fileName + "_service.go", content));
       }
     }
     return fileOps;
@@ -462,21 +448,23 @@ public class Go extends Language {
   private List<FileOp> genModels(String outputDirectoryPath, List<Resource> resources)
       throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
-
-    Template resourceTemplate = getTemplateContent("models");
+    
+    Template modelTemplate = getTemplateContent("models");
     Template responseTemplate = getTemplateContent("responses");
     for (var res : resources) {
       if (SDK_DEBUG && !DEBUG_RESOURCE.contains(res.name)) continue;
 
+      StringBuffer buf = new StringBuffer(Constants.ROOT_PACKAGE);
       String resourceDirName =
           CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_", "");
-      fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, resourceDirName));
+      
+      // enums
+      // fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, resourceDirName));
       List<Enum> resourceAssistEnums = new ResourceAssist().setResource(res).enums();
       List<Enum> schemaLessEnums = SchemaLessEnumParser.getSchemalessEnum(res, resourceList);
       if (!resourceAssistEnums.isEmpty() || !schemaLessEnums.isEmpty()) {
-        fileOps.addAll(
-            genModelEnums(
-                outputDirectoryPath, resourceDirName, resourceAssistEnums, schemaLessEnums));
+        buf.append(
+            genModelEnums(resourceDirName, resourceAssistEnums, schemaLessEnums));
       }
       activeResource = res;
       enumImport.clear();
@@ -541,19 +529,17 @@ public class Go extends Language {
       goRes.setImportFiles(getImportFiles());
       goRes.setResponseImports(getResponseImports(res));
       ObjectMapper oMapper = new ObjectMapper();
-      var content = resourceTemplate.apply(oMapper.convertValue(goRes, Map.class));
+      // models and enums
+      buf.append(modelTemplate.apply(oMapper.convertValue(goRes, Map.class)));
+      // request and response
+      if (!goRes.getOperations().isEmpty()) {
+        buf.append(responseTemplate.apply(oMapper.convertValue(goRes, Map.class)));
+      }
+
       String modelFileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name);
       fileOps.add(
           new FileOp.WriteString(
-              outputDirectoryPath + "/" + resourceDirName, modelFileName + ".go", content));
-
-      if (!goRes.getOperations().isEmpty()) {
-        var responseContent = responseTemplate.apply(oMapper.convertValue(goRes, Map.class));
-        fileOps.add(
-            new FileOp.WriteString(
-                outputDirectoryPath + "/" + resourceDirName, modelFileName + "_response.go",
-                responseContent));
-      }
+              outputDirectoryPath, modelFileName + ".go", buf.toString()));
     }
     return fileOps;
   }
@@ -809,26 +795,20 @@ public class Go extends Language {
     return formatUsingDelimiter(buf.toString());
   }
 
-  private List<FileOp> genModelEnums(
-      String outputDirectoryPath,
+  private StringBuffer genModelEnums(
       String resourceDirName,
       List<Enum> resourceAssistEnums,
       List<Enum> schemaLessEnums)
       throws IOException {
-    List<FileOp> fileOps = new ArrayList<>();
+    StringBuffer buf = new StringBuffer();
     Template enumTemplate = getTemplateContent("enums");
-    String enumDirPath = outputDirectoryPath + "/" + resourceDirName;
-    String enumFileName = resourceDirName + "_enum.go";
+
     var enums =
         resourceAssistEnums.stream()
-            .map(e -> globalEnumTemplate(e, resourceDirName))
+            .map(this::globalEnumTemplate)
             .filter(m -> !m.isEmpty()).toList();
     var schemalessEnum =
-        schemaLessEnums.stream().map(e -> globalEnumTemplate(e, resourceDirName)).filter(m -> !m.isEmpty()).toList();
-
-    // we will have a single enum file
-    StringBuilder buf = new StringBuilder();
-    buf.append("package " + resourceDirName + "\n");
+        schemaLessEnums.stream().map(this::globalEnumTemplate).filter(m -> !m.isEmpty()).toList();
 
     for (var _enum : enums) {
       buf.append(enumTemplate.apply(_enum));
@@ -837,8 +817,7 @@ public class Go extends Language {
       buf.append(enumTemplate.apply(_enum));
     }
 
-    fileOps.add(new FileOp.WriteString(enumDirPath, enumFileName, buf.toString()));
-    return fileOps;
+    return buf;
   }
 
   public String getCols() {

@@ -15,6 +15,7 @@ public class Constants {
   public static final String MAP_STRING_INTERFACE = "map[string]interface{}";
   public static final String FILTER = "*filter.";
   public static final String ENUM_WITH_DELIMITER = "enum.";
+  public static final String ROOT_PACKAGE = "package chargebee\n";
 
   private Constants() {}
 }
