@@ -94,8 +94,10 @@ public class ListResponseBuilder {
         }
 
         // Derive method name from path using common utility
-        var normalizedMethodName = MethodNameDeriver.deriveMethodName(pathEntry.getKey(), "GET", operation);
-        normalizedMethodName = MethodNameDeriver.applyBatchPrefix(pathEntry.getKey(), normalizedMethodName);
+        var normalizedMethodName =
+            MethodNameDeriver.deriveMethodName(pathEntry.getKey(), "GET", operation);
+        normalizedMethodName =
+            MethodNameDeriver.applyBatchPrefix(pathEntry.getKey(), normalizedMethodName);
         var methodName =
             CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, normalizedMethodName);
         var module = String.valueOf(operation.getExtensions().get(Extension.RESOURCE_ID));
@@ -405,12 +407,13 @@ public class ListResponseBuilder {
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
 
-      // If operationId contains the module name (or its singular/plural variations), don't prefix it
+      // If operationId contains the module name (or its singular/plural variations), don't prefix
+      // it
       var moduleBase = moduleSnake.replaceAll("_", "");
       var operationBase = operationIdSnake.replaceAll("_", "");
-      if (operationIdSnake.contains(moduleSnake) ||
-          operationBase.contains(moduleBase) ||
-          moduleBase.contains(operationBase)) {
+      if (operationIdSnake.contains(moduleSnake)
+          || operationBase.contains(moduleBase)
+          || moduleBase.contains(operationBase)) {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationIdSnake);
       }
 

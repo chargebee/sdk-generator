@@ -259,7 +259,8 @@ class GetRequestParamsBuilderTest {
           .contains("public CustomerListBuilder after(Timestamp timestamp)");
       assertThat(writeOp.fileContent)
           .contains("public CustomerListBuilder before(Timestamp timestamp)");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder on(Timestamp timestamp)");
+      assertThat(writeOp.fileContent)
+          .contains("public CustomerListBuilder on(Timestamp timestamp)");
       assertThat(writeOp.fileContent)
           .contains("public CustomerListBuilder between(Timestamp start, Timestamp end)");
     }
@@ -281,11 +282,16 @@ class GetRequestParamsBuilderTest {
           .contains("public SubscriptionListBuilder between(Timestamp start, Timestamp end)");
       // Verify the implementation converts Timestamp to Unix time in query params
       assertThat(writeOp.fileContent)
-          .contains("builder.queryParams.put(fieldName + \"[between]\", \"[\" + (start.getTime() / 1000) + \",\" + (end.getTime() / 1000) + \"]\")");
+          .contains(
+              "builder.queryParams.put(fieldName + \"[between]\", \"[\" + (start.getTime() / 1000)"
+                  + " + \",\" + (end.getTime() / 1000) + \"]\")");
       // Also verify other timestamp operations use Timestamp
-      assertThat(writeOp.fileContent).contains("public SubscriptionListBuilder after(Timestamp timestamp)");
-      assertThat(writeOp.fileContent).contains("public SubscriptionListBuilder before(Timestamp timestamp)");
-      assertThat(writeOp.fileContent).contains("public SubscriptionListBuilder on(Timestamp timestamp)");
+      assertThat(writeOp.fileContent)
+          .contains("public SubscriptionListBuilder after(Timestamp timestamp)");
+      assertThat(writeOp.fileContent)
+          .contains("public SubscriptionListBuilder before(Timestamp timestamp)");
+      assertThat(writeOp.fileContent)
+          .contains("public SubscriptionListBuilder on(Timestamp timestamp)");
     }
 
     @Test
@@ -1296,7 +1302,8 @@ class GetRequestParamsBuilderTest {
     }
 
     @Test
-    @DisplayName("Should derive method name from path when OPERATION_METHOD_NAME extension is missing")
+    @DisplayName(
+        "Should derive method name from path when OPERATION_METHOD_NAME extension is missing")
     void shouldDeriveMethodNameFromPathWhenExtensionMissing() throws IOException {
       Operation getOperation = new Operation();
       Map<String, Object> extensions = new java.util.HashMap<>();

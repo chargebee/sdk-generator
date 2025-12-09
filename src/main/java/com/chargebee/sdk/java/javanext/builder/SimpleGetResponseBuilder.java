@@ -13,9 +13,9 @@ import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
+import io.swagger.v3.oas.models.media.Schema;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -112,7 +112,8 @@ public class SimpleGetResponseBuilder {
         if (jsonContent == null) continue;
 
         var schema = jsonContent.getSchema();
-        // Resolve top-level $ref and unwrap composed schemas (allOf/anyOf/oneOf) to access properties
+        // Resolve top-level $ref and unwrap composed schemas (allOf/anyOf/oneOf) to access
+        // properties
         schema = resolveEffectiveSchema(schema);
         if (schema == null) continue;
 
@@ -230,7 +231,8 @@ public class SimpleGetResponseBuilder {
         if (openApi.getComponents().getSchemas().containsKey(refModelName)) {
           // Create a $ref schema to drive typing/imports
           io.swagger.v3.oas.models.media.Schema<?> refSchema =
-              new io.swagger.v3.oas.models.media.Schema<>().$ref("#/components/schemas/" + refModelName);
+              new io.swagger.v3.oas.models.media.Schema<>()
+                  .$ref("#/components/schemas/" + refModelName);
 
           var field = new Field();
           field.setName(module); // e.g., "full_export" -> getter getFullExport()
@@ -348,9 +350,10 @@ public class SimpleGetResponseBuilder {
     int guard = 0;
     while (current.get$ref() != null && openApi != null && openApi.getComponents() != null) {
       String refName = lastSegmentOfRef(current.get$ref());
-      Schema<?> target = openApi.getComponents().getSchemas() != null
-          ? openApi.getComponents().getSchemas().get(refName)
-          : null;
+      Schema<?> target =
+          openApi.getComponents().getSchemas() != null
+              ? openApi.getComponents().getSchemas().get(refName)
+              : null;
       if (target == null || target == current) break;
       current = target;
       if (++guard > 50) break; // guard against cycles
@@ -415,12 +418,13 @@ public class SimpleGetResponseBuilder {
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
 
-      // If operationId contains the module name (or its singular/plural variations), don't prefix it
+      // If operationId contains the module name (or its singular/plural variations), don't prefix
+      // it
       var moduleBase = moduleSnake.replaceAll("_", "");
       var operationBase = operationIdSnake.replaceAll("_", "");
-      if (operationIdSnake.contains(moduleSnake) ||
-          operationBase.contains(moduleBase) ||
-          moduleBase.contains(operationBase)) {
+      if (operationIdSnake.contains(moduleSnake)
+          || operationBase.contains(moduleBase)
+          || moduleBase.contains(operationBase)) {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationIdSnake);
       }
 

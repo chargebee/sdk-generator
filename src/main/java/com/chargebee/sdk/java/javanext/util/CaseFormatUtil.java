@@ -105,12 +105,12 @@ public final class CaseFormatUtil {
 
   public static String toUpperUnderscoreSafe(String input) {
     if (input == null) return "";
-    
+
     String trimmed = input.trim();
     if (trimmed.matches("^[a-zA-Z]\\d+$")) {
       return trimmed.toUpperCase(java.util.Locale.ROOT);
     }
-    
+
     String snake = toSnakeCaseSafe(input);
     return snake.toUpperCase(java.util.Locale.ROOT);
   }

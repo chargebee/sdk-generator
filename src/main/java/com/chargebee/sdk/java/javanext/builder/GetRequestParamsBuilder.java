@@ -353,18 +353,20 @@ public class GetRequestParamsBuilder {
     private List<Model> subModels;
 
     public String getName() {
-      var operationIdSnake = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
+      var operationIdSnake =
+          CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
       var moduleSnake =
           module.contains("_")
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
 
-      // If operationId contains the module name (or its singular/plural variations), don't prefix it
+      // If operationId contains the module name (or its singular/plural variations), don't prefix
+      // it
       var moduleBase = moduleSnake.replaceAll("_", "");
       var operationBase = operationIdSnake.replaceAll("_", "");
-      if (operationIdSnake.contains(moduleSnake) ||
-          operationBase.contains(moduleBase) ||
-          moduleBase.contains(operationBase)) {
+      if (operationIdSnake.contains(moduleSnake)
+          || operationBase.contains(moduleBase)
+          || moduleBase.contains(operationBase)) {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationIdSnake);
       }
 

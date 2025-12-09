@@ -500,13 +500,14 @@ public class PostRequestParamsBuilder {
       String opSnake = CaseFormatUtil.toSnakeCaseSafe(getOperationId());
       String moduleSnake = CaseFormatUtil.toSnakeCaseSafe(module);
 
-      // Check if operationId already contains the module name (e.g., "voidInvoice" contains "invoice")
+      // Check if operationId already contains the module name (e.g., "voidInvoice" contains
+      // "invoice")
       // This happens when reserved keywords are suffixed with the resource name
       String moduleBase = moduleSnake.replaceAll("_", "");
       String operationBase = opSnake.replaceAll("_", "");
-      if (opSnake.contains(moduleSnake) ||
-          operationBase.contains(moduleBase) ||
-          moduleBase.contains(operationBase)) {
+      if (opSnake.contains(moduleSnake)
+          || operationBase.contains(moduleBase)
+          || moduleBase.contains(operationBase)) {
         return CaseFormatUtil.toUpperCamelSafe(opSnake);
       }
 

@@ -1,6 +1,5 @@
 package com.chargebee.sdk.java.javanext.builder;
 
-import com.chargebee.GenUtil;
 import com.chargebee.openapi.Extension;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.java.javanext.JavaFormatter;
@@ -248,13 +247,15 @@ public class ServiceBuilder {
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
 
-      // If operationId contains the module name (or its singular/plural variations), don't prefix it
+      // If operationId contains the module name (or its singular/plural variations), don't prefix
+      // it
       var operationSnake = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
       var moduleBase = moduleSnake.replaceAll("_", "");
       var operationBase = operationSnake.replaceAll("_", "");
-      boolean shouldSkipPrefix = operationSnake.contains(moduleSnake) ||
-          operationBase.contains(moduleBase) ||
-          moduleBase.contains(operationBase);
+      boolean shouldSkipPrefix =
+          operationSnake.contains(moduleSnake)
+              || operationBase.contains(moduleBase)
+              || moduleBase.contains(operationBase);
       if (shouldSkipPrefix) {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationId) + "Params";
       }
@@ -273,18 +274,21 @@ public class ServiceBuilder {
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
 
-      // If operationId contains the module name (or its singular/plural variations), don't prefix it
+      // If operationId contains the module name (or its singular/plural variations), don't prefix
+      // it
       var operationSnake = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
       var moduleBase = moduleSnake.replaceAll("_", "");
       var operationBase = operationSnake.replaceAll("_", "");
-      boolean shouldSkipPrefix = operationSnake.contains(moduleSnake) ||
-          operationBase.contains(moduleBase) ||
-          moduleBase.contains(operationBase);
+      boolean shouldSkipPrefix =
+          operationSnake.contains(moduleSnake)
+              || operationBase.contains(moduleBase)
+              || moduleBase.contains(operationBase);
       if (shouldSkipPrefix) {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationId) + "Response";
       }
       var prefixedActionName = moduleSnake + "_" + operationId;
-      return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, prefixedActionName) + "Response";
+      return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, prefixedActionName)
+          + "Response";
     }
 
     @SuppressWarnings("unused")

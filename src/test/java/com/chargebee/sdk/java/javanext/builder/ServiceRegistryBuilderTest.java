@@ -113,7 +113,11 @@ class ServiceRegistryBuilderTest {
     @DisplayName("Should throw exception when OpenAPI is null")
     void shouldThrowExceptionWhenOpenAPIIsNull() {
       assertThatThrownBy(
-              () -> registryBuilder.withOutputDirectoryPath(outputPath).withTemplate(template).build(null))
+              () ->
+                  registryBuilder
+                      .withOutputDirectoryPath(outputPath)
+                      .withTemplate(template)
+                      .build(null))
           .isInstanceOf(NullPointerException.class)
           .hasMessageContaining("openApi");
     }
@@ -474,7 +478,8 @@ class ServiceRegistryBuilderTest {
     addResourceWithOperation(resourceId, "/" + resourceId + "s", PathItem.HttpMethod.POST);
   }
 
-  private void addResourceWithOperation(String resourceId, String path, PathItem.HttpMethod method) {
+  private void addResourceWithOperation(
+      String resourceId, String path, PathItem.HttpMethod method) {
     // Add schema
     ObjectSchema schema = new ObjectSchema();
     schema.addProperty("id", new StringSchema());
@@ -533,16 +538,18 @@ class ServiceRegistryBuilderTest {
     boolean exists =
         fileOps.stream()
             .anyMatch(
-                op -> op instanceof FileOp.WriteString && ((FileOp.WriteString) op).fileName.equals(fileName));
-    assertThat(exists)
-        .as("Expected file %s to exist in file operations", fileName)
-        .isTrue();
+                op ->
+                    op instanceof FileOp.WriteString
+                        && ((FileOp.WriteString) op).fileName.equals(fileName));
+    assertThat(exists).as("Expected file %s to exist in file operations", fileName).isTrue();
   }
 
   private FileOp.WriteString findWriteOp(List<FileOp> fileOps, String fileName) {
     return fileOps.stream()
         .filter(
-            op -> op instanceof FileOp.WriteString && ((FileOp.WriteString) op).fileName.equals(fileName))
+            op ->
+                op instanceof FileOp.WriteString
+                    && ((FileOp.WriteString) op).fileName.equals(fileName))
         .map(op -> (FileOp.WriteString) op)
         .findFirst()
         .orElseThrow(

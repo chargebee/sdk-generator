@@ -159,8 +159,7 @@ class PostRequestParamsBuilderTest {
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      FileOp.WriteString writeOp =
-          findWriteOp(fileOps, "ChangeBillingDateForCustomerParams.java");
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "ChangeBillingDateForCustomerParams.java");
       assertThat(writeOp.fileContent).contains("BillingDayOfWeek");
       assertThat(writeOp.fileContent).containsIgnoringCase("sunday");
       assertThat(writeOp.fileContent).containsIgnoringCase("monday");
@@ -286,7 +285,8 @@ class PostRequestParamsBuilderTest {
     @Test
     @DisplayName("Should mark deprecated multi-attribute params with @Deprecated")
     void shouldMarkDeprecatedMultiAttributeParams() throws IOException {
-      // Mirrors: shouldHavaObsoleteTagForDeprecatedMultiAttributesInRequestBodyParams (JavaTests.java:1983)
+      // Mirrors: shouldHavaObsoleteTagForDeprecatedMultiAttributesInRequestBodyParams
+      // (JavaTests.java:1983)
       StringSchema gwPaymentMethodIdSchema = new StringSchema();
       gwPaymentMethodIdSchema.setDeprecated(true);
       gwPaymentMethodIdSchema.addExtension("x-cb-is-sub-resource", true);
@@ -349,8 +349,7 @@ class PostRequestParamsBuilderTest {
     }
 
     @Test
-    @DisplayName(
-        "Should support parameter blank option as empty in list multi-attributes")
+    @DisplayName("Should support parameter blank option as empty in list multi-attributes")
     void shouldSupportParameterBlankOptionAsEmptyInListMultiAttributes() throws IOException {
       // Mirrors: shouldContinueParameterBlankOptionAsEmptyInListMultiAttributesInRequestBodyParams
       // (JavaTests.java:2146)

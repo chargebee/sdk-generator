@@ -35,6 +35,7 @@ public final class {{name}}Params {
     {{#if customFieldsSupported}}
     private final Map<String, Object> customFields;
     {{/if}}
+    private final Map<String, Object> consentFields;
 
     private {{name}}Params({{name}}Builder builder) {
         {{#each fields}}
@@ -43,6 +44,7 @@ public final class {{name}}Params {
         {{#if customFieldsSupported}}
         this.customFields = builder.customFields.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.customFields));
         {{/if}}
+        this.consentFields = builder.consentFields.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.consentFields));
     }
 
     {{#each fields}}
@@ -55,6 +57,9 @@ public final class {{name}}Params {
         return customFields;
     }
     {{/if}}
+    public Map<String, Object> consentFields() {
+        return consentFields;
+    }
 
     /**
      * Get the form data for this request.
@@ -104,6 +109,7 @@ public final class {{name}}Params {
         {{#if customFieldsSupported}}
         formData.putAll(customFields);
         {{/if}}
+        formData.putAll(consentFields);
 
         return formData;
     }
@@ -123,6 +129,7 @@ public final class {{name}}Params {
         {{#if customFieldsSupported}}
         private Map<String, Object> customFields = new LinkedHashMap<>();
         {{/if}}
+        private Map<String, Object> consentFields = new LinkedHashMap<>();
 
         private {{name}}Builder() {}
 
@@ -170,6 +177,58 @@ public final class {{name}}Params {
             return this;
         }
         {{/if}}
+
+        /**
+         * Add a consent field to the request. Consent fields must start with "cs_".
+         * Consent fields typically hold boolean values or options.
+         *
+         * @param fieldName the name of the consent field (e.g., "cs_marketing_consent")
+         * @param value the value of the consent field (typically Boolean or String for options)
+         * @return this builder
+         * @throws IllegalArgumentException if fieldName doesn't start with "cs_"
+         */
+        public {{name}}Builder consentField(String fieldName, Object value) {
+            if (fieldName == null || !fieldName.startsWith("cs_")) {
+                throw new IllegalArgumentException("Consent field name must start with 'cs_'");
+            }
+            this.consentFields.put(fieldName, value);
+            return this;
+        }
+
+        /**
+         * Add a boolean consent field to the request. Consent fields must start with "cs_".
+         *
+         * @param fieldName the name of the consent field (e.g., "cs_marketing_consent")
+         * @param value the boolean value of the consent field
+         * @return this builder
+         * @throws IllegalArgumentException if fieldName doesn't start with "cs_"
+         */
+        public {{name}}Builder consentField(String fieldName, Boolean value) {
+            if (fieldName == null || !fieldName.startsWith("cs_")) {
+                throw new IllegalArgumentException("Consent field name must start with 'cs_'");
+            }
+            this.consentFields.put(fieldName, value);
+            return this;
+        }
+
+        /**
+         * Add multiple consent fields to the request. All field names must start with "cs_".
+         *
+         * @param consentFields map of consent field names to values
+         * @return this builder
+         * @throws IllegalArgumentException if any field name doesn't start with "cs_"
+         */
+        public {{name}}Builder consentFields(Map<String, Object> consentFields) {
+            if (consentFields != null) {
+                for (Map.Entry<String, Object> entry : consentFields.entrySet()) {
+                    if (entry.getKey() == null || !entry.getKey().startsWith("cs_")) {
+                        throw new IllegalArgumentException("Consent field name must start with 'cs_': " + entry.getKey());
+                    }
+                    this.consentFields.put(entry.getKey(), entry.getValue());
+                }
+            }
+            return this;
+        }
 
         public {{name}}Params build() {
             return new {{name}}Params(this);

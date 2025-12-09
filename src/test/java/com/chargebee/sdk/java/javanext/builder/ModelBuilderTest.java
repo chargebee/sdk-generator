@@ -467,8 +467,7 @@ class ModelBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "Customer.java");
       assertThat(writeOp.fileContent).contains("public class Customer");
-      assertThat(writeOp.fileContent)
-          .contains("import com.chargebee.v4.models.address.Address");
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.models.address.Address");
       assertFileExists(fileOps, "Address.java");
     }
 
@@ -655,8 +654,7 @@ class ModelBuilderTest {
 
       assertDirectoryExists(fileOps, "customerAccount");
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerAccount.java");
-      assertThat(writeOp.fileContent)
-          .contains("package com.chargebee.v4.models.customerAccount");
+      assertThat(writeOp.fileContent).contains("package com.chargebee.v4.models.customerAccount");
     }
 
     @Test
@@ -671,8 +669,7 @@ class ModelBuilderTest {
       assertDirectoryExists(fileOps, "paymentMethod");
       assertDirectoryExists(fileOps, "customerAccount");
       FileOp.WriteString writeOp = findWriteOp(fileOps, "PaymentMethod.java");
-      assertThat(writeOp.fileContent)
-          .contains("package com.chargebee.v4.models.paymentMethod");
+      assertThat(writeOp.fileContent).contains("package com.chargebee.v4.models.paymentMethod");
     }
 
     @Test
@@ -833,7 +830,8 @@ class ModelBuilderTest {
 
     @Test
     void shouldHandleEmptyOpenAPISpec() throws IOException {
-      OpenAPI emptySpec = new OpenAPI().components(new Components().schemas(new java.util.HashMap<>()));
+      OpenAPI emptySpec =
+          new OpenAPI().components(new Components().schemas(new java.util.HashMap<>()));
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = modelBuilder.build(emptySpec);
@@ -844,7 +842,8 @@ class ModelBuilderTest {
 
     @Test
     void shouldHandleOpenAPIWithNullComponents() throws IOException {
-      OpenAPI apiWithNullComponents = new OpenAPI().components(new Components().schemas(new java.util.HashMap<>()));
+      OpenAPI apiWithNullComponents =
+          new OpenAPI().components(new Components().schemas(new java.util.HashMap<>()));
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = modelBuilder.build(apiWithNullComponents);
@@ -906,7 +905,8 @@ class ModelBuilderTest {
       assertThat(writeOp.fileContent).contains("public class Customer");
       assertThat(writeOp.fileContent)
           .contains("private java.util.Map<String, Object> customFields");
-      assertThat(writeOp.fileContent).contains("public java.util.Map<String, Object> getCustomFields()");
+      assertThat(writeOp.fileContent)
+          .contains("public java.util.Map<String, Object> getCustomFields()");
       assertThat(writeOp.fileContent).contains("public Object getCustomField(String fieldName)");
     }
 
@@ -928,7 +928,8 @@ class ModelBuilderTest {
     }
 
     @Test
-    void shouldIncludeExtractCustomFieldsHelperMethodWhenCustomFieldsSupported() throws IOException {
+    void shouldIncludeExtractCustomFieldsHelperMethodWhenCustomFieldsSupported()
+        throws IOException {
       ObjectSchema invoiceSchema = new ObjectSchema();
       invoiceSchema.addProperty("id", new StringSchema());
       invoiceSchema.addProperty("amount", new IntegerSchema());
@@ -943,7 +944,8 @@ class ModelBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "Invoice.java");
       assertThat(writeOp.fileContent)
           .contains("private static java.util.Map<String, Object> extractCustomFields");
-      assertThat(writeOp.fileContent).contains("obj.customFields = extractCustomFields(json, knownFields)");
+      assertThat(writeOp.fileContent)
+          .contains("obj.customFields = extractCustomFields(json, knownFields)");
       assertThat(writeOp.fileContent).contains("key.startsWith(\"cf_\")");
     }
 
@@ -978,7 +980,8 @@ class ModelBuilderTest {
 
       for (String modelName : supportedModels) {
         FileOp.WriteString writeOp = findWriteOp(fileOps, modelName + ".java");
-        assertThat(writeOp.fileContent).contains("private java.util.Map<String, Object> customFields");
+        assertThat(writeOp.fileContent)
+            .contains("private java.util.Map<String, Object> customFields");
       }
     }
 
@@ -1150,8 +1153,7 @@ class ModelBuilderTest {
       List<FileOp> fileOps = modelBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerCreatedEvent.java");
-      assertThat(writeOp.fileContent)
-          .contains("import com.chargebee.v4.models.customer.Customer");
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.models.customer.Customer");
     }
 
     @Test
@@ -1217,6 +1219,154 @@ class ModelBuilderTest {
       assertDirectoryExists(fileOps, "customer");
       assertDirectoryExists(fileOps, "invoice");
       assertDirectoryExists(fileOps, "event");
+    }
+  }
+
+  @Nested
+  @DisplayName("Consent Fields Support")
+  class ConsentFieldsSupportTests {
+
+    @Test
+    void shouldAddConsentFieldsMapToAllModels() throws IOException {
+      ObjectSchema customerSchema = new ObjectSchema();
+      customerSchema.addProperty("id", new StringSchema());
+      customerSchema.addProperty("first_name", new StringSchema());
+
+      openAPI.getComponents().addSchemas("Customer", customerSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Customer.java");
+      assertThat(writeOp.fileContent).contains("public class Customer");
+      // Consent fields should always be present
+      assertThat(writeOp.fileContent)
+          .contains("private java.util.Map<String, Object> consentFields");
+      assertThat(writeOp.fileContent)
+          .contains("public java.util.Map<String, Object> getConsentFields()");
+      assertThat(writeOp.fileContent).contains("public Object getConsentField(String fieldName)");
+    }
+
+    @Test
+    void shouldIncludeGetConsentFieldAsBooleanMethod() throws IOException {
+      ObjectSchema subscriptionSchema = new ObjectSchema();
+      subscriptionSchema.addProperty("id", new StringSchema());
+      subscriptionSchema.addProperty("status", new StringSchema());
+
+      openAPI.getComponents().addSchemas("Subscription", subscriptionSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Subscription.java");
+      assertThat(writeOp.fileContent)
+          .contains("public Boolean getConsentFieldAsBoolean(String fieldName)");
+    }
+
+    @Test
+    void shouldIncludeExtractConsentFieldsHelperMethod() throws IOException {
+      ObjectSchema invoiceSchema = new ObjectSchema();
+      invoiceSchema.addProperty("id", new StringSchema());
+      invoiceSchema.addProperty("amount", new IntegerSchema());
+
+      openAPI.getComponents().addSchemas("Invoice", invoiceSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Invoice.java");
+      assertThat(writeOp.fileContent)
+          .contains("private static java.util.Map<String, Object> extractConsentFields");
+      assertThat(writeOp.fileContent)
+          .contains("obj.consentFields = extractConsentFields(json, knownFields)");
+      assertThat(writeOp.fileContent).contains("key.startsWith(\"cs_\")");
+    }
+
+    @Test
+    void shouldIncludeKnownFieldsSetInFromJsonForConsentFields() throws IOException {
+      ObjectSchema planSchema = new ObjectSchema();
+      planSchema.addProperty("id", new StringSchema());
+      planSchema.addProperty("name", new StringSchema());
+      planSchema.addProperty("price", new IntegerSchema());
+
+      openAPI.getComponents().addSchemas("Plan", planSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Plan.java");
+      assertThat(writeOp.fileContent).contains("java.util.Set<String> knownFields");
+      assertThat(writeOp.fileContent).contains("knownFields.add(\"id\")");
+      assertThat(writeOp.fileContent).contains("knownFields.add(\"name\")");
+      assertThat(writeOp.fileContent).contains("knownFields.add(\"price\")");
+    }
+
+    @Test
+    void shouldSupportBothCustomAndConsentFieldsTogether() throws IOException {
+      ObjectSchema customerSchema = new ObjectSchema();
+      customerSchema.addProperty("id", new StringSchema());
+      customerSchema.addProperty("email", new StringSchema());
+      customerSchema.setAdditionalProperties(true);
+      customerSchema.addExtension("x-cb-is-custom-fields-supported", true);
+
+      openAPI.getComponents().addSchemas("Customer", customerSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Customer.java");
+      // Both custom and consent fields should be present
+      assertThat(writeOp.fileContent)
+          .contains("private java.util.Map<String, Object> customFields");
+      assertThat(writeOp.fileContent)
+          .contains("private java.util.Map<String, Object> consentFields");
+      assertThat(writeOp.fileContent).contains("getCustomFields()");
+      assertThat(writeOp.fileContent).contains("getConsentFields()");
+      assertThat(writeOp.fileContent).contains("extractCustomFields");
+      assertThat(writeOp.fileContent).contains("extractConsentFields");
+    }
+
+    @Test
+    void shouldHaveConsentFieldsEvenWhenCustomFieldsNotSupported() throws IOException {
+      ObjectSchema addressSchema = new ObjectSchema();
+      addressSchema.addProperty("street", new StringSchema());
+      addressSchema.addProperty("city", new StringSchema());
+      // Custom fields NOT enabled
+
+      openAPI.getComponents().addSchemas("Address", addressSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Address.java");
+      // Custom fields should NOT be present
+      assertThat(writeOp.fileContent).doesNotContain("customFields");
+      assertThat(writeOp.fileContent).doesNotContain("getCustomFields()");
+      // But consent fields SHOULD be present
+      assertThat(writeOp.fileContent)
+          .contains("private java.util.Map<String, Object> consentFields");
+      assertThat(writeOp.fileContent).contains("getConsentFields()");
+    }
+
+    @Test
+    void shouldHandleConsentFieldsForAllResourceTypes() throws IOException {
+      List<String> resourceNames = List.of("Addon", "Coupon", "Feature", "Item", "Plan", "Quote");
+
+      for (String resourceName : resourceNames) {
+        ObjectSchema schema = new ObjectSchema();
+        schema.addProperty("id", new StringSchema());
+        openAPI.getComponents().addSchemas(resourceName, schema);
+      }
+
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      for (String resourceName : resourceNames) {
+        FileOp.WriteString writeOp = findWriteOp(fileOps, resourceName + ".java");
+        assertThat(writeOp.fileContent)
+            .contains("private java.util.Map<String, Object> consentFields");
+      }
     }
   }
 

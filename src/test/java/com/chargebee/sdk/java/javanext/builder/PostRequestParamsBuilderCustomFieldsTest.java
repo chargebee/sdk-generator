@@ -84,8 +84,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerCreateParams.java");
       assertThat(writeOp.fileContent).contains("public CustomerCreateBuilder customField(");
       assertThat(writeOp.fileContent).contains("public CustomerCreateBuilder customFields(");
-      assertThat(writeOp.fileContent)
-          .contains("Custom field name must start with 'cf_'");
+      assertThat(writeOp.fileContent).contains("Custom field name must start with 'cf_'");
     }
 
     @Test
@@ -159,7 +158,8 @@ class PostRequestParamsBuilderCustomFieldsTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "SubscriptionCreateParams.java");
-      assertThat(writeOp.fileContent).contains("if (fieldName == null || !fieldName.startsWith(\"cf_\"))");
+      assertThat(writeOp.fileContent)
+          .contains("if (fieldName == null || !fieldName.startsWith(\"cf_\"))");
       assertThat(writeOp.fileContent).contains("throw new IllegalArgumentException");
     }
 
@@ -199,7 +199,8 @@ class PostRequestParamsBuilderCustomFieldsTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerUpdateParams.java");
       assertThat(writeOp.fileContent)
           .contains("public CustomerUpdateBuilder customFields(Map<String, Object> customFields)");
-      assertThat(writeOp.fileContent).contains("for (Map.Entry<String, Object> entry : customFields.entrySet())");
+      assertThat(writeOp.fileContent)
+          .contains("for (Map.Entry<String, Object> entry : customFields.entrySet())");
     }
 
     @Test

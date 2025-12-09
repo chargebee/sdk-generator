@@ -305,7 +305,8 @@ class ServiceBuilderTest {
     }
 
     @Test
-    @DisplayName("Should derive method name from path when OPERATION_METHOD_NAME extension is missing")
+    @DisplayName(
+        "Should derive method name from path when OPERATION_METHOD_NAME extension is missing")
     void shouldDeriveMethodNameFromPathWhenExtensionMissing() throws IOException {
       Operation op = new Operation();
       op.addExtension(Extension.RESOURCE_ID, "customer");

@@ -16,15 +16,61 @@ import java.util.Set;
 public final class MethodNameDeriver {
 
   // Java reserved keywords that cannot be used as method names
-  private static final Set<String> JAVA_RESERVED_KEYWORDS = Set.of(
-      "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char",
-      "class", "const", "continue", "default", "do", "double", "else", "enum",
-      "extends", "final", "finally", "float", "for", "goto", "if", "implements",
-      "import", "instanceof", "int", "interface", "long", "native", "new", "package",
-      "private", "protected", "public", "return", "short", "static", "strictfp",
-      "super", "switch", "synchronized", "this", "throw", "throws", "transient",
-      "try", "void", "volatile", "while", "true", "false", "null"
-  );
+  private static final Set<String> JAVA_RESERVED_KEYWORDS =
+      Set.of(
+          "abstract",
+          "assert",
+          "boolean",
+          "break",
+          "byte",
+          "case",
+          "catch",
+          "char",
+          "class",
+          "const",
+          "continue",
+          "default",
+          "do",
+          "double",
+          "else",
+          "enum",
+          "extends",
+          "final",
+          "finally",
+          "float",
+          "for",
+          "goto",
+          "if",
+          "implements",
+          "import",
+          "instanceof",
+          "int",
+          "interface",
+          "long",
+          "native",
+          "new",
+          "package",
+          "private",
+          "protected",
+          "public",
+          "return",
+          "short",
+          "static",
+          "strictfp",
+          "super",
+          "switch",
+          "synchronized",
+          "this",
+          "throw",
+          "throws",
+          "transient",
+          "try",
+          "void",
+          "volatile",
+          "while",
+          "true",
+          "false",
+          "null");
 
   // Cached set of schema names from the OpenAPI spec
   private static Set<String> schemaNames = null;
@@ -38,7 +84,9 @@ public final class MethodNameDeriver {
    * This should be called once before using deriveMethodName.
    */
   public static void initialize(OpenAPI openApi) {
-    if (openApi != null && openApi.getComponents() != null && openApi.getComponents().getSchemas() != null) {
+    if (openApi != null
+        && openApi.getComponents() != null
+        && openApi.getComponents().getSchemas() != null) {
       schemaNames = openApi.getComponents().getSchemas().keySet();
     } else {
       schemaNames = Set.of();
@@ -63,7 +111,8 @@ public final class MethodNameDeriver {
       return crudMethodName;
     }
     // For non-CRUD operations, derive from path
-    // Reserved keywords and context disambiguation are handled inside deriveMethodNameFromPathSegments
+    // Reserved keywords and context disambiguation are handled inside
+    // deriveMethodNameFromPathSegments
     return deriveMethodNameFromPathSegments(path, httpMethod);
   }
 
@@ -72,10 +121,11 @@ public final class MethodNameDeriver {
    * Only handles GET and POST HTTP methods.
    */
   private static String getCrudMethodName(String path, String httpMethod, Operation operation) {
-    boolean isListOperation = operation != null &&
-        operation.getExtensions() != null &&
-        operation.getExtensions().get(Extension.IS_OPERATION_LIST) != null &&
-        (boolean) operation.getExtensions().get(Extension.IS_OPERATION_LIST);
+    boolean isListOperation =
+        operation != null
+            && operation.getExtensions() != null
+            && operation.getExtensions().get(Extension.IS_OPERATION_LIST) != null
+            && (boolean) operation.getExtensions().get(Extension.IS_OPERATION_LIST);
 
     String pathWithoutLeadingSlash = path.startsWith("/") ? path.substring(1) : path;
     // Handle batch paths - strip the "batch/" prefix for CRUD detection
@@ -143,13 +193,15 @@ public final class MethodNameDeriver {
       String firstResource = pathSegments[0];
       String secondSegment = pathSegments[1];
       String thirdSegment = pathSegments[2];
-      
+
       // Check if pattern is: resource/{id}/otherResource (cross-resource)
       // The third segment should be a known resource from the schema
-      if (secondSegment.contains("{") && !thirdSegment.contains("{") && !thirdSegment.isEmpty()
+      if (secondSegment.contains("{")
+          && !thirdSegment.contains("{")
+          && !thirdSegment.isEmpty()
           && isKnownResource(thirdSegment)) {
         String singularFirstResource = singularize(firstResource);
-        
+
         if ("GET".equalsIgnoreCase(httpMethod)) {
           // GET: list operation -> ordersForInvoice
           String methodName = thirdSegment + "_for_" + singularFirstResource;
@@ -186,14 +238,15 @@ public final class MethodNameDeriver {
     if (!actionSegments.isEmpty()) {
       String methodName = String.join("_", actionSegments);
       String normalizedMethodName = GenUtil.normalizeToLowerCamelCase(methodName);
-      
+
       // Handle Java reserved keywords by suffixing with resource name
       // e.g., /invoices/{id}/void -> voidInvoice (not voidForInvoice)
-      if (JAVA_RESERVED_KEYWORDS.contains(normalizedMethodName.toLowerCase()) && firstResourceSegment != null) {
+      if (JAVA_RESERVED_KEYWORDS.contains(normalizedMethodName.toLowerCase())
+          && firstResourceSegment != null) {
         String singularResource = singularize(firstResourceSegment);
         return normalizedMethodName + GenUtil.toClazName(singularResource);
       }
-      
+
       // If the action is a CRUD verb that could conflict with simple CRUD operations,
       // append the resource name to disambiguate.
       // e.g., /unbilled_charges/create -> createUnbilledCharge (not just create)
@@ -201,7 +254,7 @@ public final class MethodNameDeriver {
         String singularResource = singularize(firstResourceSegment);
         return normalizedMethodName + GenUtil.toClazName(singularResource);
       }
-      
+
       // If there's a path parameter, append the parent resource context to disambiguate
       // e.g., /customers/{id}/import_subscription -> importSubscriptionForCustomer
       // vs /subscriptions/import_subscription -> importSubscription
@@ -209,7 +262,7 @@ public final class MethodNameDeriver {
         String singularResource = singularize(firstResourceSegment);
         return normalizedMethodName + "For" + GenUtil.toClazName(singularResource);
       }
-      
+
       return normalizedMethodName;
     }
 
@@ -225,8 +278,6 @@ public final class MethodNameDeriver {
     return "execute";
   }
 
-
-
   /**
    * Prefixes batch operations to avoid method name collisions.
    *
@@ -235,8 +286,10 @@ public final class MethodNameDeriver {
    * @return the method name, prefixed with "batch" if applicable
    */
   public static String applyBatchPrefix(String path, String methodName) {
-    if (methodName != null && !methodName.isEmpty() && 
-        path.startsWith("/batch/") && !methodName.startsWith("batch")) {
+    if (methodName != null
+        && !methodName.isEmpty()
+        && path.startsWith("/batch/")
+        && !methodName.startsWith("batch")) {
       return "batch" + methodName.substring(0, 1).toUpperCase() + methodName.substring(1);
     }
     return methodName;
@@ -255,11 +308,12 @@ public final class MethodNameDeriver {
   }
 
   /**
-   * Checks if a method name is a standard CRUD verb that could conflict with 
+   * Checks if a method name is a standard CRUD verb that could conflict with
    * auto-generated CRUD method names.
    */
   private static boolean isCrudVerb(String methodName) {
-    return Set.of("create", "update", "delete", "list", "retrieve", "get").contains(methodName.toLowerCase());
+    return Set.of("create", "update", "delete", "list", "retrieve", "get")
+        .contains(methodName.toLowerCase());
   }
 
   /**
@@ -270,15 +324,15 @@ public final class MethodNameDeriver {
     if (schemaNames == null || schemaNames.isEmpty()) {
       return false;
     }
-    
+
     // Convert segment to possible schema name formats
     // e.g., "orders" -> "order", "credit_notes" -> "credit_note", "CreditNote"
     String singular = singularize(segment);
     String upperCamel = GenUtil.toClazName(singular);
-    
+
     // Check if any schema name matches
-    return schemaNames.contains(upperCamel) || 
-           schemaNames.contains(singular) ||
-           schemaNames.contains(segment);
+    return schemaNames.contains(upperCamel)
+        || schemaNames.contains(singular)
+        || schemaNames.contains(segment);
   }
 }

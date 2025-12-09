@@ -485,16 +485,18 @@ class ClientMethodsBuilderTest {
     boolean exists =
         fileOps.stream()
             .anyMatch(
-                op -> op instanceof FileOp.WriteString && ((FileOp.WriteString) op).fileName.equals(fileName));
-    assertThat(exists)
-        .as("Expected file %s to exist in file operations", fileName)
-        .isTrue();
+                op ->
+                    op instanceof FileOp.WriteString
+                        && ((FileOp.WriteString) op).fileName.equals(fileName));
+    assertThat(exists).as("Expected file %s to exist in file operations", fileName).isTrue();
   }
 
   private FileOp.WriteString findWriteOp(List<FileOp> fileOps, String fileName) {
     return fileOps.stream()
         .filter(
-            op -> op instanceof FileOp.WriteString && ((FileOp.WriteString) op).fileName.equals(fileName))
+            op ->
+                op instanceof FileOp.WriteString
+                    && ((FileOp.WriteString) op).fileName.equals(fileName))
         .map(op -> (FileOp.WriteString) op)
         .findFirst()
         .orElseThrow(

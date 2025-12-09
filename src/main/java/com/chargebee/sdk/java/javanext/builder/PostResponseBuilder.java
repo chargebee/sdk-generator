@@ -131,10 +131,7 @@ public class PostResponseBuilder {
       String content = baseResponseTemplate.apply(null);
       String formattedContent = JavaFormatter.formatSafely(content);
       fileOps.add(
-          new FileOp.WriteString(
-              this.outputDirectoryPath,
-              "BaseResponse.java",
-              formattedContent));
+          new FileOp.WriteString(this.outputDirectoryPath, "BaseResponse.java", formattedContent));
     } catch (IOException e) {
       LOG.log(Level.WARNING, "Failed to generate BaseResponse class", e);
     }
@@ -317,21 +314,21 @@ public class PostResponseBuilder {
    */
   private FieldType unwrapArrayIfNeeded(String fieldName, Schema<?> propertySchema) {
     // Check if this is an array
-    if (!"array".equals(propertySchema.getType()) 
-        && !(propertySchema instanceof ArraySchema)) {
+    if (!"array".equals(propertySchema.getType()) && !(propertySchema instanceof ArraySchema)) {
       return TypeMapper.getJavaType(fieldName, propertySchema);
     }
 
-    Schema<?> items = propertySchema instanceof ArraySchema 
-        ? ((ArraySchema) propertySchema).getItems() 
-        : propertySchema.getItems();
+    Schema<?> items =
+        propertySchema instanceof ArraySchema
+            ? ((ArraySchema) propertySchema).getItems()
+            : propertySchema.getItems();
 
     // Check if items is an object with a single property that's a $ref
-    if (items != null 
+    if (items != null
         && "object".equals(items.getType())
-        && items.getProperties() != null 
+        && items.getProperties() != null
         && items.getProperties().size() == 1) {
-      
+
       Object singleProp = items.getProperties().values().iterator().next();
       if (singleProp instanceof Schema) {
         Schema<?> propSchema = (Schema<?>) singleProp;
@@ -339,9 +336,8 @@ public class PostResponseBuilder {
           // Extract the type name from the $ref and return List<Type>
           String refName = extractTypeFromRef(propSchema.get$ref());
           return new com.chargebee.sdk.java.javanext.datatype.ListType(
-              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, refName), 
-              createArraySchemaWithRef(propSchema.get$ref())
-          );
+              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, refName),
+              createArraySchemaWithRef(propSchema.get$ref()));
         }
       }
     }
@@ -453,19 +449,21 @@ public class PostResponseBuilder {
     private List<Field> fields;
 
     public String getName() {
-      var operationIdSnake = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
+      var operationIdSnake =
+          CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
       // Normalize module to snake_case to preserve word boundaries (handles lowerCamel inputs)
       var moduleSnake =
           module != null && module.contains("_")
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
 
-      // If operationId contains the module name (or its singular/plural variations), don't prefix it
+      // If operationId contains the module name (or its singular/plural variations), don't prefix
+      // it
       var moduleBase = moduleSnake.replaceAll("_", "");
       var operationBase = operationIdSnake.replaceAll("_", "");
-      if (operationIdSnake.contains(moduleSnake) ||
-          operationBase.contains(moduleBase) ||
-          moduleBase.contains(operationBase)) {
+      if (operationIdSnake.contains(moduleSnake)
+          || operationBase.contains(moduleBase)
+          || moduleBase.contains(operationBase)) {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationIdSnake);
       }
 

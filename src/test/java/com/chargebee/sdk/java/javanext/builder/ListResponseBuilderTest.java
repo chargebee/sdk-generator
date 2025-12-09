@@ -175,8 +175,7 @@ class ListResponseBuilderTest {
       List<FileOp> fileOps = listResponseBuilder.build(openAPI);
 
       // Should only have directory, no response file for non-paginated
-      assertThat(fileOps)
-          .allMatch(op -> op instanceof FileOp.CreateDirectory);
+      assertThat(fileOps).allMatch(op -> op instanceof FileOp.CreateDirectory);
     }
 
     @Test
@@ -239,13 +238,15 @@ class ListResponseBuilderTest {
     void shouldHandlePathParametersInListOperations() throws IOException {
       // Path /customers/{customer-id}/subscriptions derives to subscriptionsForCustomer
       // subscriptionsForCustomer doesn't contain "subscription", so prefix is added
-      addPaginatedListOperation("subscription", "subscriptionsForCustomer", "/customers/{customer-id}/subscriptions");
+      addPaginatedListOperation(
+          "subscription", "subscriptionsForCustomer", "/customers/{customer-id}/subscriptions");
 
       listResponseBuilder.withOutputDirectoryPath(outputPath).withTemplate(template);
 
       List<FileOp> fileOps = listResponseBuilder.build(openAPI);
 
-      FileOp.WriteString responseFile = findWriteOp(fileOps, "SubscriptionsForCustomerResponse.java");
+      FileOp.WriteString responseFile =
+          findWriteOp(fileOps, "SubscriptionsForCustomerResponse.java");
 
       // Should handle path parameters (converted to camelCase)
       assertThat(responseFile.fileContent).containsIgnoringCase("customerId");
@@ -377,8 +378,7 @@ class ListResponseBuilderTest {
       List<FileOp> fileOps = listResponseBuilder.build(openAPI);
 
       // Should skip this operation
-      assertThat(fileOps)
-          .allMatch(op -> op instanceof FileOp.CreateDirectory);
+      assertThat(fileOps).allMatch(op -> op instanceof FileOp.CreateDirectory);
     }
 
     @Test
@@ -403,8 +403,7 @@ class ListResponseBuilderTest {
       List<FileOp> fileOps = listResponseBuilder.build(openAPI);
 
       // Should skip this operation
-      assertThat(fileOps)
-          .allMatch(op -> op instanceof FileOp.CreateDirectory);
+      assertThat(fileOps).allMatch(op -> op instanceof FileOp.CreateDirectory);
     }
 
     @Test
@@ -427,8 +426,7 @@ class ListResponseBuilderTest {
       List<FileOp> fileOps = listResponseBuilder.build(openAPI);
 
       // Should skip this operation (no 200 response)
-      assertThat(fileOps)
-          .allMatch(op -> op instanceof FileOp.CreateDirectory);
+      assertThat(fileOps).allMatch(op -> op instanceof FileOp.CreateDirectory);
     }
 
     @Test
@@ -451,8 +449,7 @@ class ListResponseBuilderTest {
       List<FileOp> fileOps = listResponseBuilder.build(openAPI);
 
       // Should skip this operation
-      assertThat(fileOps)
-          .allMatch(op -> op instanceof FileOp.CreateDirectory);
+      assertThat(fileOps).allMatch(op -> op instanceof FileOp.CreateDirectory);
     }
 
     @Test
@@ -482,8 +479,7 @@ class ListResponseBuilderTest {
       List<FileOp> fileOps = listResponseBuilder.build(openAPI);
 
       // Should skip this operation (no JSON content)
-      assertThat(fileOps)
-          .allMatch(op -> op instanceof FileOp.CreateDirectory);
+      assertThat(fileOps).allMatch(op -> op instanceof FileOp.CreateDirectory);
     }
 
     @Test
@@ -511,8 +507,7 @@ class ListResponseBuilderTest {
       List<FileOp> fileOps = listResponseBuilder.build(openAPI);
 
       // Should skip (not a valid list response)
-      assertThat(fileOps)
-          .allMatch(op -> op instanceof FileOp.CreateDirectory);
+      assertThat(fileOps).allMatch(op -> op instanceof FileOp.CreateDirectory);
     }
 
     @Test
@@ -555,16 +550,20 @@ class ListResponseBuilderTest {
       // Path with multiple path params derives based on path structure
       // /sites/{site-id}/customers/{customer-id}/subscriptions -> subscriptionsForCustomer
       addPaginatedListOperation(
-          "subscription", "subscriptionsForCustomer", "/sites/{site-id}/customers/{customer-id}/subscriptions");
+          "subscription",
+          "subscriptionsForCustomer",
+          "/sites/{site-id}/customers/{customer-id}/subscriptions");
 
       listResponseBuilder.withOutputDirectoryPath(outputPath).withTemplate(template);
 
       List<FileOp> fileOps = listResponseBuilder.build(openAPI);
 
       // Verify a response file is generated for the subscription resource
-      assertThat(fileOps).anyMatch(op -> 
-          op instanceof FileOp.WriteString && 
-          ((FileOp.WriteString) op).fileName.contains("Subscription"));
+      assertThat(fileOps)
+          .anyMatch(
+              op ->
+                  op instanceof FileOp.WriteString
+                      && ((FileOp.WriteString) op).fileName.contains("Subscription"));
     }
 
     @Test

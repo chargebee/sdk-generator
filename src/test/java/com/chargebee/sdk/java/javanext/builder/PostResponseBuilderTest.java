@@ -12,7 +12,6 @@ import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.media.*;
-import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.io.IOException;
@@ -266,9 +265,11 @@ class PostResponseBuilderTest {
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
       // Verify a delete response file is generated
-      assertThat(fileOps).anyMatch(op -> 
-          op instanceof FileOp.WriteString && 
-          ((FileOp.WriteString) op).fileName.contains("Delete"));
+      assertThat(fileOps)
+          .anyMatch(
+              op ->
+                  op instanceof FileOp.WriteString
+                      && ((FileOp.WriteString) op).fileName.contains("Delete"));
     }
 
     @Test
@@ -377,9 +378,11 @@ class PostResponseBuilderTest {
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
       // Verify a delete response file is generated
-      assertThat(fileOps).anyMatch(op -> 
-          op instanceof FileOp.WriteString && 
-          ((FileOp.WriteString) op).fileName.contains("Delete"));
+      assertThat(fileOps)
+          .anyMatch(
+              op ->
+                  op instanceof FileOp.WriteString
+                      && ((FileOp.WriteString) op).fileName.contains("Delete"));
     }
   }
 
