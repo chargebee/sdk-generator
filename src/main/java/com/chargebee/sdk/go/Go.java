@@ -413,6 +413,12 @@ public class Go extends Language {
     return new GlobalEnum(e).template();
   }
 
+  private Map<String, Object> resourceEnumTemplate(Enum e, String resourceName) {
+    var _enum = new GlobalEnum(e);
+    _enum.setResourceName(resourceName);
+    return _enum.template();
+  }  
+
   private List<FileOp> generateServices(
       String outputDirectoryPath, List<Resource> resources) throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
@@ -463,8 +469,7 @@ public class Go extends Language {
       List<Enum> resourceAssistEnums = new ResourceAssist().setResource(res).enums();
       List<Enum> schemaLessEnums = SchemaLessEnumParser.getSchemalessEnum(res, resourceList);
       if (!resourceAssistEnums.isEmpty() || !schemaLessEnums.isEmpty()) {
-        buf.append(
-            genModelEnums(resourceDirName, resourceAssistEnums, schemaLessEnums));
+        buf.append(genModelEnums(res.name, resourceAssistEnums, schemaLessEnums));
       }
       activeResource = res;
       enumImport.clear();
@@ -583,6 +588,7 @@ public class Go extends Language {
   }
 
   private String subParams(Attribute subParam) {
+    System.out.println("subParam: " + subParam.name);
     String type = "";
     StringJoiner buf = new StringJoiner("\n");
     for (Attribute attribute :
@@ -796,19 +802,23 @@ public class Go extends Language {
   }
 
   private StringBuffer genModelEnums(
-      String resourceDirName,
+      String resourceName,
       List<Enum> resourceAssistEnums,
       List<Enum> schemaLessEnums)
       throws IOException {
     StringBuffer buf = new StringBuffer();
     Template enumTemplate = getTemplateContent("enums");
 
-    var enums =
+    List<Map<String, Object>> enums =
         resourceAssistEnums.stream()
-            .map(this::globalEnumTemplate)
-            .filter(m -> !m.isEmpty()).toList();
-    var schemalessEnum =
-        schemaLessEnums.stream().map(this::globalEnumTemplate).filter(m -> !m.isEmpty()).toList();
+            .map(e -> this.resourceEnumTemplate(e, resourceName))
+            .filter(m -> !m.isEmpty())
+            .toList();
+    List<Map<String, Object>> schemalessEnum =
+        schemaLessEnums.stream()
+            .map(e -> this.resourceEnumTemplate(e, resourceName))
+            .filter(m -> !m.isEmpty())
+            .toList();
 
     for (var _enum : enums) {
       buf.append(enumTemplate.apply(_enum));

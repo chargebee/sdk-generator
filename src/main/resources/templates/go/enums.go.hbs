@@ -1,8 +1,8 @@
 
-type {{ snakeCaseToPascalCase name }} string
+type {{ snakeCaseToPascalCase resourceName }}{{ snakeCaseToPascalCase name }} string
 
 const ({{#each possibleValues}}
-    {{ snakeCaseToPascalCase ../name }}{{ snakeCaseToPascalCase name }} {{ snakeCaseToPascalCase ../name }} = "{{ name }}"{{/each}}
+    {{ snakeCaseToPascalCase resourceName }}{{ snakeCaseToPascalCase ../name }}{{ snakeCaseToPascalCase name }} {{ snakeCaseToPascalCase resourceName }}{{snakeCaseToPascalCase ../name}} = "{{ name }}"{{/each}}
 {{~#if deprecatedEnums}}{{~#each deprecatedEnums}}
-    {{ snakeCaseToPascalCase ../name }}{{ snakeCaseToPascalCase name }} {{ snakeCaseToPascalCase ../name }} = "{{ name }}"{{/each}}{{/if}}
+    {{ snakeCaseToPascalCase resourceName }}{{ snakeCaseToPascalCase ../name }}{{ snakeCaseToPascalCase name }} {{ snakeCaseToPascalCase resourceName }}{{snakeCaseToPascalCase ../name}} = "{{ name }}"{{/each}}{{/if}}
 )

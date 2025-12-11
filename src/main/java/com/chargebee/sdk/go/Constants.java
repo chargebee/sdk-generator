@@ -13,8 +13,8 @@ public class Constants {
   public static final String STRING_TYPE = "string";
   public static final String ENUM_DOT = ".";
   public static final String MAP_STRING_INTERFACE = "map[string]interface{}";
-  public static final String FILTER = "*filter.";
-  public static final String ENUM_WITH_DELIMITER = "enum.";
+  public static final String FILTER = "*";
+  public static final String ENUM_WITH_DELIMITER = "";
   public static final String ROOT_PACKAGE = "package chargebee\n";
 
   private Constants() {}

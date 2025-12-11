@@ -6,11 +6,11 @@ type {{clazName}} struct {
 {{/if}}
 }
 {{~#each subResources}}
-type {{clazName}} struct {
+type {{@root.clazName}}{{clazName}} struct {
 {{{cols}}}
 }{{/each}}
 {{~#each operations}}{{#if hasInputParams}}
-type {{clazName}} struct {
+type {{@root.clazName}}{{clazName}} struct {
 {{~#if inputParams}}
 {{{inputParams}}}
 {{~/if}}
@@ -18,9 +18,9 @@ type {{clazName}} struct {
 {{~/if}}
 {{~#each inputSubResParams}}
 {{~#if multi}}
-type {{methodName}}{{camelSingularResName}} struct {
+type {{@root.clazName}}{{methodName}}{{camelSingularResName}} struct {
 {{~else}}
-type {{methodName}}{{camelResName}} struct {
+type {{@root.clazName}}{{methodName}}{{camelResName}} struct {
 {{~/if}}
 {{{subParams}}}
 }
