@@ -12,9 +12,9 @@ declare module 'chargebee' {
   }{{#unless hasEmptyActionsAndSubResources}}
 
   export namespace {{name}} {
-    {{#if actions.length}}export class {{name}}Resource { {{#each actions}} {{#if description}}
+    {{#if actions.length}}export class {{name}}Resource { {{#each actions}} {{#if isDeprecated}}
       /**
-        * @description {{description}}
+        * @deprecated This method is deprecated and will be removed in a future version.
         */
       {{/if}}
       {{pascalCase name}}({{#each pathParameters}}{{#if @index}}, {{/if}}{{camelCaseToSnakeCase name}}:{{{type}}},{{/each}}{{#if hasQueryParameters}}input{{#if isAllQueryParamsOptional}}?{{/if}}:{{camelCase name}}InputParam,{{/if}}{{#if hasRequestBodyParameters}}input{{#if isAllRequestBodyParamsOptional}}?{{/if}}:{{camelCase name}}InputParam,{{/if}} headers?:ChargebeeRequestHeader):{{#with response}}Promise<ChargebeeResponse<{{camelCaseToPascalCase name}}>>{{/with}};{{#unless @last}}

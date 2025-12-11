@@ -732,6 +732,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
         )
 
         type Addon struct {
+        //Deprecated: this field is deprecated
         \tType   addonEnum.Type `json:"type"`
         \tObject string         `json:"object"`
         }

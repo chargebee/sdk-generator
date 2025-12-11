@@ -18,7 +18,8 @@ module ChargeBee
 {{/if}}{{#if isTimeMachine}}{{{includeFile "src/main/resources/templates/ruby/timeMachine.rb.hbs"}}}
 {{/if}}  # OPERATIONS
   #-----------
-{{#each actions}}
+{{#each actions}}{{#if isDeprecated}}
+  # @deprecated This method is deprecated and will be removed in a future version.{{/if}}
   def self.{{ camelCaseToSnakeCase name }}({{#if hasPathParameters}}id, {{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}params{{#and isAllRequestBodyParamsOptional isAllQueryParamsOptional}}={}{{/and}}, {{/or}}env=nil, headers={})
     jsonKeys = { {{#each jsonKeys}}{{#each this}}
         :{{@key}} => {{this}},

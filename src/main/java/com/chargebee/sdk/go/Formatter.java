@@ -12,6 +12,9 @@ public class Formatter {
     List<String> rows = List.of(input.split("\n"));
     List<String> output = new ArrayList<>();
     for (String row : rows) {
+      if (row.trim().startsWith("//")) {
+        continue;
+      }
       List<String> cols = List.of(row.split(delimiter));
       if (cols.size() < 2) continue;
       maxName = Math.max(maxName, cols.get(0).length());
@@ -20,6 +23,10 @@ public class Formatter {
     maxName = maxName + 1;
     maxType = maxType + 1;
     for (String row : rows) {
+      if (row.trim().startsWith("//")) {
+        output.add(row);
+        continue;
+      }
       List<String> cols = List.of(row.split(delimiter));
       if (cols.size() < 2) continue;
       output.add(

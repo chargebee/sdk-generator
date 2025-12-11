@@ -27,4 +27,5 @@ public @Data class Action {
   private String actionDocLink;
   List<Map<String, Integer>> jsonKeys;
   private boolean isIdempotent;
+  private boolean isDeprecated;
 }
