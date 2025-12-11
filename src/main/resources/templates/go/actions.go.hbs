@@ -23,7 +23,7 @@ type {{camelCaseToPascalCase name}}Service struct {
 }
 
 {{#each actions}}
-func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}req *{{camelCaseToPascalCase goParamName}}Request{{/or}}) {{#if isListResourceAction}}List{{/if}}Request {
+func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}req *{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Request{{/or}}) {{#if isListResourceAction}}List{{/if}}Request {
     return s.transport.Send{{#if isOperationNeedsJsonInput}}JsonRequest{{/if}}{{#if isListResourceAction}}List{{/if}}("{{httpRequestType}}", fmt.Sprintf("/{{urlPrefix}}{{#if hasPathParameters}}/%v{{/if}}{{#if urlSuffix}}/{{urlSuffix}}{{/if}}"{{#if hasPathParameters}}, url.PathEscape(id){{/if}}), {{#or hasRequestBodyParameters hasQueryParameters}}req{{else}}nil{{/or}}){{#if subDomain}}.SetSubDomain("{{subDomain}}"){{/if}}{{#if options.isIdempotent}}.SetIdempotency({{options.isIdempotent}}){{/if}}
 }
 {{/each}}

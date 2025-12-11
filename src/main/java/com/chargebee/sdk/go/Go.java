@@ -491,12 +491,14 @@ public class Go extends Language {
         subResourceList.add(sr);
       }
       goRes.setSubResources(subResourceList);
-
+      // operations
       List<com.chargebee.sdk.go.model.Operation> operations = new ArrayList<>();
       for (Action action : activeResource.getSortedAction()) {
         com.chargebee.sdk.go.model.Operation operation =
             new com.chargebee.sdk.go.model.Operation();
         List<InputSubResParam> inputSubResParamList = new ArrayList<>();
+        // System.out.println("action.name: " + action.name);
+        // System.out.println("activeResource.name: " + activeResource.name);
         operation.setClazName(toClazName(action.name, "Request"));
         operation.setHasInputParams(hasInputParams(action));
         operation.setInputParams(inputParams(action));
@@ -588,7 +590,6 @@ public class Go extends Language {
   }
 
   private String subParams(Attribute subParam) {
-    System.out.println("subParam: " + subParam.name);
     String type = "";
     StringJoiner buf = new StringJoiner("\n");
     for (Attribute attribute :
@@ -716,7 +717,7 @@ public class Go extends Language {
           continue;
         } else {
           m.put(attribute.name, 1);
-          type = "*" + firstCharUpper(action.name) + toCamelCase(singularize(attribute.name));
+          type = "*" + activeResource.name + firstCharUpper(action.name) + toCamelCase(singularize(attribute.name));
           if (attribute.isCompositeArrayRequestBody()) {
             type = "[]" + type;
           }
@@ -753,19 +754,20 @@ public class Go extends Language {
                       getJsonVal(attribute, req)));
       } else if (attribute.isEnumAttribute() && !attribute.isFilterAttribute()) {
         if (attribute.isListOfEnum()) {
-          type = "[]enum." + getListOfEnumTypeForAttribute(attribute);
+          type = getListOfEnumTypeForAttribute(attribute);
         } else if (attribute.isGenSeparate()) {
           type = Constants.ENUM_WITH_DELIMITER + toClazName(attribute.name);
         } else {
           type =
-              firstCharLower(toCamelCase(activeResource.name))
-                  + Constants.ENUM_DOT
+              // firstCharLower(toCamelCase(activeResource.name))
+              activeResource.name
+                  // + Constants.ENUM_DOT
                   + toClazName(attribute.name);
         }
         addEnumImport(type);
-        if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
-          type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
-        }
+        // if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
+        //   type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
+        // }
         buf.add(
             "\t"
                 + String.join(
@@ -835,27 +837,31 @@ public class Go extends Language {
     String type = "";
     List<Attribute> attributes = activeResource.getSortedResourceAttributes();
     for (Attribute a : attributes) {
-      if (a.isEnumAttribute()) {
+      if (a.isEnumAttribute()) {        
         if (a.isListOfEnum()) {
+          // System.out.println("listOfEnum: " + a.name);
           type = "[]" + Constants.ENUM_WITH_DELIMITER + getListOfEnumTypeForAttribute(a);
         } else if (a.isGenSeparate()) {
+          // System.out.println("genSeparate: " + a.name);
           type =
               Constants.ENUM_WITH_DELIMITER
                   + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
         } else {
           type =
-              getCamelClazName(activeResource.name)
-                  + Constants.ENUM_DOT
-                  + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
+          activeResource.name
+          // + Constants.ENUM_DOT
+          + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
+          // System.out.println("else: " + a.name + "," + activeResource.name + "," + type);
         }
         addEnumImport(type);
-        if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
-          type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
-        }
+        // if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
+        //   type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
+        // }
         buf.add("\t" + String.join(delimiter, toCamelCase(a.name), type, getJsonVal(a, true)));
       } else {
         if (a.isSubResource() && a.subResourceName() != null) {
           if (a.isListSubResourceAttribute() && !a.isDependentAttribute()) {
+            // System.out.println("listSubResourceAttribute: " + a.name);
             buf.add(
                 "\t"
                     + String.join(
@@ -864,6 +870,7 @@ public class Go extends Language {
                         dataType(a.schema, a.name),
                         getJsonVal(a, true)));
           } else {
+            // System.out.println("subResourceAttribute: " + a.name);
             buf.add(
                 "\t"
                     + String.join(
@@ -873,6 +880,7 @@ public class Go extends Language {
                         getJsonVal(a, true)));
           }
         } else {
+          // System.out.println("else: " + a.name);
           buf.add(
               "\t"
                   + String.join(
@@ -918,7 +926,7 @@ public class Go extends Language {
         if (attribute.isGenSeparate()) {
           type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
         } else if (attribute.isDependentAttribute()) {
-          type = activeResource.name + Constants.ENUM_DOT + attribute.name;
+          type = attribute.name;
         } else {
           if (attribute.isExternalEnum()) {
             if (attribute.getEnumApiName() == null
@@ -977,9 +985,9 @@ public class Go extends Language {
               };
         }
         addEnumImport(type);
-        if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
-          type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
-        }
+        // if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
+        //   type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
+        // }
         buf.add(
             "\t"
                 + String.join(
@@ -1060,15 +1068,19 @@ public class Go extends Language {
     }
 
     if (isListOfSubResourceSchema(schema)) {
+      System.out.println("dataType isListOfSubResourceSchema: " + attributeName + "," + activeResource.name);
       if (!getDependentResource(activeResource).isEmpty()) {
+        System.out.println("dataType isListOfSubResourceSchema not empty: " + attributeName + "," + activeResource.name);
         String dep =
             getCamelClazName(singularize(attributeName)).toLowerCase().replace("_", "") + ".";
         return "[]*" + dep + toCamelCase(singularize(attributeName));
       } else {
-        return "[]*" + toCamelCase(singularize(attributeName));
+        System.out.println("dataType isListOfSubResourceSchema empty: " + attributeName + "," + activeResource.name);
+        return "[]*" + activeResource.name + toCamelCase(singularize(attributeName));
       }
     }
     if (isSubResourceSchema(schema)) {
+      System.out.println("dataType isSubResourceSchema: " + attributeName + "," + activeResource.name);
       String dep = "";
       if (!getDependentResource(activeResource).isEmpty()) {
         if (schemaNamespaceIsLocal(schema)) {
