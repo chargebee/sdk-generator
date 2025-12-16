@@ -23,18 +23,41 @@ public class NodeV3 extends Language {
     List<FileOp> fileOps = new ArrayList<>();
     fileOps.add(generateApiEndpointsFile(outputDirectoryPath, resources));
     
-    // Generate webhook files (content, handler, auth)
+    // Generate webhook files (content, handler, auth, eventType)
     {
         Template contentTemplate = getTemplateContent("webhookContent");
         Template handlerTemplate = getTemplateContent("webhookHandler");
         Template authTemplate = getTemplateContent("webhookAuth");
+        Template eventTypesTemplate = getTemplateContent("webhookEventTypes");
         fileOps.addAll(
             WebhookGenerator.generate(
                 outputDirectoryPath, 
                 spec, 
                 contentTemplate, 
                 handlerTemplate,
-                authTemplate
+                authTemplate,
+                eventTypesTemplate
+            )
+        );
+    }
+    
+    // Generate entry point files (in parent directory of resources)
+    {
+        String parentDirectoryPath = outputDirectoryPath.replace("/resources", "");
+        Template esmTemplate = getTemplateContent("chargebeeEsm");
+        Template cjsTemplate = getTemplateContent("chargebeeCjs");
+        fileOps.add(
+            new FileOp.WriteString(
+                parentDirectoryPath,
+                "chargebee.esm.ts",
+                esmTemplate.apply("")
+            )
+        );
+        fileOps.add(
+            new FileOp.WriteString(
+                parentDirectoryPath,
+                "chargebee.cjs.ts",
+                cjsTemplate.apply("")
             )
         );
     }
@@ -44,12 +67,15 @@ public class NodeV3 extends Language {
 
   @Override
   protected Map<String, String> templatesDefinition() {
-    return Map.of(
-        "api_endpoints", "/templates/node/api_endpoints.ts.hbs",
-        "webhookContent", "/templates/node/webhook_content.ts.hbs",
-        "webhookHandler", "/templates/node/webhook_handler.ts.hbs",
-        "webhookAuth", "/templates/node/webhook_auth.ts.hbs"
-    );
+    var templates = new HashMap<String, String>();
+    templates.put("api_endpoints", "/templates/node/api_endpoints.ts.hbs");
+    templates.put("webhookContent", "/templates/node/webhook_content.ts.hbs");
+    templates.put("webhookHandler", "/templates/node/webhook_handler.ts.hbs");
+    templates.put("webhookAuth", "/templates/node/webhook_auth.ts.hbs");
+    templates.put("webhookEventTypes", "/templates/node/webhook_event_types.ts.hbs");
+    templates.put("chargebeeEsm", "/templates/node/chargebee_esm.ts.hbs");
+    templates.put("chargebeeCjs", "/templates/node/chargebee_cjs.ts.hbs");
+    return templates;
   }
 
   private FileOp generateApiEndpointsFile(String resourcesDirectoryPath, List<Resource> resources)

@@ -36,7 +36,8 @@ public class WebhookGenerator {
       Spec spec,
       Template contentTemplate,
       Template handlerTemplate,
-      Template authTemplate)
+      Template authTemplate,
+      Template eventTypesTemplate)
       throws IOException {
     final String webhookDirectoryPath = "/webhook";
     List<FileOp> fileOps = new ArrayList<>();
@@ -120,6 +121,19 @@ public class WebhookGenerator {
               outputDirectoryPath + webhookDirectoryPath,
               "auth.ts",
               authTemplate.apply("")
+          )
+        );
+    }
+
+    // eventType.ts
+    {
+        Map<String, Object> ctx = new HashMap<>();
+        ctx.put("events", events);
+        fileOps.add(
+          new FileOp.WriteString(
+              outputDirectoryPath + webhookDirectoryPath,
+              "eventType.ts",
+              eventTypesTemplate.apply(ctx)
           )
         );
     }
