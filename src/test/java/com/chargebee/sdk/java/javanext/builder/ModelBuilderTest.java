@@ -1227,10 +1227,11 @@ class ModelBuilderTest {
   class ConsentFieldsSupportTests {
 
     @Test
-    void shouldAddConsentFieldsMapToAllModels() throws IOException {
+    void shouldAddConsentFieldsMapWhenExtensionEnabled() throws IOException {
       ObjectSchema customerSchema = new ObjectSchema();
       customerSchema.addProperty("id", new StringSchema());
       customerSchema.addProperty("first_name", new StringSchema());
+      customerSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       openAPI.getComponents().addSchemas("Customer", customerSchema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -1252,6 +1253,7 @@ class ModelBuilderTest {
       ObjectSchema subscriptionSchema = new ObjectSchema();
       subscriptionSchema.addProperty("id", new StringSchema());
       subscriptionSchema.addProperty("status", new StringSchema());
+      subscriptionSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       openAPI.getComponents().addSchemas("Subscription", subscriptionSchema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -1268,6 +1270,7 @@ class ModelBuilderTest {
       ObjectSchema invoiceSchema = new ObjectSchema();
       invoiceSchema.addProperty("id", new StringSchema());
       invoiceSchema.addProperty("amount", new IntegerSchema());
+      invoiceSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       openAPI.getComponents().addSchemas("Invoice", invoiceSchema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -1288,6 +1291,7 @@ class ModelBuilderTest {
       planSchema.addProperty("id", new StringSchema());
       planSchema.addProperty("name", new StringSchema());
       planSchema.addProperty("price", new IntegerSchema());
+      planSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       openAPI.getComponents().addSchemas("Plan", planSchema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -1308,6 +1312,7 @@ class ModelBuilderTest {
       customerSchema.addProperty("email", new StringSchema());
       customerSchema.setAdditionalProperties(true);
       customerSchema.addExtension("x-cb-is-custom-fields-supported", true);
+      customerSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       openAPI.getComponents().addSchemas("Customer", customerSchema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -1331,7 +1336,8 @@ class ModelBuilderTest {
       ObjectSchema addressSchema = new ObjectSchema();
       addressSchema.addProperty("street", new StringSchema());
       addressSchema.addProperty("city", new StringSchema());
-      // Custom fields NOT enabled
+      // Custom fields NOT enabled, but consent fields enabled
+      addressSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       openAPI.getComponents().addSchemas("Address", addressSchema);
       modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -1349,12 +1355,13 @@ class ModelBuilderTest {
     }
 
     @Test
-    void shouldHandleConsentFieldsForAllResourceTypes() throws IOException {
+    void shouldHandleConsentFieldsOnlyWhenExtensionEnabled() throws IOException {
       List<String> resourceNames = List.of("Addon", "Coupon", "Feature", "Item", "Plan", "Quote");
 
       for (String resourceName : resourceNames) {
         ObjectSchema schema = new ObjectSchema();
         schema.addProperty("id", new StringSchema());
+        schema.addExtension("x-cb-is-consent-fields-supported", true);
         openAPI.getComponents().addSchemas(resourceName, schema);
       }
 
@@ -1367,6 +1374,24 @@ class ModelBuilderTest {
         assertThat(writeOp.fileContent)
             .contains("private java.util.Map<String, Object> consentFields");
       }
+    }
+
+    @Test
+    void shouldNotHaveConsentFieldsWhenExtensionNotEnabled() throws IOException {
+      ObjectSchema productSchema = new ObjectSchema();
+      productSchema.addProperty("id", new StringSchema());
+      productSchema.addProperty("name", new StringSchema());
+      // No consent fields extension
+
+      openAPI.getComponents().addSchemas("Product", productSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Product.java");
+      // Consent fields should NOT be present
+      assertThat(writeOp.fileContent).doesNotContain("consentFields");
+      assertThat(writeOp.fileContent).doesNotContain("getConsentFields()");
     }
   }
 

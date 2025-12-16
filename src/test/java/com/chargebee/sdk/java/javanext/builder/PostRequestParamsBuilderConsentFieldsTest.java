@@ -53,6 +53,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
       ObjectSchema requestSchema = new ObjectSchema();
       requestSchema.addProperty("first_name", new StringSchema());
       requestSchema.addProperty("email", new StringSchema());
+      requestSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       MediaType mediaType = new MediaType();
       mediaType.setSchema(requestSchema);
@@ -91,6 +92,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
     void shouldIncludeValidationForConsentFieldNames() throws IOException {
       ObjectSchema requestSchema = new ObjectSchema();
       requestSchema.addProperty("id", new StringSchema());
+      requestSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       MediaType mediaType = new MediaType();
       mediaType.setSchema(requestSchema);
@@ -128,6 +130,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
     void shouldSupportBulkConsentFieldsMethod() throws IOException {
       ObjectSchema requestSchema = new ObjectSchema();
       requestSchema.addProperty("email", new StringSchema());
+      requestSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       MediaType mediaType = new MediaType();
       mediaType.setSchema(requestSchema);
@@ -157,7 +160,8 @@ class PostRequestParamsBuilderConsentFieldsTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerUpdateParams.java");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerUpdateBuilder consentFields(Map<String, Object> consentFields)");
+          .contains(
+              "public CustomerUpdateBuilder consentFields(Map<String, Object> consentFields)");
       assertThat(writeOp.fileContent)
           .contains("for (Map.Entry<String, Object> entry : consentFields.entrySet())");
     }
@@ -166,6 +170,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
     void shouldSupportBooleanConsentFieldMethod() throws IOException {
       ObjectSchema requestSchema = new ObjectSchema();
       requestSchema.addProperty("name", new StringSchema());
+      requestSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       MediaType mediaType = new MediaType();
       mediaType.setSchema(requestSchema);
@@ -203,6 +208,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
     void shouldIncludeConsentFieldsInFormData() throws IOException {
       ObjectSchema requestSchema = new ObjectSchema();
       requestSchema.addProperty("id", new StringSchema());
+      requestSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       MediaType mediaType = new MediaType();
       mediaType.setSchema(requestSchema);
@@ -239,6 +245,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
     void shouldHaveConsentFieldsMapInBuilder() throws IOException {
       ObjectSchema requestSchema = new ObjectSchema();
       requestSchema.addProperty("name", new StringSchema());
+      requestSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       MediaType mediaType = new MediaType();
       mediaType.setSchema(requestSchema);
@@ -276,6 +283,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
     void shouldHaveConsentFieldsGetterInParams() throws IOException {
       ObjectSchema requestSchema = new ObjectSchema();
       requestSchema.addProperty("email", new StringSchema());
+      requestSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       MediaType mediaType = new MediaType();
       mediaType.setSchema(requestSchema);
@@ -309,12 +317,12 @@ class PostRequestParamsBuilderConsentFieldsTest {
     }
 
     @Test
-    void shouldSupportConsentFieldsEvenWithoutRequestSchema() throws IOException {
+    void shouldNotHaveConsentFieldsWithoutRequestSchema() throws IOException {
       Operation postOp = new Operation();
       postOp.setOperationId("trigger");
       postOp.addExtension(Extension.OPERATION_METHOD_NAME, "trigger");
       postOp.addExtension(Extension.RESOURCE_ID, "workflow");
-      // No request body
+      // No request body - consent fields support cannot be determined
 
       PathItem pathItem = new PathItem();
       pathItem.setPost(postOp);
@@ -328,9 +336,9 @@ class PostRequestParamsBuilderConsentFieldsTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "WorkflowTriggerParams.java");
-      // Consent fields should still be available even without request schema
-      assertThat(writeOp.fileContent).contains("consentField");
-      assertThat(writeOp.fileContent).contains("consentFields");
+      // Consent fields should NOT be available without consent fields extension
+      assertThat(writeOp.fileContent).doesNotContain("consentField(");
+      assertThat(writeOp.fileContent).doesNotContain("consentFields(");
     }
   }
 
@@ -344,6 +352,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
       requestSchema.addProperty("name", new StringSchema());
       requestSchema.setAdditionalProperties(true);
       requestSchema.addExtension("x-cb-is-custom-fields-supported", true);
+      requestSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       MediaType mediaType = new MediaType();
       mediaType.setSchema(requestSchema);
@@ -386,7 +395,8 @@ class PostRequestParamsBuilderConsentFieldsTest {
     void shouldSupportConsentFieldsEvenWhenCustomFieldsNotEnabled() throws IOException {
       ObjectSchema requestSchema = new ObjectSchema();
       requestSchema.addProperty("name", new StringSchema());
-      // Custom fields NOT enabled
+      // Custom fields NOT enabled, but consent fields enabled
+      requestSchema.addExtension("x-cb-is-consent-fields-supported", true);
 
       MediaType mediaType = new MediaType();
       mediaType.setSchema(requestSchema);
@@ -432,4 +442,3 @@ class PostRequestParamsBuilderConsentFieldsTest {
         .orElseThrow(() -> new AssertionError("File not found: " + fileName));
   }
 }
-

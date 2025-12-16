@@ -66,6 +66,7 @@ public class ModelBuilder {
       model.setEnumFields(getEnumFields(entry.getValue()));
       model.setSubModels(getSubModels(entry.getValue()));
       model.setCustomFieldsSupported(SchemaUtil.isCustomFieldsSupported(entry.getValue()));
+      model.setConsentFieldsSupported(SchemaUtil.isConsentFieldsSupported(entry.getValue()));
       var content = template.apply(model);
       var formattedContent = JavaFormatter.formatSafely(content);
 

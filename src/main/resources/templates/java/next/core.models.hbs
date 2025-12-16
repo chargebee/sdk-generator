@@ -24,7 +24,8 @@ public class {{name}} {
 private {{{type}}} {{name}};{{/each}}
 {{#if customFieldsSupported}}
 private java.util.Map<String, Object> customFields = new java.util.HashMap<>();{{/if}}
-private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
+{{#if consentFieldsSupported}}
+private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();{{/if}}
 {{#each fields}}
 {{#if deprecated}}
 @Deprecated
@@ -53,6 +54,7 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
     return customFields.get(fieldName);
   }
 {{/if}}
+{{#if consentFieldsSupported}}
   /**
    * Returns a map of consent fields. Consent fields are dynamic boolean/option properties
    * that follow the pattern cs_* (e.g., cs_marketing_consent).
@@ -86,6 +88,7 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
     }
     return null;
   }
+{{/if}}
 {{#each enumFields}}
   public enum {{name}} {
     {{#each values}}
@@ -119,11 +122,19 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
 {{/each}}
  public static {{name}} fromJson(String json) {
   {{name}} obj = new {{name}}();
-  // Parse JSON to extract all keys for custom/consent field extraction
+  {{#if customFieldsSupported}}
+  // Parse JSON to extract all keys for custom field extraction
   java.util.Set<String> knownFields = new java.util.HashSet<>();
   {{#each fields}}
   knownFields.add("{{curlName}}");
   {{/each}}
+  {{else if consentFieldsSupported}}
+  // Parse JSON to extract all keys for consent field extraction
+  java.util.Set<String> knownFields = new java.util.HashSet<>();
+  {{#each fields}}
+  knownFields.add("{{curlName}}");
+  {{/each}}
+  {{/if}}
 
   {{#each fields}}
   {{#if isMapType}}
@@ -171,8 +182,10 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
   // Extract custom fields (fields starting with cf_)
   obj.customFields = extractCustomFields(json, knownFields);
   {{/if}}
+  {{#if consentFieldsSupported}}
   // Extract consent fields (fields starting with cs_)
   obj.consentFields = extractConsentFields(json, knownFields);
+  {{/if}}
   return obj;
  }
 {{#if customFieldsSupported}}
@@ -205,6 +218,7 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
   return customFields;
  }
 {{/if}}
+{{#if consentFieldsSupported}}
 
  /**
   * Helper method to extract consent fields from JSON.
@@ -234,6 +248,7 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
   }
   return consentFields;
  }
+{{/if}}
 
 {{#each subModels}}
   public static class {{name}} {

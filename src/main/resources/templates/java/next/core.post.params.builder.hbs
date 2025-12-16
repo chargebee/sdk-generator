@@ -35,7 +35,9 @@ public final class {{name}}Params {
     {{#if customFieldsSupported}}
     private final Map<String, Object> customFields;
     {{/if}}
+    {{#if consentFieldsSupported}}
     private final Map<String, Object> consentFields;
+    {{/if}}
 
     private {{name}}Params({{name}}Builder builder) {
         {{#each fields}}
@@ -44,7 +46,9 @@ public final class {{name}}Params {
         {{#if customFieldsSupported}}
         this.customFields = builder.customFields.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.customFields));
         {{/if}}
+        {{#if consentFieldsSupported}}
         this.consentFields = builder.consentFields.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.consentFields));
+        {{/if}}
     }
 
     {{#each fields}}
@@ -57,9 +61,11 @@ public final class {{name}}Params {
         return customFields;
     }
     {{/if}}
+    {{#if consentFieldsSupported}}
     public Map<String, Object> consentFields() {
         return consentFields;
     }
+    {{/if}}
 
     /**
      * Get the form data for this request.
@@ -109,7 +115,9 @@ public final class {{name}}Params {
         {{#if customFieldsSupported}}
         formData.putAll(customFields);
         {{/if}}
+        {{#if consentFieldsSupported}}
         formData.putAll(consentFields);
+        {{/if}}
 
         return formData;
     }
@@ -129,7 +137,9 @@ public final class {{name}}Params {
         {{#if customFieldsSupported}}
         private Map<String, Object> customFields = new LinkedHashMap<>();
         {{/if}}
+        {{#if consentFieldsSupported}}
         private Map<String, Object> consentFields = new LinkedHashMap<>();
+        {{/if}}
 
         private {{name}}Builder() {}
 
@@ -177,6 +187,7 @@ public final class {{name}}Params {
             return this;
         }
         {{/if}}
+        {{#if consentFieldsSupported}}
 
         /**
          * Add a consent field to the request. Consent fields must start with "cs_".
@@ -229,6 +240,7 @@ public final class {{name}}Params {
             }
             return this;
         }
+        {{/if}}
 
         public {{name}}Params build() {
             return new {{name}}Params(this);

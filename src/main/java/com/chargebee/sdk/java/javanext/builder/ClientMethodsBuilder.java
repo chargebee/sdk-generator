@@ -1,6 +1,7 @@
 package com.chargebee.sdk.java.javanext.builder;
 
 import com.chargebee.handlebar.Inflector;
+import com.chargebee.openapi.Extension;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.java.javanext.JavaFormatter;
 import com.github.jknack.handlebars.Template;
@@ -31,7 +32,6 @@ public class ClientMethodsBuilder {
   private static final String CLIENT_SUBDIR = "/com/chargebee/v4/client";
   private static final String KEY_SERVICES = "services";
   private static final String KEY_IMPORTS = "imports";
-  private static final String CB_RESOURCE_ID_EXT = "x-cb-resource-id";
   private static final String CLIENT_METHODS_FILENAME = "ClientMethods.java";
   private static final String CLIENT_METHODS_IMPL_FILENAME = "ClientMethodsImpl.java";
 
@@ -147,7 +147,7 @@ public class ClientMethodsBuilder {
           continue;
         }
 
-        Object resourceIdObj = operation.getExtensions().get(CB_RESOURCE_ID_EXT);
+        Object resourceIdObj = operation.getExtensions().get(Extension.RESOURCE_ID);
         if (resourceIdObj != null) {
           resourcesWithOperations.add(resourceIdObj.toString());
         }

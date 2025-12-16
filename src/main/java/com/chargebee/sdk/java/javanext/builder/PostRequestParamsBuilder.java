@@ -99,12 +99,15 @@ public class PostRequestParamsBuilder {
             dedupeAndPrefixSubModels(postAction.getModule(), subModels, postAction.getFields());
             postAction.setSubModels(subModels);
             postAction.setCustomFieldsSupported(SchemaUtil.isCustomFieldsSupported(requestSchema));
+            postAction.setConsentFieldsSupported(
+                SchemaUtil.isConsentFieldsSupported(requestSchema));
           } else {
             // No usable request schema - generate empty params class
             postAction.setFields(new ArrayList<>());
             postAction.setEnumFields(new ArrayList<>());
             postAction.setSubModels(new ArrayList<>());
             postAction.setCustomFieldsSupported(false);
+            postAction.setConsentFieldsSupported(false);
           }
 
           var content = template.apply(postAction);
@@ -495,6 +498,7 @@ public class PostRequestParamsBuilder {
     private List<EnumFields> enumFields;
     private List<Model> subModels;
     private boolean customFieldsSupported;
+    private boolean consentFieldsSupported;
 
     public String getName() {
       String opSnake = CaseFormatUtil.toSnakeCaseSafe(getOperationId());
