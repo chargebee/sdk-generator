@@ -818,11 +818,15 @@ public class Go extends Language {
         resourceAssistEnums.stream()
             .map(e -> this.resourceEnumTemplate(e, resourceName))
             .filter(m -> !m.isEmpty())
+            // remove duplicate enums
+            .distinct()
             .toList();
     List<Map<String, Object>> schemalessEnum =
         schemaLessEnums.stream()
             .map(e -> this.resourceEnumTemplate(e, resourceName))
             .filter(m -> !m.isEmpty())
+            // remove duplicate enums
+            .distinct()
             .toList();
 
     for (var _enum : enums) {
