@@ -32,12 +32,11 @@ public class SchemaLessEnumParser {
           atter.add(attribute);
           atter.forEach(
               value -> {
-                if (!(value.isEnumAttribute() || value.isGlobalEnumAttribute())) {
+                if (!(value.isEnumAttribute())) {
                   return;
                 }
                 if (!value.isNotHiddenAttribute()) return;
-                if (value.isGlobalEnumAttribute()
-                    || (value.isDeprecated() && value.isEnumAttribute())) {
+                if ((value.isDeprecated() && value.isEnumAttribute())) {
                   return;
                 }
                 boolean isResourceLevelEnum =

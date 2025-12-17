@@ -27,13 +27,14 @@ public class ResourceAssist {
         .toList();
   }
 
-  public List<Enum> enumsHelper() {
+  public List<Enum> enumsHelper(boolean includeGlobals) {
     List<Enum> enums =
         new java.util.ArrayList<>(
             new java.util.ArrayList<>(
                 this.resource.attributes().stream()
                     .filter(Attribute::isNotHiddenAttribute)
-                    .filter(attr -> !attr.isGlobalEnumAttribute() && attr.isEnumAttribute())
+                    // .filter(attr -> attr.isEnumAttribute() && (includeGlobals ? true : !attr.isGlobalEnumAttribute()))
+                    .filter(attr -> attr.isEnumAttribute())
                     .map(attr -> new Enum(attr.name, attr.getSchema()))
                     .toList()));
 
@@ -41,7 +42,7 @@ public class ResourceAssist {
   }
 
   public List<Enum> enums() {
-    List<Enum> enums = enumsHelper();
+    List<Enum> enums = enumsHelper(false);
 
     for (Attribute attribute : this.resource.attributes()) {
       for (Attribute subAttribute :
@@ -67,7 +68,7 @@ public class ResourceAssist {
   }
 
   public List<Enum> pyEnums() {
-    List<Enum> enums = enumsHelper();
+    List<Enum> enums = enumsHelper(false);
 
     for (Attribute attribute : this.resource.attributes()) {
       if (!attribute.isNotHiddenAttribute()) continue;
@@ -84,6 +85,32 @@ public class ResourceAssist {
             new Enum(
                 singularize(subResSnakeCaseName) + "_" + subAttribute.name,
                 subAttribute.getSchema()));
+      }
+    }
+    return enums;
+  }
+
+  public List<Enum> goEnums() {
+    List<Enum> enums = enumsHelper(true);
+
+    for (Attribute attribute : this.resource.attributes()) {
+      for (Attribute subAttribute :
+          attribute.attributes().stream()
+              .filter(Attribute::isNotHiddenAttribute)
+              .filter(attr -> attr.isEnumAttribute())
+              .toList()) {
+
+        String enumName = singularize(attribute.name) + "_" + subAttribute.name;
+        String attributeName = attribute.name;
+        String attributeType = attribute.subResourceName();
+
+        if (!attributeType.equals(toCamelCase(singularize(attributeName)))) {
+          enumName =
+              singularize(CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, (attributeType)))
+                  + "_"
+                  + subAttribute.name;
+        }
+        enums.add(new Enum(enumName, subAttribute.getSchema()));
       }
     }
     return enums;

@@ -69,7 +69,7 @@ public class ResponseParser {
         && operationResponse.getListResponse().isEmpty()) {
       type = "[]" + type;
     } else {
-      type = "[]*" + actionNameInPascalCase() + activeResourceName + "Response";
+      type = "[]*" + activeResourceName + actionNameInPascalCase() + activeResourceName + "Response";
     }
     return "\t"
         + String.join(

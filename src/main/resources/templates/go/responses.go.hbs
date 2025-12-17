@@ -1,10 +1,12 @@
 {{#each operations}}
 {{#if operationResponses.subResponseClassName}}
+// operation sub response
 type {{@root.clazName}}{{ operationResponses.subResponseClassName }} struct {
 {{{ operationResponses.subResponseParams }}}
 }
 {{/if}}
 
+// operation response
 type {{@root.clazName}}{{ operationResponses.className }} struct {
 {{{ operationResponses.responseParams }}}
 }

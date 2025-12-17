@@ -20,13 +20,12 @@ type {{@root.clazName}}{{clazName}} struct {
 {{~/if}}
 }
 {{~/if}}
-// input sub resource params
-// multi
 {{~#each inputSubResParams}}
 {{~#if multi}}
+// input sub resource params multi
 type {{@root.clazName}}{{methodName}}{{camelSingularResName}} struct {
 {{~else}}
-// single
+// input sub resource params single
 type {{@root.clazName}}{{methodName}}{{camelResName}} struct {
 {{~/if}}
 {{{subParams}}}

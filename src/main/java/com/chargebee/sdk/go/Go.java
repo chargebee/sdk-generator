@@ -51,7 +51,6 @@ public class Go extends Language {
 
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
-    var globalEnums = spec.globalEnums();
     var resources =
         spec.resources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
@@ -60,10 +59,8 @@ public class Go extends Language {
     List<FileOp> fileOps = new ArrayList<>();
 
     fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, ""));
-    fileOps.add(generateGlobalEnumFiles(outputDirectoryPath, globalEnums));
     fileOps.addAll(generateServices(outputDirectoryPath, resources));
-    // // fileOps.add(generateResultFile(outputDirectoryPath, resources));
-    fileOps.addAll(genModels(outputDirectoryPath, resources));
+    fileOps.addAll(genModels(outputDirectoryPath, resources, spec));
     return fileOps;
   }
 
@@ -149,62 +146,62 @@ public class Go extends Language {
     if (hasJSONObjectCols(activeResource)) {
       buf.add("\t\"encoding/json\"");
     }
-    if (hasExternalEnumCols(activeResource)) {
-      buf.add("\t\"github.com/chargebee/chargebee-go/v3/enum\"");
-    }
-    if (!getOperRequestClasses(activeResource).isEmpty()
-        && (hasFilterParams() || isExportResource())) {
-      buf.add("\t\"github.com/chargebee/chargebee-go/v3/filter\"");
-    }
-    if (!getDependentResource(activeResource).isEmpty()) {
-      for (Attribute dr : getDependentResource(activeResource)) {
-        var refModelName = singularize(dr.name.replace("_", ""));
-        if (dr.isDependentAttribute()
-            && resourceList.stream().noneMatch(r -> r.id.contains(singularize(dr.name)))) {
-          if (dr.subResourceName() != null) {
-            refModelName = dr.subResourceName().toLowerCase();
-          } else {
-            refModelName = refModelName.replace(activeResource.id, "");
-          }
-        }
-        buf.add("\t\"github.com/chargebee/chargebee-go/v3/" + refModelName + "\"");
-      }
-    }
-    if (!getSubResource(activeResource).isEmpty()) {
-      for (Attribute sr : getSubResource(activeResource)) {
-        for (Attribute nestedSubRes :
-            sr.attributes().stream()
-                .filter(
-                    (attr ->
-                        attr.isDependentAttribute()
-                            || attr.isGlobalResourceReference()
-                                && attr.name != "error_detail")) // error detail is handled below
-                .toList()) {
-          buf.add(
-              "\t\"github.com/chargebee/chargebee-go/v3/"
-                  + singularize(nestedSubRes.name.replace("_", "").toLowerCase())
-                  + "\"");
-        }
-      }
-    }
-    if (activeResource.name.equalsIgnoreCase("PaymentIntent")) {
-      buf.add("\t\"github.com/chargebee/chargebee-go/v3/gatewayerrordetail\"");
-    }
-    String currentPkg =
-        CaseFormat.UPPER_CAMEL
-            .to(CaseFormat.LOWER_UNDERSCORE, activeResource.name)
-            .replace("_", "");
-    consolidatedEnum.forEach(
-        a -> {
-          if (!getCamelClazName(a).toLowerCase().equals(currentPkg)) {
-            buf.add(
-                "\t"
-                    + getCamelClazName(a)
-                    + Constants.ENUM_MODEL_IMPORT
-                    + getCamelClazName(a).toLowerCase()
-                    + Constants.ENUM);
-          }
-        });
+    // if (hasExternalEnumCols(activeResource)) {
+    //   buf.add("\t\"github.com/chargebee/chargebee-go/v3/enum\"");
+    // }
+    // if (!getOperRequestClasses(activeResource).isEmpty()
+    //     && (hasFilterParams() || isExportResource())) {
+    //   buf.add("\t\"github.com/chargebee/chargebee-go/v3/filter\"");
+    // }
+    // if (!getDependentResource(activeResource).isEmpty()) {
+    //   for (Attribute dr : getDependentResource(activeResource)) {
+    //     var refModelName = singularize(dr.name.replace("_", ""));
+    //     if (dr.isDependentAttribute()
+    //         && resourceList.stream().noneMatch(r -> r.id.contains(singularize(dr.name)))) {
+    //       if (dr.subResourceName() != null) {
+    //         refModelName = dr.subResourceName().toLowerCase();
+    //       } else {
+    //         refModelName = refModelName.replace(activeResource.id, "");
+    //       }
+    //     }
+    //     buf.add("\t\"github.com/chargebee/chargebee-go/v3/" + refModelName + "\"");
+    //   }
+    // }
+    // if (!getSubResource(activeResource).isEmpty()) {
+    //   for (Attribute sr : getSubResource(activeResource)) {
+    //     for (Attribute nestedSubRes :
+    //         sr.attributes().stream()
+    //             .filter(
+    //                 (attr ->
+    //                     attr.isDependentAttribute()
+    //                         || attr.isGlobalResourceReference()
+    //                             && attr.name != "error_detail")) // error detail is handled below
+    //             .toList()) {
+    //       buf.add(
+    //           "\t\"github.com/chargebee/chargebee-go/v3/"
+    //               + singularize(nestedSubRes.name.replace("_", "").toLowerCase())
+    //               + "\"");
+    //     }
+    //   }
+    // }
+    // if (activeResource.name.equalsIgnoreCase("PaymentIntent")) {
+    //   buf.add("\t\"github.com/chargebee/chargebee-go/v3/gatewayerrordetail\"");
+    // }
+    // String currentPkg =
+    //     CaseFormat.UPPER_CAMEL
+    //         .to(CaseFormat.LOWER_UNDERSCORE, activeResource.name)
+    //         .replace("_", "");
+    // consolidatedEnum.forEach(
+    //     a -> {
+    //       if (!getCamelClazName(a).toLowerCase().equals(currentPkg)) {
+    //         buf.add(
+    //             "\t"
+    //                 + getCamelClazName(a)
+    //                 + Constants.ENUM_MODEL_IMPORT
+    //                 + getCamelClazName(a).toLowerCase()
+    //                 + Constants.ENUM);
+    //       }
+    //     });
     if (buf.toString().isEmpty()) {
       return "";
     } else {
@@ -417,7 +414,7 @@ public class Go extends Language {
     var _enum = new GlobalEnum(e);
     _enum.setResourceName(resourceName);
     return _enum.template();
-  }  
+  }
 
   private List<FileOp> generateServices(
       String outputDirectoryPath, List<Resource> resources) throws IOException {
@@ -451,28 +448,31 @@ public class Go extends Language {
     return fileOps;
   }
 
-  private List<FileOp> genModels(String outputDirectoryPath, List<Resource> resources)
+  private List<FileOp> genModels(String outputDirectoryPath, List<Resource> resources, Spec spec)
       throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
-    
+
     Template modelTemplate = getTemplateContent("models");
     Template responseTemplate = getTemplateContent("responses");
     for (var res : resources) {
       if (SDK_DEBUG && !DEBUG_RESOURCE.contains(res.name)) continue;
+      activeResource = res;
 
       StringBuffer buf = new StringBuffer(Constants.ROOT_PACKAGE);
-      String resourceDirName =
-          CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_", "");
-      
+      buf.append(getImportFiles());
+      // String resourceDirName =
+      //     CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_", "");
+
       // enums
-      // fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, resourceDirName));
-      List<Enum> resourceAssistEnums = new ResourceAssist().setResource(res).enums();
+      List<Enum> resourceAssistEnums = new ResourceAssist().setResource(res).goEnums();
       List<Enum> schemaLessEnums = SchemaLessEnumParser.getSchemalessEnum(res, resourceList);
       if (!resourceAssistEnums.isEmpty() || !schemaLessEnums.isEmpty()) {
         buf.append(genModelEnums(res.name, resourceAssistEnums, schemaLessEnums));
       }
-      activeResource = res;
+
+
       enumImport.clear();
+      // main resource
       com.chargebee.sdk.go.model.Resource goRes = new com.chargebee.sdk.go.model.Resource();
       goRes.setPkgName(
           CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_", ""));
@@ -491,14 +491,13 @@ public class Go extends Language {
         subResourceList.add(sr);
       }
       goRes.setSubResources(subResourceList);
+
       // operations
       List<com.chargebee.sdk.go.model.Operation> operations = new ArrayList<>();
       for (Action action : activeResource.getSortedAction()) {
         com.chargebee.sdk.go.model.Operation operation =
             new com.chargebee.sdk.go.model.Operation();
         List<InputSubResParam> inputSubResParamList = new ArrayList<>();
-        // System.out.println("action.name: " + action.name);
-        // System.out.println("activeResource.name: " + activeResource.name);
         operation.setClazName(toClazName(action.name, "Request"));
         operation.setHasInputParams(hasInputParams(action));
         operation.setInputParams(inputParams(action));
@@ -534,6 +533,9 @@ public class Go extends Language {
       }
       goRes.setOperations(operations);
       goRes.setImportFiles(getImportFiles());
+      // if (goRes.getImportFiles() != null && !goRes.getImportFiles().isEmpty()) {
+      //   buf.insert(0, goRes.getImportFiles());
+      // }
       goRes.setResponseImports(getResponseImports(res));
       ObjectMapper oMapper = new ObjectMapper();
       // models and enums
@@ -712,6 +714,7 @@ public class Go extends Language {
             .withOnlyPagination(true)
             .withFilterSubResource(true);
     for (Attribute attribute : actionAssist.getAllAttribute()) {
+      if (attribute.isDeprecated()) continue;
       if (attribute.isSubResource() || attribute.isCompositeArrayRequestBody()) {
         if (m.containsKey(attribute.name)) {
           continue;
@@ -756,7 +759,7 @@ public class Go extends Language {
         if (attribute.isListOfEnum()) {
           type = getListOfEnumTypeForAttribute(attribute);
         } else if (attribute.isGenSeparate()) {
-          type = Constants.ENUM_WITH_DELIMITER + toClazName(attribute.name);
+          type = activeResource.name + toClazName(attribute.name);
         } else {
           type =
               // firstCharLower(toCamelCase(activeResource.name))
@@ -837,31 +840,25 @@ public class Go extends Language {
     String type = "";
     List<Attribute> attributes = activeResource.getSortedResourceAttributes();
     for (Attribute a : attributes) {
-      if (a.isEnumAttribute()) {        
+      if (a.isDeprecated()) continue;
+      if (a.isEnumAttribute()) {
         if (a.isListOfEnum()) {
-          // System.out.println("listOfEnum: " + a.name);
           type = "[]" + Constants.ENUM_WITH_DELIMITER + getListOfEnumTypeForAttribute(a);
         } else if (a.isGenSeparate()) {
-          // System.out.println("genSeparate: " + a.name);
           type =
-              Constants.ENUM_WITH_DELIMITER
+              activeResource.name
                   + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
         } else {
           type =
           activeResource.name
           // + Constants.ENUM_DOT
           + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
-          // System.out.println("else: " + a.name + "," + activeResource.name + "," + type);
         }
         addEnumImport(type);
-        // if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
-        //   type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
-        // }
         buf.add("\t" + String.join(delimiter, toCamelCase(a.name), type, getJsonVal(a, true)));
       } else {
         if (a.isSubResource() && a.subResourceName() != null) {
           if (a.isListSubResourceAttribute() && !a.isDependentAttribute()) {
-            // System.out.println("listSubResourceAttribute: " + a.name);
             buf.add(
                 "\t"
                     + String.join(
@@ -870,7 +867,6 @@ public class Go extends Language {
                         dataType(a.schema, a.name),
                         getJsonVal(a, true)));
           } else {
-            // System.out.println("subResourceAttribute: " + a.name);
             buf.add(
                 "\t"
                     + String.join(
@@ -880,7 +876,6 @@ public class Go extends Language {
                         getJsonVal(a, true)));
           }
         } else {
-          // System.out.println("else: " + a.name);
           buf.add(
               "\t"
                   + String.join(
@@ -922,9 +917,10 @@ public class Go extends Language {
     List<Attribute> attributes =
         subResource.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList();
     for (Attribute attribute : attributes) {
+      System.out.println("attribute: " + attribute.name + "," + activeResource.name + "," + subResource.name + "," + attribute.isEnumAttribute() + "," + attribute.isGenSeparate() + "," + attribute.isDependentAttribute() + "," + attribute.isExternalEnum());
       if (attribute.isEnumAttribute()) {
         if (attribute.isGenSeparate()) {
-          type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+          type = activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name);
         } else if (attribute.isDependentAttribute()) {
           type = attribute.name;
         } else {
@@ -1068,19 +1064,19 @@ public class Go extends Language {
     }
 
     if (isListOfSubResourceSchema(schema)) {
-      System.out.println("dataType isListOfSubResourceSchema: " + attributeName + "," + activeResource.name);
+      // System.out.println("dataType isListOfSubResourceSchema: " + attributeName + "," + activeResource.name);
       if (!getDependentResource(activeResource).isEmpty()) {
-        System.out.println("dataType isListOfSubResourceSchema not empty: " + attributeName + "," + activeResource.name);
+        // System.out.println("dataType isListOfSubResourceSchema not empty: " + attributeName + "," + activeResource.name);
         String dep =
             getCamelClazName(singularize(attributeName)).toLowerCase().replace("_", "") + ".";
         return "[]*" + dep + toCamelCase(singularize(attributeName));
       } else {
-        System.out.println("dataType isListOfSubResourceSchema empty: " + attributeName + "," + activeResource.name);
+        // System.out.println("dataType isListOfSubResourceSchema empty: " + attributeName + "," + activeResource.name);
         return "[]*" + activeResource.name + toCamelCase(singularize(attributeName));
       }
     }
     if (isSubResourceSchema(schema)) {
-      System.out.println("dataType isSubResourceSchema: " + attributeName + "," + activeResource.name);
+      // System.out.println("dataType isSubResourceSchema: " + attributeName + "," + activeResource.name);
       String dep = "";
       if (!getDependentResource(activeResource).isEmpty()) {
         if (schemaNamespaceIsLocal(schema)) {
