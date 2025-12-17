@@ -217,6 +217,9 @@ public class SimpleGetResponseBuilder {
       Schema<?> schema, String module, List<Imports> importsAccumulator) {
     schema = resolveEffectiveSchema(schema);
     var fields = new ArrayList<Field>();
+    var requiredFields = schema != null && schema.getRequired() != null 
+        ? new java.util.HashSet<>(schema.getRequired()) 
+        : new java.util.HashSet<String>();
     if (schema == null || schema.getProperties() == null || schema.getProperties().isEmpty()) {
       // Fallback: some external specs omit properties but mark required ["<resource>"]
       // Infer a single field named after the resource id and reference the corresponding model.
@@ -270,6 +273,7 @@ public class SimpleGetResponseBuilder {
       var fieldType = TypeMapper.getJavaType(fieldName, fieldSchema);
       var field = new Field();
       field.setName(fieldName);
+      field.setRequired(requiredFields.contains(fieldName));
       if (fieldType instanceof ListType) {
         field.setName(fieldName);
         // Check if the list items have a $ref

@@ -198,9 +198,9 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerUpdateParams.java");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerUpdateBuilder customFields(Map<String, Object> customFields)");
+          .contains("public CustomerUpdateBuilder customFields(Map<String, String> customFields)");
       assertThat(writeOp.fileContent)
-          .contains("for (Map.Entry<String, Object> entry : customFields.entrySet())");
+          .contains("for (Map.Entry<String, String> entry : customFields.entrySet())");
     }
 
     @Test

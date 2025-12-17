@@ -24,6 +24,7 @@ public class Field {
   private List<String> sortableFields = new ArrayList<>();
   private boolean subModelField;
   private boolean compositeArrayField;
+  private boolean required;
 
   public String getName() {
     if (name == null) return null;

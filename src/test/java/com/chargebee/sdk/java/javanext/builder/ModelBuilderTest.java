@@ -904,10 +904,10 @@ class ModelBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "Customer.java");
       assertThat(writeOp.fileContent).contains("public class Customer");
       assertThat(writeOp.fileContent)
-          .contains("private java.util.Map<String, Object> customFields");
+          .contains("private java.util.Map<String, String> customFields");
       assertThat(writeOp.fileContent)
-          .contains("public java.util.Map<String, Object> getCustomFields()");
-      assertThat(writeOp.fileContent).contains("public Object getCustomField(String fieldName)");
+          .contains("public java.util.Map<String, String> getCustomFields()");
+      assertThat(writeOp.fileContent).contains("public String getCustomField(String fieldName)");
     }
 
     @Test
@@ -943,7 +943,7 @@ class ModelBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "Invoice.java");
       assertThat(writeOp.fileContent)
-          .contains("private static java.util.Map<String, Object> extractCustomFields");
+          .contains("private static java.util.Map<String, String> extractCustomFields");
       assertThat(writeOp.fileContent)
           .contains("obj.customFields = extractCustomFields(json, knownFields)");
       assertThat(writeOp.fileContent).contains("key.startsWith(\"cf_\")");
@@ -981,7 +981,7 @@ class ModelBuilderTest {
       for (String modelName : supportedModels) {
         FileOp.WriteString writeOp = findWriteOp(fileOps, modelName + ".java");
         assertThat(writeOp.fileContent)
-            .contains("private java.util.Map<String, Object> customFields");
+            .contains("private java.util.Map<String, String> customFields");
       }
     }
 

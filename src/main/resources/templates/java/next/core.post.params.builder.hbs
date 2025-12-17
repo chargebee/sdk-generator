@@ -33,7 +33,7 @@ public final class {{name}}Params {
     private final {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{name}};
     {{/each}}
     {{#if customFieldsSupported}}
-    private final Map<String, Object> customFields;
+    private final Map<String, String> customFields;
     {{/if}}
     {{#if consentFieldsSupported}}
     private final Map<String, Object> consentFields;
@@ -57,7 +57,7 @@ public final class {{name}}Params {
     }
     {{/each}}
     {{#if customFieldsSupported}}
-    public Map<String, Object> customFields() {
+    public Map<String, String> customFields() {
         return customFields;
     }
     {{/if}}
@@ -135,7 +135,7 @@ public final class {{name}}Params {
         private {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{name}};
         {{/each}}
         {{#if customFieldsSupported}}
-        private Map<String, Object> customFields = new LinkedHashMap<>();
+        private Map<String, String> customFields = new LinkedHashMap<>();
         {{/if}}
         {{#if consentFieldsSupported}}
         private Map<String, Object> consentFields = new LinkedHashMap<>();
@@ -160,7 +160,7 @@ public final class {{name}}Params {
          * @return this builder
          * @throws IllegalArgumentException if fieldName doesn't start with "cf_"
          */
-        public {{name}}Builder customField(String fieldName, Object value) {
+        public {{name}}Builder customField(String fieldName, String value) {
             if (fieldName == null || !fieldName.startsWith("cf_")) {
                 throw new IllegalArgumentException("Custom field name must start with 'cf_'");
             }
@@ -175,9 +175,9 @@ public final class {{name}}Params {
          * @return this builder
          * @throws IllegalArgumentException if any field name doesn't start with "cf_"
          */
-        public {{name}}Builder customFields(Map<String, Object> customFields) {
+        public {{name}}Builder customFields(Map<String, String> customFields) {
             if (customFields != null) {
-                for (Map.Entry<String, Object> entry : customFields.entrySet()) {
+                for (Map.Entry<String, String> entry : customFields.entrySet()) {
                     if (entry.getKey() == null || !entry.getKey().startsWith("cf_")) {
                         throw new IllegalArgumentException("Custom field name must start with 'cf_': " + entry.getKey());
                     }
