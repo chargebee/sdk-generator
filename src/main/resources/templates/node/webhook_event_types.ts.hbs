@@ -6,11 +6,9 @@ export enum WebhookEventType {
 {{#each events}}
   {{snakeCaseToPascalCase type}} = '{{type}}',
 {{/each}}
-  UnhandledEvent = 'unhandled_event',
 }
 
 /**
  * @deprecated Use WebhookEventType instead.
  */
 export const WebhookContentType = WebhookEventType;
-

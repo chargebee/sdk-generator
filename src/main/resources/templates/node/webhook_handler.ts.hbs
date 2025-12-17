@@ -24,7 +24,7 @@ export class WebhookHandler extends EventEmitter<WebhookEventMap> {
   constructor() {
     super({ captureRejections: true });
   }
-  
+
   handle(
     body: string | object,
     headers?: Record<string, string | string[] | undefined>,
