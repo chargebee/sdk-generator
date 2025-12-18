@@ -23,11 +23,24 @@ type {{camelCaseToPascalCase name}}Service struct {
 }
 
 {{#each actions}}
-func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}params *{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}RequestParams{{/or}}) ({{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Response, error) {
-    return s.transport.Send{{#if isOperationNeedsJsonInput}}JsonRequest{{/if}}{{#if isListResourceAction}}List{{/if}}("{{httpRequestType}}", fmt.Sprintf("/{{urlPrefix}}{{#if hasPathParameters}}/%v{{/if}}{{#if urlSuffix}}/{{urlSuffix}}{{/if}}"{{#if hasPathParameters}}, url.PathEscape(id){{/if}}), {{#or hasRequestBodyParameters hasQueryParameters}}req{{else}}nil{{/or}}){{#if subDomain}}.SetSubDomain("{{subDomain}}"){{/if}}{{#if options.isIdempotent}}.SetIdempotency({{options.isIdempotent}}){{/if}}
+func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}req *{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Request{{/or}}) (*{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Response, error) {
+    path := fmt.Sprintf("/{{urlPrefix}}{{#if hasPathParameters}}/%v{{/if}}{{#if urlSuffix}}/{{urlSuffix}}{{/if}}"{{#if hasPathParameters}}, url.PathEscape(id){{/if}})
+    r := NewRequest[{{#if hasRequestBodyParameters hasQueryParameters}}{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Request{{else}}BlankRequest{{/if}}, *{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Response]("{{httpRequestType}}", path, {{#if hasRequestBodyParameters hasQueryParameters}}req{{else}}nil{{/if}})
+    {{~#if isOperationNeedsJsonInput}}
+    r.isJsonRequest = true
+    {{/if}}
+    {{~#if isListResourceAction}}
+    r.isListRequest = true
+    {{/if}}
+    {{~#if options.isIdempotent}}
+    r.SetIdempotency(true)
+    {{/if}}
+    return r.Send(s.transport)
+    {{!-- req.prepare("{{httpRequestType}}", fmt.Sprintf("/{{urlPrefix}}{{#if hasPathParameters}}/%v{{/if}}{{#if urlSuffix}}/{{urlSuffix}}{{/if}}"{{#if hasPathParameters}}, url.PathEscape(id){{/if}}), {{#or hasRequestBodyParameters hasQueryParameters}}req{{else}}nil{{/or}}){{#if subDomain}}.SetSubDomain("{{subDomain}}"){{/if}}{{#if options.isIdempotent}}.SetIdempotency({{options.isIdempotent}}){{/if}} --}}
 }
 {{/each}}
-{{#if isExport}}{{{includeFile "src/main/resources/templates/go/export.go.hbs"}}}{{/if}}
+
+{{!-- {{#if isExport}}{{{includeFile "src/main/resources/templates/go/export.go.hbs"}}}{{/if}}
 {{#if isTimeMachine}}{{{includeFile "src/main/resources/templates/go/timeMachine.go.hbs"}}}{{/if}}
 {{#if isEvent}}{{{includeFile "src/main/resources/templates/go/event.go.hbs"}}}{{/if}}
 {{#if isHostedPage}}{{{includeFile "src/main/resources/templates/go/hostedPage.go.hbs"}}}{{/if}}
@@ -41,4 +54,4 @@ func Payment_vouchersForInvoice(id string, params *paymentvoucher.PaymentVoucher
 func Payment_vouchersForCustomer(id string, params *paymentvoucher.PaymentVouchersForCustomerRequestParams) chargebee.ListRequest {
     return chargebee.SendList("GET", fmt.Sprintf("/customers/%v/payment_vouchers", url.PathEscape(id)), params)
 }
-{{/if}}
+{{/if}} --}}

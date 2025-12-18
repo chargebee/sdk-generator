@@ -14,11 +14,14 @@ type {{@root.clazName}}{{clazName}} struct {
 // operations
 // input params
 {{~#each operations}}{{#if hasInputParams}}
-type {{@root.clazName}}{{clazName}} struct {
+type {{@root.clazName}}{{clazName}}Params struct {
 {{~#if inputParams}}
 {{{inputParams}}}
 {{~/if}}
 }
+
+type {{@root.clazName}}{{clazName}} = ChargebeeRequest[{{@root.clazName}}{{clazName}}Params, *{{@root.clazName}}{{operationResponses.className}}]
+
 {{~/if}}
 {{~#each inputSubResParams}}
 {{~#if multi}}
