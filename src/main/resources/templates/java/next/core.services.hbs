@@ -130,6 +130,21 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     }
     {{/if}}
 
+    {{#if (and (eq httpMethod "get") hasQueryParams)}}
+    /**
+     * {{methodName}} a {{../packageName}} using immutable params (executes immediately) - returns raw Response.
+     */
+    Response {{methodName}}Raw(String {{pathParamName}}, {{paramsClassName}} params) throws Exception {
+        String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
+        return get(path, params != null ? params.toQueryParams() : null);
+    }
+
+    public {{returnType}} {{methodName}}(String {{pathParamName}}, {{paramsClassName}} params) throws Exception {
+        Response response = {{methodName}}Raw({{pathParamName}}, params);
+        return {{returnType}}.fromJson(response.getBodyAsString(), response);
+    }
+    {{/if}}
+
     {{#unless (and (eq httpMethod "post") hasRequestBody)}}
     public {{returnType}} {{methodName}}(String {{pathParamName}}) throws Exception {
         Response response = {{methodName}}Raw({{pathParamName}});

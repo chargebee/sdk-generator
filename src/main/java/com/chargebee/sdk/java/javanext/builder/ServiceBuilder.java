@@ -351,5 +351,19 @@ public class ServiceBuilder {
       }
       return null;
     }
+
+    /**
+     * Returns true if the operation has query parameters (for GET operations).
+     * This is used to determine if we should generate methods that accept params.
+     */
+    @SuppressWarnings("unused")
+    public boolean hasQueryParams() {
+      if (operation == null || operation.getParameters() == null) {
+        return false;
+      }
+      return operation.getParameters().stream()
+          .anyMatch(
+              param -> param != null && "query".equals(param.getIn()) && param.getSchema() != null);
+    }
   }
 }
