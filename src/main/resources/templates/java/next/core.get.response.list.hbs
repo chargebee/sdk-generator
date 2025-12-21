@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 {{#each imports}}
 import {{packageName}}.{{name}};
 {{/each}}
+import com.chargebee.v4.exceptions.ChargebeeException;
 import com.chargebee.v4.internal.JsonUtil;
 import com.chargebee.v4.transport.Response;
 import com.chargebee.v4.services.{{serviceName}};
@@ -189,9 +190,9 @@ public final class {{name}}Response {
 
     /**
      * Get the next page of results.
-     * @throws Exception if unable to fetch next page
+     * @throws ChargebeeException if unable to fetch next page
      */
-    public {{name}}Response nextPage() throws Exception {
+    public {{name}}Response nextPage() throws ChargebeeException {
         if (!hasNextPage()) {
             throw new IllegalStateException("No more pages available");
         }
