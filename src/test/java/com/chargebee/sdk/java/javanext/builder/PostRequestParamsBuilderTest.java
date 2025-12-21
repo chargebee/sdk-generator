@@ -553,7 +553,7 @@ class PostRequestParamsBuilderTest {
     Operation operation = new Operation();
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
-    // OPERATION_METHOD_NAME is no longer used - method name is derived from path
+    extensions.put(Extension.SDK_METHOD_NAME, methodName);
     operation.setExtensions(extensions);
     operation.setRequestBody(requestBody);
     return operation;

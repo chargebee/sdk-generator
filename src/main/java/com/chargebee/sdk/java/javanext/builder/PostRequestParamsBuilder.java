@@ -59,7 +59,6 @@ public class PostRequestParamsBuilder {
    */
   public List<FileOp> build(OpenAPI openApi) {
     this.openApi = openApi;
-    MethodNameDeriver.initialize(openApi);
     generateParams();
     return fileOps;
   }
@@ -83,10 +82,9 @@ public class PostRequestParamsBuilder {
           var postAction = new PostAction();
           String module = resolveModuleName(entry.getKey(), operation);
 
-          // Derive operation ID from path using common utility
-          String opId = MethodNameDeriver.deriveMethodName(entry.getKey(), "POST", operation);
-          opId = MethodNameDeriver.applyBatchPrefix(entry.getKey(), opId);
-          postAction.setOperationId(opId != null ? opId : "post");
+          // Read method name from SDK extension (populated by cb-openapi-generator)
+          String opId = readExtensionAsString(operation, Extension.SDK_METHOD_NAME);
+          postAction.setOperationId(opId);
           postAction.setModule(module);
           postAction.setPath(entry.getKey());
 
@@ -126,6 +124,17 @@ public class PostRequestParamsBuilder {
     } catch (IOException e) {
       System.err.println("Error generating params: " + e.getMessage());
     }
+  }
+
+  // =========================================================
+  // Extension helpers
+  // =========================================================
+
+  /** Returns the string value of a custom OpenAPI extension or null. */
+  private static String readExtensionAsString(Operation operation, String key) {
+    if (operation == null || operation.getExtensions() == null) return null;
+    var value = operation.getExtensions().get(key);
+    return value != null ? value.toString() : null;
   }
 
   // =========================================================

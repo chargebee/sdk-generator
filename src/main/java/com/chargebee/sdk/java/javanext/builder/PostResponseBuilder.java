@@ -107,7 +107,6 @@ public class PostResponseBuilder {
    */
   public List<FileOp> build(OpenAPI openApi) {
     this.openApi = Objects.requireNonNull(openApi, "openApi");
-    MethodNameDeriver.initialize(openApi);
     if (this.template == null) {
       throw new IllegalStateException("Template not set. Call withTemplate(...) before build().");
     }
@@ -183,10 +182,7 @@ public class PostResponseBuilder {
       return null;
     }
 
-    // Derive method name from path instead of using x-cb-operation-method-name extension
-    String methodName = MethodNameDeriver.deriveMethodName(path, "POST", operation);
-    methodName = MethodNameDeriver.applyBatchPrefix(path, methodName);
-
+    String methodName = getExtensionOrNull(operation, Extension.SDK_METHOD_NAME);
     postResponse.setOperationId(methodName);
     postResponse.setModule(moduleName);
 

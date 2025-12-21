@@ -66,7 +66,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create_customer");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
       postOp.setRequestBody(requestBody);
 
@@ -104,7 +104,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create_address");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "address");
       postOp.setRequestBody(requestBody);
 
@@ -142,7 +142,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "subscription");
       postOp.setRequestBody(requestBody);
 
@@ -181,7 +181,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("update");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "update");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "update");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
       postOp.setRequestBody(requestBody);
 
@@ -221,7 +221,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "test");
       postOp.setRequestBody(requestBody);
 

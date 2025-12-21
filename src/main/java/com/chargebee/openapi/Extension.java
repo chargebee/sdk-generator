@@ -3,6 +3,7 @@ package com.chargebee.openapi;
 public class Extension {
   // Operation Extensions
   public static final String OPERATION_METHOD_NAME = "x-cb-operation-method-name";
+  public static final String SDK_METHOD_NAME = "x-cb-sdk-method-name";
   public static final String IS_OPERATION_LIST = "x-cb-operation-is-list";
   public static final String IS_BULK_OPERATION = "x-cb-operation-is-bulk";
   public static final String OPERATION_IS_BATCH = "x-cb-operation-is-batch";

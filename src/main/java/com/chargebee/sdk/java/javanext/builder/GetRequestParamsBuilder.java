@@ -70,7 +70,6 @@ public class GetRequestParamsBuilder {
   /** Builds all GET request param classes and returns pending file operations. */
   public List<FileOp> build(OpenAPI openApi) throws IOException {
     this.openApi = openApi;
-    MethodNameDeriver.initialize(openApi);
     generateParams();
     return fileOps;
   }
@@ -93,9 +92,7 @@ public class GetRequestParamsBuilder {
       // Skip operations without required extensions
       if (module == null) continue;
 
-      // Derive operation ID from path using common utility
-      var operationId = MethodNameDeriver.deriveMethodName(entry.getKey(), "GET", operation);
-      operationId = MethodNameDeriver.applyBatchPrefix(entry.getKey(), operationId);
+      var operationId = readExtension(operation, Extension.SDK_METHOD_NAME);
 
       getAction.setOperationId(operationId);
       getAction.setModule(module);

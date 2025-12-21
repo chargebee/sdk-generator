@@ -66,7 +66,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create_customer");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
       postOp.setRequestBody(requestBody);
 
@@ -105,7 +105,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "subscription");
       postOp.setRequestBody(requestBody);
 
@@ -143,7 +143,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("update");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "update");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "update");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
       postOp.setRequestBody(requestBody);
 
@@ -183,7 +183,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "contact");
       postOp.setRequestBody(requestBody);
 
@@ -221,7 +221,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "lead");
       postOp.setRequestBody(requestBody);
 
@@ -258,7 +258,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "prospect");
       postOp.setRequestBody(requestBody);
 
@@ -296,7 +296,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "user");
       postOp.setRequestBody(requestBody);
 
@@ -320,7 +320,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
     void shouldNotHaveConsentFieldsWithoutRequestSchema() throws IOException {
       Operation postOp = new Operation();
       postOp.setOperationId("trigger");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "trigger");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "trigger");
       postOp.addExtension(Extension.RESOURCE_ID, "workflow");
       // No request body - consent fields support cannot be determined
 
@@ -365,7 +365,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
       postOp.setRequestBody(requestBody);
 
@@ -409,7 +409,7 @@ class PostRequestParamsBuilderConsentFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "invoice");
       postOp.setRequestBody(requestBody);
 

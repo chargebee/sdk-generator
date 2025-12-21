@@ -12,6 +12,7 @@ import com.chargebee.sdk.java.javanext.datatype.ObjectType;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.Schema;
 import java.io.IOException;
@@ -70,7 +71,6 @@ public class ListResponseBuilder {
   public List<FileOp> build(OpenAPI openApi) {
     validateConfiguration(openApi);
     this.openApi = openApi;
-    MethodNameDeriver.initialize(openApi);
     generateListResponses();
     return fileOps;
   }
@@ -93,11 +93,7 @@ public class ListResponseBuilder {
           continue;
         }
 
-        // Derive method name from path using common utility
-        var normalizedMethodName =
-            MethodNameDeriver.deriveMethodName(pathEntry.getKey(), "GET", operation);
-        normalizedMethodName =
-            MethodNameDeriver.applyBatchPrefix(pathEntry.getKey(), normalizedMethodName);
+        var normalizedMethodName = readExtensionAsString(operation, Extension.SDK_METHOD_NAME);
         var methodName =
             CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, normalizedMethodName);
         var module = String.valueOf(operation.getExtensions().get(Extension.RESOURCE_ID));
@@ -121,6 +117,12 @@ public class ListResponseBuilder {
         generateListResponseFile(listResponse);
       }
     }
+  }
+
+  private static String readExtensionAsString(Operation operation, String key) {
+    if (operation == null || operation.getExtensions() == null) return null;
+    var value = operation.getExtensions().get(key);
+    return value != null ? value.toString() : null;
   }
 
   /**

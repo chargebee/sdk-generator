@@ -1667,7 +1667,7 @@ class GetRequestParamsBuilderTest {
     Operation operation = new Operation();
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
-    // Set IS_OPERATION_LIST for list operations so path-based derivation works correctly
+    extensions.put(Extension.SDK_METHOD_NAME, methodName);
     if ("list".equals(methodName)) {
       extensions.put(Extension.IS_OPERATION_LIST, true);
     }
@@ -1682,7 +1682,7 @@ class GetRequestParamsBuilderTest {
     Operation operation = new Operation();
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
-    extensions.put(Extension.OPERATION_METHOD_NAME, methodName);
+    extensions.put(Extension.SDK_METHOD_NAME, methodName);
     operation.setExtensions(extensions);
     return operation;
   }

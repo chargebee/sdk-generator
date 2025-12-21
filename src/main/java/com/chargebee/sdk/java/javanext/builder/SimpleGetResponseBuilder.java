@@ -12,6 +12,7 @@ import com.chargebee.sdk.java.javanext.datatype.ObjectType;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.ComposedSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
@@ -77,7 +78,6 @@ public class SimpleGetResponseBuilder {
    */
   public List<FileOp> build(@NonNull OpenAPI openApi) {
     this.openApi = openApi;
-    MethodNameDeriver.initialize(openApi);
     generateSimpleGetResponses();
     return fileOps;
   }
@@ -99,9 +99,7 @@ public class SimpleGetResponseBuilder {
         if (module == null) {
           continue; // Missing required extensions; skip gracefully
         }
-        // Derive method name from path using common utility
-        var methodName = MethodNameDeriver.deriveMethodName(pathEntry.getKey(), "GET", operation);
-        methodName = MethodNameDeriver.applyBatchPrefix(pathEntry.getKey(), methodName);
+        var methodName = readExtensionAsString(operation, Extension.SDK_METHOD_NAME);
 
         var responses = operation.getResponses();
         if (responses == null) continue;
@@ -158,6 +156,17 @@ public class SimpleGetResponseBuilder {
     } catch (IOException e) {
       throw new RuntimeException("Failed to generate simple get response file", e);
     }
+  }
+
+  // -----------------------------------------------------------------------------
+  // Section: Utilities
+  // -----------------------------------------------------------------------------
+
+  /** Returns the string value of a custom OpenAPI extension or null. */
+  private static String readExtensionAsString(Operation operation, String key) {
+    if (operation == null || operation.getExtensions() == null) return null;
+    var value = operation.getExtensions().get(key);
+    return value != null ? value.toString() : null;
   }
 
   // -----------------------------------------------------------------------------

@@ -340,7 +340,7 @@ class ServiceBuilderTest {
     @DisplayName("Should skip operations missing RESOURCE_ID extension")
     void shouldSkipOperationsMissingResourceId() throws IOException {
       Operation op = new Operation();
-      op.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      op.addExtension(Extension.SDK_METHOD_NAME, "create");
       addPathWithOperation("/customers", PathItem.HttpMethod.POST, op);
       serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
@@ -488,7 +488,7 @@ class ServiceBuilderTest {
   private Operation createOperation(String resourceId, String methodName) {
     Operation operation = new Operation();
     operation.addExtension(Extension.RESOURCE_ID, resourceId);
-    operation.addExtension(Extension.OPERATION_METHOD_NAME, methodName);
+    operation.addExtension(Extension.SDK_METHOD_NAME, methodName);
     return operation;
   }
 

@@ -74,7 +74,6 @@ public class ServiceBuilder {
    */
   public List<FileOp> build(@NonNull OpenAPI openApi) {
     this.openApi = Objects.requireNonNull(openApi, "openApi must not be null");
-    MethodNameDeriver.initialize(openApi);
     validateRequiredState();
     try {
       generateServices();
@@ -174,9 +173,7 @@ public class ServiceBuilder {
       String path, String httpMethod, String resourceName, Operation operation) {
     var serviceOp = new ServiceOperation();
 
-    String operationId = MethodNameDeriver.deriveMethodName(path, httpMethod, operation);
-    operationId = MethodNameDeriver.applyBatchPrefix(path, operationId);
-
+    String operationId = getExtensionAsString(operation, Extension.SDK_METHOD_NAME);
     serviceOp.setOperationId(operationId);
     serviceOp.setModule(resourceName);
     serviceOp.setPath(path);
@@ -212,6 +209,13 @@ public class ServiceBuilder {
     if (this.template == null) {
       throw new IllegalStateException("Template must be set before build()");
     }
+  }
+
+  /** Returns the string value of a custom OpenAPI extension or null. */
+  private static String getExtensionAsString(Operation operation, String key) {
+    if (operation == null || operation.getExtensions() == null) return null;
+    var value = operation.getExtensions().get(key);
+    return value != null ? value.toString() : null;
   }
 
   private String createServiceFileName(Service service) {

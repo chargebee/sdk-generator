@@ -197,7 +197,7 @@ class PostResponseBuilderTest {
       responseSchema.addProperty("id", new StringSchema());
 
       Operation getOp = new Operation();
-      getOp.addExtension(Extension.OPERATION_METHOD_NAME, "retrieve");
+      getOp.addExtension(Extension.SDK_METHOD_NAME, "retrieve");
       getOp.addExtension(Extension.RESOURCE_ID, "customer");
 
       PathItem pathItem = new PathItem();
@@ -557,7 +557,7 @@ class PostResponseBuilderTest {
       StringSchema stringSchema = new StringSchema();
 
       Operation postOp = new Operation();
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
       ApiResponses responses = new ApiResponses();
       responses.addApiResponse("200", createApiResponse(stringSchema));

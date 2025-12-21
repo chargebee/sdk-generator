@@ -249,7 +249,7 @@ class ServiceRegistryBuilderTest {
 
       Map<String, Object> extensions = new HashMap<>();
       extensions.put(Extension.RESOURCE_ID, "custom_resource");
-      extensions.put(Extension.OPERATION_METHOD_NAME, "customMethod");
+      extensions.put(Extension.SDK_METHOD_NAME, "customMethod");
       operation.setExtensions(extensions);
 
       PathItem pathItem = new PathItem();
@@ -492,7 +492,7 @@ class ServiceRegistryBuilderTest {
 
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
-    extensions.put(Extension.OPERATION_METHOD_NAME, "someMethod");
+    extensions.put(Extension.SDK_METHOD_NAME, "someMethod");
     operation.setExtensions(extensions);
 
     PathItem pathItem = openAPI.getPaths().get(path);
