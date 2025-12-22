@@ -123,6 +123,8 @@ public class Action {
                 new AbstractMap.SimpleEntry<String, Object>("urlSuffix", getUrlSuffix()),
                 new AbstractMap.SimpleEntry<String, Object>(
                     "isDeprecated", this.isOperationDeprecated()),
+                new AbstractMap.SimpleEntry<String, Object>(
+                    "deprecationMessage", getDeprecationMessage()),
                 new AbstractMap.SimpleEntry<String, Object>("sortOrder", sortOrder()),
                 new AbstractMap.SimpleEntry<String, Object>(
                     "isOperationNeedsJsonInput", this.isOperationNeedsJsonInput()),
@@ -258,6 +260,14 @@ public class Action {
         || operation.getExtensions().get(IS_INTERNAL) == null
         || !((boolean) operation.getExtensions().get(IS_INTERNAL))
         || QAModeHandler.getInstance().getValue();
+  }
+
+  public String getDeprecationMessage() {
+    if (operation.getExtensions() != null
+        && operation.getExtensions().get("x-cb-deprecation-message") != null) {
+      return (String) operation.getExtensions().get("x-cb-deprecation-message");
+    }
+    return "This method is deprecated and will be removed in a future version.";
   }
 
   public boolean isOperationDeprecated() {

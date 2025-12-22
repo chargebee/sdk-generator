@@ -191,30 +191,6 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
         "declare__module__'chargebee'__{__export__interface__Customer__{__id:string;__first_name?:string;__last_name?:string;__}__}");
   }
 
-  @Test
-  void eachAttributeOfResourceShouldHaveDescriptionAvailableInResourceInterface()
-      throws IOException {
-    var resource =
-        buildResource("customer")
-            .withAttribute(
-                "first_name",
-                new StringSchema()
-                    .description(
-                        "First name of the <a"
-                            + " href=\"https://apidocs.chargebee.com/docs/api/customers\">customer</a>"))
-            .done();
-
-    var spec = buildSpec().withResource(resource).done();
-
-    List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
-
-    assertThat(fileOps).hasSize(5);
-    assertWriteStringFileOp(
-        fileOps.get(1),
-        "/tmp/resources",
-        "Customer.d.ts",
-        "declare__module__'chargebee'__{__export__interface__Customer__{__/**__*__@description__First__name__of__the__[customer](https://apidocs.chargebee.com/docs/api/customers)__*/__first_name?:string;__}__}");
-  }
 
   @Test
   void passwordAndEmailAttributesShouldBeTreatedAsString() throws IOException {

@@ -172,8 +172,17 @@ public class Attribute {
     if (schema.getProperties() != null) {
       params.put("attributes", attributes().stream().map(a -> a.templateParams(lang)).toList());
     }
+    params.put("deprecationMessage", getDeprecatedMessage());
     params.put("type", dataType);
     return params;
+  }
+
+  public String getDeprecatedMessage() {
+    if (schema.getExtensions() != null
+        && schema.getExtensions().get("x-cb-deprecation-message") != null) {
+      return (String) schema.getExtensions().get("x-cb-deprecation-message");
+    }
+    return "Please refer API docs to use other attributes";
   }
 
   public List<Attribute> attributes() {

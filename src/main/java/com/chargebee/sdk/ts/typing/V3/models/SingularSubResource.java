@@ -10,6 +10,7 @@ public @Data class SingularSubResource {
   private String clazName;
   private boolean hidden;
   private boolean deprecated;
+  private String deprecationMessage;
   private String name;
   private String typescriptPutMethName;
   private String returnGeneric;

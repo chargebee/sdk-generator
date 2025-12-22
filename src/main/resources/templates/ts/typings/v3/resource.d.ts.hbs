@@ -3,9 +3,9 @@
 {{#if hasListOperations }}///<reference path='./filter.d.ts'/>{{/if}}
 declare module 'chargebee' {
   export interface {{name}} {
-    {{#if isAdditionalPropertiesSupported}}[key : string] : unknown;{{/if}}{{#each attributesInMultiLine}}{{#with (lookup ../attributes @index) as |attr|}}{{#if attr.description}}
+    {{#if isAdditionalPropertiesSupported}}[key : string] : unknown;{{/if}}{{#each attributesInMultiLine}}{{#with (lookup ../attributes @index) as |attr|}}{{#if attr.isDeprecated}}
     /**
-    * @description {{attr.description}}
+    * @deprecated {{attr.deprecationMessage}}
     */
     {{/if}}{{/with}}
     {{{this}}}{{/each}}
@@ -14,7 +14,7 @@ declare module 'chargebee' {
   export namespace {{name}} {
     {{#if actions.length}}export class {{name}}Resource { {{#each actions}} {{#if isDeprecated}}
       /**
-        * @deprecated This method is deprecated and will be removed in a future version.
+        * @deprecated {{deprecationMessage}}
         */
       {{/if}}
       {{pascalCase name}}({{#each pathParameters}}{{#if @index}}, {{/if}}{{camelCaseToSnakeCase name}}:{{{type}}},{{/each}}{{#if hasQueryParameters}}input{{#if isAllQueryParamsOptional}}?{{/if}}:{{camelCase name}}InputParam,{{/if}}{{#if hasRequestBodyParameters}}input{{#if isAllRequestBodyParamsOptional}}?{{/if}}:{{camelCase name}}InputParam,{{/if}} headers?:ChargebeeRequestHeader):{{#with response}}Promise<ChargebeeResponse<{{camelCaseToPascalCase name}}>>{{/with}};{{#unless @last}}
@@ -31,9 +31,9 @@ declare module 'chargebee' {
   {{#unless @last}}
     {{/unless}}{{/each}}
 
-    {{#each subResources}}export interface {{ singularize name}} { {{#each attributes}} {{#if description}}
+        {{#each subResources}}export interface {{ singularize name}} { {{#each attributes}} {{#if isDeprecated}}
          /**
-          * @description {{description}}
+          * @description {{deprecationMessage}}
           */
        {{/if}}
       {{camelCaseToSnakeCase name}}{{#unless isRequired}}?{{/unless}}:{{{type}}};{{#unless @last}}{{/unless}}{{/each}}
@@ -43,7 +43,7 @@ declare module 'chargebee' {
   //---------------
   {{#each operRequestInterfaces}}
       export interface {{clazName}} {{curly "open"}}{{#each params}}{{#if (not hidden) (not isSubFilterParam) (not sortParam)}}{{#if deprecated }}/**
-          * @deprecated Please refer API docs to use other attributes
+          * @deprecated {{deprecationMessage}}
           */
           {{/if}}
           {{name}}{{typescriptPutMethName}}: {{{returnGeneric}}};{{/if}}{{/each}}{{#if hasSortParam }}
@@ -54,7 +54,7 @@ declare module 'chargebee' {
       }{{/each}}{{#each operRequestInterfaces}}{{#if hasSingularSubs }}{{#each singularSubs as |subList key|}}
       export interface {{key}}{{subList.[0].clazName}} { {{#each subList as |singularSub|}}
           {{#unless singularSub.hidden}}{{#if singularSub.deprecated}}/**
-          * @deprecated Please refer API docs to use other attributes
+          * @deprecated {{deprecationMessage}}
           */
           {{/if}}{{singularSub.name}}{{singularSub.typescriptPutMethName}}: {{{singularSub.returnGeneric}}};{{/unless}}{{/each}}
       }{{/each}}
@@ -62,7 +62,7 @@ declare module 'chargebee' {
   {{/if}}{{#if hasMultiSubs}}{{#each multiSubs as |subList key|}}
       export interface {{snakeCaseToPascalCase key}}{{subList.[0].clazName}}{ {{#each subList as |singularSub|}}
           {{#unless singularSub.hidden}}{{#if singularSub.deprecated}}/**
-          * @deprecated Please refer API docs to use other attributes
+          * @deprecated {{deprecationMessage}}
           */
           {{/if}}{{singularSub.name}}{{singularSub.typescriptPutMethName}}: {{{singularSub.returnGeneric}}};{{/unless}}{{/each}}
       }{{/each}}{{/if}}{{/each}}

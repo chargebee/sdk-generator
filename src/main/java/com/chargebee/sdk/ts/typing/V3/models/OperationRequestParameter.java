@@ -9,6 +9,7 @@ public @Data class OperationRequestParameter {
   private boolean isSubFilterParam;
   private boolean isSortParam;
   private boolean deprecated;
+  private String deprecationMessage;
   private String name;
   private String typescriptPutMethName;
   private String returnGeneric;

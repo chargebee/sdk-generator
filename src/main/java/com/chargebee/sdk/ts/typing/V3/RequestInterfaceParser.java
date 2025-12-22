@@ -120,6 +120,7 @@ public class RequestInterfaceParser {
         OperationRequestParameter operationRequestParameter = new OperationRequestParameter();
         operationRequestParameter.setHidden(!attribute.isNotHiddenAttribute());
         operationRequestParameter.setDeprecated(attribute.isDeprecated());
+        operationRequestParameter.setDeprecationMessage(attribute.getDeprecatedMessage());
         operationRequestParameter.setReturnGeneric(dataTypePrimitiveParameters(attribute));
         operationRequestParameter.setName(attribute.name);
         operationRequestParameter.setTypescriptPutMethName(getTypescriptPutMethName(attribute));
@@ -151,6 +152,7 @@ public class RequestInterfaceParser {
                 subResource.setClazName(Utils.getClazName(action));
                 subResource.setHidden(value.isHiddenParameter());
                 subResource.setDeprecated(value.isDeprecated());
+                subResource.setDeprecationMessage(value.getDeprecatedMessage());
                 subResource.setName(value.name);
                 subResource.setTypescriptPutMethName(getTypescriptPutMethName(value));
                 subResource.setReturnGeneric(dataTypeForSingularSubResources(value));
@@ -175,6 +177,7 @@ public class RequestInterfaceParser {
                 subResource.setClazName(Utils.getClazName(action));
                 subResource.setHidden(subAttribute.isHiddenParameter());
                 subResource.setDeprecated(subAttribute.isDeprecated());
+                subResource.setDeprecationMessage(subAttribute.getDeprecatedMessage());
                 subResource.setName(subAttribute.name);
                 subResource.setTypescriptPutMethName(getTypescriptPutMethName(subAttribute));
                 subResource.setReturnGeneric(dataTypeForSubResources(subAttribute.schema));
@@ -193,6 +196,7 @@ public class RequestInterfaceParser {
     if (!action.isInputObjNeeded() && attribute.isPaginationProperty()) return;
     operationRequestParameter.setHidden(!attribute.isNotHiddenAttribute());
     operationRequestParameter.setDeprecated(attribute.isDeprecated());
+    operationRequestParameter.setDeprecationMessage(attribute.getDeprecatedMessage());
     operationRequestParameter.setReturnGeneric(
         getFilterReturnGeneric(attribute, action, activeResource));
     operationRequestParameter.setTypescriptPutMethName(getTypescriptPutMethName(attribute));
