@@ -940,11 +940,13 @@ public class Go extends Language {
           type = attribute.name;
         } else {
           if (attribute.isExternalEnum()) {
+            System.out.println("----> external enum " + attribute.getEnumApiName());
             if (attribute.getEnumApiName() == null
                 || attribute.getEnumApiName().equalsIgnoreCase(attribute.name)) {
               type = activeResource.name + toCamelCase(attribute.name);
             } else {
-              type = firstCharLower(attribute.getEnumApiName());
+              type = attribute.getEnumApiName().replace(".", "");
+              // type = firstCharLower(attribute.getEnumApiName());
               // type =
               //     type.contains(".")
               //         ? type.replace(".", Constants.ENUM_DOT)
@@ -1027,6 +1029,7 @@ public class Go extends Language {
   }
 
   private String enumTypeCustomLogic(String colsRetType) {
+    System.out.println("enumTypeCustomLogic: " + colsRetType);
     if (colsRetType != null) {
       colsRetType = colsRetType.replace("enum.TxnStatus", "transactionEnum.Status");
       colsRetType = colsRetType.replace("enum.InvoiceStatus", "invoiceEnum.Status");
