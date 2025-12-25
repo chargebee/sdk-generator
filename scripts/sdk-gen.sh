@@ -57,7 +57,6 @@ function generate() {
     done
 
     for lang in $sdk_langs; do
-    
         _format $lang "${BASE_DIR}/chargebee-${lang}"
     done
 }

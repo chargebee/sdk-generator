@@ -14,13 +14,14 @@ type {{@root.clazName}}{{clazName}} struct {
 // operations
 // input params
 {{~#each operations}}{{#if hasInputParams}}
-type {{@root.clazName}}{{clazName}}Params struct {
+type {{@root.clazName}}{{clazName}} struct {
 {{~#if inputParams}}
 {{{inputParams}}}
+apiRequest `json:"-" form:"-"`
 {{~/if}}
 }
 
-type {{@root.clazName}}{{clazName}} = ChargebeeRequest[{{@root.clazName}}{{clazName}}Params, *{{@root.clazName}}{{operationResponses.className}}]
+func (r *{{@root.clazName}}{{clazName}}) payload() any { return r }
 
 {{~/if}}
 {{~#each inputSubResParams}}

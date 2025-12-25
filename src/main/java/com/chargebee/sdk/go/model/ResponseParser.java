@@ -113,8 +113,7 @@ public class ResponseParser {
     if (type.equals("unknown")) return Constants.STRING_TYPE;
     if (isGoDataType(type)) return type;
     if (type.equalsIgnoreCase(activeResourceName)) return "*" + type; // Local resource
-    // External resource
-    String pkg = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, type).toLowerCase();
-    return "*" + pkg + "." + type;
+
+    return type;
   }
 }

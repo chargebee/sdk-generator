@@ -274,7 +274,8 @@ public class Go extends Language {
         return "ChargeBee.Models.Enums." + getName(attribute.name + Constants.UNDERSCORE_ENUM);
       }
 
-      return (activeResource.name) + "." + getName(attribute.name + Constants.UNDERSCORE_ENUM);
+      // return (activeResource.name) + "." + getName(attribute.name + Constants.UNDERSCORE_ENUM);
+      return getName(attribute.name + Constants.UNDERSCORE_ENUM);
     }
     return dataType(attribute.schema, attribute.name);
   }
@@ -616,26 +617,26 @@ public class Go extends Language {
           if (resourceAssist.enums().stream()
               .anyMatch(a -> a.name.equals(singularize(subParam.name) + "_" + attribute.name))) {
             type =
-                firstCharLower(toCamelCase(activeResource.name))
-                    + Constants.ENUM_DOT
-                    + toCamelCase(singularize(attribute.metaModelName()))
+                // firstCharLower(toCamelCase(activeResource.name))
+                    // + Constants.ENUM_DOT
+                    toCamelCase(singularize(attribute.metaModelName()))
                     + toClazName(attribute.name);
           } else if (attribute.isSubResource() && attribute.metaModelName() != null) {
             type =
-                firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
-                    + Constants.ENUM_DOT
-                    + toClazName(attribute.name);
+                // firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
+                    // + Constants.ENUM_DOT
+                    toClazName(attribute.name);
 
           } else if (attribute.metaModelName() != null && !attribute.isSubResource()) {
             type =
-                firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
-                    + Constants.ENUM_DOT
-                    + toClazName(attribute.name);
+                // firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
+                    // Constants.ENUM_DOT
+                    toClazName(attribute.name);
           } else {
             type =
-                firstCharLower(toCamelCase(activeResource.name))
-                    + Constants.ENUM_DOT
-                    + toClazName(
+                // firstCharLower(toCamelCase(activeResource.name))
+                    // + Constants.ENUM_DOT
+                    toClazName(
                         attribute.getEnumApiName() != null
                             ? attribute.getEnumApiName()
                             : attribute.name);
@@ -862,6 +863,7 @@ public class Go extends Language {
         buf.add("\t" + String.join(delimiter, toCamelCase(a.name), type, getJsonVal(a, true)));
       } else {
         if (a.isSubResource() && a.subResourceName() != null) {
+          System.out.println(a.name + " " + a.subResourceName() + " " + activeResource.name);
           if (a.isListSubResourceAttribute() && !a.isDependentAttribute()) {
             buf.add(
                 "\t"
@@ -896,7 +898,7 @@ public class Go extends Language {
               + String.join(
                   delimiter,
                   "CustomField",
-                  Constants.MAP_STRING_INTERFACE,
+                  "CustomField",
                   "`json:\"custom_field\"`"));
     if (activeResource.name.equals("Customer"))
       buf.add(
@@ -921,7 +923,6 @@ public class Go extends Language {
     List<Attribute> attributes =
         subResource.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList();
     for (Attribute attribute : attributes) {
-      System.out.println("attribute: " + attribute.name + "," + activeResource.name + "," + subResource.name + "," + attribute.isEnumAttribute() + "," + attribute.isGenSeparate() + "," + attribute.isDependentAttribute() + "," + attribute.isExternalEnum());
       if (attribute.isEnumAttribute()) {
         if (attribute.isGenSeparate()) {
           type = activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name);
@@ -934,17 +935,17 @@ public class Go extends Language {
               type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
             } else {
               type = firstCharLower(attribute.getEnumApiName());
-              type =
-                  type.contains(".")
-                      ? type.replace(".", Constants.ENUM_DOT)
-                      : Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+              // type =
+              //     type.contains(".")
+              //         ? type.replace(".", Constants.ENUM_DOT)
+              //         : Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
             }
             type = enumTypeCustomLogic(type);
           } else {
             type =
-                firstCharLower(activeResource.name)
-                    + Constants.ENUM_DOT
-                    + singularize(subResource.name)
+                // firstCharLower(activeResource.name)
+                    // + Constants.ENUM_DOT
+                    singularize(subResource.name)
                     + toCamelCase(attribute.name);
           }
         }
@@ -1073,7 +1074,7 @@ public class Go extends Language {
         // System.out.println("dataType isListOfSubResourceSchema not empty: " + attributeName + "," + activeResource.name);
         String dep =
             getCamelClazName(singularize(attributeName)).toLowerCase().replace("_", "") + ".";
-        return "[]*" + dep + toCamelCase(singularize(attributeName));
+        return "[]*" + toCamelCase(singularize(attributeName));
       } else {
         // System.out.println("dataType isListOfSubResourceSchema empty: " + attributeName + "," + activeResource.name);
         return "[]*" + activeResource.name + toCamelCase(singularize(attributeName));
@@ -1087,7 +1088,7 @@ public class Go extends Language {
           return toCamelCase(attributeName);
         }
         dep = toCamelCase(attributeName).toLowerCase() + ".";
-        return "*" + dep + toCamelCase(attributeName);
+        return "*" + toCamelCase(attributeName);
       }
       // Patch to match cb-app based naming
       if ((activeResource.name.equalsIgnoreCase("PaymentIntent")
@@ -1095,8 +1096,8 @@ public class Go extends Language {
           || (activeResource.name.equalsIgnoreCase("SubscriptionEntitlement")
               && attributeName.equalsIgnoreCase("entitlement_overrides"))) {
         return "*"
-            + toCamelCase(subResourceName(schema)).toLowerCase()
-            + "."
+            // + toCamelCase(subResourceName(schema)).toLowerCase()
+            // + "."
             + toCamelCase(subResourceName(schema));
       }
       return "*" + toCamelCase(attributeName);
