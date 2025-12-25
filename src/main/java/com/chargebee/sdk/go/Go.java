@@ -942,7 +942,7 @@ public class Go extends Language {
           if (attribute.isExternalEnum()) {
             if (attribute.getEnumApiName() == null
                 || attribute.getEnumApiName().equalsIgnoreCase(attribute.name)) {
-              type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+              type = activeResource.name + toCamelCase(attribute.name);
             } else {
               type = firstCharLower(attribute.getEnumApiName());
               // type =
