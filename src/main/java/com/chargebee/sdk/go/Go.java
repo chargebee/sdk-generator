@@ -845,15 +845,20 @@ public class Go extends Language {
     String type = "";
     List<Attribute> attributes = activeResource.getSortedResourceAttributes();
     for (Attribute a : attributes) {
+      System.out.println(a.name + " " + a.subResourceName() + " " + activeResource.name);
       if (a.isDeprecated()) continue;
       if (a.isEnumAttribute()) {
+        System.out.println("--> enum");
         if (a.isListOfEnum()) {
+          System.out.println("----> list of enum");
           type = "[]" + Constants.ENUM_WITH_DELIMITER + getListOfEnumTypeForAttribute(a);
         } else if (a.isGenSeparate()) {
+          System.out.println("----> gen separate");
           type =
               activeResource.name
                   + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
         } else {
+          System.out.println("----> else");
           type =
           activeResource.name
           // + Constants.ENUM_DOT
@@ -862,9 +867,11 @@ public class Go extends Language {
         addEnumImport(type);
         buf.add("\t" + String.join(delimiter, toCamelCase(a.name), type, getJsonVal(a, true)));
       } else {
+        System.out.println("--> else");
         if (a.isSubResource() && a.subResourceName() != null) {
-          System.out.println(a.name + " " + a.subResourceName() + " " + activeResource.name);
+          System.out.println("----> sub resource");
           if (a.isListSubResourceAttribute() && !a.isDependentAttribute()) {
+            System.out.println("------> list sub resource");
             buf.add(
                 "\t"
                     + String.join(
@@ -873,6 +880,7 @@ public class Go extends Language {
                         dataType(a.schema, a.name),
                         getJsonVal(a, true)));
           } else {
+            System.out.println("------> else");
             buf.add(
                 "\t"
                     + String.join(
@@ -882,6 +890,7 @@ public class Go extends Language {
                         getJsonVal(a, true)));
           }
         } else {
+          System.out.println("----> else");
           buf.add(
               "\t"
                   + String.join(
@@ -923,6 +932,7 @@ public class Go extends Language {
     List<Attribute> attributes =
         subResource.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList();
     for (Attribute attribute : attributes) {
+      System.out.println("getSubResourceCols: " + attribute.name + " " + attribute.isEnumAttribute() + " " + attribute.isGenSeparate() + " " + attribute.isDependentAttribute() + " " + attribute.isExternalEnum());
       if (attribute.isEnumAttribute()) {
         if (attribute.isGenSeparate()) {
           type = activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name);
@@ -945,6 +955,7 @@ public class Go extends Language {
             type =
                 // firstCharLower(activeResource.name)
                     // + Constants.ENUM_DOT
+                    activeResource.name +
                     singularize(subResource.name)
                     + toCamelCase(attribute.name);
           }
@@ -1069,24 +1080,30 @@ public class Go extends Language {
     }
 
     if (isListOfSubResourceSchema(schema)) {
+      System.out.println("++ isListOfSubResourceSchema");
       // System.out.println("dataType isListOfSubResourceSchema: " + attributeName + "," + activeResource.name);
       if (!getDependentResource(activeResource).isEmpty()) {
+        System.out.println("++++ isListOfSubResourceSchema not empty");
         // System.out.println("dataType isListOfSubResourceSchema not empty: " + attributeName + "," + activeResource.name);
         String dep =
             getCamelClazName(singularize(attributeName)).toLowerCase().replace("_", "") + ".";
         return "[]*" + toCamelCase(singularize(attributeName));
       } else {
+        System.out.println("++++ isListOfSubResourceSchema empty");
         // System.out.println("dataType isListOfSubResourceSchema empty: " + attributeName + "," + activeResource.name);
         return "[]*" + activeResource.name + toCamelCase(singularize(attributeName));
       }
     }
     if (isSubResourceSchema(schema)) {
+      System.out.println("++ isSubResourceSchema");
       // System.out.println("dataType isSubResourceSchema: " + attributeName + "," + activeResource.name);
       String dep = "";
       if (!getDependentResource(activeResource).isEmpty()) {
+        System.out.println("++++ isListOfSubResourceSchema not empty");
         if (schemaNamespaceIsLocal(schema)) {
           return toCamelCase(attributeName);
         }
+        System.out.println("++++ isSubResourceSchema not empty");
         dep = toCamelCase(attributeName).toLowerCase() + ".";
         return "*" + toCamelCase(attributeName);
       }
@@ -1100,7 +1117,7 @@ public class Go extends Language {
             // + "."
             + toCamelCase(subResourceName(schema));
       }
-      return "*" + toCamelCase(attributeName);
+      return "*" + activeResource.name + toCamelCase(attributeName);
     }
     if (schema.getItems() != null
         && dataType(schema.getItems(), attributeName).equals(Constants.STRING_TYPE)) {
