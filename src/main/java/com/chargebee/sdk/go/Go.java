@@ -521,6 +521,7 @@ public class Go extends Language {
                 .withPagination(true)
                 .withFilterSubResource(true);
         for (Attribute subResource : actionAssist.consolidatedSubParams()) {
+          // System.out.println("++++subResource: " + subResource.name + " " + subResource.isEnumAttribute() + " " + subResource.isGenSeparate() + " " + subResource.isDependentAttribute() + " " + subResource.isExternalEnum());
           InputSubResParam inputSubResParam = new InputSubResParam();
           inputSubResParam.setMethodName(toCamelCase(action.name));
           inputSubResParam.setCamelSingularResName(toCamelCase(singularize(subResource.name)));
@@ -608,9 +609,11 @@ public class Go extends Language {
                     Constants.FILTER + filterType(attribute.schema),
                     getJsonVal(attribute, attribute.isRequired)));
       } else if (attribute.isEnumAttribute()) {
-        if (attribute.isGlobalEnumAttribute()) {
-          if (attribute.name.equals("juris_type")) type = "enum.Tax" + toClazName(attribute.name);
-          else type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+        if (attribute.isGlobalEnumAttribute()) {       
+          System.out.println("++++ global enum " + attribute.name + " " + activeResource.name + " " + toCamelCase(singularize(subParam.name)) + " " + attribute.metaModelName());
+          // if (attribute.name.equals("juris_type")) type = "enum.Tax" + toClazName(attribute.name);
+          // else type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+          type = activeResource.name + toCamelCase(singularize(subParam.name)) + toCamelCase(attribute.name);
         } else {
           ResourceAssist resourceAssist = new ResourceAssist().setResource(activeResource);
 
@@ -619,19 +622,21 @@ public class Go extends Language {
             type =
                 // firstCharLower(toCamelCase(activeResource.name))
                     // + Constants.ENUM_DOT
-                    toCamelCase(singularize(attribute.metaModelName()))
+                    activeResource.name + toCamelCase(singularize(attribute.metaModelName()))
                     + toClazName(attribute.name);
           } else if (attribute.isSubResource() && attribute.metaModelName() != null) {
             type =
                 // firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
                     // + Constants.ENUM_DOT
+                    activeResource.name +
+                    toCamelCase(singularize(attribute.metaModelName())) +
                     toClazName(attribute.name);
 
           } else if (attribute.metaModelName() != null && !attribute.isSubResource()) {
             type =
                 // firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
                     // Constants.ENUM_DOT
-                    toClazName(attribute.name);
+                  activeResource.name + toCamelCase(singularize(attribute.metaModelName())) + toClazName(attribute.name);
           } else {
             type =
                 // firstCharLower(toCamelCase(activeResource.name))
