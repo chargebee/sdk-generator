@@ -653,7 +653,7 @@ public class Go extends Language {
         if (type.equalsIgnoreCase("discountEnum.EntityType")) {
           type = "invoiceEnum.DiscountEntityType";
         }
-        addEnumImport(type);
+        // addEnumImport(type);
         buf.add(
             "\t"
                 + String.join(
@@ -730,7 +730,7 @@ public class Go extends Language {
           if (attribute.isCompositeArrayRequestBody()) {
             type = "[]" + type;
           }
-          addEnumImport(type);
+          // addEnumImport(type);
           buf.add(
               "\t"
                   + String.join(
@@ -773,7 +773,7 @@ public class Go extends Language {
                   // + Constants.ENUM_DOT
                   + toClazName(attribute.name);
         }
-        addEnumImport(type);
+        // addEnumImport(type);
         // if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
         //   type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
         // }
@@ -869,7 +869,7 @@ public class Go extends Language {
           // + Constants.ENUM_DOT
           + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
         }
-        addEnumImport(type);
+        // addEnumImport(type);
         buf.add("\t" + String.join(delimiter, toCamelCase(a.name), type, getJsonVal(a, true)));
       } else {
         System.out.println("--> else");
@@ -1003,7 +1003,7 @@ public class Go extends Language {
         //         default -> type;
         //       };
         // }
-        addEnumImport(type);
+        // addEnumImport(type);
         // if (type.startsWith(getCamelClazName(activeResource.name) + Constants.ENUM_DOT)) {
         //   type = type.replace(getCamelClazName(activeResource.name) + Constants.ENUM_DOT, "");
         // }

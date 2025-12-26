@@ -1,21 +1,12 @@
 package chargebee
 
 import (
-    "fmt"
-{{~#if (or isEvent isTimeMachine isHostedPage isSession)}}
     "encoding/json"
-{{/if}}
-{{~#if (or isTimeMachine isExport)}}
     "errors"
-    "time"
-{{/if}}
-{{~#if anyActionHasPathParam}}
+    "fmt"
     "net/url"
-{{/if}}
-{{~#if isEvent}}
-    "errors"
     "strings"
-{{/if}}
+    "time"
 )
 
 type {{camelCaseToPascalCase name}}Service struct {
@@ -43,18 +34,7 @@ func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if has
 }
 {{/each}}
 
-{{!-- {{#if isExport}}{{{includeFile "src/main/resources/templates/go/export.go.hbs"}}}{{/if}}
+{{#if isExport}}{{{includeFile "src/main/resources/templates/go/export.go.hbs"}}}{{/if}}
 {{#if isTimeMachine}}{{{includeFile "src/main/resources/templates/go/timeMachine.go.hbs"}}}{{/if}}
-{{#if isEvent}}{{{includeFile "src/main/resources/templates/go/event.go.hbs"}}}{{/if}}
-{{#if isHostedPage}}{{{includeFile "src/main/resources/templates/go/hostedPage.go.hbs"}}}{{/if}}
-{{#if isSession}}{{{includeFile "src/main/resources/templates/go/session.go.hbs"}}}{{/if}}
-{{#if (eq name "PaymentVoucher")}}
-// Deprecated: This function is deprecated. Please use PaymentVouchersForInvoice instead.
-func Payment_vouchersForInvoice(id string, params *paymentvoucher.PaymentVouchersForInvoiceRequestParams) chargebee.ListRequest {
-    return chargebee.SendList("GET", fmt.Sprintf("/invoices/%v/payment_vouchers", url.PathEscape(id)), params)
-}
-// Deprecated: This function is deprecated. Please use PaymentVouchersForCustomer instead. 
-func Payment_vouchersForCustomer(id string, params *paymentvoucher.PaymentVouchersForCustomerRequestParams) chargebee.ListRequest {
-    return chargebee.SendList("GET", fmt.Sprintf("/customers/%v/payment_vouchers", url.PathEscape(id)), params)
-}
-{{/if}} --}}
+{{!-- {{#if isEvent}}{{{includeFile "src/main/resources/templates/go/event.go.hbs"}}}{{/if}}
+{{#if isHostedPage}}{{{includeFile "src/main/resources/templates/go/hostedPage.go.hbs"}}}{{/if}} --}}

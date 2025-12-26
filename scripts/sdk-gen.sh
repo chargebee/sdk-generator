@@ -26,7 +26,9 @@ function _format() {
     local lang="$1"
     local dir="$2"
     case "$lang" in
-        go) pushd "$dir" && go fmt ./... && popd;;
+        go) pushd "$dir"
+            goimports-reviser -rm-unused -format -excludes 'tests/,.git/,webhook/' ./...
+            popd;;
         *) echo "Formatter not available for $lang";;
     esac
 }
