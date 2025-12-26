@@ -19,7 +19,7 @@ function _gradlew() {
         *) echo "Unknown language"; exit 1;;
     esac
 
-    ./gradlew run --args="${args[*]}"
+    ./gradlew run --args="${args[*]}" ${DEBUG:+"--debug-jvm"}
 }
 
 function _format() {
