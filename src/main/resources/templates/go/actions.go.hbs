@@ -17,7 +17,7 @@ type {{camelCaseToPascalCase name}}Service struct {
 func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}req *{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Request{{/or}}) (*{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Response, error) {
     {{~#if (not (or hasRequestBodyParameters hasQueryParameters))}}
     req := &BlankRequest{}
-    {{/if~}}
+    {{/if}}
     req.method = "{{httpRequestType}}"
     req.path = fmt.Sprintf("/{{urlPrefix}}{{#if hasPathParameters}}/%v{{/if}}{{#if urlSuffix}}/{{urlSuffix}}{{/if}}"{{#if hasPathParameters}}, url.PathEscape(id){{/if}})
     {{#if isOperationNeedsJsonInput~}}
