@@ -1,4 +1,3 @@
-// just struct
 type {{clazName}} struct {
 {{{cols}}}
 {{#if (eq clazName "Subscription")}}
@@ -6,18 +5,15 @@ type {{clazName}} struct {
     Metadata              json.RawMessage        `json:"metadata"`
 {{/if}}
 }
-// sub resources
 {{~#each subResources}}
 type {{@root.clazName}}{{clazName}} struct {
 {{{cols}}}
 }{{/each}}
-// operations
-// input params
 {{~#each operations}}{{#if hasInputParams}}
 type {{@root.clazName}}{{clazName}} struct {
 {{~#if inputParams}}
 {{{inputParams}}}
-apiRequest `json:"-" form:"-"`
+    apiRequest `json:"-" form:"-"`
 {{~/if}}
 }
 
@@ -26,10 +22,8 @@ func (r *{{@root.clazName}}{{clazName}}) payload() any { return r }
 {{~/if}}
 {{~#each inputSubResParams}}
 {{~#if multi}}
-// input sub resource params multi
 type {{@root.clazName}}{{methodName}}{{camelSingularResName}} struct {
 {{~else}}
-// input sub resource params single
 type {{@root.clazName}}{{methodName}}{{camelResName}} struct {
 {{~/if}}
 {{{subParams}}}

@@ -508,7 +508,7 @@ public class Go extends Language {
         continue;
       activeResource = res;
 
-      StringBuffer buf = new StringBuffer(Constants.ROOT_PACKAGE);
+      StringBuffer buf = new StringBuffer(Constants.FILE_HEADER);
       buf.append(getImportFiles());
       // String resourceDirName =
       // CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_",
