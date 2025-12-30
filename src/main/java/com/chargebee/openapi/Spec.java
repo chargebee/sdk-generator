@@ -146,6 +146,10 @@ public class Spec {
   }
 
   public List<Map<String, String>> extractWebhookInfo() {
+    return extractWebhookInfo(false);
+  }
+
+  public List<Map<String, String>> extractWebhookInfo(boolean includeDeprecated) {
     List<Map<String, String>> result = new ArrayList<>();
     Map<String, PathItem> webhooks = openAPI.getWebhooks();
 
@@ -157,7 +161,7 @@ public class Spec {
         String resourceSchema = null;
 
         Operation postOp = pathItem.getPost();
-        if (postOp != null && Boolean.TRUE.equals(postOp.getDeprecated())) {
+        if (!includeDeprecated && postOp != null && Boolean.TRUE.equals(postOp.getDeprecated())) {
           continue;
         }
         if (postOp != null && postOp.getRequestBody() != null) {
@@ -168,7 +172,7 @@ public class Spec {
 
             MediaType mediaType = requestBody.getContent().get("application/json");
             Schema<?> schema = mediaType.getSchema();
-            if (schema.getDeprecated() != null && schema.getDeprecated() == true) {
+            if (!includeDeprecated && schema.getDeprecated() != null && schema.getDeprecated() == true) {
               continue;
             }
 
