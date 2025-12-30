@@ -146,12 +146,13 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     }
     {{/if}}
 
-    {{#unless (and (eq httpMethod "post") hasRequestBody)}}
+    {{!-- Generate no-params method if: not a POST with body, OR all body params are optional --}}
+    {{#if (or (not (and (eq httpMethod "post") hasRequestBody)) isAllRequestBodyParamsOptional)}}
     public {{returnType}} {{methodName}}(String {{pathParamName}}) throws ChargebeeException {
         Response response = {{methodName}}Raw({{pathParamName}});
         return {{returnType}}.fromJson(response.getBodyAsString(), response);
     }
-    {{/unless}}
+    {{/if}}
 
     {{/if}}
     {{else}}

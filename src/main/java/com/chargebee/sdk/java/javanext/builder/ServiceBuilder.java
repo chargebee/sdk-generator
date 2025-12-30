@@ -369,5 +369,30 @@ public class ServiceBuilder {
           .anyMatch(
               param -> param != null && "query".equals(param.getIn()) && param.getSchema() != null);
     }
+
+    /**
+     * Returns true if the operation has a request body but all parameters are optional.
+     * Used to generate no-params overloads for better DX when all params are optional.
+     */
+    @SuppressWarnings("unused")
+    public boolean isAllRequestBodyParamsOptional() {
+      if (operation == null || operation.getRequestBody() == null) {
+        return false;
+      }
+      var content = operation.getRequestBody().getContent();
+      if (content == null) {
+        return true; // No content means no required params
+      }
+      var mediaType = content.get("application/x-www-form-urlencoded");
+      if (mediaType == null) {
+        mediaType = content.get("application/json");
+      }
+      if (mediaType == null || mediaType.getSchema() == null) {
+        return true; // No schema means no required params
+      }
+      var schema = mediaType.getSchema();
+      var required = schema.getRequired();
+      return required == null || required.isEmpty();
+    }
   }
 }
