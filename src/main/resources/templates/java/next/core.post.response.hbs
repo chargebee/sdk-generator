@@ -144,4 +144,34 @@ public final class {{name}}Response extends BaseResponse {
     }
 
     {{/each}}
+    @Override
+    public String toString() {
+        return "{{name}}Response{" +
+        {{#each fields}}
+            "{{#unless @first}}, {{/unless}}{{name}}=" + {{name}} +
+        {{/each}}
+            "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        {{#if fields}}
+        {{name}}Response that = ({{name}}Response) o;
+        return {{#each fields}}java.util.Objects.equals({{name}}, that.{{name}}){{#unless @last}} &&
+            {{/unless}}{{/each}};
+        {{else}}
+        return true;
+        {{/if}}
+    }
+
+    @Override
+    public int hashCode() {
+        {{#if fields}}
+        return java.util.Objects.hash({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+        {{else}}
+        return 0;
+        {{/if}}
+    }
 }

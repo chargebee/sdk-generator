@@ -250,6 +250,55 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
  }
 {{/if}}
 
+ @Override
+ public String toString() {
+  return "{{name}}{" +
+  {{#each fields}}
+    "{{#unless @first}}, {{/unless}}{{name}}=" + {{name}} +
+  {{/each}}
+  {{#if customFieldsSupported}}
+    ", customFields=" + customFields +
+  {{/if}}
+  {{#if consentFieldsSupported}}
+    ", consentFields=" + consentFields +
+  {{/if}}
+    "}";
+ }
+
+ @Override
+ public boolean equals(Object o) {
+  if (this == o) return true;
+  if (o == null || getClass() != o.getClass()) return false;
+  {{#if fields}}
+  {{name}} that = ({{name}}) o;
+  return {{#each fields}}java.util.Objects.equals({{name}}, that.{{name}}){{#unless @last}} &&
+    {{/unless}}{{/each}}{{#if customFieldsSupported}} &&
+    java.util.Objects.equals(customFields, that.customFields){{/if}}{{#if consentFieldsSupported}} &&
+    java.util.Objects.equals(consentFields, that.consentFields){{/if}};
+  {{else if customFieldsSupported}}
+  {{name}} that = ({{name}}) o;
+  return java.util.Objects.equals(customFields, that.customFields);
+  {{else if consentFieldsSupported}}
+  {{name}} that = ({{name}}) o;
+  return java.util.Objects.equals(consentFields, that.consentFields);
+  {{else}}
+  return true;
+  {{/if}}
+ }
+
+ @Override
+ public int hashCode() {
+  {{#if fields}}
+  return java.util.Objects.hash({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}{{#if customFieldsSupported}}, customFields{{/if}}{{#if consentFieldsSupported}}, consentFields{{/if}});
+  {{else if customFieldsSupported}}
+  return java.util.Objects.hash(customFields);
+  {{else if consentFieldsSupported}}
+  return java.util.Objects.hash(consentFields);
+  {{else}}
+  return 0;
+  {{/if}}
+ }
+
 {{#each subModels}}
   public static class {{name}} {
 {{>modelContent this}}
