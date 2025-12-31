@@ -25,7 +25,7 @@ public class NodeV3Tests extends LanguageTests {
   void shouldCreateApiEndpointsFile() throws IOException {
     var spec = buildSpec().done();
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -59,7 +59,7 @@ public class NodeV3Tests extends LanguageTests {
     var spec = buildSpec().withResources(subscription, contract_term).done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -98,7 +98,7 @@ public class NodeV3Tests extends LanguageTests {
     var spec = buildSpec().withResources(subscription, subscription_preview).done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -134,7 +134,7 @@ public class NodeV3Tests extends LanguageTests {
     var spec = buildSpec().withResources(subscription, subscription_preview).done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -172,7 +172,7 @@ public class NodeV3Tests extends LanguageTests {
     var spec = buildSpec().withResources(subscription, contract_term, credit_note_estimate).done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -227,7 +227,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -292,7 +292,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -337,7 +337,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -384,7 +384,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -437,7 +437,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -490,7 +490,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -559,7 +559,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -624,7 +624,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -676,7 +676,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -729,7 +729,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(1);
+    assertThat(fileOps).hasSize(4);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
