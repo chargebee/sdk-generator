@@ -100,6 +100,7 @@ public class Go extends Language {
     List<FileOp> fileOps = new ArrayList<>();
 
     fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, ""));
+    fileOps.add(generateGlobalEnumFiles(outputDirectoryPath, spec.globalEnums()));
     fileOps.addAll(generateServices(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath, resources, spec));
     return fileOps;
