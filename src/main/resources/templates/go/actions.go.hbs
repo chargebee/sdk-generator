@@ -46,5 +46,3 @@ func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if has
 
 {{#if isExport}}{{{includeFile "src/main/resources/templates/go/export.go.hbs"}}}{{/if}}
 {{#if isTimeMachine}}{{{includeFile "src/main/resources/templates/go/timeMachine.go.hbs"}}}{{/if}}
-{{!-- {{#if isEvent}}{{{includeFile "src/main/resources/templates/go/event.go.hbs"}}}{{/if}}
-{{#if isHostedPage}}{{{includeFile "src/main/resources/templates/go/hostedPage.go.hbs"}}}{{/if}} --}}
