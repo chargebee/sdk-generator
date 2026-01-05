@@ -103,6 +103,7 @@ public class Go extends Language {
     fileOps.add(generateGlobalEnumFiles(outputDirectoryPath, spec.globalEnums()));
     fileOps.addAll(generateServices(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath, resources, spec));
+    fileOps.add(generateClientFile(outputDirectoryPath));
     return fileOps;
   }
 
@@ -431,16 +432,26 @@ public class Go extends Language {
         "/templates/go/globalEnums.go.hbs",
         "enums",
         "/templates/go/enums.go.hbs",
-        "actions",
-        "/templates/go/actions.go.hbs",
-        "result",
-        "/templates/go/result.go.hbs",
+        "services",
+        "/templates/go/services.go.hbs",
         "models",
         "/templates/go/models.go.hbs",
         "responses",
         "/templates/go/responses.go.hbs",
+        "client",
+        "/templates/go/client.go.hbs",
         "exceptions",
         "/templates/go/api_error.go.hbs");
+  }
+
+  private FileOp generateClientFile(String outputDirectoryPath) throws IOException {
+    Template clientTemplate = getTemplateContent("client");
+    List<Map<String, String>> resourceNames = this.resourceList.stream()
+      .filter(Resource::hasAnyAction)
+      .map(r -> Map.of("name", r.name))
+      .toList();
+    String content = clientTemplate.apply(Map.of("resources", resourceNames));
+    return new FileOp.WriteString(outputDirectoryPath, "client.go", content);
   }
 
   private FileOp generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums) throws IOException {
@@ -466,7 +477,7 @@ public class Go extends Language {
       String outputDirectoryPath, List<Resource> resources) throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
 
-    Template actionTemplates = getTemplateContent("actions");
+    Template actionTemplates = getTemplateContent("services");
     for (var resource : resources) {
       if (!resource.actions.isEmpty()) {
         var actionPayload = resource.templateParams(this);
