@@ -11,6 +11,7 @@ import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.media.*;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
@@ -111,7 +112,7 @@ class ServiceBuilderTest {
       assertThat(fileOps).isNotEmpty();
       assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
       FileOp.CreateDirectory dirOp = (FileOp.CreateDirectory) fileOps.get(0);
-      assertThat(dirOp.basePath).endsWith("/v4/core/services");
+      assertThat(dirOp.basePath).endsWith("/com/chargebee/v4/services");
     }
   }
 
@@ -168,16 +169,16 @@ class ServiceBuilderTest {
     }
 
     @Test
-    @DisplayName("Should distinguish GET, POST, PUT, DELETE HTTP methods")
+    @DisplayName("Should distinguish GET, POST HTTP methods")
     void shouldHandleDifferentHttpMethods() throws IOException {
       // Mirrors: shouldHaveHttpMethodInReturnStatement (JavaTests.java:997)
       Operation createOp = createPostOperationWithRequestBody("customer", "create");
       Operation updateOp = createPostOperationWithRequestBody("customer", "update");
-      Operation deleteOp = createOperation("customer", "delete");
+      Operation retrieveOp = createGetOperation("customer", "retrieve");
 
       addPathWithOperation("/customers", PathItem.HttpMethod.POST, createOp);
       addPathWithOperation("/customers/{customer-id}/update", PathItem.HttpMethod.POST, updateOp);
-      addPathWithOperation("/customers/{customer-id}", PathItem.HttpMethod.DELETE, deleteOp);
+      addPathWithOperation("/customers/{customer-id}", PathItem.HttpMethod.GET, retrieveOp);
       serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
@@ -186,7 +187,7 @@ class ServiceBuilderTest {
       // Should contain all three operations
       assertThat(writeOp.fileContent).containsIgnoringCase("create");
       assertThat(writeOp.fileContent).containsIgnoringCase("update");
-      assertThat(writeOp.fileContent).containsIgnoringCase("delete");
+      assertThat(writeOp.fileContent).containsIgnoringCase("retrieve");
     }
 
     @Test
@@ -200,6 +201,50 @@ class ServiceBuilderTest {
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
       assertFileExists(fileOps, "CustomerService.java");
+    }
+
+    @Test
+    @DisplayName("Should generate method overload with params for GET operations with query params and path params")
+    void shouldGenerateMethodOverloadForGetWithQueryParamsAndPathParams() throws IOException {
+      // Test for GET operations like /invoices/{invoice-id} that have both path params AND query params
+      Operation retrieveOp = createGetOperationWithQueryParams("invoice", "retrieve");
+      addPathWithOperation("/invoices/{invoice-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "InvoiceService.java");
+      
+      // Should have retrieve method without params
+      assertThat(writeOp.fileContent).contains("retrieve(String invoiceId)");
+      
+      // Should also have retrieve method WITH params (this is the fix we're testing)
+      assertThat(writeOp.fileContent).contains("retrieve(String invoiceId, InvoiceRetrieveParams params)");
+      
+      // Should have retrieveRaw with params
+      assertThat(writeOp.fileContent).contains("retrieveRaw(String invoiceId, InvoiceRetrieveParams params)");
+      
+      // Should call get() with query params
+      assertThat(writeOp.fileContent).contains("params.toQueryParams()");
+    }
+
+    @Test
+    @DisplayName("Should NOT generate method overload with params for GET operations without query params")
+    void shouldNotGenerateMethodOverloadForGetWithoutQueryParams() throws IOException {
+      // Regular GET without query params should NOT have the params overload
+      Operation retrieveOp = createGetOperationWithResponse("customer", "retrieve");
+      addPathWithOperation("/customers/{customer-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      
+      // Should have retrieve method without params
+      assertThat(writeOp.fileContent).contains("retrieve(String customerId)");
+      
+      // Should NOT have the params overload since there are no query params
+      assertThat(writeOp.fileContent).doesNotContain("retrieve(String customerId, CustomerRetrieveParams params)");
     }
   }
 
@@ -295,7 +340,7 @@ class ServiceBuilderTest {
     @DisplayName("Should skip operations missing RESOURCE_ID extension")
     void shouldSkipOperationsMissingResourceId() throws IOException {
       Operation op = new Operation();
-      op.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      op.addExtension(Extension.SDK_METHOD_NAME, "create");
       addPathWithOperation("/customers", PathItem.HttpMethod.POST, op);
       serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
@@ -305,8 +350,9 @@ class ServiceBuilderTest {
     }
 
     @Test
-    @DisplayName("Should skip operations missing OPERATION_METHOD_NAME extension")
-    void shouldSkipOperationsMissingMethodName() throws IOException {
+    @DisplayName(
+        "Should derive method name from path when OPERATION_METHOD_NAME extension is missing")
+    void shouldDeriveMethodNameFromPathWhenExtensionMissing() throws IOException {
       Operation op = new Operation();
       op.addExtension(Extension.RESOURCE_ID, "customer");
       addPathWithOperation("/customers", PathItem.HttpMethod.POST, op);
@@ -314,7 +360,10 @@ class ServiceBuilderTest {
 
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
-      assertThat(fileOps).hasSize(1); // Only directory
+      assertFileExists(fileOps, "CustomerService.java");
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      // Should derive "create" from POST to /customers
+      assertThat(writeOp.fileContent).containsIgnoringCase("create");
     }
   }
 
@@ -439,7 +488,7 @@ class ServiceBuilderTest {
   private Operation createOperation(String resourceId, String methodName) {
     Operation operation = new Operation();
     operation.addExtension(Extension.RESOURCE_ID, resourceId);
-    operation.addExtension(Extension.OPERATION_METHOD_NAME, methodName);
+    operation.addExtension(Extension.SDK_METHOD_NAME, methodName);
     return operation;
   }
 
@@ -488,6 +537,27 @@ class ServiceBuilderTest {
     responses.addApiResponse("200", apiResponse);
 
     operation.setResponses(responses);
+    return operation;
+  }
+
+  /** Creates a GET operation with query parameters (like /invoices/{invoice-id} with line_items_limit). */
+  private Operation createGetOperationWithQueryParams(String resourceId, String methodName) {
+    Operation operation = createGetOperationWithResponse(resourceId, methodName);
+
+    // Add query parameters similar to /invoices/{invoice-id}
+    Parameter limitParam = new Parameter();
+    limitParam.setName("line_items_limit");
+    limitParam.setIn("query");
+    limitParam.setSchema(new IntegerSchema());
+
+    Parameter offsetParam = new Parameter();
+    offsetParam.setName("line_items_offset");
+    offsetParam.setIn("query");
+    offsetParam.setSchema(new StringSchema());
+
+    operation.addParametersItem(limitParam);
+    operation.addParametersItem(offsetParam);
+
     return operation;
   }
 

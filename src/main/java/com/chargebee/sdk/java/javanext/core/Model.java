@@ -13,6 +13,7 @@ public class Model {
   private List<Model> subModels;
   private List<String> imports;
   private boolean customFieldsSupported;
+  private boolean consentFieldsSupported;
 
   public String getPackageName() {
     if (packageName == null || packageName.isEmpty()) return packageName;

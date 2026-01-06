@@ -49,7 +49,7 @@ public class PostResponseBuilder {
   private static final String CODE_200 = "200";
   private static final String CODE_202 = "202";
   private static final String CODE_204 = "204";
-  private static final String RESPONSES_DIR_SUFFIX = "/v4/core/responses";
+  private static final String MODELS_DIR_SUFFIX = "/com/chargebee/v4/models";
 
   private Template template;
   private Template baseResponseTemplate;
@@ -69,7 +69,7 @@ public class PostResponseBuilder {
     if (outputDirectoryPath == null || outputDirectoryPath.trim().isEmpty()) {
       throw new IllegalArgumentException("outputDirectoryPath must not be null or blank");
     }
-    this.outputDirectoryPath = outputDirectoryPath + RESPONSES_DIR_SUFFIX;
+    this.outputDirectoryPath = outputDirectoryPath + MODELS_DIR_SUFFIX;
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }
@@ -130,10 +130,7 @@ public class PostResponseBuilder {
       String content = baseResponseTemplate.apply(null);
       String formattedContent = JavaFormatter.formatSafely(content);
       fileOps.add(
-          new FileOp.WriteString(
-              this.outputDirectoryPath,
-              "BaseResponse.java",
-              formattedContent));
+          new FileOp.WriteString(this.outputDirectoryPath, "BaseResponse.java", formattedContent));
     } catch (IOException e) {
       LOG.log(Level.WARNING, "Failed to generate BaseResponse class", e);
     }
@@ -176,24 +173,16 @@ public class PostResponseBuilder {
       String path, Operation operation, ApiResponse response) {
     var postResponse = new PostResponse();
 
-    String rawMethodName = getExtensionOrNull(operation, Extension.OPERATION_METHOD_NAME);
     String moduleName = getExtensionOrNull(operation, Extension.RESOURCE_ID);
-    if (rawMethodName == null || moduleName == null) {
+    if (moduleName == null) {
       LOG.log(
           Level.WARNING,
-          "Skipping operation due to missing required extensions: {0}",
+          "Skipping operation due to missing RESOURCE_ID extension: {0}",
           operation.getOperationId());
       return null;
     }
 
-    // Normalize to proper camelCase
-    String methodName = com.chargebee.GenUtil.normalizeToLowerCamelCase(rawMethodName);
-
-    // Prefix batch operations to avoid method name collisions
-    if (path.startsWith("/batch/") && !methodName.startsWith("batch")) {
-      methodName = "batch" + methodName.substring(0, 1).toUpperCase() + methodName.substring(1);
-    }
-
+    String methodName = getExtensionOrNull(operation, Extension.SDK_METHOD_NAME);
     postResponse.setOperationId(methodName);
     postResponse.setModule(moduleName);
 
@@ -321,21 +310,21 @@ public class PostResponseBuilder {
    */
   private FieldType unwrapArrayIfNeeded(String fieldName, Schema<?> propertySchema) {
     // Check if this is an array
-    if (!"array".equals(propertySchema.getType()) 
-        && !(propertySchema instanceof ArraySchema)) {
+    if (!"array".equals(propertySchema.getType()) && !(propertySchema instanceof ArraySchema)) {
       return TypeMapper.getJavaType(fieldName, propertySchema);
     }
 
-    Schema<?> items = propertySchema instanceof ArraySchema 
-        ? ((ArraySchema) propertySchema).getItems() 
-        : propertySchema.getItems();
+    Schema<?> items =
+        propertySchema instanceof ArraySchema
+            ? ((ArraySchema) propertySchema).getItems()
+            : propertySchema.getItems();
 
     // Check if items is an object with a single property that's a $ref
-    if (items != null 
+    if (items != null
         && "object".equals(items.getType())
-        && items.getProperties() != null 
+        && items.getProperties() != null
         && items.getProperties().size() == 1) {
-      
+
       Object singleProp = items.getProperties().values().iterator().next();
       if (singleProp instanceof Schema) {
         Schema<?> propSchema = (Schema<?>) singleProp;
@@ -343,9 +332,8 @@ public class PostResponseBuilder {
           // Extract the type name from the $ref and return List<Type>
           String refName = extractTypeFromRef(propSchema.get$ref());
           return new com.chargebee.sdk.java.javanext.datatype.ListType(
-              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, refName), 
-              createArraySchemaWithRef(propSchema.get$ref())
-          );
+              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, refName),
+              createArraySchemaWithRef(propSchema.get$ref()));
         }
       }
     }
@@ -419,10 +407,12 @@ public class PostResponseBuilder {
   /** Registers file operations to write the rendered response class. */
   private void writeResponse(PostResponse responseAction, String formattedContent) {
     var moduleDir = this.outputDirectoryPath + "/" + responseAction.getModule();
+    var responsesDir = moduleDir + "/responses";
     fileOps.add(new FileOp.CreateDirectory(moduleDir, ""));
+    fileOps.add(new FileOp.CreateDirectory(responsesDir, ""));
     fileOps.add(
         new FileOp.WriteString(
-            moduleDir, responseAction.getName() + "Response.java", formattedContent));
+            responsesDir, responseAction.getName() + "Response.java", formattedContent));
   }
 
   /** Returns true if the schema is an object schema. */
@@ -455,13 +445,25 @@ public class PostResponseBuilder {
     private List<Field> fields;
 
     public String getName() {
-      var operationId = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
+      var operationIdSnake =
+          CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
       // Normalize module to snake_case to preserve word boundaries (handles lowerCamel inputs)
       var moduleSnake =
           module != null && module.contains("_")
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
-      var actionName = moduleSnake + "_" + operationId;
+
+      // If operationId contains the module name (or its singular/plural variations), don't prefix
+      // it
+      var moduleBase = moduleSnake.replaceAll("_", "");
+      var operationBase = operationIdSnake.replaceAll("_", "");
+      if (operationIdSnake.contains(moduleSnake)
+          || operationBase.contains(moduleBase)
+          || moduleBase.contains(operationBase)) {
+        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationIdSnake);
+      }
+
+      var actionName = moduleSnake + "_" + operationIdSnake;
       return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, actionName);
     }
 

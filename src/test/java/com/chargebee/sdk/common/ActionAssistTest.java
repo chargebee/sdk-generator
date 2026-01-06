@@ -507,7 +507,7 @@ class ActionAssistTest {
     Operation operation =
         new Operation()
             .operationId("testOperation")
-            .extensions(Map.of(OPERATION_METHOD_NAME, "testMethod"));
+            .extensions(Map.of(SDK_METHOD_NAME, "testMethod"));
     return new Action(HttpRequestType.GET, operation, "/test");
   }
 
@@ -528,7 +528,7 @@ class ActionAssistTest {
     Operation operation =
         new Operation()
             .operationId("testOperation")
-            .extensions(Map.of(OPERATION_METHOD_NAME, "testMethod"))
+            .extensions(Map.of(SDK_METHOD_NAME, "testMethod"))
             .requestBody(requestBody)
             .addParametersItem(
                 new QueryParameter().name("limit").required(false).schema(new StringSchema()));
@@ -552,7 +552,7 @@ class ActionAssistTest {
     Operation operation =
         new Operation()
             .operationId("testOperation")
-            .extensions(Map.of(OPERATION_METHOD_NAME, "testMethod"))
+            .extensions(Map.of(SDK_METHOD_NAME, "testMethod"))
             .requestBody(requestBody);
 
     return new Action(HttpRequestType.POST, operation, "/test");
@@ -562,7 +562,7 @@ class ActionAssistTest {
     Operation operation =
         new Operation()
             .operationId("testOperation")
-            .extensions(Map.of(OPERATION_METHOD_NAME, "testMethod"))
+            .extensions(Map.of(SDK_METHOD_NAME, "testMethod"))
             .addParametersItem(
                 new QueryParameter().name("limit").required(false).schema(new StringSchema()));
 

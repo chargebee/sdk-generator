@@ -4,7 +4,7 @@
  * Reach out to dx@chargebee.com for any questions.
  * Copyright 2025 Chargebee Inc.
  */
-package com.chargebee.v4.core.models.{{module}}.params;
+package com.chargebee.v4.models.{{module}}.params;
 
 import com.chargebee.v4.internal.Recommended;
 import com.chargebee.v4.internal.JsonUtil;
@@ -29,16 +29,96 @@ public final class {{name}}Params {
 }
 
 {{#*inline "paramsContent"}}
-    private final Map<String, Object> formData;
+    {{#each fields}}
+    private final {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{name}};
+    {{/each}}
+    {{#if customFieldsSupported}}
+    private final Map<String, String> customFields;
+    {{/if}}
+    {{#if consentFieldsSupported}}
+    private final Map<String, Object> consentFields;
+    {{/if}}
 
     private {{name}}Params({{name}}Builder builder) {
-        this.formData = Collections.unmodifiableMap(new LinkedHashMap<>(builder.formData));
+        {{#each fields}}
+        this.{{name}} = builder.{{name}};
+        {{/each}}
+        {{#if customFieldsSupported}}
+        this.customFields = builder.customFields.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.customFields));
+        {{/if}}
+        {{#if consentFieldsSupported}}
+        this.consentFields = builder.consentFields.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.consentFields));
+        {{/if}}
     }
+
+    {{#each fields}}
+    public {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{getterName}}() {
+        return {{name}};
+    }
+    {{/each}}
+    {{#if customFieldsSupported}}
+    public Map<String, String> customFields() {
+        return customFields;
+    }
+    {{/if}}
+    {{#if consentFieldsSupported}}
+    public Map<String, Object> consentFields() {
+        return consentFields;
+    }
+    {{/if}}
 
     /**
      * Get the form data for this request.
      */
     public Map<String, Object> toFormData() {
+        Map<String, Object> formData = new LinkedHashMap<>();
+
+        {{#each fields}}
+        if (this.{{name}} != null) {
+            {{#if subModelField}}
+                {{#if compositeArrayField}}
+                // List of objects
+                for (int i = 0; i < this.{{name}}.size(); i++) {
+                    {{subModelParamsType}} item = this.{{name}}.get(i);
+                    if (item != null) {
+                        Map<String, Object> itemData = item.toFormData();
+                        for (Map.Entry<String, Object> entry : itemData.entrySet()) {
+                            String indexedKey = "{{curlName}}[" + entry.getKey() + "][" + i + "]";
+                            formData.put(indexedKey, entry.getValue());
+                        }
+                    }
+                }
+                {{else}}
+                // Single object
+                Map<String, Object> nestedData = this.{{name}}.toFormData();
+                for (Map.Entry<String, Object> entry : nestedData.entrySet()) {
+                    String nestedKey = "{{curlName}}[" + entry.getKey() + "]";
+                    formData.put(nestedKey, entry.getValue());
+                }
+                {{/if}}
+            {{else}}
+                {{#if mapType}}
+                formData.put("{{curlName}}", JsonUtil.toJson(this.{{name}}));
+                {{else if isListType}}
+                    {{#if (or (eq listElementType "Object") (eq listElementType "java.util.Map<String, Object>"))}}
+                    formData.put("{{curlName}}", JsonUtil.toJson(this.{{name}}));
+                    {{else}}
+                    formData.put("{{curlName}}", this.{{name}});
+                    {{/if}}
+                {{else}}
+                formData.put("{{curlName}}", this.{{name}});
+                {{/if}}
+            {{/if}}
+        }
+        {{/each}}
+        
+        {{#if customFieldsSupported}}
+        formData.putAll(customFields);
+        {{/if}}
+        {{#if consentFieldsSupported}}
+        formData.putAll(consentFields);
+        {{/if}}
+
         return formData;
     }
 
@@ -51,59 +131,24 @@ public final class {{name}}Params {
     }
 
     public static final class {{name}}Builder {
-        private final Map<String, Object> formData = new LinkedHashMap<>();
+        {{#each fields}}
+        private {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{name}};
+        {{/each}}
+        {{#if customFieldsSupported}}
+        private Map<String, String> customFields = new LinkedHashMap<>();
+        {{/if}}
+        {{#if consentFieldsSupported}}
+        private Map<String, Object> consentFields = new LinkedHashMap<>();
+        {{/if}}
 
-        private {{../name}}Builder() {}
+        private {{name}}Builder() {}
 
         {{#each fields}}
-        {{#if subModelField}}
-        {{#if compositeArrayField}}
         {{#if deprecated}}@Deprecated{{/if}}
-        public {{../name}}Builder {{name}}(List<{{subModelParamsType}}> value) {
-            if (value != null && !value.isEmpty()) {
-                for (int i = 0; i < value.size(); i++) {
-                    {{subModelParamsType}} item = value.get(i);
-                    if (item != null) {
-                        Map<String, Object> itemData = item.toFormData();
-                        for (Map.Entry<String, Object> entry : itemData.entrySet()) {
-                            String indexedKey = "{{curlName}}[" + entry.getKey() + "][" + i + "]";
-                            formData.put(indexedKey, entry.getValue());
-                        }
-                    }
-                }
-            }
+        public {{../name}}Builder {{name}}({{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} value) {
+            this.{{name}} = value;
             return this;
         }
-        {{else}}
-        {{#if deprecated}}@Deprecated{{/if}}
-        public {{../name}}Builder {{name}}({{subModelParamsType}} value) {
-            if (value != null) {
-                Map<String, Object> nestedData = value.toFormData();
-                for (Map.Entry<String, Object> entry : nestedData.entrySet()) {
-                    String nestedKey = "{{curlName}}[" + entry.getKey() + "]";
-                    formData.put(nestedKey, entry.getValue());
-                }
-            }
-            return this;
-        }
-        {{/if}}
-        {{else}}
-        {{#if deprecated}}@Deprecated{{/if}}
-        public {{../name}}Builder {{name}}({{{type}}} value) {
-            {{#if mapType}}
-            formData.put("{{curlName}}", JsonUtil.toJson(value));
-            {{else if isListType}}
-            {{#if (or (eq listElementType "Object") (eq listElementType "java.util.Map<String, Object>"))}}
-            formData.put("{{curlName}}", JsonUtil.toJson(value));
-            {{else}}
-            formData.put("{{curlName}}", value);
-            {{/if}}
-            {{else}}
-            formData.put("{{curlName}}", value);
-            {{/if}}
-            return this;
-        }
-        {{/if}}
         {{/each}}
         {{#if customFieldsSupported}}
 
@@ -115,11 +160,11 @@ public final class {{name}}Params {
          * @return this builder
          * @throws IllegalArgumentException if fieldName doesn't start with "cf_"
          */
-        public {{name}}Builder customField(String fieldName, Object value) {
+        public {{name}}Builder customField(String fieldName, String value) {
             if (fieldName == null || !fieldName.startsWith("cf_")) {
                 throw new IllegalArgumentException("Custom field name must start with 'cf_'");
             }
-            formData.put(fieldName, value);
+            this.customFields.put(fieldName, value);
             return this;
         }
 
@@ -130,13 +175,67 @@ public final class {{name}}Params {
          * @return this builder
          * @throws IllegalArgumentException if any field name doesn't start with "cf_"
          */
-        public {{name}}Builder customFields(Map<String, Object> customFields) {
+        public {{name}}Builder customFields(Map<String, String> customFields) {
             if (customFields != null) {
-                for (Map.Entry<String, Object> entry : customFields.entrySet()) {
+                for (Map.Entry<String, String> entry : customFields.entrySet()) {
                     if (entry.getKey() == null || !entry.getKey().startsWith("cf_")) {
                         throw new IllegalArgumentException("Custom field name must start with 'cf_': " + entry.getKey());
                     }
-                    formData.put(entry.getKey(), entry.getValue());
+                    this.customFields.put(entry.getKey(), entry.getValue());
+                }
+            }
+            return this;
+        }
+        {{/if}}
+        {{#if consentFieldsSupported}}
+
+        /**
+         * Add a consent field to the request. Consent fields must start with "cs_".
+         * Consent fields typically hold boolean values or options.
+         *
+         * @param fieldName the name of the consent field (e.g., "cs_marketing_consent")
+         * @param value the value of the consent field (typically Boolean or String for options)
+         * @return this builder
+         * @throws IllegalArgumentException if fieldName doesn't start with "cs_"
+         */
+        public {{name}}Builder consentField(String fieldName, Object value) {
+            if (fieldName == null || !fieldName.startsWith("cs_")) {
+                throw new IllegalArgumentException("Consent field name must start with 'cs_'");
+            }
+            this.consentFields.put(fieldName, value);
+            return this;
+        }
+
+        /**
+         * Add a boolean consent field to the request. Consent fields must start with "cs_".
+         *
+         * @param fieldName the name of the consent field (e.g., "cs_marketing_consent")
+         * @param value the boolean value of the consent field
+         * @return this builder
+         * @throws IllegalArgumentException if fieldName doesn't start with "cs_"
+         */
+        public {{name}}Builder consentField(String fieldName, Boolean value) {
+            if (fieldName == null || !fieldName.startsWith("cs_")) {
+                throw new IllegalArgumentException("Consent field name must start with 'cs_'");
+            }
+            this.consentFields.put(fieldName, value);
+            return this;
+        }
+
+        /**
+         * Add multiple consent fields to the request. All field names must start with "cs_".
+         *
+         * @param consentFields map of consent field names to values
+         * @return this builder
+         * @throws IllegalArgumentException if any field name doesn't start with "cs_"
+         */
+        public {{name}}Builder consentFields(Map<String, Object> consentFields) {
+            if (consentFields != null) {
+                for (Map.Entry<String, Object> entry : consentFields.entrySet()) {
+                    if (entry.getKey() == null || !entry.getKey().startsWith("cs_")) {
+                        throw new IllegalArgumentException("Consent field name must start with 'cs_': " + entry.getKey());
+                    }
+                    this.consentFields.put(entry.getKey(), entry.getValue());
                 }
             }
             return this;

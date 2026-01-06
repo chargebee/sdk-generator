@@ -17,7 +17,7 @@ This document describes all the custom extension parameters (prefixed with `x-cb
 | x-cb-batch-operation-path-id       | string   |         |          | Path identifier for batch operations.                                       |                                |
 | x-cb-is-operation-needs-json-input | boolean  | false   |          | Indicates that the operation requires JSON input format.                    |                                |
 | x-cb-is-operation-needs-input-object | boolean | false   |          | Indicates that the operation requires an input object.                     |                                |
-| x-cb-is-custom-fields-supported    | boolean  | false   |          | Indicates if the operation supports custom fields.                          |                                |
+| x-cb-is-custom-fields-supported    | boolean  | false   |          | Indicates if the operation supports custom fields (cf_*).                   |                                |
 | x-cb-sort-order                    | integer  | -1      |          | Defines the display order of operations in generated documentation and SDK. |                                |
 
 ---

@@ -78,13 +78,16 @@ class GetResponseBuilderTest {
       responseBuilder.withOutputDirectoryPath(outputPath);
 
       List<FileOp> fileOps =
-          responseBuilder.withListTemplate(listTemplate).withSimpleTemplate(simpleTemplate).build(openAPI);
+          responseBuilder
+              .withListTemplate(listTemplate)
+              .withSimpleTemplate(simpleTemplate)
+              .build(openAPI);
 
       // Should create base responses directory
       assertThat(fileOps).isNotEmpty();
       assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
       FileOp.CreateDirectory dirOp = (FileOp.CreateDirectory) fileOps.get(0);
-      assertThat(dirOp.basePath).isEqualTo(outputPath + "/v4/core/responses");
+      assertThat(dirOp.basePath).isEqualTo(outputPath + "/com/chargebee/v4/models");
     }
 
     @Test
@@ -140,7 +143,8 @@ class GetResponseBuilderTest {
 
       Operation simpleOp =
           createGetOperationWithResponse("customer", "retrieve", simpleResponseSchema);
-      addPathWithGetOperation("/customers/customer-id", simpleOp);
+      // Use path parameter syntax for retrieve to derive correctly
+      addPathWithGetOperation("/customers/{customer-id}", simpleOp);
 
       responseBuilder
           .withOutputDirectoryPath(outputPath)
@@ -185,7 +189,7 @@ class GetResponseBuilderTest {
       // Verify directory is created with correct path
       assertThat(fileOps).isNotEmpty();
       FileOp.CreateDirectory baseDir = (FileOp.CreateDirectory) fileOps.get(0);
-      assertThat(baseDir.basePath).isEqualTo(outputPath + "/v4/core/responses");
+      assertThat(baseDir.basePath).isEqualTo(outputPath + "/com/chargebee/v4/models");
     }
 
     @Test
@@ -220,7 +224,7 @@ class GetResponseBuilderTest {
       addPathWithGetOperation(
           "/customers", createGetOperationWithResponse("customer", "list", listSchema));
       addPathWithGetOperation(
-          "/customers/id", createGetOperationWithResponse("customer", "retrieve", simpleSchema));
+          "/customers/{id}", createGetOperationWithResponse("customer", "retrieve", simpleSchema));
 
       responseBuilder
           .withOutputDirectoryPath(outputPath)
@@ -230,7 +234,8 @@ class GetResponseBuilderTest {
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
       // Should have operations from both builders aggregated
-      long directoryOps = fileOps.stream().filter(op -> op instanceof FileOp.CreateDirectory).count();
+      long directoryOps =
+          fileOps.stream().filter(op -> op instanceof FileOp.CreateDirectory).count();
       long writeOps = fileOps.stream().filter(op -> op instanceof FileOp.WriteString).count();
 
       assertThat(directoryOps).isGreaterThanOrEqualTo(1);
@@ -280,8 +285,7 @@ class GetResponseBuilderTest {
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
       // Should only create directories, no response files
-      assertThat(fileOps)
-          .allMatch(op -> op instanceof FileOp.CreateDirectory);
+      assertThat(fileOps).allMatch(op -> op instanceof FileOp.CreateDirectory);
     }
 
     @Test
@@ -303,7 +307,8 @@ class GetResponseBuilderTest {
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
       // Should generate operations for all endpoints
-      long directoryOps = fileOps.stream().filter(op -> op instanceof FileOp.CreateDirectory).count();
+      long directoryOps =
+          fileOps.stream().filter(op -> op instanceof FileOp.CreateDirectory).count();
       long writeOps = fileOps.stream().filter(op -> op instanceof FileOp.WriteString).count();
 
       // At least base directory + resource directories
@@ -320,7 +325,10 @@ class GetResponseBuilderTest {
     Operation operation = new Operation();
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
-    extensions.put(Extension.OPERATION_METHOD_NAME, methodName);
+    // Set IS_OPERATION_LIST for list operations so path-based derivation works correctly
+    if ("list".equals(methodName)) {
+      extensions.put(Extension.IS_OPERATION_LIST, true);
+    }
     operation.setExtensions(extensions);
 
     ApiResponse response = new ApiResponse();

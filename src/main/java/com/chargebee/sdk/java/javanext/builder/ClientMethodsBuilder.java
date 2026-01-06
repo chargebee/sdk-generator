@@ -1,5 +1,7 @@
 package com.chargebee.sdk.java.javanext.builder;
 
+import com.chargebee.handlebar.Inflector;
+import com.chargebee.openapi.Extension;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.java.javanext.JavaFormatter;
 import com.github.jknack.handlebars.Template;
@@ -27,10 +29,9 @@ public class ClientMethodsBuilder {
   // Constants
   // --------------------------------------------------------------------------------------
 
-  private static final String CLIENT_SUBDIR = "/v4/client";
+  private static final String CLIENT_SUBDIR = "/com/chargebee/v4/client";
   private static final String KEY_SERVICES = "services";
   private static final String KEY_IMPORTS = "imports";
-  private static final String CB_RESOURCE_ID_EXT = "x-cb-resource-id";
   private static final String CLIENT_METHODS_FILENAME = "ClientMethods.java";
   private static final String CLIENT_METHODS_IMPL_FILENAME = "ClientMethodsImpl.java";
 
@@ -146,7 +147,7 @@ public class ClientMethodsBuilder {
           continue;
         }
 
-        Object resourceIdObj = operation.getExtensions().get(CB_RESOURCE_ID_EXT);
+        Object resourceIdObj = operation.getExtensions().get(Extension.RESOURCE_ID);
         if (resourceIdObj != null) {
           resourcesWithOperations.add(resourceIdObj.toString());
         }
@@ -158,14 +159,15 @@ public class ClientMethodsBuilder {
 
   private Set<String> deriveImports(List<ServiceInfo> services) {
     return services.stream()
-        .map(service -> "com.chargebee.v4.core.services." + service.getClassName())
+        .map(service -> "com.chargebee.v4.services." + service.getClassName())
         .collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
   private ServiceInfo createServiceInfo(String resourceName) {
     ServiceInfo serviceInfo = new ServiceInfo();
     serviceInfo.setResourceName(resourceName);
-    serviceInfo.setMethodName(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, resourceName));
+    String camelCase = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, resourceName);
+    serviceInfo.setMethodName(Inflector.pluralize(camelCase));
     serviceInfo.setClassName(
         CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, resourceName) + "Service");
     return serviceInfo;

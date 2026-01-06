@@ -66,7 +66,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create_customer");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
       postOp.setRequestBody(requestBody);
 
@@ -84,8 +84,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerCreateParams.java");
       assertThat(writeOp.fileContent).contains("public CustomerCreateBuilder customField(");
       assertThat(writeOp.fileContent).contains("public CustomerCreateBuilder customFields(");
-      assertThat(writeOp.fileContent)
-          .contains("Custom field name must start with 'cf_'");
+      assertThat(writeOp.fileContent).contains("Custom field name must start with 'cf_'");
     }
 
     @Test
@@ -105,7 +104,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create_address");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "address");
       postOp.setRequestBody(requestBody);
 
@@ -143,7 +142,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "subscription");
       postOp.setRequestBody(requestBody);
 
@@ -159,7 +158,8 @@ class PostRequestParamsBuilderCustomFieldsTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "SubscriptionCreateParams.java");
-      assertThat(writeOp.fileContent).contains("if (fieldName == null || !fieldName.startsWith(\"cf_\"))");
+      assertThat(writeOp.fileContent)
+          .contains("if (fieldName == null || !fieldName.startsWith(\"cf_\"))");
       assertThat(writeOp.fileContent).contains("throw new IllegalArgumentException");
     }
 
@@ -181,7 +181,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("update");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "update");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "update");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
       postOp.setRequestBody(requestBody);
 
@@ -198,8 +198,9 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerUpdateParams.java");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerUpdateBuilder customFields(Map<String, Object> customFields)");
-      assertThat(writeOp.fileContent).contains("for (Map.Entry<String, Object> entry : customFields.entrySet())");
+          .contains("public CustomerUpdateBuilder customFields(Map<String, String> customFields)");
+      assertThat(writeOp.fileContent)
+          .contains("for (Map.Entry<String, String> entry : customFields.entrySet())");
     }
 
     @Test
@@ -220,7 +221,7 @@ class PostRequestParamsBuilderCustomFieldsTest {
 
       Operation postOp = new Operation();
       postOp.setOperationId("create");
-      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "test");
       postOp.setRequestBody(requestBody);
 

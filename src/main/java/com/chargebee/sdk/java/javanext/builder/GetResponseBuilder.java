@@ -15,7 +15,7 @@ public class GetResponseBuilder {
   private final List<FileOp> fileOps = new ArrayList<>();
 
   public GetResponseBuilder withOutputDirectoryPath(String outputDirectoryPath) {
-    this.outputDirectoryPath = outputDirectoryPath + "/v4/core/responses";
+    this.outputDirectoryPath = outputDirectoryPath + "/com/chargebee/v4/models";
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }

@@ -1,5 +1,6 @@
 package com.chargebee.sdk.java.javanext.builder;
 
+import com.chargebee.handlebar.Inflector;
 import com.chargebee.openapi.Extension;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.java.javanext.JavaFormatter;
@@ -25,7 +26,7 @@ public class ServiceRegistryBuilder {
   // Constants & Logger
   // ---------------------------------------------------------------------------------------------
   private static final Logger LOGGER = Logger.getLogger(ServiceRegistryBuilder.class.getName());
-  private static final String CLIENT_DIR_SUFFIX = "/v4/client";
+  private static final String CLIENT_DIR_SUFFIX = "/com/chargebee/v4/client";
 
   // ---------------------------------------------------------------------------------------------
   // State
@@ -194,7 +195,8 @@ public class ServiceRegistryBuilder {
   }
 
   private static String toServiceMethodName(String resourceName) {
-    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, resourceName);
+    String camelCase = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, resourceName);
+    return Inflector.pluralize(camelCase);
   }
 
   private static String toServiceFieldName(String resourceName) {
@@ -213,7 +215,7 @@ public class ServiceRegistryBuilder {
   private static class ServiceInfo {
     private String name; // customer
     private String className; // CustomerService
-    private String methodName; // customer
+    private String methodName; // customers
     private String fieldName; // customerService
   }
 }

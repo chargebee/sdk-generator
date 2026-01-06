@@ -56,7 +56,7 @@ public class GetRequestParamsBuilder {
    * Output structure: <base>/core/models/<module>/params
    */
   public GetRequestParamsBuilder withOutputDirectoryPath(String outputDirectoryPath) {
-    this.outputDirectoryPath = outputDirectoryPath + "/v4/core/models";
+    this.outputDirectoryPath = outputDirectoryPath + "/com/chargebee/v4/models";
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }
@@ -87,14 +87,12 @@ public class GetRequestParamsBuilder {
       if (operation.getParameters() == null || operation.getParameters().isEmpty()) continue;
 
       var getAction = new GetAction();
-      var rawOperationId = readExtension(operation, Extension.OPERATION_METHOD_NAME);
       var module = readExtension(operation, Extension.RESOURCE_ID);
 
       // Skip operations without required extensions
-      if (rawOperationId == null || module == null) continue;
+      if (module == null) continue;
 
-      // Normalize operation ID to proper camelCase
-      var operationId = com.chargebee.GenUtil.normalizeToLowerCamelCase(rawOperationId);
+      var operationId = readExtension(operation, Extension.SDK_METHOD_NAME);
 
       getAction.setOperationId(operationId);
       getAction.setModule(module);
@@ -352,12 +350,24 @@ public class GetRequestParamsBuilder {
     private List<Model> subModels;
 
     public String getName() {
-      var operationId = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
+      var operationIdSnake =
+          CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getOperationId());
       var moduleSnake =
           module.contains("_")
               ? module
               : CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, module);
-      var actionName = moduleSnake + "_" + operationId;
+
+      // If operationId contains the module name (or its singular/plural variations), don't prefix
+      // it
+      var moduleBase = moduleSnake.replaceAll("_", "");
+      var operationBase = operationIdSnake.replaceAll("_", "");
+      if (operationIdSnake.contains(moduleSnake)
+          || operationBase.contains(moduleBase)
+          || moduleBase.contains(operationBase)) {
+        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, operationIdSnake);
+      }
+
+      var actionName = moduleSnake + "_" + operationIdSnake;
       return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, actionName);
     }
 
