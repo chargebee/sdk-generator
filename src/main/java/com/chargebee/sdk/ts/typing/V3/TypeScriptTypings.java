@@ -15,6 +15,7 @@ import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.Language;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Template;
+import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.*;
 import java.io.IOException;
 import java.util.*;
@@ -107,10 +108,35 @@ public class TypeScriptTypings extends Language {
             .attributes()
             .forEach(
                 (innerAttribute -> {
-                  String ref = innerAttribute.schema.get$ref();
+                  Schema<?> schema = innerAttribute.schema;
+                  String ref = null;
+                  boolean isArray = false;
+                  if (schema instanceof ArraySchema) {
+                    ArraySchema arraySchema = (ArraySchema) schema;
+                    Schema<?> itemSchema = arraySchema.getItems();
+                    if (itemSchema != null) {
+                      ref = itemSchema.get$ref();
+                      isArray = true;
+                    }
+                  } else {
+                    ref = schema.get$ref();
+                  }
+
                   if (ref != null && ref.contains("/")) {
                     String schemaName = ref.substring(ref.lastIndexOf("/") + 1);
-                    resources.add(schemaName);
+                    if (isArray) {
+                      resources.add(
+                          String.format(
+                              "%s: %s[];",
+                              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, schemaName),
+                              schemaName));
+                    } else {
+                      resources.add(
+                          String.format(
+                              "%s: %s;",
+                              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, schemaName),
+                              schemaName));
+                    }
                   }
                 }));
       }

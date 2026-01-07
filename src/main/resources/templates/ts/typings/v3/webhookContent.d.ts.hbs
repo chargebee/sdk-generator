@@ -33,7 +33,7 @@ declare module 'chargebee' {
         origin_user?:string;
     }
     {{#each this }} export type {{snakeCaseToPascalCase type}}Content = { {{#each resource_schemas}}
-        {{pascalCaseToSnakeCase .}}: {{.}};
+        {{.}}
     {{/each}}
     }
     {{/each}}
