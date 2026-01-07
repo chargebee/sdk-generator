@@ -19,7 +19,9 @@ public class Field {
   private String curlName;
   private boolean isFilter;
   private String filterType;
+  private String filterSdkName; // e.g., "NumberFilter", "TimestampFilter", "StringFilter"
   private List<String> supportedOperations = new ArrayList<>();
+  private List<String> filterEnumValues; // Enum values for filter fields (e.g., Status values)
   private boolean isSort;
   private List<String> sortableFields = new ArrayList<>();
   private boolean subModelField;
@@ -203,5 +205,50 @@ public class Field {
     // Replace dots with underscores to handle field names like "card.copy_billing_info"
     String normalizedName = name.replace('.', '_');
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, normalizedName) + "SortBuilder";
+  }
+
+  /**
+   * Returns true if this filter field has typed enum values.
+   */
+  public boolean hasFilterEnum() {
+    return filterEnumValues != null && !filterEnumValues.isEmpty();
+  }
+
+  /**
+   * Returns true if this is a NumberFilter (uses Long for values).
+   */
+  public boolean isNumberFilter() {
+    return "NumberFilter".equals(filterSdkName);
+  }
+
+  /**
+   * Returns true if this is a TimestampFilter (uses Timestamp for values).
+   */
+  public boolean isTimestampFilter() {
+    return "TimestampFilter".equals(filterSdkName);
+  }
+
+  /**
+   * Returns the enum type name for this filter field (e.g., "Status" for status filter).
+   */
+  public String getFilterEnumType() {
+    if (name == null) return null;
+    String normalizedName = name.replace('.', '_');
+    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, normalizedName);
+  }
+
+  /**
+   * Returns the filter enum values formatted for template (key-value pairs).
+   */
+  public List<java.util.Map<String, String>> getFilterEnumFormatted() {
+    if (filterEnumValues == null) return null;
+    var formatted = new ArrayList<java.util.Map<String, String>>();
+    for (String value : filterEnumValues) {
+      var entry = new java.util.LinkedHashMap<String, String>();
+      entry.put("key", CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_UNDERSCORE, value));
+      entry.put("value", value);
+      formatted.add(entry);
+    }
+    return formatted;
   }
 }

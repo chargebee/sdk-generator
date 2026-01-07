@@ -37,4 +37,14 @@ public class Model {
         ? Character.toUpperCase(name.charAt(0)) + name.substring(1)
         : name;
   }
+
+  /**
+   * Returns true if this model has any filter fields.
+   */
+  public boolean hasFilterFields() {
+    if (fields == null || fields.isEmpty()) {
+      return false;
+    }
+    return fields.stream().anyMatch(Field::isFilter);
+  }
 }

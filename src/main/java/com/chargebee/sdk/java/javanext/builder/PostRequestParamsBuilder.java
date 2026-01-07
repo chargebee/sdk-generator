@@ -158,6 +158,9 @@ public class PostRequestParamsBuilder {
         if (nestedProps == null || nestedProps.isEmpty()) {
           continue;
         }
+        if (isDirectFilterParameter(schemaDefn)) {
+          continue;
+        }
         String fullPath =
             (parentPath == null || parentPath.isBlank())
                 ? fieldName.toString()
@@ -212,6 +215,11 @@ public class PostRequestParamsBuilder {
     }
     for (var fieldName : properties.keySet()) {
       Schema<?> schemaDefn = properties.get(fieldName);
+
+      if (isDirectFilterParameter(schemaDefn)) {
+        continue;
+      }
+
       Schema<?> enumSchema = schemaDefn;
 
       // For composite array sub-models, check if this is an array with enum items
@@ -274,10 +282,19 @@ public class PostRequestParamsBuilder {
                 ? entry.getKey()
                 : parentPath + "_" + entry.getKey();
         var subModelRef = new Model();
-        // name is simple leaf; packageName is full path
         subModelRef.setPackageName(fullPath);
         subModelRef.setName(entry.getKey());
         field.setSubModel(subModelRef);
+      } else if (isDirectFilterParameter(schemaDefn)) {
+        field.setFilter(true);
+        String filterTypeName = CaseFormatUtil.toUpperCamelSafe(entry.getKey()) + "Filter";
+        field.setFilterType(filterTypeName);
+        field.setSupportedOperations(getSupportedOperations(schemaDefn));
+        field.setFilterSdkName(getFilterSdkName(schemaDefn));
+        List<String> enumValues = getFilterEnumValues(schemaDefn);
+        if (enumValues != null && !enumValues.isEmpty()) {
+          field.setFilterEnumValues(enumValues);
+        }
       } else if (fieldType instanceof ObjectType
           && safeProperties(schemaDefn) != null
           && !safeProperties(schemaDefn).isEmpty()) {
@@ -498,6 +515,71 @@ public class PostRequestParamsBuilder {
     return true;
   }
 
+  // =========================================================
+  // Filter detection helpers (for POST params with filters)
+  // =========================================================
+
+  /**
+   * Determines if a schema represents a filter parameter by checking the x-cb-is-filter-parameter
+   * extension. This is the canonical way to detect filter parameters in the OpenAPI spec.
+   */
+  private boolean isDirectFilterParameter(Schema<?> schema) {
+    if (schema == null) {
+      return false;
+    }
+    return schema.getExtensions() != null
+              && schema.getExtensions().get(Extension.IS_FILTER_PARAMETER) != null
+              && (boolean) schema.getExtensions().get(Extension.IS_FILTER_PARAMETER);
+  }
+
+  /**
+   * Get the list of supported filter operations from a filter schema.
+   */
+  private List<String> getSupportedOperations(Schema<?> schema) {
+    var props = safeProperties(schema);
+    if (props == null) {
+      return new ArrayList<>();
+    }
+    return new ArrayList<>(props.keySet());
+  }
+
+  /**
+   * Get the SDK filter name from the x-cb-sdk-filter-name extension.
+   * Returns values like "NumberFilter", "TimestampFilter", "StringFilter", etc.
+   */
+  private String getFilterSdkName(Schema<?> schema) {
+    if (schema == null || schema.getExtensions() == null) {
+      return null;
+    }
+    Object filterName = schema.getExtensions().get(Extension.SDK_FILTER_NAME);
+    return filterName != null ? filterName.toString() : null;
+  }
+
+  /**
+   * Check if a filter has enum values (for type-safe enum filter methods).
+   * Iterates through filter properties to find any with enum values.
+   */
+  private List<String> getFilterEnumValues(Schema<?> filterSchema) {
+    var props = safeProperties(filterSchema);
+    if (props == null) {
+      return null;
+    }
+
+    // Find any property with enum values
+    for (Schema<?> propSchema : props.values()) {
+      if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) {
+        return propSchema.getEnum().stream().map(String::valueOf).collect(Collectors.toList());
+      }
+      // Also check array items for enums (for 'in'/'not_in' operators)
+      if (propSchema.getItems() != null && propSchema.getItems().getEnum() != null) {
+        return propSchema.getItems().getEnum().stream()
+            .map(String::valueOf)
+            .collect(Collectors.toList());
+      }
+    }
+    return null;
+  }
+
   @lombok.Data
   private static class PostAction {
     private String operationId;
@@ -531,6 +613,17 @@ public class PostRequestParamsBuilder {
 
     public String getModule() {
       return CaseFormatUtil.toLowerCamelSafe(module);
+    }
+
+    /**
+     * Returns true if this action has any filter fields.
+     * Required by the template to conditionally declare filterParams.
+     */
+    public boolean hasFilterFields() {
+      if (fields == null || fields.isEmpty()) {
+        return false;
+      }
+      return fields.stream().anyMatch(Field::isFilter);
     }
   }
 }
