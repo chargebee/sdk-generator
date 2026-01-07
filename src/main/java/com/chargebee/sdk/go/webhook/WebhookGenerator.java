@@ -90,8 +90,7 @@ public class WebhookGenerator {
           List<String> filteredSchemas = new ArrayList<>();
           for (String schemaName : allSchemas) {
             // Convert to models directory name: lower_underscore then remove underscores
-            String snake =
-                CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, schemaName);
+            String snake = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, schemaName);
             String folder = snake.replace("_", "");
             java.io.File schemaDir = new java.io.File(modelsDir, folder);
             if (schemaDir.exists() && schemaDir.isDirectory()) {
@@ -147,5 +146,3 @@ public class WebhookGenerator {
     return fileOps;
   }
 }
-
-

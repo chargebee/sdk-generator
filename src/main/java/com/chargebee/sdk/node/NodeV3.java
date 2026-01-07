@@ -19,17 +19,17 @@ public class NodeV3 extends Language {
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .sorted(Comparator.comparing(Resource::sortOrder))
             .toList();
-    
+
     List<FileOp> fileOps = new ArrayList<>();
     fileOps.add(generateApiEndpointsFile(outputDirectoryPath, resources));
-    
+
     // Generate webhook event types file
     fileOps.addAll(generateWebhookEventTypes(outputDirectoryPath, spec));
-    
+
     // Generate entry point files (in parent directory of resources)
     String parentDirectoryPath = outputDirectoryPath.replace("/resources", "");
     fileOps.addAll(generateEntryPoints(parentDirectoryPath));
-    
+
     return fileOps;
   }
 
@@ -53,74 +53,62 @@ public class NodeV3 extends Language {
         resourcesDirectoryPath, "api_endpoints.ts", resourceTemplate.apply(templateParams));
   }
 
-  private List<FileOp> generateWebhookEventTypes(String outputDirectoryPath, Spec spec) 
+  private List<FileOp> generateWebhookEventTypes(String outputDirectoryPath, Spec spec)
       throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
     final String webhookDirectoryPath = "/webhook";
-    
+
     // Ensure webhook directory exists
     fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, webhookDirectoryPath));
-    
+
     // Include deprecated webhook events (like PCV1) since customers may still receive them
     var webhookInfo = spec.extractWebhookInfo(true);
-    
+
     if (webhookInfo.isEmpty()) {
       return fileOps;
     }
-    
+
     List<Map<String, Object>> events = new ArrayList<>();
     Set<String> seenTypes = new HashSet<>();
-    
+
     for (Map<String, String> info : webhookInfo) {
       String type = info.get("type");
       if (seenTypes.contains(type)) {
         continue;
       }
       seenTypes.add(type);
-      
+
       Map<String, Object> params = new HashMap<>();
       params.put("type", type);
       events.add(params);
     }
-    
+
     events.sort(Comparator.comparing(e -> e.get("type").toString()));
-    
+
     // eventType.ts
     Map<String, Object> ctx = new HashMap<>();
     ctx.put("events", events);
     Template eventTypesTemplate = getTemplateContent("webhookEventTypes");
     fileOps.add(
-      new FileOp.WriteString(
-          outputDirectoryPath + webhookDirectoryPath,
-          "eventType.ts",
-          eventTypesTemplate.apply(ctx)
-      )
-    );
-    
+        new FileOp.WriteString(
+            outputDirectoryPath + webhookDirectoryPath,
+            "eventType.ts",
+            eventTypesTemplate.apply(ctx)));
+
     return fileOps;
   }
 
   private List<FileOp> generateEntryPoints(String parentDirectoryPath) throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
-    
+
     Template esmTemplate = getTemplateContent("chargebeeEsm");
     Template cjsTemplate = getTemplateContent("chargebeeCjs");
-    
+
     fileOps.add(
-      new FileOp.WriteString(
-          parentDirectoryPath,
-          "chargebee.esm.ts",
-          esmTemplate.apply("")
-      )
-    );
+        new FileOp.WriteString(parentDirectoryPath, "chargebee.esm.ts", esmTemplate.apply("")));
     fileOps.add(
-      new FileOp.WriteString(
-          parentDirectoryPath,
-          "chargebee.cjs.ts",
-          cjsTemplate.apply("")
-      )
-    );
-    
+        new FileOp.WriteString(parentDirectoryPath, "chargebee.cjs.ts", cjsTemplate.apply("")));
+
     return fileOps;
   }
 }
