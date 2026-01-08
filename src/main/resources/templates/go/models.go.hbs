@@ -5,6 +5,14 @@ type {{clazName}} struct {
     Metadata              json.RawMessage        `json:"metadata"`
 {{/if}}
 }
+{{#if hasCustomFields}}
+func (r *{{clazName}}) setCustomFields(cf *customFields) { r.CustomFields = cf }
+
+func (r *{{clazName}}) UnmarshalJSON(data []byte) error {
+    type Alias {{clazName}}
+    return unmarshalObjectWithCustomField(data, r, (*Alias)(r))
+}
+{{/if}}
 {{~#each subResources}}
 type {{@root.clazName}}{{clazName}} struct {
 {{{cols}}}

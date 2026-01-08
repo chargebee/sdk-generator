@@ -522,9 +522,6 @@ public class Go extends Language {
 
       StringBuffer buf = new StringBuffer(Constants.FILE_HEADER);
       buf.append(getImportFiles());
-      // String resourceDirName =
-      // CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_",
-      // "");
 
       // enums
       List<Enum> resourceAssistEnums = new ResourceAssist().setResource(res).goEnums();
@@ -534,12 +531,14 @@ public class Go extends Language {
       }
 
       enumImport.clear();
+
       // main resource
       com.chargebee.sdk.go.model.Resource goRes = new com.chargebee.sdk.go.model.Resource();
       goRes.setPkgName(
           CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_", ""));
       goRes.setClazName(res.name);
       goRes.setCols(getCols());
+      goRes.setHasCustomFields(activeResource.isCustomFieldSupported());
 
       List<SubResource> subResourceList = new ArrayList<>();
       for (Resource subResource : activeResource.subResources()) {
@@ -950,9 +949,9 @@ public class Go extends Language {
           "\t"
               + String.join(
                   delimiter,
-                  "CustomField",
-                  "CustomField",
-                  "`json:\"custom_field\"`"));
+                  "CustomFields",
+                  "*customFields",
+                  "`json:\"-\"`"));
     if (activeResource.name.equals("Customer"))
       buf.add(
           "\t"

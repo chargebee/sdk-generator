@@ -12,4 +12,5 @@ public class Resource {
   private List<SubResource> subResources;
   private List<Operation> operations;
   private String responseImports;
+  private Boolean hasCustomFields;
 }

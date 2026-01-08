@@ -27,7 +27,7 @@ function _format() {
     local dir="$2"
     case "$lang" in
         go) pushd "$dir"
-            goimports-reviser -rm-unused -use-cache -format -apply-to-generated-files -excludes 'gen_*.go,tests' ./...
+            goimports-reviser -rm-unused -use-cache -format -apply-to-generated-files ./...
             popd;;
         *) echo "Formatter not available for $lang";;
     esac
