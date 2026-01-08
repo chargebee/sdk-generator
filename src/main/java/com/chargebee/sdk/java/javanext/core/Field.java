@@ -1,5 +1,7 @@
 package com.chargebee.sdk.java.javanext.core;
 
+import static com.chargebee.openapi.Extension.IS_MONEY_COLUMN;
+
 import com.chargebee.sdk.java.javanext.datatype.EnumType;
 import com.chargebee.sdk.java.javanext.datatype.FieldType;
 import com.chargebee.sdk.java.javanext.datatype.ListType;
@@ -160,6 +162,23 @@ public class Field {
       if ("string".equals(items.getType())) {
         return "String";
       }
+      if ("integer".equals(items.getType())) {
+        String fmt = items.getFormat();
+        if ("int64".equals(fmt)) {
+          return "Long";
+        }
+        // Check for money column extension - money columns should be Long
+        if (isMoneyColumn(items)) {
+          return "Long";
+        }
+        return "Integer";
+      }
+      if ("boolean".equals(items.getType())) {
+        return "Boolean";
+      }
+      if ("number".equals(items.getType())) {
+        return "Double";
+      }
 
       // Default for unspecified or other types
       return "Object";
@@ -250,5 +269,15 @@ public class Field {
       formatted.add(entry);
     }
     return formatted;
+  }
+
+  /**
+   * Check if the schema has the x-cb-is-money-column extension set to true.
+   * Money columns should be represented as Long in Java.
+   */
+  private static boolean isMoneyColumn(Schema<?> schema) {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_MONEY_COLUMN) != null
+        && (boolean) schema.getExtensions().get(IS_MONEY_COLUMN);
   }
 }

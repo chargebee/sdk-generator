@@ -1,5 +1,7 @@
 package com.chargebee.sdk.java.javanext.core;
 
+import static com.chargebee.openapi.Extension.IS_MONEY_COLUMN;
+
 import com.chargebee.sdk.java.javanext.datatype.*;
 import io.swagger.v3.oas.models.media.*;
 
@@ -61,6 +63,8 @@ public class TypeMapper {
         if ("unix-time".equals(fmt)) return new TimestampType();
         if ("int64".equals(fmt)) return new LongType();
         if ("decimal".equals(fmt)) return new BigDecimalType();
+        // Check for money column extension - money columns should be Long
+        if (isMoneyColumn(schema)) return new LongType();
         return new IntegerType();
       case "number":
         String numFmt = schema.getFormat();
@@ -85,5 +89,15 @@ public class TypeMapper {
       default:
         return null;
     }
+  }
+
+  /**
+   * Check if the schema has the x-cb-is-money-column extension set to true.
+   * Money columns should be represented as Long in Java.
+   */
+  private static boolean isMoneyColumn(Schema<?> schema) {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_MONEY_COLUMN) != null
+        && (boolean) schema.getExtensions().get(IS_MONEY_COLUMN);
   }
 }

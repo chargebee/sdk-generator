@@ -1,5 +1,7 @@
 package com.chargebee.sdk.java.javanext.datatype;
 
+import static com.chargebee.openapi.Extension.IS_MONEY_COLUMN;
+
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
@@ -55,6 +57,14 @@ public record ListType(String fieldName, Schema schema) implements FieldType {
       return "List<String>";
     }
     if ("integer".equals(itemType)) {
+      String fmt = items.getFormat();
+      if ("int64".equals(fmt)) {
+        return "List<Long>";
+      }
+      // Check for money column extension - money columns should be Long
+      if (isMoneyColumn(items)) {
+        return "List<Long>";
+      }
       return "List<Integer>";
     }
     if ("number".equals(itemType)) {
@@ -70,5 +80,15 @@ public record ListType(String fieldName, Schema schema) implements FieldType {
   @Override
   public @NotNull String toString() {
     return display();
+  }
+
+  /**
+   * Check if the schema has the x-cb-is-money-column extension set to true.
+   * Money columns should be represented as Long in Java.
+   */
+  private static boolean isMoneyColumn(Schema<?> schema) {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_MONEY_COLUMN) != null
+        && (boolean) schema.getExtensions().get(IS_MONEY_COLUMN);
   }
 }
