@@ -76,7 +76,7 @@ class ClientMethodsBuilderTest {
       assertThat(fileOps).isNotEmpty();
       assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
       FileOp.CreateDirectory dirOp = (FileOp.CreateDirectory) fileOps.get(0);
-      assertThat(dirOp.basePath).isEqualTo(outputPath + "/v4/client");
+      assertThat(dirOp.basePath).isEqualTo(outputPath + "/com/chargebee/v4/client");
     }
 
     @Test

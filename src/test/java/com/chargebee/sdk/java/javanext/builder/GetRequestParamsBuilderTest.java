@@ -545,6 +545,7 @@ class GetRequestParamsBuilderTest {
 
     @Test
     @DisplayName("Should recognize nested filter inside submodel")
+    @SuppressWarnings("rawtypes")
     void shouldRecognizeNestedFilterInsideSubmodel() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
 
@@ -884,14 +885,14 @@ class GetRequestParamsBuilderTest {
       addEnumQueryParam(
           getOperation, "hierarchy_operation_type", List.of("complete_hierarchy", "subordinates"));
 
-      // Path with {id} and action derives to hierarchyForCustomer
-      // hierarchyForCustomer contains "customer", so prefix is skipped
+      // Path with {id} and action - module "customer" is prefixed to operation name "hierarchy"
       addPathWithOperation("/customers/{customer-id}/hierarchy", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      FileOp.WriteString writeOp = findWriteOp(fileOps, "HierarchyForCustomerParams.java");
+      // Module "customer" + operation "hierarchy" = CustomerHierarchyParams
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerHierarchyParams.java");
       assertThat(writeOp.fileContent).contains("public enum HierarchyOperationType");
       assertThat(writeOp.fileContent).contains("COMPLETE_HIERARCHY(\"complete_hierarchy\")");
       assertThat(writeOp.fileContent).contains("SUBORDINATES(\"subordinates\")");
@@ -1135,14 +1136,14 @@ class GetRequestParamsBuilderTest {
       Operation getOperation = createGetOperation("customer", "changeEstimate");
       addStringQueryParam(getOperation, "subscription_id");
 
-      // Path with {id} and action derives to changeEstimateForCustomer
+      // Path with {id} and action - module "customer" is prefixed to operation name "changeEstimate"
       addPathWithOperation("/customers/{customer-id}/change_estimate", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      // changeEstimateForCustomer contains "customer", so prefix is skipped
-      assertFileExists(fileOps, "ChangeEstimateForCustomerParams.java");
+      // Module "customer" + operation "changeEstimate" = CustomerChangeEstimateParams
+      assertFileExists(fileOps, "CustomerChangeEstimateParams.java");
     }
 
     @Test
@@ -1302,13 +1303,13 @@ class GetRequestParamsBuilderTest {
     }
 
     @Test
-    @DisplayName(
-        "Should derive method name from path when OPERATION_METHOD_NAME extension is missing")
-    void shouldDeriveMethodNameFromPathWhenExtensionMissing() throws IOException {
+    @DisplayName("Should skip operation when SDK_METHOD_NAME extension is missing")
+    void shouldSkipOperationWhenMethodNameExtensionMissing() throws IOException {
       Operation getOperation = new Operation();
       Map<String, Object> extensions = new java.util.HashMap<>();
       extensions.put(Extension.RESOURCE_ID, "customer");
       extensions.put(Extension.IS_OPERATION_LIST, true);
+      // SDK_METHOD_NAME is intentionally not set
       getOperation.setExtensions(extensions);
       addStringQueryParam(getOperation, "test_param");
 
@@ -1317,10 +1318,10 @@ class GetRequestParamsBuilderTest {
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      // Should generate a file with method name derived from path (list for GET on /customers)
-      assertThat(fileOps).hasSizeGreaterThan(1);
-      boolean hasWriteOp = fileOps.stream().anyMatch(op -> op instanceof FileOp.WriteString);
-      assertThat(hasWriteOp).isTrue();
+      // Without SDK_METHOD_NAME, the operation cannot generate a valid params class
+      // Only directory creation should occur
+      assertThat(fileOps).hasSize(1);
+      assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
     }
 
     @Test

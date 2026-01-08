@@ -159,7 +159,7 @@ class PostRequestParamsBuilderTest {
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      FileOp.WriteString writeOp = findWriteOp(fileOps, "ChangeBillingDateForCustomerParams.java");
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerChangeBillingDateParams.java");
       assertThat(writeOp.fileContent).contains("BillingDayOfWeek");
       assertThat(writeOp.fileContent).containsIgnoringCase("sunday");
       assertThat(writeOp.fileContent).containsIgnoringCase("monday");
