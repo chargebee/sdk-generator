@@ -669,6 +669,7 @@ class ListResponseBuilderTest {
 
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
+    extensions.put(Extension.SDK_METHOD_NAME, methodName);
     // Set IS_OPERATION_LIST for list operations so path-based derivation works correctly
     if ("list".equals(methodName)) {
       extensions.put(Extension.IS_OPERATION_LIST, true);

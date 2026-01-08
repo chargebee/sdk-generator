@@ -192,15 +192,15 @@ class SimpleGetResponseBuilderTest {
       ObjectSchema responseSchema = new ObjectSchema();
       responseSchema.addProperty("id", new StringSchema());
 
-      // Path /payment_sources/{id}/retrieve_details derives to retrieveDetailsForPaymentSource
+      // Path /payment_sources/{id}/retrieve_details - module "payment_source" + method "retrieve_details"
       addGetOperation("payment_source", "retrieve_details", responseSchema);
 
       responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(template);
 
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
-      // retrieveDetailsForPaymentSource contains "payment_source", so prefix is skipped
-      assertFileExists(fileOps, "RetrieveDetailsForPaymentSourceResponse.java");
+      // Module "payment_source" + method "retrieve_details" = PaymentSourceRetrieveDetailsResponse
+      assertFileExists(fileOps, "PaymentSourceRetrieveDetailsResponse.java");
     }
   }
 
@@ -809,6 +809,7 @@ class SimpleGetResponseBuilderTest {
 
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
+    extensions.put(Extension.SDK_METHOD_NAME, methodName);
     // Set IS_OPERATION_LIST for list operations so path-based derivation works correctly
     if ("list".equals(methodName)) {
       extensions.put(Extension.IS_OPERATION_LIST, true);

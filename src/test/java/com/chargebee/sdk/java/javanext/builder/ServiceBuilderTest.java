@@ -350,20 +350,19 @@ class ServiceBuilderTest {
     }
 
     @Test
-    @DisplayName(
-        "Should derive method name from path when OPERATION_METHOD_NAME extension is missing")
-    void shouldDeriveMethodNameFromPathWhenExtensionMissing() throws IOException {
+    @DisplayName("Should skip operation when SDK_METHOD_NAME extension is missing")
+    void shouldSkipOperationWhenMethodNameExtensionMissing() throws IOException {
       Operation op = new Operation();
       op.addExtension(Extension.RESOURCE_ID, "customer");
+      // SDK_METHOD_NAME is NOT set - operation should be skipped
       addPathWithOperation("/customers", PathItem.HttpMethod.POST, op);
       serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
-      assertFileExists(fileOps, "CustomerService.java");
-      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
-      // Should derive "create" from POST to /customers
-      assertThat(writeOp.fileContent).containsIgnoringCase("create");
+      // Operation is skipped due to missing SDK_METHOD_NAME, so only directory is created
+      assertThat(fileOps).hasSize(1);
+      assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
     }
   }
 
