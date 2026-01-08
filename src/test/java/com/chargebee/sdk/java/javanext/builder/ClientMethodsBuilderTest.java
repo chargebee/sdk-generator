@@ -270,11 +270,11 @@ class ClientMethodsBuilderTest {
       FileOp.WriteString implFile = findWriteOp(fileOps, "ClientMethodsImpl.java");
 
       // Should import service classes
-      assertThat(interfaceFile.fileContent).contains("com.chargebee.v4.services");
+      assertThat(interfaceFile.fileContent).contains("com.chargebee.v4.core.services");
       assertThat(interfaceFile.fileContent).containsIgnoringCase("CustomerService");
       assertThat(interfaceFile.fileContent).containsIgnoringCase("InvoiceService");
 
-      assertThat(implFile.fileContent).contains("com.chargebee.v4.services");
+      assertThat(implFile.fileContent).contains("com.chargebee.v4.core.services");
     }
 
     @Test
@@ -485,18 +485,16 @@ class ClientMethodsBuilderTest {
     boolean exists =
         fileOps.stream()
             .anyMatch(
-                op ->
-                    op instanceof FileOp.WriteString
-                        && ((FileOp.WriteString) op).fileName.equals(fileName));
-    assertThat(exists).as("Expected file %s to exist in file operations", fileName).isTrue();
+                op -> op instanceof FileOp.WriteString && ((FileOp.WriteString) op).fileName.equals(fileName));
+    assertThat(exists)
+        .as("Expected file %s to exist in file operations", fileName)
+        .isTrue();
   }
 
   private FileOp.WriteString findWriteOp(List<FileOp> fileOps, String fileName) {
     return fileOps.stream()
         .filter(
-            op ->
-                op instanceof FileOp.WriteString
-                    && ((FileOp.WriteString) op).fileName.equals(fileName))
+            op -> op instanceof FileOp.WriteString && ((FileOp.WriteString) op).fileName.equals(fileName))
         .map(op -> (FileOp.WriteString) op)
         .findFirst()
         .orElseThrow(

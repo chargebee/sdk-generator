@@ -20,7 +20,7 @@ public class OperationBuilder {
   private final boolean isPostOperation;
 
   private static final String IS_CUSTOM_FIELDS_SUPPORTED = "x-cb-is-custom-fields-supported";
-  private static final String SDK_METHOD_NAME = "x-cb-sdk-method-name";
+  private static final String OPERATION_METHOD_NAME = "x-cb-operation-method-name";
   private static final String OPERATION_IS_LIST = "x-cb-operation-is-list";
 
   private OperationBuilder(
@@ -33,14 +33,14 @@ public class OperationBuilder {
 
   public static OperationBuilder buildOperation(String methodName) {
     LinkedHashMap linkedHashMap = new LinkedHashMap();
-    linkedHashMap.put(SDK_METHOD_NAME, methodName);
+    linkedHashMap.put(OPERATION_METHOD_NAME, methodName);
     Operation operation = new Operation().operationId(methodName).extensions(linkedHashMap);
     return new OperationBuilder(methodName, operation, false, false);
   }
 
   public static OperationBuilder buildListOperation(String methodName) {
     LinkedHashMap linkedHashMap = new LinkedHashMap();
-    linkedHashMap.put(SDK_METHOD_NAME, methodName);
+    linkedHashMap.put(OPERATION_METHOD_NAME, methodName);
     linkedHashMap.put(OPERATION_IS_LIST, true);
     Operation operation = new Operation().operationId(methodName).extensions(linkedHashMap);
     return new OperationBuilder(methodName, operation, true, false);
@@ -49,7 +49,7 @@ public class OperationBuilder {
   public static OperationBuilder buildListOperationWithCustomField(
       String methodName, boolean customFieldSupported) {
     LinkedHashMap linkedHashMap = new LinkedHashMap();
-    linkedHashMap.put(SDK_METHOD_NAME, methodName);
+    linkedHashMap.put(OPERATION_METHOD_NAME, methodName);
     linkedHashMap.put(OPERATION_IS_LIST, true);
     linkedHashMap.put(IS_CUSTOM_FIELDS_SUPPORTED, customFieldSupported);
     Operation operation = new Operation().operationId(methodName).extensions(linkedHashMap);
@@ -71,7 +71,7 @@ public class OperationBuilder {
   private static OperationBuilder buildPostOperation(
       String methodName, String description, boolean hasSupportForAdditionalProperties) {
     LinkedHashMap linkedHashMap = new LinkedHashMap();
-    linkedHashMap.put(SDK_METHOD_NAME, methodName);
+    linkedHashMap.put(OPERATION_METHOD_NAME, methodName);
     Operation operation =
         new Operation()
             .description(description)
@@ -94,7 +94,7 @@ public class OperationBuilder {
   public static OperationBuilder buildPostOperationWitCbCustomField(
       String methodName, String description, boolean customFieldSupported) {
     LinkedHashMap<String, Object> linkedHashMap = new LinkedHashMap<>();
-    linkedHashMap.put(SDK_METHOD_NAME, methodName);
+    linkedHashMap.put(OPERATION_METHOD_NAME, methodName);
 
     LinkedHashMap<String, Object> abc = new LinkedHashMap<>();
     abc.put(IS_CUSTOM_FIELDS_SUPPORTED, customFieldSupported);
@@ -120,7 +120,7 @@ public class OperationBuilder {
   public static OperationBuilder buildPostOperationWitNullCbCustomField(
       String methodName, String description) {
     LinkedHashMap<String, Object> linkedHashMap = new LinkedHashMap<>();
-    linkedHashMap.put(SDK_METHOD_NAME, methodName);
+    linkedHashMap.put(OPERATION_METHOD_NAME, methodName);
 
     LinkedHashMap<String, Object> abc = new LinkedHashMap<>();
     abc.put(IS_CUSTOM_FIELDS_SUPPORTED, null);

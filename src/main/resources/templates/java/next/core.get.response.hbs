@@ -1,9 +1,9 @@
-package com.chargebee.v4.models.{{module}}.responses;
+package com.chargebee.v4.core.responses.{{module}};
 
 {{#each imports}}
 import {{packageName}}.{{name}};
 {{/each}}
-import com.chargebee.v4.models.BaseResponse;
+import com.chargebee.v4.core.responses.BaseResponse;
 import com.chargebee.v4.internal.JsonUtil;
 import com.chargebee.v4.transport.Response;
 import java.math.BigDecimal;
@@ -21,10 +21,10 @@ public final class {{name}}Response extends BaseResponse {
 
     {{/each}}
 
-    private {{name}}Response(Builder builder) {
-        super(builder.httpResponse);
+    private {{name}}Response({{#each fields}}{{{type}}} {{name}}, {{/each}}Response httpResponse) {
+        super(httpResponse);
         {{#each fields}}
-        this.{{name}} = builder.{{name}};
+        this.{{name}} = {{name}};
         {{/each}}
     }
 
@@ -40,119 +40,55 @@ public final class {{name}}Response extends BaseResponse {
      */
     public static {{name}}Response fromJson(String json, Response httpResponse) {
         try {
-            Builder builder = builder();
             {{#each fields}}
             {{#if isMapType}}
             String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}(JsonUtil.parseJsonObjectToMap(__{{name}}Json));
-            }
+            {{{type}}} {{name}} = __{{name}}Json != null ? JsonUtil.parseJsonObjectToMap(__{{name}}Json) : new java.util.HashMap<>();
             {{else if isComplexObjectType}}
             String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}({{{type}}}.fromJson(__{{name}}Json));
-            }
+            {{{type}}} {{name}} = __{{name}}Json != null ? {{{type}}}.fromJson(__{{name}}Json) : null;
             {{else if isEnumType}}
-            builder.{{name}}({{{type}}}.fromString(JsonUtil.getString(json, "{{curlName}}")));
+            {{{type}}} {{name}} = {{{type}}}.fromString(JsonUtil.getString(json, "{{curlName}}"));
             {{else if isListOfObjects}}
-            {{#if listElementType}}
-            {{#unless (eq listElementType "Object")}}
-            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}(JsonUtil.parseObjectArray(__{{name}}Json).stream().map({{listElementType}}::fromJson).collect(java.util.stream.Collectors.toList()));
-            }
-            {{else}}
-            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}(JsonUtil.parseObjectArray(__{{name}}Json).stream().collect(java.util.stream.Collectors.toList()));
-            }
-            {{/unless}}
-            {{else}}
-            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}(JsonUtil.parseArrayOfString(__{{name}}Json));
-            }
-            {{/if}}
+              {{#if listElementType}}
+                {{#unless (eq listElementType "Object")}}
+                {{{type}}} {{name}} =
+                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}"))
+                        .stream()
+                        .map({{listElementType}}::fromJson)
+                        .collect(java.util.stream.Collectors.toList());
+                {{else}}
+                {{{type}}} {{name}} =
+                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}"))
+                        .stream()
+                        .collect(java.util.stream.Collectors.toList());
+                {{/unless}}
+              {{else}}
+              {{{type}}} {{name}} =
+                  JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
+              {{/if}}
             {{else if isListOfPrimitives}}
-            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}(JsonUtil.parseArrayOfString(__{{name}}Json));
-            }
+            {{{type}}} {{name}} =
+                JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
             {{else if isListType}}
-            {{#if (eq listElementType "Object")}}
             String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}(JsonUtil.parseObjectArray(__{{name}}Json).stream()
-                .map(JsonUtil::parseJsonObjectToMap)
-                .collect(java.util.stream.Collectors.toList()));
-            }
-            {{else if (eq listElementType "java.util.Map<String, Object>")}}
-            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}(JsonUtil.parseObjectArray(__{{name}}Json).stream()
-                .map(JsonUtil::parseJsonObjectToMap)
-                .collect(java.util.stream.Collectors.toList()));
-            }
-            {{else}}
-            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}(JsonUtil.parseArrayOfString(__{{name}}Json));
-            }
-            {{/if}}
+            {{{type}}} {{name}} = __{{name}}Json != null ?
+                JsonUtil.parseObjectArray(__{{name}}Json).stream()
+                    .collect(java.util.stream.Collectors.toList()) : null;
             {{else if isObjectType}}
             {{#if isPlainObjectType}}
-            builder.{{name}}(JsonUtil.getObject(json, "{{curlName}}"));
+            {{{type}}} {{name}} = JsonUtil.getObject(json, "{{curlName}}");
             {{else}}
-            String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}({{{type}}}.fromJson(__{{name}}Json));
-            }
+            {{{type}}} {{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
             {{/if}}
             {{else}}
-            builder.{{name}}(JsonUtil.get{{{type}}}(json, "{{curlName}}"));
+            {{{type}}} {{name}} = JsonUtil.get{{{type}}}(json, "{{curlName}}");
             {{/if}}
             {{/each}}
             
-            builder.httpResponse(httpResponse);
-            return builder.build();
+            return new {{name}}Response({{#each fields}}{{name}}, {{/each}}httpResponse);
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse {{name}}Response from JSON", e);
-        }
-    }
-
-    /**
-     * Create a new builder for {{name}}Response.
-     */
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    /**
-     * Builder for {{name}}Response.
-     */
-    public static class Builder {
-        {{#each fields}}
-        private {{{type}}} {{name}};
-        {{/each}}
-        private Response httpResponse;
-
-        private Builder() {}
-
-        {{#each fields~}}
-{{#if deprecated}}        @Deprecated
-{{/if}}        public Builder {{name}}({{{type}}} {{name}}) {
-            this.{{name}} = {{name}};
-            return this;
-        }
-
-        {{/each}}
-        public Builder httpResponse(Response httpResponse) {
-            this.httpResponse = httpResponse;
-            return this;
-        }
-
-        public {{name}}Response build() {
-            return new {{name}}Response(this);
         }
     }
 
@@ -164,36 +100,6 @@ public final class {{name}}Response extends BaseResponse {
     }
 
     {{/each}}
-    @Override
-    public String toString() {
-        return "{{name}}Response{" +
-        {{#each fields}}
-            "{{#unless @first}}, {{/unless}}{{name}}=" + {{name}} +
-        {{/each}}
-            "}";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        {{#if fields}}
-        {{name}}Response that = ({{name}}Response) o;
-        return {{#each fields}}java.util.Objects.equals({{name}}, that.{{name}}){{#unless @last}} &&
-            {{/unless}}{{/each}};
-        {{else}}
-        return true;
-        {{/if}}
-    }
-
-    @Override
-    public int hashCode() {
-        {{#if fields}}
-        return java.util.Objects.hash({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-        {{else}}
-        return 0;
-        {{/if}}
-    }
 
     {{#each subModels}}
     public static class {{name}} {
@@ -216,9 +122,7 @@ public final class {{name}}Response extends BaseResponse {
             {{#each fields}}
             {{#if isMapType}}
             String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            item.{{name}} = JsonUtil.parseJsonObjectToMap(__{{name}}Json);
-            }
+            item.{{name}} = __{{name}}Json != null ? JsonUtil.parseJsonObjectToMap(__{{name}}Json) : new java.util.HashMap<>();
             {{else if isComplexObjectType}}
             String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
             if (__{{name}}Json != null) {
@@ -229,88 +133,40 @@ public final class {{name}}Response extends BaseResponse {
             {{else if isListOfObjects}}
               {{#if listElementType}}
                 {{#unless (eq listElementType "Object")}}
-                String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-                if (__{{name}}Json != null) {
                 item.{{name}} =
-                    JsonUtil.parseObjectArray(__{{name}}Json)
+                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}"))
                         .stream()
                         .map({{listElementType}}::fromJson)
                         .collect(java.util.stream.Collectors.toList());
-                }
                 {{else}}
-                String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-                if (__{{name}}Json != null) {
                 item.{{name}} =
-                    JsonUtil.parseObjectArray(__{{name}}Json)
+                    JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}"))
                         .stream()
                         .collect(java.util.stream.Collectors.toList());
-                }
                 {{/unless}}
               {{else}}
-              String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-              if (__{{name}}Json != null) {
               item.{{name}} =
-                  JsonUtil.parseArrayOfString(__{{name}}Json);
-              }
+                  JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
               {{/if}}
             {{else if isListOfPrimitives}}
-            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
             item.{{name}} =
-                JsonUtil.parseArrayOfString(__{{name}}Json);
-            }
+                JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
             {{else if isListType}}
             String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            item.{{name}} =
+            item.{{name}} = __{{name}}Json != null ?
                 JsonUtil.parseObjectArray(__{{name}}Json).stream()
-                    .collect(java.util.stream.Collectors.toList());
-            }
+                    .collect(java.util.stream.Collectors.toList()) : null;
             {{else if isObjectType}}
             {{#if (eq type "Object")}}
             item.{{name}} = JsonUtil.getObject(json, "{{curlName}}");
             {{else}}
-            String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            item.{{name}} = {{{type}}}.fromJson(__{{name}}Json);
-            }
+            item.{{name}} = {{{type}}}.fromJson(JsonUtil.getObject(json, "{{curlName}}"));
             {{/if}}
             {{else}}
             item.{{name}} = JsonUtil.get{{{type}}}(json, "{{curlName}}");
             {{/if}}
             {{/each}}
             return item;
-        }
-
-        @Override
-        public String toString() {
-            return "{{name}}{" +
-            {{#each fields}}
-                "{{#unless @first}}, {{/unless}}{{name}}=" + {{name}} +
-            {{/each}}
-                "}";
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            {{#if fields}}
-            {{name}} that = ({{name}}) o;
-            return {{#each fields}}java.util.Objects.equals({{name}}, that.{{name}}){{#unless @last}} &&
-                {{/unless}}{{/each}};
-            {{else}}
-            return true;
-            {{/if}}
-        }
-
-        @Override
-        public int hashCode() {
-            {{#if fields}}
-            return java.util.Objects.hash({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            {{else}}
-            return 0;
-            {{/if}}
         }
     }
     {{/each}}

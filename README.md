@@ -266,8 +266,6 @@ Generate SDKs for all supported languages targeting Chargebee's official client 
 
 ./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA -o ../chargebee-java/src/main/java/com/chargebee" &&
 
-./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA_NEXT -o ../chargebee-java/src/main/java/com/chargebee" &&
-
 ./gradlew run --args="-i chargebee_sdk_spec.json -l DOTNET -o ../chargebee-dotnet/ChargeBee" &&
 
 ./gradlew run --args="-i chargebee_sdk_spec.json -l GO -o ../chargebee-go" &&

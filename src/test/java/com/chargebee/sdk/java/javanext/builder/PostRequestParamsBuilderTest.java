@@ -152,14 +152,13 @@ class PostRequestParamsBuilderTest {
       requestSchema.addProperty("billing_day_of_week", billingDayEnum);
 
       Operation postOp = createPostOperation("customer", "changeBillingDate", requestSchema);
-      // Path with {id} and action derives to changeBillingDateForCustomer
-      // changeBillingDateForCustomer contains "customer", so prefix is skipped
       addPathWithPostOperation("/customers/{customer-id}/change_billing_date", postOp);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      FileOp.WriteString writeOp = findWriteOp(fileOps, "ChangeBillingDateForCustomerParams.java");
+      FileOp.WriteString writeOp =
+          findWriteOp(fileOps, "CustomerChangeBillingDateParams.java");
       assertThat(writeOp.fileContent).contains("BillingDayOfWeek");
       assertThat(writeOp.fileContent).containsIgnoringCase("sunday");
       assertThat(writeOp.fileContent).containsIgnoringCase("monday");
@@ -285,8 +284,7 @@ class PostRequestParamsBuilderTest {
     @Test
     @DisplayName("Should mark deprecated multi-attribute params with @Deprecated")
     void shouldMarkDeprecatedMultiAttributeParams() throws IOException {
-      // Mirrors: shouldHavaObsoleteTagForDeprecatedMultiAttributesInRequestBodyParams
-      // (JavaTests.java:1983)
+      // Mirrors: shouldHavaObsoleteTagForDeprecatedMultiAttributesInRequestBodyParams (JavaTests.java:1983)
       StringSchema gwPaymentMethodIdSchema = new StringSchema();
       gwPaymentMethodIdSchema.setDeprecated(true);
       gwPaymentMethodIdSchema.addExtension("x-cb-is-sub-resource", true);
@@ -349,7 +347,8 @@ class PostRequestParamsBuilderTest {
     }
 
     @Test
-    @DisplayName("Should support parameter blank option as empty in list multi-attributes")
+    @DisplayName(
+        "Should support parameter blank option as empty in list multi-attributes")
     void shouldSupportParameterBlankOptionAsEmptyInListMultiAttributes() throws IOException {
       // Mirrors: shouldContinueParameterBlankOptionAsEmptyInListMultiAttributesInRequestBodyParams
       // (JavaTests.java:2146)
@@ -451,8 +450,7 @@ class PostRequestParamsBuilderTest {
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      // importInvoice contains "invoice", so no prefix is added
-      FileOp.WriteString writeOp = findWriteOp(fileOps, "ImportInvoiceParams.java");
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "InvoiceImportInvoiceParams.java");
       // Should contain EntityType enum
       assertThat(writeOp.fileContent).contains("EntityType");
     }
@@ -472,7 +470,7 @@ class PostRequestParamsBuilderTest {
 
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
-      // Only creates base directory structure (/v4/models)
+      // Only creates base directory structure (/v4/core/models)
       assertThat(fileOps).hasSizeGreaterThanOrEqualTo(1);
       assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
     }
@@ -481,8 +479,8 @@ class PostRequestParamsBuilderTest {
     @DisplayName("Should generate params file even for operation without request body")
     void shouldGenerateParamsFileEvenWithoutRequestBody() throws IOException {
       // PostRequestParamsBuilder generates params files even if there's no request body
-      // Path with {id} and POST method derives to "update"
       Operation postOp = new Operation();
+      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "delete");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
 
       addPathWithPostOperation("/customers/{customer-id}", postOp);
@@ -553,7 +551,7 @@ class PostRequestParamsBuilderTest {
     Operation operation = new Operation();
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
-    extensions.put(Extension.SDK_METHOD_NAME, methodName);
+    extensions.put(Extension.OPERATION_METHOD_NAME, methodName);
     operation.setExtensions(extensions);
     operation.setRequestBody(requestBody);
     return operation;

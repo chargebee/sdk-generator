@@ -65,7 +65,6 @@ public class TypeMapper {
       case "number":
         String numFmt = schema.getFormat();
         if ("decimal".equals(numFmt)) return new BigDecimalType();
-        if ("double".equals(numFmt)) return new DoubleType();
         return new NumberType();
       default:
         return null;

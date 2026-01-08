@@ -24,20 +24,12 @@ public class Field {
   private List<String> sortableFields = new ArrayList<>();
   private boolean subModelField;
   private boolean compositeArrayField;
-  private boolean required;
 
   public String getName() {
     if (name == null) return null;
     // Replace dots with underscores to handle field names like "card.copy_billing_info"
     String normalizedName = name.replace('.', '_');
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, normalizedName);
-  }
-
-  public String getCapitalizedName() {
-    if (name == null) return null;
-    // Replace dots with underscores to handle field names like "card.copy_billing_info"
-    String normalizedName = name.replace('.', '_');
-    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, normalizedName);
   }
 
   public String getCurlName() {

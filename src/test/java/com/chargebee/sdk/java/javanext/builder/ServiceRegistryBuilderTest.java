@@ -73,7 +73,7 @@ class ServiceRegistryBuilderTest {
       assertThat(fileOps).isNotEmpty();
       assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
       FileOp.CreateDirectory dirOp = (FileOp.CreateDirectory) fileOps.get(0);
-      assertThat(dirOp.basePath).isEqualTo(outputPath + "/com/chargebee/v4/client");
+      assertThat(dirOp.basePath).isEqualTo(outputPath + "/v4/client");
     }
 
     @Test
@@ -113,11 +113,7 @@ class ServiceRegistryBuilderTest {
     @DisplayName("Should throw exception when OpenAPI is null")
     void shouldThrowExceptionWhenOpenAPIIsNull() {
       assertThatThrownBy(
-              () ->
-                  registryBuilder
-                      .withOutputDirectoryPath(outputPath)
-                      .withTemplate(template)
-                      .build(null))
+              () -> registryBuilder.withOutputDirectoryPath(outputPath).withTemplate(template).build(null))
           .isInstanceOf(NullPointerException.class)
           .hasMessageContaining("openApi");
     }
@@ -249,7 +245,7 @@ class ServiceRegistryBuilderTest {
 
       Map<String, Object> extensions = new HashMap<>();
       extensions.put(Extension.RESOURCE_ID, "custom_resource");
-      extensions.put(Extension.SDK_METHOD_NAME, "customMethod");
+      extensions.put(Extension.OPERATION_METHOD_NAME, "customMethod");
       operation.setExtensions(extensions);
 
       PathItem pathItem = new PathItem();
@@ -478,8 +474,7 @@ class ServiceRegistryBuilderTest {
     addResourceWithOperation(resourceId, "/" + resourceId + "s", PathItem.HttpMethod.POST);
   }
 
-  private void addResourceWithOperation(
-      String resourceId, String path, PathItem.HttpMethod method) {
+  private void addResourceWithOperation(String resourceId, String path, PathItem.HttpMethod method) {
     // Add schema
     ObjectSchema schema = new ObjectSchema();
     schema.addProperty("id", new StringSchema());
@@ -492,7 +487,7 @@ class ServiceRegistryBuilderTest {
 
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
-    extensions.put(Extension.SDK_METHOD_NAME, "someMethod");
+    extensions.put(Extension.OPERATION_METHOD_NAME, "someMethod");
     operation.setExtensions(extensions);
 
     PathItem pathItem = openAPI.getPaths().get(path);
@@ -538,18 +533,16 @@ class ServiceRegistryBuilderTest {
     boolean exists =
         fileOps.stream()
             .anyMatch(
-                op ->
-                    op instanceof FileOp.WriteString
-                        && ((FileOp.WriteString) op).fileName.equals(fileName));
-    assertThat(exists).as("Expected file %s to exist in file operations", fileName).isTrue();
+                op -> op instanceof FileOp.WriteString && ((FileOp.WriteString) op).fileName.equals(fileName));
+    assertThat(exists)
+        .as("Expected file %s to exist in file operations", fileName)
+        .isTrue();
   }
 
   private FileOp.WriteString findWriteOp(List<FileOp> fileOps, String fileName) {
     return fileOps.stream()
         .filter(
-            op ->
-                op instanceof FileOp.WriteString
-                    && ((FileOp.WriteString) op).fileName.equals(fileName))
+            op -> op instanceof FileOp.WriteString && ((FileOp.WriteString) op).fileName.equals(fileName))
         .map(op -> (FileOp.WriteString) op)
         .findFirst()
         .orElseThrow(

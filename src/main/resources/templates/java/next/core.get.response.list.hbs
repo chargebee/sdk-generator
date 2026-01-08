@@ -1,4 +1,4 @@
-package com.chargebee.v4.models.{{module}}.responses;
+package com.chargebee.v4.core.responses.{{module}};
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -8,11 +8,10 @@ import java.sql.Timestamp;
 {{#each imports}}
 import {{packageName}}.{{name}};
 {{/each}}
-import com.chargebee.v4.exceptions.ChargebeeException;
 import com.chargebee.v4.internal.JsonUtil;
 import com.chargebee.v4.transport.Response;
-import com.chargebee.v4.services.{{serviceName}};
-import com.chargebee.v4.models.{{module}}.params.{{name}}Params;
+import com.chargebee.v4.core.services.{{serviceName}};
+import com.chargebee.v4.core.models.{{module}}.params.{{name}}Params;
 
 /**
  * Immutable response object for {{name}} operation.
@@ -190,9 +189,9 @@ public final class {{name}}Response {
 
     /**
      * Get the next page of results.
-     * @throws ChargebeeException if unable to fetch next page
+     * @throws Exception if unable to fetch next page
      */
-    public {{name}}Response nextPage() throws ChargebeeException {
+    public {{name}}Response nextPage() throws Exception {
         if (!hasNextPage()) {
             throw new IllegalStateException("No more pages available");
         }
@@ -238,37 +237,6 @@ public final class {{name}}Response {
             .map(java.util.Map.Entry::getValue)
             .findFirst()
             .orElse(null);
-    }
-
-    @Override
-    public String toString() {
-        return "{{name}}Response{" +
-        {{#each fields}}
-            "{{#unless @first}}, {{/unless}}{{name}}=" + {{name}} +
-        {{/each}}
-            "}";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        {{#if fields}}
-        {{name}}Response that = ({{name}}Response) o;
-        return {{#each fields}}java.util.Objects.equals({{name}}, that.{{name}}){{#unless @last}} &&
-            {{/unless}}{{/each}};
-        {{else}}
-        return true;
-        {{/if}}
-    }
-
-    @Override
-    public int hashCode() {
-        {{#if fields}}
-        return java.util.Objects.hash({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-        {{else}}
-        return 0;
-        {{/if}}
     }
 
     {{#each subModels}}
@@ -317,37 +285,6 @@ public final class {{name}}Response {
         {{/each}}
         return item;
     }
-
-        @Override
-        public String toString() {
-            return "{{name}}{" +
-            {{#each fields}}
-                "{{#unless @first}}, {{/unless}}{{name}}=" + {{name}} +
-            {{/each}}
-                "}";
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            {{#if fields}}
-            {{name}} that = ({{name}}) o;
-            return {{#each fields}}java.util.Objects.equals({{name}}, that.{{name}}){{#unless @last}} &&
-                {{/unless}}{{/each}};
-            {{else}}
-            return true;
-            {{/if}}
-        }
-
-        @Override
-        public int hashCode() {
-            {{#if fields}}
-            return java.util.Objects.hash({{#each fields}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            {{else}}
-            return 0;
-            {{/if}}
-        }
     }
     {{/each}}
 }

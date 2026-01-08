@@ -24,8 +24,6 @@ import java.util.stream.Collectors;
 
 public class ModelBuilder {
 
-  private static final String EVENTS_PACKAGE = "event";
-
   private Template template;
   private String outputDirectoryPath;
   private OpenAPI openApi;
@@ -33,7 +31,7 @@ public class ModelBuilder {
   private final List<FileOp> fileOps = new ArrayList<>();
 
   public ModelBuilder withOutputDirectoryPath(String outputDirectoryPath) {
-    this.outputDirectoryPath = outputDirectoryPath + "/com/chargebee/v4/models";
+    this.outputDirectoryPath = outputDirectoryPath + "/v4/core/models";
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }
@@ -51,59 +49,25 @@ public class ModelBuilder {
 
   private void generateModels() throws IOException {
     var models = getModels();
-    boolean eventsDirectoryCreated = false;
     for (var entry : models.entrySet()) {
       Model model = new Model();
-      String modelName = entry.getKey();
-      boolean isWebhookEvent = isWebhookEvent(modelName);
-
-      // Use "events" package for webhook event classes, otherwise use the model name
-      String packageName = isWebhookEvent ? EVENTS_PACKAGE : toLowerCamel(modelName);
-      model.setPackageName(packageName);
-      model.setName(modelName);
+      model.setPackageName(entry.getKey());
+      model.setName(entry.getKey());
       model.setFields(getFields(entry.getValue()));
       model.setImports(getImports(entry.getValue()));
       model.setEnumFields(getEnumFields(entry.getValue()));
       model.setSubModels(getSubModels(entry.getValue()));
       model.setCustomFieldsSupported(SchemaUtil.isCustomFieldsSupported(entry.getValue()));
-      model.setConsentFieldsSupported(SchemaUtil.isConsentFieldsSupported(entry.getValue()));
       var content = template.apply(model);
       var formattedContent = JavaFormatter.formatSafely(content);
-
-      if (isWebhookEvent) {
-        // Create events directory only once
-        if (!eventsDirectoryCreated) {
-          fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, EVENTS_PACKAGE));
-          eventsDirectoryCreated = true;
-        }
-        fileOps.add(
-            new FileOp.WriteString(
-                this.outputDirectoryPath + "/" + EVENTS_PACKAGE,
-                model.getName() + ".java",
-                formattedContent));
-      } else {
-        String packageDirName = toLowerCamel(modelName);
-        fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, packageDirName));
-        fileOps.add(
-            new FileOp.WriteString(
-                this.outputDirectoryPath + "/" + packageDirName,
-                model.getName() + ".java",
-                formattedContent));
-      }
+      String packageDirName = toLowerCamel(entry.getKey());
+      fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, packageDirName));
+      fileOps.add(
+          new FileOp.WriteString(
+              this.outputDirectoryPath + "/" + packageDirName,
+              model.getName() + ".java",
+              formattedContent));
     }
-  }
-
-  /**
-   * Checks if a model name represents a webhook event.
-   * Webhook events end with "Event" but excludes non-webhook classes like "Event", "UsageEvent", "OfferEvent".
-   */
-  private static boolean isWebhookEvent(String modelName) {
-    if (modelName == null || !modelName.endsWith("Event")) {
-      return false;
-    }
-    // Exclude non-webhook event models
-    Set<String> excludedModels = Set.of("Event", "UsageEvent", "OfferEvent");
-    return !excludedModels.contains(modelName);
   }
 
   private static String toLowerCamel(String name) {
@@ -151,9 +115,8 @@ public class ModelBuilder {
     if (schema.get$ref() != null) {
       String ref = schema.get$ref();
       String refName = ref.substring(ref.lastIndexOf('/') + 1);
-      // Use "events" package for webhook event classes
-      String refPkg = isWebhookEvent(refName) ? EVENTS_PACKAGE : toLowerCamel(refName);
-      fqns.add("com.chargebee.v4.models." + refPkg + "." + refName);
+      String refPkg = toLowerCamel(refName);
+      fqns.add("com.chargebee.v4.core.models." + refPkg + "." + refName);
       return;
     }
     // Arrays

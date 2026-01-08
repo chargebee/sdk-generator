@@ -44,7 +44,7 @@ public class PostRequestParamsBuilder {
   private final List<FileOp> fileOps = new ArrayList<>();
 
   public PostRequestParamsBuilder withOutputDirectoryPath(String outputDirectoryPath) {
-    this.outputDirectoryPath = outputDirectoryPath + "/com/chargebee/v4/models";
+    this.outputDirectoryPath = outputDirectoryPath + "/v4/core/models";
     fileOps.add(new FileOp.CreateDirectory(this.outputDirectoryPath, ""));
     return this;
   }
@@ -80,11 +80,30 @@ public class PostRequestParamsBuilder {
           var operation = pathItem.getPost();
 
           var postAction = new PostAction();
-          String module = resolveModuleName(entry.getKey(), operation);
+          // Safely read extensions
+          var extensions = operation.getExtensions();
+          String opId = null;
+          if (extensions != null) {
+            Object opNameExt = extensions.get(Extension.OPERATION_METHOD_NAME);
+            if (opNameExt != null) opId = opNameExt.toString();
+          }
+          // Fallbacks
+          if (opId == null && operation.getOperationId() != null) {
+            opId = operation.getOperationId();
+          }
 
-          // Read method name from SDK extension (populated by cb-openapi-generator)
-          String opId = readExtensionAsString(operation, Extension.SDK_METHOD_NAME);
-          postAction.setOperationId(opId);
+          // Normalize operation ID to proper camelCase
+          if (opId != null) {
+            opId = com.chargebee.GenUtil.normalizeToLowerCamelCase(opId);
+          }
+
+          // Prefix batch operations to avoid method name collisions
+          if (entry.getKey().startsWith("/batch/") && opId != null && !opId.isEmpty() && !opId.startsWith("batch")) {
+            opId = "batch" + opId.substring(0, 1).toUpperCase() + opId.substring(1);
+          }
+
+          String module = resolveModuleName(entry.getKey(), operation);
+          postAction.setOperationId(opId != null ? opId : "post");
           postAction.setModule(module);
           postAction.setPath(entry.getKey());
 
@@ -97,15 +116,12 @@ public class PostRequestParamsBuilder {
             dedupeAndPrefixSubModels(postAction.getModule(), subModels, postAction.getFields());
             postAction.setSubModels(subModels);
             postAction.setCustomFieldsSupported(SchemaUtil.isCustomFieldsSupported(requestSchema));
-            postAction.setConsentFieldsSupported(
-                SchemaUtil.isConsentFieldsSupported(requestSchema));
           } else {
             // No usable request schema - generate empty params class
             postAction.setFields(new ArrayList<>());
             postAction.setEnumFields(new ArrayList<>());
             postAction.setSubModels(new ArrayList<>());
             postAction.setCustomFieldsSupported(false);
-            postAction.setConsentFieldsSupported(false);
           }
 
           var content = template.apply(postAction);
@@ -124,17 +140,6 @@ public class PostRequestParamsBuilder {
     } catch (IOException e) {
       System.err.println("Error generating params: " + e.getMessage());
     }
-  }
-
-  // =========================================================
-  // Extension helpers
-  // =========================================================
-
-  /** Returns the string value of a custom OpenAPI extension or null. */
-  private static String readExtensionAsString(Operation operation, String key) {
-    if (operation == null || operation.getExtensions() == null) return null;
-    var value = operation.getExtensions().get(key);
-    return value != null ? value.toString() : null;
   }
 
   // =========================================================
@@ -507,24 +512,10 @@ public class PostRequestParamsBuilder {
     private List<EnumFields> enumFields;
     private List<Model> subModels;
     private boolean customFieldsSupported;
-    private boolean consentFieldsSupported;
 
     public String getName() {
       String opSnake = CaseFormatUtil.toSnakeCaseSafe(getOperationId());
       String moduleSnake = CaseFormatUtil.toSnakeCaseSafe(module);
-
-      // Check if operationId already contains the module name (e.g., "voidInvoice" contains
-      // "invoice")
-      // This happens when reserved keywords are suffixed with the resource name
-      String moduleBase = moduleSnake.replaceAll("_", "");
-      String operationBase = opSnake.replaceAll("_", "");
-      if (opSnake.contains(moduleSnake)
-          || operationBase.contains(moduleBase)
-          || moduleBase.contains(operationBase)) {
-        return CaseFormatUtil.toUpperCamelSafe(opSnake);
-      }
-
-      // Prefix with module name for other cases
       String actionSnake = moduleSnake.isEmpty() ? opSnake : moduleSnake + "_" + opSnake;
       return CaseFormatUtil.toUpperCamelSafe(actionSnake);
     }

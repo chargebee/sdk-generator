@@ -12,6 +12,7 @@ import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.media.*;
+import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.io.IOException;
@@ -140,7 +141,7 @@ class PostResponseBuilderTest {
       assertThat(fileOps).isNotEmpty();
       assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
       FileOp.CreateDirectory dirOp = (FileOp.CreateDirectory) fileOps.get(0);
-      assertThat(dirOp.basePath).endsWith("/v4/models");
+      assertThat(dirOp.basePath).endsWith("/v4/core/responses");
     }
   }
 
@@ -197,7 +198,7 @@ class PostResponseBuilderTest {
       responseSchema.addProperty("id", new StringSchema());
 
       Operation getOp = new Operation();
-      getOp.addExtension(Extension.SDK_METHOD_NAME, "retrieve");
+      getOp.addExtension(Extension.OPERATION_METHOD_NAME, "retrieve");
       getOp.addExtension(Extension.RESOURCE_ID, "customer");
 
       PathItem pathItem = new PathItem();
@@ -256,20 +257,14 @@ class PostResponseBuilderTest {
     @Test
     @DisplayName("Should use 204 response if 200 and 202 not available")
     void shouldUse204ResponseIf200And202NotAvailable() throws IOException {
-      // Path /customers/{customer-id}/delete with POST derives to "deleteForCustomer"
       Operation postOp = createPostOperation("customer", "delete");
       add204Response(postOp);
-      addPathWithPostOperation("/customers/{customer-id}/delete", postOp);
+      addPathWithPostOperation("/customers/{customer-id}", postOp);
       responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
-      // Verify a delete response file is generated
-      assertThat(fileOps)
-          .anyMatch(
-              op ->
-                  op instanceof FileOp.WriteString
-                      && ((FileOp.WriteString) op).fileName.contains("Delete"));
+      assertFileExists(fileOps, "CustomerDeleteResponse.java");
     }
 
     @Test
@@ -341,14 +336,13 @@ class PostResponseBuilderTest {
       ObjectSchema responseSchema = new ObjectSchema();
       responseSchema.addProperty("customers", customersArray);
 
-      // Path /customers with POST derives to "create"
-      Operation postOp = createPostOperationWithResponse("customer", "create", responseSchema);
+      Operation postOp = createPostOperationWithResponse("customer", "list", responseSchema);
       addPathWithPostOperation("/customers", postOp);
       responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
-      assertFileExists(fileOps, "CustomerCreateResponse.java");
+      assertFileExists(fileOps, "CustomerListResponse.java");
     }
 
     @Test
@@ -369,20 +363,14 @@ class PostResponseBuilderTest {
     @Test
     @DisplayName("Should generate empty response for 204 No Content")
     void shouldGenerateEmptyResponseFor204NoContent() throws IOException {
-      // Path /customers/{customer-id}/delete with POST derives to "deleteForCustomer"
       Operation postOp = createPostOperation("customer", "delete");
       add204Response(postOp);
-      addPathWithPostOperation("/customers/{customer-id}/delete", postOp);
+      addPathWithPostOperation("/customers/{customer-id}", postOp);
       responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
-      // Verify a delete response file is generated
-      assertThat(fileOps)
-          .anyMatch(
-              op ->
-                  op instanceof FileOp.WriteString
-                      && ((FileOp.WriteString) op).fileName.contains("Delete"));
+      assertFileExists(fileOps, "CustomerDeleteResponse.java");
     }
   }
 
@@ -557,7 +545,7 @@ class PostResponseBuilderTest {
       StringSchema stringSchema = new StringSchema();
 
       Operation postOp = new Operation();
-      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
+      postOp.addExtension(Extension.OPERATION_METHOD_NAME, "create");
       postOp.addExtension(Extension.RESOURCE_ID, "customer");
       ApiResponses responses = new ApiResponses();
       responses.addApiResponse("200", createApiResponse(stringSchema));
@@ -578,7 +566,7 @@ class PostResponseBuilderTest {
   private Operation createPostOperation(String resourceId, String methodName) {
     Operation operation = new Operation();
     operation.addExtension(Extension.RESOURCE_ID, resourceId);
-    // OPERATION_METHOD_NAME is no longer used - method name is derived from path
+    operation.addExtension(Extension.OPERATION_METHOD_NAME, methodName);
     return operation;
   }
 

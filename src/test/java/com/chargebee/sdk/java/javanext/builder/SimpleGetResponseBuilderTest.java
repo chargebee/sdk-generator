@@ -141,7 +141,7 @@ class SimpleGetResponseBuilderTest {
       assertThat(responseFile.fileContent).containsIgnoringCase("id");
       assertThat(responseFile.fileContent).containsIgnoringCase("email");
       assertThat(responseFile.fileContent).containsIgnoringCase("createdAt");
-      assertThat(responseFile.fileContent).startsWith("package com.chargebee.v4.models.");
+      assertThat(responseFile.fileContent).startsWith("package com.chargebee.v4.core.responses.");
     }
 
     @Test
@@ -192,15 +192,14 @@ class SimpleGetResponseBuilderTest {
       ObjectSchema responseSchema = new ObjectSchema();
       responseSchema.addProperty("id", new StringSchema());
 
-      // Path /payment_sources/{id}/retrieve_details derives to retrieveDetailsForPaymentSource
       addGetOperation("payment_source", "retrieve_details", responseSchema);
 
       responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(template);
 
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
-      // retrieveDetailsForPaymentSource contains "payment_source", so prefix is skipped
-      assertFileExists(fileOps, "RetrieveDetailsForPaymentSourceResponse.java");
+      // payment_source_retrieve_details -> PaymentSourceRetrieveDetailsResponse
+      assertFileExists(fileOps, "PaymentSourceRetrieveDetailsResponse.java");
     }
   }
 
@@ -304,7 +303,7 @@ class SimpleGetResponseBuilderTest {
       FileOp.WriteString responseFile = findWriteOp(fileOps, "CustomerRetrieveResponse.java");
 
       // Should import Address
-      assertThat(responseFile.fileContent).contains("com.chargebee.v4.models");
+      assertThat(responseFile.fileContent).contains("com.chargebee.v4.core.models");
       assertThat(responseFile.fileContent).containsIgnoringCase("Address");
     }
 
@@ -337,7 +336,7 @@ class SimpleGetResponseBuilderTest {
       FileOp.WriteString responseFile = findWriteOp(fileOps, "CustomerRetrieveResponse.java");
 
       // Should have import but not duplicated
-      assertThat(responseFile.fileContent).contains("com.chargebee.v4.models");
+      assertThat(responseFile.fileContent).contains("com.chargebee.v4.core.models");
     }
   }
 
@@ -417,7 +416,7 @@ class SimpleGetResponseBuilderTest {
       FileOp.WriteString responseFile = findWriteOp(fileOps, "CustomerRetrieveResponse.java");
 
       // Should import Tag
-      assertThat(responseFile.fileContent).contains("com.chargebee.v4.models");
+      assertThat(responseFile.fileContent).contains("com.chargebee.v4.core.models");
       assertThat(responseFile.fileContent).containsIgnoringCase("Tag");
     }
 
@@ -762,17 +761,7 @@ class SimpleGetResponseBuilderTest {
 
     PathItem pathItem = new PathItem();
     pathItem.setGet(operation);
-    // Build path based on method name: retrieve -> /{id}, list -> no {id}, others -> /{id}/action
-    String path;
-    if ("retrieve".equals(methodName)) {
-      path = "/" + resourceId + "s/{id}";
-    } else if ("list".equals(methodName)) {
-      path = "/" + resourceId + "s";
-    } else {
-      // For custom actions like retrieve_details, use path with action segment
-      path = "/" + resourceId + "s/{id}/" + methodName;
-    }
-    openAPI.getPaths().addPathItem(path, pathItem);
+    openAPI.getPaths().addPathItem("/" + resourceId + "s/{id}", pathItem);
   }
 
   private void addGetOperationWithSchema(String resourceId, String methodName, Schema<?> schema) {
@@ -790,17 +779,7 @@ class SimpleGetResponseBuilderTest {
 
     PathItem pathItem = new PathItem();
     pathItem.setGet(operation);
-    // Build path based on method name: retrieve -> /{id}, list -> no {id}, others -> /{id}/action
-    String path;
-    if ("retrieve".equals(methodName)) {
-      path = "/" + resourceId + "s/{id}";
-    } else if ("list".equals(methodName)) {
-      path = "/" + resourceId + "s";
-    } else {
-      // For custom actions like retrieve_details, use path with action segment
-      path = "/" + resourceId + "s/{id}/" + methodName;
-    }
-    openAPI.getPaths().addPathItem(path, pathItem);
+    openAPI.getPaths().addPathItem("/" + resourceId + "s/{id}", pathItem);
   }
 
   private Operation createOperationWithExtensions(String resourceId, String methodName) {
@@ -809,10 +788,7 @@ class SimpleGetResponseBuilderTest {
 
     Map<String, Object> extensions = new HashMap<>();
     extensions.put(Extension.RESOURCE_ID, resourceId);
-    // Set IS_OPERATION_LIST for list operations so path-based derivation works correctly
-    if ("list".equals(methodName)) {
-      extensions.put(Extension.IS_OPERATION_LIST, true);
-    }
+    extensions.put(Extension.OPERATION_METHOD_NAME, methodName);
     operation.setExtensions(extensions);
 
     return operation;
