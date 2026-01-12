@@ -6,13 +6,15 @@ import com.chargebee.openapi.Spec;
 import com.chargebee.sdk.FileOp;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
+import io.swagger.v3.oas.models.media.ArraySchema;
+import io.swagger.v3.oas.models.media.Schema;
 import java.io.IOException;
 import java.util.*;
 
 public class WebhookGenerator {
 
-  private static List<String> getEventResourcesForAEvent(Resource eventResource) {
-    List<String> resources = new ArrayList<>();
+  private static List<Map<String, Object>> getEventResourcesForAEvent(Resource eventResource) {
+    List<Map<String, Object>> resources = new ArrayList<>();
     if (eventResource != null) {
       for (Attribute attribute : eventResource.attributes()) {
         if (attribute.name.equals("content")) {
@@ -20,10 +22,26 @@ public class WebhookGenerator {
               .attributes()
               .forEach(
                   (innerAttribute -> {
-                    String ref = innerAttribute.schema.get$ref();
+                    Schema<?> schema = innerAttribute.schema;
+                    String ref = null;
+                    boolean isArray = false;
+                    if (schema instanceof ArraySchema) {
+                      ArraySchema arraySchema = (ArraySchema) schema;
+                      Schema<?> itemSchema = arraySchema.getItems();
+                      if (itemSchema != null) {
+                        ref = itemSchema.get$ref();
+                        isArray = true;
+                      }
+                    } else {
+                      ref = schema.get$ref();
+                    }
+
                     if (ref != null && ref.contains("/")) {
                       String schemaName = ref.substring(ref.lastIndexOf("/") + 1);
-                      resources.add(schemaName);
+                      Map<String, Object> resourceMap = new HashMap<>();
+                      resourceMap.put("resource_schema_name", schemaName);
+                      resourceMap.put("isArray", isArray);
+                      resources.add(resourceMap);
                     }
                   }));
         }
@@ -84,18 +102,18 @@ public class WebhookGenerator {
                   .findFirst()
                   .orElse(null);
 
-          List<String> allSchemas = getEventResourcesForAEvent(matchedSchema);
+          List<Map<String, Object>> allSchemas = getEventResourcesForAEvent(matchedSchema);
 
           // Filter schemas by presence of model directory to avoid missing imports
-          List<String> filteredSchemas = new ArrayList<>();
-          for (String schemaName : allSchemas) {
+          List<Map<String, Object>> filteredSchemas = new ArrayList<>();
+          for (var schema : allSchemas) {
             // Convert to models directory name: lower_underscore then remove underscores
-            String snake =
-                CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, schemaName);
+            String schemaName = (String) schema.get("resource_schema_name");
+            String snake = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, schemaName);
             String folder = snake.replace("_", "");
             java.io.File schemaDir = new java.io.File(modelsDir, folder);
             if (schemaDir.exists() && schemaDir.isDirectory()) {
-              filteredSchemas.add(schemaName);
+              filteredSchemas.add(schema);
               uniqueImports.add(schemaName);
             }
           }
@@ -147,5 +165,3 @@ public class WebhookGenerator {
     return fileOps;
   }
 }
-
-
