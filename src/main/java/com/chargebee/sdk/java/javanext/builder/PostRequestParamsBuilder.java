@@ -555,22 +555,28 @@ public class PostRequestParamsBuilder {
     return filterName != null ? filterName.toString() : null;
   }
 
-  /**
-   * Check if a filter has enum values (for type-safe enum filter methods).
-   * Iterates through filter properties to find any with enum values.
-   */
   private List<String> getFilterEnumValues(Schema<?> filterSchema) {
+    String sdkFilterName = getFilterSdkName(filterSchema);
+    if ("StringFilter".equals(sdkFilterName)) {
+      return null;
+    }
+
     var props = safeProperties(filterSchema);
     if (props == null) {
       return null;
     }
 
-    // Find any property with enum values
-    for (Schema<?> propSchema : props.values()) {
+    for (var entry : props.entrySet()) {
+      String propName = entry.getKey();
+      Schema<?> propSchema = entry.getValue();
+
+      if ("is_present".equals(propName)) {
+        continue;
+      }
+
       if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) {
         return propSchema.getEnum().stream().map(String::valueOf).collect(Collectors.toList());
       }
-      // Also check array items for enums (for 'in'/'not_in' operators)
       if (propSchema.getItems() != null && propSchema.getItems().getEnum() != null) {
         return propSchema.getItems().getEnum().stream()
             .map(String::valueOf)
