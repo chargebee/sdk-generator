@@ -1321,8 +1321,9 @@ class ModelBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "Customer.java");
       // Both custom and consent fields should be present
+      // Custom fields use Map<String, String>, consent fields use Map<String, Object>
       assertThat(writeOp.fileContent)
-          .contains("private java.util.Map<String, Object> customFields");
+          .contains("private java.util.Map<String, String> customFields");
       assertThat(writeOp.fileContent)
           .contains("private java.util.Map<String, Object> consentFields");
       assertThat(writeOp.fileContent).contains("getCustomFields()");

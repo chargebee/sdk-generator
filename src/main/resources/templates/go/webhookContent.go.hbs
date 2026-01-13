@@ -11,7 +11,7 @@ import (
 {{#each events}}
 type {{snakeCaseToPascalCase type}}Content struct {
 {{#each filtered_resource_schemas}}
-	{{snakeCaseToPascalCase (pascalCaseToSnakeCase .)}} *{{snakeCaseToLowerCaseNoUnderscore (pascalCaseToSnakeCase .)}}.{{.}} `json:"{{pascalCaseToSnakeCase .}},omitempty"`
+    {{snakeCaseToPascalCase (pascalCaseToSnakeCase resource_schema_name)}}{{#if isArray}}[]{{/if}}*{{snakeCaseToLowerCaseNoUnderscore (pascalCaseToSnakeCase resource_schema_name)}}.{{resource_schema_name}} `json:"{{pascalCaseToSnakeCase resource_schema_name}},omitempty"`
 {{/each}}
 }
 

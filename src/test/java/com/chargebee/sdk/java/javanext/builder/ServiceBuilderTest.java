@@ -204,12 +204,9 @@ class ServiceBuilderTest {
     }
 
     @Test
-    @DisplayName(
-        "Should generate method overload with params for GET operations with query params and path"
-            + " params")
+    @DisplayName("Should generate method overload with params for GET operations with query params and path params")
     void shouldGenerateMethodOverloadForGetWithQueryParamsAndPathParams() throws IOException {
-      // Test for GET operations like /invoices/{invoice-id} that have both path params AND query
-      // params
+      // Test for GET operations like /invoices/{invoice-id} that have both path params AND query params
       Operation retrieveOp = createGetOperationWithQueryParams("invoice", "retrieve");
       addPathWithOperation("/invoices/{invoice-id}", PathItem.HttpMethod.GET, retrieveOp);
       serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -217,25 +214,22 @@ class ServiceBuilderTest {
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "InvoiceService.java");
-
+      
       // Should have retrieve method without params
       assertThat(writeOp.fileContent).contains("retrieve(String invoiceId)");
-
+      
       // Should also have retrieve method WITH params (this is the fix we're testing)
-      assertThat(writeOp.fileContent)
-          .contains("retrieve(String invoiceId, InvoiceRetrieveParams params)");
-
+      assertThat(writeOp.fileContent).contains("retrieve(String invoiceId, InvoiceRetrieveParams params)");
+      
       // Should have retrieveRaw with params
-      assertThat(writeOp.fileContent)
-          .contains("retrieveRaw(String invoiceId, InvoiceRetrieveParams params)");
-
+      assertThat(writeOp.fileContent).contains("retrieveRaw(String invoiceId, InvoiceRetrieveParams params)");
+      
       // Should call get() with query params
       assertThat(writeOp.fileContent).contains("params.toQueryParams()");
     }
 
     @Test
-    @DisplayName(
-        "Should NOT generate method overload with params for GET operations without query params")
+    @DisplayName("Should NOT generate method overload with params for GET operations without query params")
     void shouldNotGenerateMethodOverloadForGetWithoutQueryParams() throws IOException {
       // Regular GET without query params should NOT have the params overload
       Operation retrieveOp = createGetOperationWithResponse("customer", "retrieve");
@@ -245,13 +239,12 @@ class ServiceBuilderTest {
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
-
+      
       // Should have retrieve method without params
       assertThat(writeOp.fileContent).contains("retrieve(String customerId)");
-
+      
       // Should NOT have the params overload since there are no query params
-      assertThat(writeOp.fileContent)
-          .doesNotContain("retrieve(String customerId, CustomerRetrieveParams params)");
+      assertThat(writeOp.fileContent).doesNotContain("retrieve(String customerId, CustomerRetrieveParams params)");
     }
   }
 
@@ -357,20 +350,19 @@ class ServiceBuilderTest {
     }
 
     @Test
-    @DisplayName(
-        "Should derive method name from path when OPERATION_METHOD_NAME extension is missing")
-    void shouldDeriveMethodNameFromPathWhenExtensionMissing() throws IOException {
+    @DisplayName("Should skip operation when SDK_METHOD_NAME extension is missing")
+    void shouldSkipOperationWhenMethodNameExtensionMissing() throws IOException {
       Operation op = new Operation();
       op.addExtension(Extension.RESOURCE_ID, "customer");
+      // SDK_METHOD_NAME is NOT set - operation should be skipped
       addPathWithOperation("/customers", PathItem.HttpMethod.POST, op);
       serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
-      assertFileExists(fileOps, "CustomerService.java");
-      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
-      // Should derive "create" from POST to /customers
-      assertThat(writeOp.fileContent).containsIgnoringCase("create");
+      // Operation is skipped due to missing SDK_METHOD_NAME, so only directory is created
+      assertThat(fileOps).hasSize(1);
+      assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
     }
   }
 

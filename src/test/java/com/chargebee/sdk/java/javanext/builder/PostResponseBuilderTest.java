@@ -437,18 +437,21 @@ class PostResponseBuilderTest {
   class BatchOperationsTests {
 
     @Test
-    @DisplayName("Should prefix batch operations with 'batch'")
-    void shouldPrefixBatchOperations() throws IOException {
+    @DisplayName("Should generate response for batch operations")
+    void shouldGenerateResponseForBatchOperations() throws IOException {
       ObjectSchema responseSchema = new ObjectSchema();
       responseSchema.addProperty("status", new StringSchema());
 
+      // For batch operations, module is still "customer" and method is "create"
+      // The naming follows the standard module + method pattern
       Operation postOp = createPostOperationWithResponse("customer", "create", responseSchema);
       addPathWithPostOperation("/batch/customers", postOp);
       responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = responseBuilder.build(openAPI);
 
-      assertFileExists(fileOps, "CustomerBatchCreateResponse.java");
+      // Module "customer" + method "create" = CustomerCreateResponse
+      assertFileExists(fileOps, "CustomerCreateResponse.java");
     }
   }
 
@@ -578,7 +581,7 @@ class PostResponseBuilderTest {
   private Operation createPostOperation(String resourceId, String methodName) {
     Operation operation = new Operation();
     operation.addExtension(Extension.RESOURCE_ID, resourceId);
-    // OPERATION_METHOD_NAME is no longer used - method name is derived from path
+    operation.addExtension(Extension.SDK_METHOD_NAME, methodName);
     return operation;
   }
 
