@@ -528,8 +528,8 @@ public class PostRequestParamsBuilder {
       return false;
     }
     return schema.getExtensions() != null
-              && schema.getExtensions().get(Extension.IS_FILTER_PARAMETER) != null
-              && (boolean) schema.getExtensions().get(Extension.IS_FILTER_PARAMETER);
+        && schema.getExtensions().get(Extension.IS_FILTER_PARAMETER) != null
+        && (boolean) schema.getExtensions().get(Extension.IS_FILTER_PARAMETER);
   }
 
   /**

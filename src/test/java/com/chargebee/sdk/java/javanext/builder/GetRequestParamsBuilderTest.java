@@ -202,7 +202,9 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public FirstNameFilter firstName()");
       assertThat(writeOp.fileContent)
-          .contains("public static final class FirstNameFilter extends StringFilter<CustomerListBuilder>");
+          .contains(
+              "public static final class FirstNameFilter extends"
+                  + " StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -237,7 +239,8 @@ class GetRequestParamsBuilderTest {
       assertThat(writeOp.fileContent).contains("public FirstNameFilter firstName()");
       assertThat(writeOp.fileContent)
           .contains(
-              "public static final class FirstNameFilter extends StringFilter<CustomerListBuilder>");
+              "public static final class FirstNameFilter extends"
+                  + " StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -256,7 +259,8 @@ class GetRequestParamsBuilderTest {
       assertThat(writeOp.fileContent).contains("public CreatedAtFilter createdAt()");
       assertThat(writeOp.fileContent)
           .contains(
-              "public static final class CreatedAtFilter extends StringFilter<CustomerListBuilder>");
+              "public static final class CreatedAtFilter extends"
+                  + " StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -274,7 +278,8 @@ class GetRequestParamsBuilderTest {
       assertThat(writeOp.fileContent).contains("public CreatedAtFilter createdAt()");
       assertThat(writeOp.fileContent)
           .contains(
-              "public static final class CreatedAtFilter extends StringFilter<SubscriptionListBuilder>");
+              "public static final class CreatedAtFilter extends"
+                  + " StringFilter<SubscriptionListBuilder>");
     }
 
     @Test
@@ -293,7 +298,8 @@ class GetRequestParamsBuilderTest {
           .contains("public AutoCloseInvoicesFilter autoCloseInvoices()");
       assertThat(writeOp.fileContent)
           .contains(
-              "public static final class AutoCloseInvoicesFilter extends StringFilter<CustomerListBuilder>");
+              "public static final class AutoCloseInvoicesFilter extends"
+                  + " StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -351,7 +357,8 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public EmailFilter email()");
       assertThat(writeOp.fileContent)
-          .contains("public static final class EmailFilter extends StringFilter<CustomerListBuilder>");
+          .contains(
+              "public static final class EmailFilter extends StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -381,7 +388,9 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public CreatedAtFilter createdAt()");
       assertThat(writeOp.fileContent)
-          .contains("public static final class CreatedAtFilter extends StringFilter<CustomerListBuilder>");
+          .contains(
+              "public static final class CreatedAtFilter extends"
+                  + " StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -1115,7 +1124,8 @@ class GetRequestParamsBuilderTest {
       Operation getOperation = createGetOperation("customer", "changeEstimate");
       addStringQueryParam(getOperation, "subscription_id");
 
-      // Path with {id} and action - module "customer" is prefixed to operation name "changeEstimate"
+      // Path with {id} and action - module "customer" is prefixed to operation name
+      // "changeEstimate"
       addPathWithOperation("/customers/{customer-id}/change_estimate", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
