@@ -162,7 +162,8 @@ public class ServiceBuilder {
   private boolean hasRequiredExtensions(Operation operation) {
     if (operation == null
         || operation.getExtensions() == null
-        || !operation.getExtensions().containsKey(Extension.RESOURCE_ID)) {
+        || !operation.getExtensions().containsKey(Extension.RESOURCE_ID)
+        || !operation.getExtensions().containsKey(Extension.SDK_METHOD_NAME)) {
       return false;
     }
 

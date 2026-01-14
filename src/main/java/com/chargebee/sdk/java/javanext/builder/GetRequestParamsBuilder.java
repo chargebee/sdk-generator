@@ -87,11 +87,10 @@ public class GetRequestParamsBuilder {
 
       var getAction = new GetAction();
       var module = readExtension(operation, Extension.RESOURCE_ID);
+      var operationId = readExtension(operation, Extension.SDK_METHOD_NAME);
 
       // Skip operations without required extensions
-      if (module == null) continue;
-
-      var operationId = readExtension(operation, Extension.SDK_METHOD_NAME);
+      if (module == null || operationId == null) continue;
 
       getAction.setOperationId(operationId);
       getAction.setModule(module);
