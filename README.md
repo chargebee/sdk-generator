@@ -60,7 +60,7 @@ cd sdk-generator
 ### Using Gradle
 
 ```bash
-./gradlew run --args="-i spec.json -l JAVA -o ./output"
+./gradlew run --args="-i spec.json -l JAVA_V4 -o ./output"
 ```
 
 ## 🚀 Quick Start
@@ -69,7 +69,7 @@ cd sdk-generator
 
 ```bash
 # Generate a Java SDK
-./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA -o ../chargebee-java/src/main/java/com/chargebee"
+./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA_V4 -o ../chargebee-java/src/main/java/"
 
 # Generate Nodejs typings
 ./gradlew run --args="-i chargebee_sdk_spec.json -l TYPESCRIPT_TYPINGS_V3 -o ../chargebee-node/types/"
@@ -101,7 +101,7 @@ docker compose run --rm sdk-generator generate <lang1> <lang2>
 
 #### Current/Latest Versions
 ```
-JAVA                    - Java SDK
+JAVA_V4                - Java SDK (v4) 
 TYPESCRIPT_TYPINGS_V3  - TypeScript type definitions (v3)
 NODE_V3                - Node.js SDK (v3)
 PYTHON_V3              - Python SDK (v3)
@@ -116,6 +116,7 @@ GO                     - Go SDK
 NODE                   - Node.js SDK (legacy)
 PYTHON                 - Python SDK (legacy)
 PHP                    - PHP SDK (legacy)
+JAVA_V3                - Java SDK (legacy)
 ```
 
 ## 📁 Project Structure
@@ -230,7 +231,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 #### Using Current/Latest Versions (Recommended)
 ```bash
 # Generate SDKs using latest versions
-./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA -o ../chargebee-java/src/main/java/com/chargebee"
+./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA_V4 -o ../chargebee-java/src/main/java/"
 ./gradlew run --args="-i chargebee_sdk_spec.json -l PHP_V4 -o ../chargebee-php/src"
 ./gradlew run --args="-i chargebee_sdk_spec.json -l PYTHON_V3 -o ../chargebee-python/chargebee"
 ./gradlew run --args="-i chargebee_sdk_spec.json -l TYPESCRIPT_TYPINGS_V3 -o ../chargebee-node/types/"
@@ -264,9 +265,9 @@ Generate SDKs for all supported languages targeting Chargebee's official client 
 
 ./gradlew run --args="-i chargebee_sdk_spec.json -l TYPESCRIPT_TYPINGS_V3 -o ../chargebee-node/types/" &&
 
-./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA -o ../chargebee-java/src/main/java/com/chargebee" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA_V3 -o ../chargebee-java/src/main/java/com/chargebee" &&
 
-./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA_NEXT -o ../chargebee-java/src/main/java/com/chargebee" &&
+./gradlew run --args="-i chargebee_sdk_spec.json -l JAVA_V4 -o ../chargebee-java/src/main/java/" &&
 
 ./gradlew run --args="-i chargebee_sdk_spec.json -l DOTNET -o ../chargebee-dotnet/ChargeBee" &&
 
