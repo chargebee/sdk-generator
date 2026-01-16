@@ -395,5 +395,24 @@ public class ServiceBuilder {
       var required = schema.getRequired();
       return required == null || required.isEmpty();
     }
+
+    @SuppressWarnings("unused")
+    public boolean isAllQueryParamsOptional() {
+      if (operation == null || !"get".equalsIgnoreCase(httpMethod)) {
+        return false;
+      }
+      var parameters = operation.getParameters();
+      if (parameters == null || parameters.isEmpty()) {
+        return true;
+      }
+      for (var param : parameters) {
+        if (param != null && "query".equals(param.getIn())) {
+          if (Boolean.TRUE.equals(param.getRequired())) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
   }
 }

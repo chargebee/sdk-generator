@@ -192,7 +192,8 @@ class SimpleGetResponseBuilderTest {
       ObjectSchema responseSchema = new ObjectSchema();
       responseSchema.addProperty("id", new StringSchema());
 
-      // Path /payment_sources/{id}/retrieve_details - module "payment_source" + method "retrieve_details"
+      // Path /payment_sources/{id}/retrieve_details - module "payment_source" + method
+      // "retrieve_details"
       addGetOperation("payment_source", "retrieve_details", responseSchema);
 
       responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(template);

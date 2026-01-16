@@ -168,7 +168,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         {{/if}}
     }
 
-    {{#if isListResponse}}
+    {{#if (or isListResponse isAllQueryParamsOptional)}}
     /**
      * {{methodName}} a {{../packageName}} without params (executes immediately) - returns raw Response.
      */
@@ -201,10 +201,14 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         {{/if}}
     }
 
-    {{#if isListResponse}}
+    {{#if (or isListResponse isAllQueryParamsOptional)}}
     public {{returnType}} {{methodName}}() throws ChargebeeException {
         Response response = {{methodName}}Raw();
+        {{#if isListResponse}}
         return {{returnType}}.fromJson(response.getBodyAsString(), this, null, response);
+        {{else}}
+        return {{returnType}}.fromJson(response.getBodyAsString(), response);
+        {{/if}}
     }
     {{/if}}
 

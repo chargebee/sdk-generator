@@ -172,7 +172,9 @@ public class Spec {
 
             MediaType mediaType = requestBody.getContent().get("application/json");
             Schema<?> schema = mediaType.getSchema();
-            if (!includeDeprecated && schema.getDeprecated() != null && schema.getDeprecated() == true) {
+            if (!includeDeprecated
+                && schema.getDeprecated() != null
+                && schema.getDeprecated() == true) {
               continue;
             }
 

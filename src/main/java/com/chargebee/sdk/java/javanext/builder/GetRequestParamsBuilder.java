@@ -20,7 +20,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -138,6 +137,7 @@ public class GetRequestParamsBuilder {
                 CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, param.getName()) + "Filter";
             field.setFilterType(filterTypeName);
             field.setSupportedOperations(getSupportedOperations(schema));
+            field.setFilterSdkName(getFilterSdkName(schema));
           } else {
             field.setSubModelField(true);
           }
@@ -154,32 +154,19 @@ public class GetRequestParamsBuilder {
   }
 
   private boolean isDirectFilterParameter(Schema<Object> schema) {
-    var props = schema.getProperties();
-    if (props == null || props.isEmpty()) {
+    if (schema == null || schema.getExtensions() == null) {
       return false;
     }
-    var filterOperations =
-        Set.of(
-            "is",
-            "is_not",
-            "starts_with",
-            "in",
-            "not_in",
-            "is_present",
-            "after",
-            "before",
-            "on",
-            "between",
-            ASC,
-            DESC);
+    Object isFilterParam = schema.getExtensions().get(Extension.IS_FILTER_PARAMETER);
+    return isFilterParam != null && (boolean) isFilterParam;
+  }
 
-    for (String propName : props.keySet()) {
-      if (filterOperations.contains(propName)) {
-        return true;
-      }
+  private String getFilterSdkName(Schema<?> filterSchema) {
+    if (filterSchema == null || filterSchema.getExtensions() == null) {
+      return null;
     }
-
-    return false;
+    Object sdkFilterName = filterSchema.getExtensions().get(Extension.SDK_FILTER_NAME);
+    return sdkFilterName != null ? sdkFilterName.toString() : null;
   }
 
   private boolean isSortParameter(String paramName, Schema<Object> schema) {
@@ -253,7 +240,7 @@ public class GetRequestParamsBuilder {
         @SuppressWarnings("unchecked")
         Schema<Object> schema = (Schema<Object>) param.getSchema();
         if (OBJECT.equals(schema.getType()) && schema.getProperties() != null) {
-          if (!isDirectFilterParameter(schema)) {
+          if (!isDirectFilterParameter(schema) && !isSortParameter(param.getName(), schema)) {
             subModels.add(createFilterModel(param.getName(), schema));
           }
         }
@@ -289,6 +276,7 @@ public class GetRequestParamsBuilder {
               CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, entry.getKey()) + "Filter";
           field.setFilterType(filterTypeName);
           field.setSupportedOperations(getSupportedOperations(propSchema));
+          field.setFilterSdkName(getFilterSdkName(propSchema));
         }
       }
 

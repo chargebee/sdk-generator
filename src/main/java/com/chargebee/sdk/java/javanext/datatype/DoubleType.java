@@ -13,4 +13,3 @@ public record DoubleType() implements FieldType {
     return display();
   }
 }
-

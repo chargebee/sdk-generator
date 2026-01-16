@@ -201,11 +201,10 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public FirstNameFilter firstName()");
-      assertThat(writeOp.fileContent).contains("public static final class FirstNameFilter");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder is(String value)");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder isNot(String value)");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder startsWith(String value)");
+          .contains(
+              "public static final class FirstNameFilter extends"
+                  + " StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -220,9 +219,9 @@ class GetRequestParamsBuilderTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder in(String... values)");
+      assertThat(writeOp.fileContent).contains("public IdFilter id()");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder notIn(String... values)");
+          .contains("public static final class IdFilter extends StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -237,8 +236,11 @@ class GetRequestParamsBuilderTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
+      assertThat(writeOp.fileContent).contains("public FirstNameFilter firstName()");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder isPresent(boolean value)");
+          .contains(
+              "public static final class FirstNameFilter extends"
+                  + " StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -256,18 +258,14 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public CreatedAtFilter createdAt()");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder after(Timestamp timestamp)");
-      assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder before(Timestamp timestamp)");
-      assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder on(Timestamp timestamp)");
-      assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder between(Timestamp start, Timestamp end)");
+          .contains(
+              "public static final class CreatedAtFilter extends"
+                  + " StringFilter<CustomerListBuilder>");
     }
 
     @Test
-    @DisplayName("Should generate between filter with Timestamp parameters for timestamp fields")
-    void shouldGenerateBetweenFilterWithTimestampParameters() throws IOException {
+    @DisplayName("Should generate timestamp filter extending StringFilter")
+    void shouldGenerateTimestampFilterExtendingStringFilter() throws IOException {
       Operation getOperation = createGetOperation("subscription", "list");
       addTimestampFilterParam(getOperation, "created_at");
 
@@ -277,21 +275,11 @@ class GetRequestParamsBuilderTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "SubscriptionListParams.java");
-      // Verify that between method accepts Timestamp start and Timestamp end parameters
-      assertThat(writeOp.fileContent)
-          .contains("public SubscriptionListBuilder between(Timestamp start, Timestamp end)");
-      // Verify the implementation converts Timestamp to Unix time in query params
+      assertThat(writeOp.fileContent).contains("public CreatedAtFilter createdAt()");
       assertThat(writeOp.fileContent)
           .contains(
-              "builder.queryParams.put(fieldName + \"[between]\", \"[\" + (start.getTime() / 1000)"
-                  + " + \",\" + (end.getTime() / 1000) + \"]\")");
-      // Also verify other timestamp operations use Timestamp
-      assertThat(writeOp.fileContent)
-          .contains("public SubscriptionListBuilder after(Timestamp timestamp)");
-      assertThat(writeOp.fileContent)
-          .contains("public SubscriptionListBuilder before(Timestamp timestamp)");
-      assertThat(writeOp.fileContent)
-          .contains("public SubscriptionListBuilder on(Timestamp timestamp)");
+              "public static final class CreatedAtFilter extends"
+                  + " StringFilter<SubscriptionListBuilder>");
     }
 
     @Test
@@ -308,7 +296,10 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent)
           .contains("public AutoCloseInvoicesFilter autoCloseInvoices()");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder is(String value)");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public static final class AutoCloseInvoicesFilter extends"
+                  + " StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -344,6 +335,7 @@ class GetRequestParamsBuilderTest {
 
       ObjectSchema filterSchema = new ObjectSchema();
       filterSchema.setType("object");
+      filterSchema.addExtension(Extension.IS_FILTER_PARAMETER, true);
       filterSchema.addProperty("is", new StringSchema());
       filterSchema.addProperty("is_not", new StringSchema());
       filterSchema.addProperty("starts_with", new StringSchema());
@@ -364,16 +356,9 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public EmailFilter email()");
-      assertThat(writeOp.fileContent).contains("public static final class EmailFilter");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder is(String value)");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder isNot(String value)");
       assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder startsWith(String value)");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder in(String... values)");
-      assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder notIn(String... values)");
-      assertThat(writeOp.fileContent)
-          .contains("public CustomerListBuilder isPresent(boolean value)");
+          .contains(
+              "public static final class EmailFilter extends StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -383,6 +368,7 @@ class GetRequestParamsBuilderTest {
 
       ObjectSchema dateFilterSchema = new ObjectSchema();
       dateFilterSchema.setType("object");
+      dateFilterSchema.addExtension(Extension.IS_FILTER_PARAMETER, true);
       dateFilterSchema.addProperty("after", new IntegerSchema());
       dateFilterSchema.addProperty("before", new IntegerSchema());
       dateFilterSchema.addProperty("on", new IntegerSchema());
@@ -401,11 +387,10 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public CreatedAtFilter createdAt()");
-      assertThat(writeOp.fileContent).contains("public static final class CreatedAtFilter");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder after(");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder before(");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder on(");
-      assertThat(writeOp.fileContent).contains("public CustomerListBuilder between(");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public static final class CreatedAtFilter extends"
+                  + " StringFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -444,6 +429,7 @@ class GetRequestParamsBuilderTest {
 
       ObjectSchema mixedSchema = new ObjectSchema();
       mixedSchema.setType("object");
+      mixedSchema.addExtension(Extension.IS_FILTER_PARAMETER, true);
       mixedSchema.addProperty("is", new StringSchema()); // filter operation
       mixedSchema.addProperty("custom_data", new StringSchema()); // non-filter property
 
@@ -523,6 +509,7 @@ class GetRequestParamsBuilderTest {
 
       ObjectSchema schema = new ObjectSchema();
       schema.setType("object");
+      schema.addExtension(Extension.IS_FILTER_PARAMETER, true);
       schema.addProperty("asc", new StringSchema());
       schema.addProperty("desc", new StringSchema());
 
@@ -556,6 +543,7 @@ class GetRequestParamsBuilderTest {
 
       ObjectSchema amountFilterSchema = new ObjectSchema();
       amountFilterSchema.setType("object");
+      amountFilterSchema.addExtension(Extension.IS_FILTER_PARAMETER, true);
       amountFilterSchema.setProperties(filterProps);
 
       // Create parent submodel
@@ -578,9 +566,8 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("public static final class BillingParams");
       assertThat(writeOp.fileContent).contains("public AmountFilter amount()");
-      assertThat(writeOp.fileContent).contains("public static final class AmountFilter");
-      assertThat(writeOp.fileContent).contains("public BillingBuilder is(");
-      assertThat(writeOp.fileContent).contains("public BillingBuilder isNot(");
+      assertThat(writeOp.fileContent)
+          .contains("public static final class AmountFilter extends StringFilter<BillingBuilder>");
     }
 
     @Test
@@ -986,6 +973,7 @@ class GetRequestParamsBuilderTest {
 
       ObjectSchema parentIdFilter = new ObjectSchema();
       parentIdFilter.setType("object");
+      parentIdFilter.addExtension(Extension.IS_FILTER_PARAMETER, true);
       parentIdFilter.addProperty("is", new StringSchema());
       parentIdFilter.addProperty("is_not", new StringSchema());
 
@@ -1136,7 +1124,8 @@ class GetRequestParamsBuilderTest {
       Operation getOperation = createGetOperation("customer", "changeEstimate");
       addStringQueryParam(getOperation, "subscription_id");
 
-      // Path with {id} and action - module "customer" is prefixed to operation name "changeEstimate"
+      // Path with {id} and action - module "customer" is prefixed to operation name
+      // "changeEstimate"
       addPathWithOperation("/customers/{customer-id}/change_estimate", getOperation);
       paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
@@ -1705,6 +1694,7 @@ class GetRequestParamsBuilderTest {
   private void addStringFilterParam(Operation operation, String name, List<String> operations) {
     ObjectSchema filterSchema = new ObjectSchema();
     filterSchema.setType("object");
+    filterSchema.addExtension(Extension.IS_FILTER_PARAMETER, true);
     for (String op : operations) {
       filterSchema.addProperty(op, new StringSchema());
     }
@@ -1722,6 +1712,7 @@ class GetRequestParamsBuilderTest {
   private void addTimestampFilterParam(Operation operation, String name) {
     ObjectSchema filterSchema = new ObjectSchema();
     filterSchema.setType("object");
+    filterSchema.addExtension(Extension.IS_FILTER_PARAMETER, true);
     filterSchema.addProperty("after", new StringSchema());
     filterSchema.addProperty("before", new StringSchema());
     filterSchema.addProperty("on", new StringSchema());
@@ -1740,6 +1731,7 @@ class GetRequestParamsBuilderTest {
   private void addBooleanFilterParam(Operation operation, String name) {
     ObjectSchema filterSchema = new ObjectSchema();
     filterSchema.setType("object");
+    filterSchema.addExtension(Extension.IS_FILTER_PARAMETER, true);
     filterSchema.addProperty("is", new StringSchema());
 
     Parameter param = new Parameter();
@@ -1794,6 +1786,7 @@ class GetRequestParamsBuilderTest {
 
     ObjectSchema filterSchema = new ObjectSchema();
     filterSchema.setType("object");
+    filterSchema.addExtension(Extension.IS_FILTER_PARAMETER, true);
     filterSchema.addProperty("is", enumSchema);
 
     Parameter param = new Parameter();

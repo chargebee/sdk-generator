@@ -68,20 +68,18 @@ public class Go extends Language {
     List<FileOp> fileOps = new ArrayList<>();
 
     fileOps.addAll(
-        List.of(
-            createEnumsDirectory,
-            createActionsDirectoryPath,
-            createModelsDirectory));
+        List.of(createEnumsDirectory, createActionsDirectoryPath, createModelsDirectory));
     fileOps.addAll(generateGlobalEnumFiles(outputDirectoryPath + enumsDirectoryPath, globalEnums));
-    
+
     // Generate webhook event type enum
     {
       var webhookInfo = spec.extractWebhookInfo(true);
       if (!webhookInfo.isEmpty()) {
-        fileOps.add(generateWebhookEventTypeEnum(outputDirectoryPath + enumsDirectoryPath, webhookInfo));
+        fileOps.add(
+            generateWebhookEventTypeEnum(outputDirectoryPath + enumsDirectoryPath, webhookInfo));
       }
     }
-    
+
     fileOps.addAll(
         generateActionsDirectories(outputDirectoryPath + actionsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
@@ -461,7 +459,7 @@ public class Go extends Language {
   private FileOp generateWebhookEventTypeEnum(
       String outDirectoryPath, List<Map<String, String>> webhookInfo) throws IOException {
     Template globalEnumTemplate = getTemplateContent("globalEnums");
-    
+
     // Collect unique event types and sort them
     Set<String> seenTypes = new HashSet<>();
     List<Map<String, String>> eventTypes = new ArrayList<>();
@@ -475,7 +473,7 @@ public class Go extends Language {
       }
     }
     eventTypes.sort(Comparator.comparing(e -> e.get("name")));
-    
+
     // Create enum structure similar to GlobalEnum
     Map<String, Object> enumData = new HashMap<>();
     enumData.put("name", "EventType");
@@ -486,7 +484,7 @@ public class Go extends Language {
       possibleValues.add(value);
     }
     enumData.put("possibleValues", possibleValues);
-    
+
     var content = globalEnumTemplate.apply(enumData);
     return new FileOp.WriteString(outDirectoryPath, "event_type.go", content);
   }

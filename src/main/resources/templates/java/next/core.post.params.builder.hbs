@@ -8,14 +8,20 @@ package com.chargebee.v4.models.{{module}}.params;
 
 import com.chargebee.v4.internal.Recommended;
 import com.chargebee.v4.internal.JsonUtil;
+import com.chargebee.v4.filters.StringFilter;
+import com.chargebee.v4.filters.NumberFilter;
+import com.chargebee.v4.filters.TimestampFilter;
+import com.chargebee.v4.filters.EnumFilter;
 
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.List;
+import java.util.Arrays;
 import java.util.function.Consumer;
 import java.sql.Timestamp;
+import java.util.stream.Collectors;
 
 
 public final class {{name}}Params {
@@ -30,8 +36,13 @@ public final class {{name}}Params {
 
 {{#*inline "paramsContent"}}
     {{#each fields}}
+    {{#unless isFilter}}
     private final {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{name}};
+    {{/unless}}
     {{/each}}
+    {{#if hasFilterFields}}
+    private final Map<String, Object> filterParams;
+    {{/if}}
     {{#if customFieldsSupported}}
     private final Map<String, String> customFields;
     {{/if}}
@@ -41,8 +52,13 @@ public final class {{name}}Params {
 
     private {{name}}Params({{name}}Builder builder) {
         {{#each fields}}
+        {{#unless isFilter}}
         this.{{name}} = builder.{{name}};
+        {{/unless}}
         {{/each}}
+        {{#if hasFilterFields}}
+        this.filterParams = builder.filterParams.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.filterParams));
+        {{/if}}
         {{#if customFieldsSupported}}
         this.customFields = builder.customFields.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.customFields));
         {{/if}}
@@ -52,9 +68,11 @@ public final class {{name}}Params {
     }
 
     {{#each fields}}
+    {{#unless isFilter}}
     public {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{getterName}}() {
         return {{name}};
     }
+    {{/unless}}
     {{/each}}
     {{#if customFieldsSupported}}
     public Map<String, String> customFields() {
@@ -74,6 +92,7 @@ public final class {{name}}Params {
         Map<String, Object> formData = new LinkedHashMap<>();
 
         {{#each fields}}
+        {{#unless isFilter}}
         if (this.{{name}} != null) {
             {{#if subModelField}}
                 {{#if compositeArrayField}}
@@ -110,7 +129,13 @@ public final class {{name}}Params {
                 {{/if}}
             {{/if}}
         }
+        {{/unless}}
         {{/each}}
+        
+        {{#if hasFilterFields}}
+        // Add filter params
+        formData.putAll(filterParams);
+        {{/if}}
         
         {{#if customFieldsSupported}}
         formData.putAll(customFields);
@@ -132,8 +157,13 @@ public final class {{name}}Params {
 
     public static final class {{name}}Builder {
         {{#each fields}}
+        {{#unless isFilter}}
         private {{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} {{name}};
+        {{/unless}}
         {{/each}}
+        {{#if hasFilterFields}}
+        private final Map<String, Object> filterParams = new LinkedHashMap<>();
+        {{/if}}
         {{#if customFieldsSupported}}
         private Map<String, String> customFields = new LinkedHashMap<>();
         {{/if}}
@@ -144,11 +174,18 @@ public final class {{name}}Params {
         private {{name}}Builder() {}
 
         {{#each fields}}
-        {{#if deprecated}}@Deprecated{{/if}}
-        public {{../name}}Builder {{name}}({{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} value) {
+        {{#if isFilter}}{{#if deprecated}}
+        @Deprecated
+{{/if}}        public {{filterType}} {{name}}() {
+            return new {{filterType}}("{{curlName}}", this, filterParams);
+        }
+        {{else}}{{#if deprecated}}
+        @Deprecated
+{{/if}}        public {{../name}}Builder {{name}}({{#if subModelField}}{{#if compositeArrayField}}List<{{subModelParamsType}}>{{else}}{{subModelParamsType}}{{/if}}{{else}}{{{type}}}{{/if}} value) {
             this.{{name}} = value;
             return this;
         }
+        {{/if}}
         {{/each}}
         {{#if customFieldsSupported}}
 
@@ -245,6 +282,36 @@ public final class {{name}}Params {
         public {{name}}Params build() {
             return new {{name}}Params(this);
         }
+
+        {{#each fields}}
+        {{#if isFilter}}
+        {{#if hasFilterEnum}}
+        public static final class {{filterType}} extends EnumFilter<{{filterEnumType}}, {{../name}}Builder> {
+            {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
+                super(fieldName, builder, params, {{filterEnumType}}::getValue);
+            }
+        }
+        {{else if numberFilter}}
+        public static final class {{filterType}} extends NumberFilter<{{../name}}Builder> {
+            {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
+                super(fieldName, builder, params);
+            }
+        }
+        {{else if timestampFilter}}
+        public static final class {{filterType}} extends TimestampFilter<{{../name}}Builder> {
+            {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
+                super(fieldName, builder, params);
+            }
+        }
+        {{else}}
+        public static final class {{filterType}} extends StringFilter<{{../name}}Builder> {
+            {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
+                super(fieldName, builder, params);
+            }
+        }
+        {{/if}}
+        {{/if}}
+        {{/each}}
     }
 
     {{#each enumFields}}
@@ -277,5 +344,41 @@ public final class {{name}}Params {
             return _UNKNOWN;
         }
     }
+    {{/each}}
+
+    {{#each fields}}
+    {{#if isFilter}}
+    {{#if hasFilterEnum}}
+    public enum {{filterEnumType}} {
+        {{#each filterEnumFormatted}}
+        {{this.key}}("{{this.value}}"),
+        {{/each}}
+        /**
+            * An enum member indicating that {{filterEnumType}} was instantiated with an unknown
+            * value.
+            */
+        _UNKNOWN(null);
+        private final String value;
+
+        {{filterEnumType}}(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public static {{filterEnumType}} fromString(String value) {
+            if (value == null) return _UNKNOWN;
+            for ({{filterEnumType}} enumValue : {{filterEnumType}}.values()) {
+                if (enumValue.value != null && enumValue.value.equals(value)) {
+                    return enumValue;
+                }
+            }
+            return _UNKNOWN;
+        }
+    }
+    {{/if}}
+    {{/if}}
     {{/each}}
 {{/inline}}
