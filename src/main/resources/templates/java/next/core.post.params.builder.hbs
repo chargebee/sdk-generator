@@ -102,8 +102,16 @@ public final class {{name}}Params {
                     if (item != null) {
                         Map<String, Object> itemData = item.toFormData();
                         for (Map.Entry<String, Object> entry : itemData.entrySet()) {
+                            {{~#if subModelHasFilterFields}}
+                            String key = entry.getKey();
+                            String indexedKey = key.contains("[") 
+                                ? "{{curlName}}[" + key.replace("[", "][") + "[" + i + "]"
+                                : "{{curlName}}[" + key + "][" + i + "]";
+                            formData.put(indexedKey, entry.getValue());
+                            {{~else}}
                             String indexedKey = "{{curlName}}[" + entry.getKey() + "][" + i + "]";
                             formData.put(indexedKey, entry.getValue());
+                            {{~/if}}
                         }
                     }
                 }
@@ -111,8 +119,16 @@ public final class {{name}}Params {
                 // Single object
                 Map<String, Object> nestedData = this.{{name}}.toFormData();
                 for (Map.Entry<String, Object> entry : nestedData.entrySet()) {
+                    {{~#if subModelHasFilterFields}}
+                    String key = entry.getKey();
+                    String nestedKey = key.contains("[") 
+                        ? "{{curlName}}[" + key.replace("[", "][") 
+                        : "{{curlName}}[" + key + "]";
+                    formData.put(nestedKey, entry.getValue());
+                    {{~else}}
                     String nestedKey = "{{curlName}}[" + entry.getKey() + "]";
                     formData.put(nestedKey, entry.getValue());
+                    {{~/if}}
                 }
                 {{/if}}
             {{else}}

@@ -397,16 +397,16 @@ public class PostRequestParamsBuilder {
     }
 
     // Update top-level field references
-    updateFieldSubModelRefs(topLevelFields, renameByFullPath);
+    updateFieldSubModelRefs(topLevelFields, renameByFullPath, subModels);
     // Update field references inside each submodel (flattened, but they may reference other
     // submodels)
     for (var m : subModels) {
-      updateFieldSubModelRefs(m.getFields(), renameByFullPath);
+      updateFieldSubModelRefs(m.getFields(), renameByFullPath, subModels);
     }
   }
 
   private void updateFieldSubModelRefs(
-      List<Field> fields, java.util.Map<String, String> renameByFullPath) {
+      List<Field> fields, java.util.Map<String, String> renameByFullPath, List<Model> subModels) {
     if (fields == null) return;
     for (var f : fields) {
       if (Boolean.TRUE.equals(f.isSubModelField()) && f.getSubModel() != null) {
@@ -415,6 +415,15 @@ public class PostRequestParamsBuilder {
         String newSnakeName = renameByFullPath.get(fullPath);
         if (newSnakeName != null) {
           ref.setName(newSnakeName);
+        }
+        // Find the actual subModel and copy its fields so hasFilterFields() works
+        if (subModels != null) {
+          for (var subModel : subModels) {
+            if (fullPath.equals(subModel.getPackageName())) {
+              ref.setFields(subModel.getFields());
+              break;
+            }
+          }
         }
       }
     }

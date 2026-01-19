@@ -21,6 +21,13 @@ import com.chargebee.v4.models.{{../packageName}}.params.{{paramsClassName}};
 {{#each operations}}
 import com.chargebee.v4.models.{{../packageName}}.responses.{{returnType}};
 {{/each}}
+{{#if (eq name "TimeMachine")}}
+import com.chargebee.v4.models.timeMachine.TimeMachine;
+import com.chargebee.v4.models.timeMachine.TimeMachine.TimeTravelStatus;
+import com.chargebee.v4.exceptions.OperationFailedException;
+import com.chargebee.v4.exceptions.codes.BadRequestApiErrorCode;
+import com.chargebee.v4.internal.JsonUtil;
+{{/if}}
 
 
 public final class {{name}}Service extends BaseService<{{name}}Service> {
@@ -214,4 +221,103 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
 
     {{/if}}
     {{/each}}
+{{#if (eq name "Export")}}
+    // === Export Utility Methods ===
+    
+    /**
+     * Waits for an export operation to complete by polling its status.
+     * Polls every 10 seconds (configurable via cb.java.export.sleep.millis system property).
+     * 
+     * @param export The export to wait for (must have a valid ID)
+     * @return The completed Export object with COMPLETED or FAILED status
+     * @throws ChargebeeException if API call fails during polling
+     * @throws RuntimeException if export takes too long (over 50 polling attempts)
+     * @throws InterruptedException if thread is interrupted while waiting
+     */
+    public com.chargebee.v4.models.export.Export waitForExportCompletion(
+            com.chargebee.v4.models.export.Export export) 
+            throws ChargebeeException, InterruptedException {
+        int count = 0;
+        int sleepTime = Integer.getInteger("cb.java.export.sleep.millis", 10000);
+        com.chargebee.v4.models.export.Export currentExport = export;
+        
+        while (currentExport.getStatus() == com.chargebee.v4.models.export.Export.Status.IN_PROCESS) {
+            if (count++ > 50) {
+                throw new RuntimeException("Export is taking too long");
+            }
+            Thread.sleep(sleepTime);
+            ExportRetrieveResponse response = retrieve(currentExport.getId());
+            currentExport = response.getExport();
+        }
+        return currentExport;
+    }
+{{/if}}
+{{#if (eq name "TimeMachine")}}
+    // === Time Travel Completion Helper ===
+    
+    /**
+     * Waits for time travel operation to complete.
+     * Polls the API until the status changes from IN_PROGRESS.
+     *
+     * @param timeMachine The TimeMachine instance to wait for
+     * @return The updated TimeMachine with final status
+     * @throws ChargebeeException if the API call fails
+     * @throws InterruptedException if the thread is interrupted while waiting
+     * @throws RuntimeException if time travel takes too long or ends in invalid state
+     * @throws OperationFailedException if time travel fails
+     */
+    public TimeMachine waitForTimeTravelCompletion(TimeMachine timeMachine)
+            throws ChargebeeException, InterruptedException {
+        return waitForTimeTravelCompletion(timeMachine.getName());
+    }
+    
+    /**
+     * Waits for time travel operation to complete.
+     * Polls the API until the status changes from IN_PROGRESS.
+     *
+     * @param timeMachineName The name of the TimeMachine to wait for
+     * @return The updated TimeMachine with final status
+     * @throws ChargebeeException if the API call fails
+     * @throws InterruptedException if the thread is interrupted while waiting
+     * @throws RuntimeException if time travel takes too long or ends in invalid state
+     * @throws OperationFailedException if time travel fails
+     */
+    public TimeMachine waitForTimeTravelCompletion(String timeMachineName)
+            throws ChargebeeException, InterruptedException {
+        int count = 0;
+        int sleepTime = Integer.getInteger("cb.java.time_travel.sleep.millis", 3000);
+        TimeMachine timeMachine = retrieve(timeMachineName).getTimeMachine();
+        
+        while (timeMachine.getTimeTravelStatus() == TimeTravelStatus.IN_PROGRESS) {
+            if (count++ > 30) {
+                throw new RuntimeException("The time travel is taking too much time");
+            }
+            Thread.sleep(sleepTime);
+            timeMachine = retrieve(timeMachineName).getTimeMachine();
+        }
+        
+        if (timeMachine.getTimeTravelStatus() == TimeTravelStatus.FAILED) {
+            String errorJson = timeMachine.getErrorJson();
+            int httpStatusCode = JsonUtil.getInteger(errorJson, "http_code");
+            String exceptionMessage = JsonUtil.getString(errorJson, "message");
+            throw new OperationFailedException(
+                httpStatusCode,
+                "operation_failed",
+                BadRequestApiErrorCode._UNKNOWN,
+                exceptionMessage,
+                errorJson,
+                null,
+                null
+            );
+        }
+        
+        if (timeMachine.getTimeTravelStatus() == TimeTravelStatus.NOT_ENABLED
+                || timeMachine.getTimeTravelStatus() == TimeTravelStatus._UNKNOWN) {
+            throw new RuntimeException("Time travel status is in wrong state: " 
+                + timeMachine.getTimeTravelStatus());
+        }
+        
+        return timeMachine;
+    }
+{{/if}}
 }
