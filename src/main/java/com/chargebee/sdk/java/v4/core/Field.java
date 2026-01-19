@@ -219,6 +219,10 @@ public class Field {
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, normalizedName) + "Params";
   }
 
+  public boolean isSubModelHasFilterFields() {
+    return subModel != null && subModel.hasFilterFields();
+  }
+
   public String getSortBuilderType() {
     if (name == null) return null;
     // Replace dots with underscores to handle field names like "card.copy_billing_info"
