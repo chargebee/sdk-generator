@@ -24,7 +24,7 @@ final class SubscriptionActions implements SubscriptionActionsInterface
     }
 
     /**
-    *   @see https://apidocs.chargebee.com/docs/api/subscriptions?lang=php#createWithItems
+    *   @see https://apidocs.chargebee.com/docs/api/subscriptions/create-with-items?lang=php-v4
     *   @param array{
     *     subscription_items?: array<array{
     *     item_price_id?: string,

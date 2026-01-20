@@ -6,7 +6,7 @@ public class Constants {
   public static final String PHP_FILE_NAME_EXTENSION = ".php";
   public static final String RESPONSE = "response";
   public static final String API_DOCS_URL = "https://apidocs.chargebee.com/docs/api/";
-  public static final String API_DOCS_QUERY = "?lang=php#";
+  public static final String API_DOCS_QUERY = "?lang=php-v4";
   public static final String RESPONSES = "Responses";
   public static final String LIST_RESPONSE = "listResponse";
   public static final String FORWARD_SLASH = "/";

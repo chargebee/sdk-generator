@@ -504,7 +504,7 @@ public class Php_v4Tests extends LanguageTests {
       throws IOException {
     var subscription = buildResource("subscription").withAttribute("id", true).done();
     var operation =
-        buildPostOperation("createWithItems")
+        buildPostOperation("create_with_items")
             .forResource("subscription")
             .withCompositeArrayRequestBody(
                 "subscription_items",

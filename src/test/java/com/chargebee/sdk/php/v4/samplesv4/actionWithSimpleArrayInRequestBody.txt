@@ -25,7 +25,7 @@ final class CustomerActions implements CustomerActionsInterface
     }
 
     /**
-    *   @see https://apidocs.chargebee.com/docs/api/customers?lang=php#list
+    *   @see https://apidocs.chargebee.com/docs/api/customers/list?lang=php-v4
     *   @param array{
     *     limit?: int,
     *     coupons?: array<string>,
