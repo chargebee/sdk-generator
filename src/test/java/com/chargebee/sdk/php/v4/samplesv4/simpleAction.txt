@@ -24,7 +24,7 @@ final class CustomerActions implements CustomerActionsInterface
     }
 
     /**
-    *   @see https://apidocs.chargebee.com/docs/api/customers?lang=php#create
+    *   @see https://apidocs.chargebee.com/docs/api/customers/create?lang=php-v4
     *   @param array{
     *     id?: string,
     *     } $params Description of the parameters
