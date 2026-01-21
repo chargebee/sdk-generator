@@ -70,7 +70,7 @@ class Generate implements Callable<Integer> {
     new JsonSchemaUpcaster(openAPI).upcastAllSchemas();
 
     var latestCbSpecsurl = "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/main/spec/chargebee_sdk_spec.json";
-    var lastReleasedSpecsurl = "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/sept_release_2025/spec/chargebee_sdk_spec.json";
+    var lastReleasedSpecsurl = "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/mid_may_release_2025/spec/chargebee_sdk_spec.json";
     var openAPILatest = new OpenAPIV3Parser().readLocation(latestCbSpecsurl, null, null).getOpenAPI();
     var openAPILastReleased =  new OpenAPIV3Parser().readLocation(lastReleasedSpecsurl, null, null).getOpenAPI();
     new JsonSchemaUpcaster(openAPILatest).upcastAllSchemas();

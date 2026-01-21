@@ -1,5 +1,7 @@
 package com.chargebee.sdk.changelog.generators;
 
+import com.chargebee.openapi.Action;
+import com.chargebee.openapi.Attribute;
 import com.chargebee.openapi.Resource;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.changelog.ChangeLog;
@@ -8,13 +10,11 @@ import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
 
 import java.io.IOException;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.chargebee.GenUtil.pluralize;
+import static com.chargebee.GenUtil.singularize;
 import static com.chargebee.sdk.changelog.Constants.*;
 
 public class ChangeLogGenerator implements FileGenerator {
@@ -34,6 +34,8 @@ public class ChangeLogGenerator implements FileGenerator {
 
         ChangeLogSchema changeLogSchema = new ChangeLogSchema();
         changeLogSchema.setNewResource(generateResourceLine(oldResources, newResources));
+        changeLogSchema.setNewActions(generateActionLine(oldResources, newResources));
+        changeLogSchema.setNewResourceAttribute(generateAttributeLine(oldResources, newResources));
 
         String content = changeLogTemplate.apply(changeLogGenerator.getObjectMapper().convertValue(changeLogSchema, Map.class));
         return new FileOp.WriteString("./", output + "CHANGELOG.md", content);
@@ -41,9 +43,7 @@ public class ChangeLogGenerator implements FileGenerator {
 
     private String convertNewResourceToResourceLine(Resource r){
         String resourceName = r.name;
-        String resourceId = r.id;
-
-        String message = String.format("- [%s](https://apidocs.chargebee.com/docs/api/%s) has been generated.", resourceName, toHyphenCase(pluralize(resourceId)));
+        String message = String.format("- [%s](%s) has been added.", resourceName, getDocsUrlForResource(r));
         return message;
     }
 
@@ -58,6 +58,78 @@ public class ChangeLogGenerator implements FileGenerator {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         return newResource.stream().toList();
+    }
+
+    private List<String> generateActionLine(List<Resource> oldResources, List<Resource> newResources) {
+        Map<String, Set<String>> oldActionsByResourceId = oldResources.stream()
+                .collect(Collectors.toMap(
+                        resource -> resource.id,
+                        resource -> resource.actions.stream()
+                                .map(action -> action.name)
+                                .collect(Collectors.toSet())
+                ));
+
+        Set<String> newActionLines = new LinkedHashSet<>();
+
+        for (Resource newResource : newResources) {
+            Set<String> oldActions = oldActionsByResourceId.getOrDefault(newResource.id, Collections.emptySet());
+            for (Action action : newResource.actions) {
+                if (!oldActions.contains(action.name)) {
+                    newActionLines.add(convertNewActionToActionLine(newResource, action));
+                }
+            }
+        }
+        return new ArrayList<>(newActionLines);
+    }
+
+    private List<String> generateAttributeLine(List<Resource> oldResources, List<Resource> newResources) {
+        Map<String, Set<String>> oldAttributesByResourceId = oldResources.stream()
+                .collect(Collectors.toMap(
+                        resource -> resource.id,
+                        resource -> resource.attributes().stream()
+                                .map(attribute -> attribute.name)
+                                .collect(Collectors.toSet())
+                ));
+
+        return newResources.stream()
+                .flatMap(resource -> resource.attributes().stream()
+                        .filter(attribute -> !oldAttributesByResourceId
+                                .getOrDefault(resource.id, Collections.emptySet())
+                                .contains(attribute.name))
+                        .map(attribute -> convertNewAttributeToAttributeLine(resource, attribute)))
+                .collect(Collectors.toCollection(LinkedHashSet::new))
+                .stream()
+                .toList();
+    }
+
+    private String convertNewActionToActionLine(Resource resource, Action action) {
+        String actionName = action.name;
+        String resourceName = resource.name;
+
+        return String.format("- [%s](%s) has been added to [%s](%s).", actionName, getDocsUrlForActions(resource, action), resourceName, getDocsUrlForResource(resource));
+    }
+
+    private String getDocsUrlForResource(Resource resource){
+        return String.format("https://apidocs.chargebee.com/docs/api/%s", pluralize(resource.id));
+    }
+
+    private String getDocsUrlForActions(Resource resource, Action action){
+        String resourcePath = pluralize(resource.id);
+        String actionPath = toHyphenCase(action.id);
+        return String.format("https://apidocs.chargebee.com/docs/api/%s/%s", resourcePath, actionPath);
+    }
+
+    private String convertNewAttributeToAttributeLine(Resource resource, Attribute attribute) {
+        String attributeName = attribute.name;
+        String resourceName = resource.name;
+
+        return String.format("- [%s](%s) has been added to [%s](%s).", attributeName, getDocsUrlForAttribute(resource, attribute), resourceName, getDocsUrlForResource(resource));
+    }
+
+    private String getDocsUrlForAttribute(Resource resource, Attribute attribute) {
+        String resourcePath = pluralize(resource.id);
+        String attributePath = attribute.name;
+        return String.format("https://apidocs.chargebee.com/docs/api/%s/%s-object#%s", resourcePath, toHyphenCase(singularize(resource.id)), attributePath);
     }
 
     private  String toHyphenCase(String s){
