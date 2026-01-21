@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -69,10 +68,14 @@ class Generate implements Callable<Integer> {
     var openAPI = new OpenAPIV3Parser().read(openAPISpecFilePath);
     new JsonSchemaUpcaster(openAPI).upcastAllSchemas();
 
-    var latestCbSpecsurl = "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/main/spec/chargebee_sdk_spec.json";
-    var lastReleasedSpecsurl = "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/mid_may_release_2025/spec/chargebee_sdk_spec.json";
-    var openAPILatest = new OpenAPIV3Parser().readLocation(latestCbSpecsurl, null, null).getOpenAPI();
-    var openAPILastReleased =  new OpenAPIV3Parser().readLocation(lastReleasedSpecsurl, null, null).getOpenAPI();
+    var latestCbSpecsurl =
+        "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/main/spec/chargebee_sdk_spec.json";
+    var lastReleasedSpecsurl =
+        "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/mid_may_release_2025/spec/chargebee_sdk_spec.json";
+    var openAPILatest =
+        new OpenAPIV3Parser().readLocation(latestCbSpecsurl, null, null).getOpenAPI();
+    var openAPILastReleased =
+        new OpenAPIV3Parser().readLocation(lastReleasedSpecsurl, null, null).getOpenAPI();
     new JsonSchemaUpcaster(openAPILatest).upcastAllSchemas();
     new JsonSchemaUpcaster(openAPILastReleased).upcastAllSchemas();
 
@@ -80,7 +83,9 @@ class Generate implements Callable<Integer> {
     if (language.cleanDirectoryBeforeGenerate()) {
       cleanDirectory(Paths.get(outputDirectoryPath));
     }
-    FileOp fileOps = language.generate(outputDirectoryPath, new Spec(openAPILastReleased),  new Spec(openAPILatest));
+    FileOp fileOps =
+        language.generate(
+            outputDirectoryPath, new Spec(openAPILastReleased), new Spec(openAPILatest));
     fileOps.exec();
     return 0;
   }
@@ -171,7 +176,7 @@ enum Lang {
     if (lang == Lang.PHP_V4) {
       return new PHP_V4();
     }
-    if (lang == Lang.CHANGELOG){
+    if (lang == Lang.CHANGELOG) {
       return new ChangeLog();
     }
     throw new IllegalArgumentException("Lang " + lang + " not supported");
