@@ -9,7 +9,7 @@ LANGS=${LANGS:-"java node python php go ruby dotnet"}
 function _gradlew() {
     args=("-i ${BASE_DIR}/chargebee_sdk_spec.json")
     case "$1" in
-        java) args+=("-l JAVA -o $BASE_DIR/chargebee-java/src/main/java/com/chargebee");;
+        java) args+=("-l JAVA_V4 -o $BASE_DIR/chargebee-java/src/main/java/");;
         php) args+=("-l PHP_V4 -o $BASE_DIR/chargebee-php/src");;
         python) args+=("-l PYTHON_V3 -o $BASE_DIR/chargebee-python/chargebee");;
         node) args+=("-l NODE_V3 -o $BASE_DIR/chargebee-node/src/resources");;

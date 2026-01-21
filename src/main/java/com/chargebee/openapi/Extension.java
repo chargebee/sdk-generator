@@ -3,6 +3,7 @@ package com.chargebee.openapi;
 public class Extension {
   // Operation Extensions
   public static final String OPERATION_METHOD_NAME = "x-cb-operation-method-name";
+  public static final String SDK_METHOD_NAME = "x-cb-sdk-method-name";
   public static final String IS_OPERATION_LIST = "x-cb-operation-is-list";
   public static final String IS_BULK_OPERATION = "x-cb-operation-is-bulk";
   public static final String OPERATION_IS_BATCH = "x-cb-operation-is-batch";
@@ -13,6 +14,7 @@ public class Extension {
   public static final String IS_OPERATION_NEEDS_INPUT_OBJECT =
       "x-cb-is-operation-needs-input-object";
   public static final String IS_CUSTOM_FIELDS_SUPPORTED = "x-cb-is-custom-fields-supported";
+  public static final String IS_CONSENT_FIELDS_SUPPORTED = "x-cb-is-consent-fields-supported";
   public static final String IS_GLOBAL_RESOURCE_REFRENCE = "x-cb-is-global-resource-reference";
   public static final String SORT_ORDER = "x-cb-sort-order";
 

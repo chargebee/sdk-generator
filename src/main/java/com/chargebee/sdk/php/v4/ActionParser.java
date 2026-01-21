@@ -61,6 +61,7 @@ public class ActionParser {
         .setReturnType(toCamelCase(action.name) + res.name + "Response")
         .setPhpDocField(PHPDocSerializer.serializeActionParameter(action))
         .setActionDocLink(API_DOCS_URL + pluralize(res.id) + API_DOCS_QUERY + action.id)
+        .setDeprecated(action.isOperationDeprecated())
         .setIdempotent(action.isIdempotent());
   }
 

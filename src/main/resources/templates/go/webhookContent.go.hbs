@@ -1,0 +1,41 @@
+package webhook
+
+import (
+	"time"
+{{#each unique_imports}}
+	"github.com/chargebee/chargebee-go/v3/models/{{snakeCaseToLowerCaseNoUnderscore (pascalCaseToSnakeCase .)}}"
+{{/each}}
+)
+
+// Event content structures for each webhook type
+{{#each events}}
+type {{snakeCaseToPascalCase type}}Content struct {
+{{#each filtered_resource_schemas}}
+    {{snakeCaseToPascalCase (pascalCaseToSnakeCase resource_schema_name)}}{{#if isArray}}[]{{/if}}*{{snakeCaseToLowerCaseNoUnderscore (pascalCaseToSnakeCase resource_schema_name)}}.{{resource_schema_name}} `json:"{{pascalCaseToSnakeCase resource_schema_name}},omitempty"`
+{{/each}}
+}
+
+{{/each}}
+
+type BaseEvent struct {
+	Id            string `json:"id"`
+	OccurredAt    int64  `json:"occurred_at"`
+	Source        string `json:"source"`
+	Object        string `json:"object"`
+	ApiVersion    string `json:"api_version"`
+	EventType     string `json:"event_type"`
+	WebhookStatus string `json:"webhook_status"`
+}
+
+func (e *BaseEvent) GetOccurredAtTime() time.Time {
+	return time.Unix(e.OccurredAt, 0)
+}
+
+{{#each events}}
+// {{snakeCaseToPascalCase type}}Event represents a {{type}} webhook event
+type {{snakeCaseToPascalCase type}}Event struct {
+	BaseEvent
+	Content *{{snakeCaseToPascalCase type}}Content `json:"content"`
+}
+
+{{/each}}
