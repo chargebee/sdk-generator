@@ -3,6 +3,8 @@ package com.chargebee.sdk.changelog.generators;
 import com.chargebee.openapi.Action;
 import com.chargebee.openapi.Attribute;
 import com.chargebee.openapi.Resource;
+import java.util.function.Function;
+import com.chargebee.openapi.parameter.Parameter;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.changelog.ChangeLog;
 import com.chargebee.sdk.changelog.models.ChangeLogSchema;
@@ -12,6 +14,7 @@ import com.google.common.base.CaseFormat;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.chargebee.GenUtil.pluralize;
 import static com.chargebee.GenUtil.singularize;
@@ -36,6 +39,24 @@ public class ChangeLogGenerator implements FileGenerator {
         changeLogSchema.setNewResource(generateResourceLine(oldResources, newResources));
         changeLogSchema.setNewActions(generateActionLine(oldResources, newResources));
         changeLogSchema.setNewResourceAttribute(generateAttributeLine(oldResources, newResources));
+
+        List<String> queryParamLines = generateParameterLine(
+                oldResources,
+                newResources,
+                Action::queryParameters,
+                "query parameter"
+        );
+        List<String> requestBodyParamLines = generateParameterLine(
+                oldResources,
+                newResources,
+                Action::requestBodyParameters,
+                "request body parameter"
+        );
+        List<String> allParamLines = Stream
+                .concat(queryParamLines.stream(), requestBodyParamLines.stream())
+                .collect(Collectors.toList());
+        changeLogSchema.setNewParams(allParamLines);
+
 
         String content = changeLogTemplate.apply(changeLogGenerator.getObjectMapper().convertValue(changeLogSchema, Map.class));
         return new FileOp.WriteString("./", output + "CHANGELOG.md", content);
@@ -135,4 +156,67 @@ public class ChangeLogGenerator implements FileGenerator {
     private  String toHyphenCase(String s){
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, s);
     }
+
+    private List<String> generateParameterLine(
+            List<Resource> oldResources,
+            List<Resource> newResources,
+            Function<Action, List<Parameter>> parameterExtractor,
+            String parameterType) {
+
+        Map<String, Map<String, Set<String>>> oldParamsByResourceAndAction = oldResources.stream()
+                .collect(Collectors.toMap(
+                        resource -> resource.id,
+                        resource -> resource.actions.stream()
+                                .collect(Collectors.toMap(
+                                        action -> action.id,
+                                        action -> parameterExtractor.apply(action).stream()
+                                                .map(param -> param.getName())
+                                                .collect(Collectors.toSet())
+                                ))
+                ));
+
+        Set<String> newParamLines = new LinkedHashSet<>();
+
+        for (Resource newResource : newResources) {
+            Map<String, Set<String>> oldActionsMap = oldParamsByResourceAndAction.getOrDefault(newResource.id, Collections.emptyMap());
+
+            for (Action action : newResource.actions) {
+                Set<String> oldParams = oldActionsMap.getOrDefault(action.id, Collections.emptySet());
+
+                for (Parameter param : parameterExtractor.apply(action)) {
+                    if (!oldParams.contains(param.getName())) {
+                        newParamLines.add(convertNewParameterToLine(newResource, action, param, parameterType));
+                    }
+                }
+            }
+        }
+
+        return new ArrayList<>(newParamLines);
+    }
+
+    private String convertNewParameterToLine(Resource resource, Action action, Parameter param, String parameterType) {
+        String paramName = param.getName();
+        String actionName = action.name;
+        String resourceName = resource.name;
+
+        return String.format("- [%s](%s) has been added as %s to [%s](%s) in [%s](%s).",
+                paramName,
+                getDocsUrlForParameter(resource, action, param),
+                parameterType,
+                actionName,
+                getDocsUrlForActions(resource, action),
+                resourceName,
+                getDocsUrlForResource(resource));
+    }
+
+    private String getDocsUrlForParameter(Resource resource, Action action, Parameter param) {
+        String resourcePath = pluralize(resource.id);
+        String actionPath = toHyphenCase(action.id);
+        String paramPath = param.getName();
+        return String.format("https://apidocs.chargebee.com/docs/api/%s/%s#%s",
+                resourcePath,
+                actionPath,
+                paramPath);
+    }
+
 }
