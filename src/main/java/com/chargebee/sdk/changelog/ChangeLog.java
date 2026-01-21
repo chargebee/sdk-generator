@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import static com.chargebee.sdk.changelog.Constants.*;
 
 public class ChangeLog extends Language {
-    protected final String[] hiddenOverride = {"media"};
+    public final String[] hiddenOverride = {"media"};
     private final ObjectMapper objectMapper;
     private Map<String, FileGenerator> generators;
 
@@ -47,18 +47,8 @@ public class ChangeLog extends Language {
             Spec newerVersion
     ) throws IOException {
         this.generators = initializeGenerators();
-        List <Resource> newVersionResource = filterResources(newerVersion.resources());
-        List <Resource> olderVersionResource = filterResources(oldVersion.resources());
-        return generators.get("changelog").generate(outputPath, olderVersionResource, newVersionResource);
+        return generators.get("changelog").generate(outputPath, oldVersion, newerVersion);
     }
-
-    private List<com.chargebee.openapi.Resource> filterResources(
-            List<com.chargebee.openapi.Resource> resources) {
-        return resources.stream()
-                .filter(resource -> !List.of(this.hiddenOverride).contains(resource.id))
-                .collect(Collectors.toList());
-    }
-
     public ObjectMapper getObjectMapper() {
         return objectMapper;
     }

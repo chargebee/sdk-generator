@@ -15,6 +15,5 @@ public @Data class ChangeLogSchema {
     List<String> newActions;
     List< String> newParams;
     List<String> newResourceAttribute;
-    List<Map<String, String>> newEventType;
-    List<Map<String, String>> newGlobalEnums;
+    List<String> newEventType;
 }
