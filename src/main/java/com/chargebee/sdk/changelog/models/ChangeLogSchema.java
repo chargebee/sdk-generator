@@ -13,7 +13,7 @@ import java.util.Map;
 public @Data class ChangeLogSchema {
     List<String> newResource;
     List<String> newActions;
-    List<Map<String, String>> newParams;
+    List< String> newParams;
     List<String> newResourceAttribute;
     List<Map<String, String>> newEventType;
     List<Map<String, String>> newGlobalEnums;
