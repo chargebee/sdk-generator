@@ -103,6 +103,10 @@ public abstract class Language implements DataType {
     return generateSDK(outputDirectoryPath, spec);
   }
 
+  public FileOp generate(String outputDirectoryPath, Spec oldVersion, Spec newerVersion) throws IOException {
+    initialise();
+    return generateChangeLog(outputDirectoryPath, oldVersion, newerVersion);
+  }
   protected Map<String, Object> resourceResponses(List<Resource> resources) {
     List<Map<String, Object>> responseMap =
         resources.stream()
@@ -178,6 +182,14 @@ public abstract class Language implements DataType {
 
   public Map<String, Object> additionalTemplateParams(Resource resource) {
     return Map.of();
+  }
+
+  protected FileOp generateChangeLog(
+          String outputDirectoryPath,
+          Spec oldVersion,
+          Spec newerVersion
+  ) throws IOException {
+    return null;
   }
 
   public boolean cleanDirectoryBeforeGenerate() {

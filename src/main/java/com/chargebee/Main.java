@@ -4,6 +4,7 @@ import com.chargebee.openapi.ApiVersion;
 import com.chargebee.openapi.Spec;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.Language;
+import com.chargebee.sdk.changelog.ChangeLog;
 import com.chargebee.sdk.dotnet.Dotnet;
 import com.chargebee.sdk.go.Go;
 import com.chargebee.sdk.java.GenerationMode;
@@ -65,17 +66,22 @@ class Generate implements Callable<Integer> {
       System.err.println("\u001B[36m🔒 Please check file permissions.\u001B[0m");
       return 1;
     }
-
     var openAPI = new OpenAPIV3Parser().read(openAPISpecFilePath);
     new JsonSchemaUpcaster(openAPI).upcastAllSchemas();
+
+    var latestCbSpecsurl = "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/main/spec/chargebee_sdk_spec.json";
+    var lastReleasedSpecsurl = "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/sept_release_2025/spec/chargebee_sdk_spec.json";
+    var openAPILatest = new OpenAPIV3Parser().readLocation(latestCbSpecsurl, null, null).getOpenAPI();
+    var openAPILastReleased =  new OpenAPIV3Parser().readLocation(lastReleasedSpecsurl, null, null).getOpenAPI();
+    new JsonSchemaUpcaster(openAPILatest).upcastAllSchemas();
+    new JsonSchemaUpcaster(openAPILastReleased).upcastAllSchemas();
+
     Language language = Lang.sdkLanguage(lang);
     if (language.cleanDirectoryBeforeGenerate()) {
       cleanDirectory(Paths.get(outputDirectoryPath));
     }
-    List<FileOp> fileOps = language.generate(outputDirectoryPath, new Spec(openAPI));
-    for (var fileOp : fileOps) {
-      fileOp.exec();
-    }
+    FileOp fileOps = language.generate(outputDirectoryPath, new Spec(openAPILastReleased),  new Spec(openAPILatest));
+    fileOps.exec();
     return 0;
   }
 
@@ -90,6 +96,7 @@ class Generate implements Callable<Integer> {
 }
 
 enum Lang {
+  CHANGELOG,
   TYPESCRIPT_TYPINGS,
   TYPESCRIPT_TYPINGS_V3,
   PYTHON,
@@ -163,6 +170,9 @@ enum Lang {
     }
     if (lang == Lang.PHP_V4) {
       return new PHP_V4();
+    }
+    if (lang == Lang.CHANGELOG){
+      return new ChangeLog();
     }
     throw new IllegalArgumentException("Lang " + lang + " not supported");
   }
