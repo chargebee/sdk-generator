@@ -53,9 +53,31 @@ public class ChangeLogGenerator implements FileGenerator {
     changeLogSchema.setNewEventType(
         generateEventLine(
             oldVersion.extractWebhookInfo(false), newerVersion.extractWebhookInfo(false)));
+    changeLogSchema.setDeletedResource(generateDeletedResourceLine(oldResources, newResources));
+    changeLogSchema.setDeletedActions(generateDeletedActionLine(oldResources, newResources));
+    changeLogSchema.setDeletedResourceAttribute(
+        generateDeletedAttributeLine(oldResources, newResources));
+
+    List<String> deletedQueryParamLines =
+        generateDeletedParameterLine(
+            oldResources, newResources, Action::queryParameters, "query parameter");
+    List<String> deletedRequestBodyParamLines =
+        generateDeletedParameterLine(
+            oldResources, newResources, Action::requestBodyParameters, "request body parameter");
+    List<String> allDeletedParamLines =
+        Stream.concat(deletedQueryParamLines.stream(), deletedRequestBodyParamLines.stream())
+            .collect(Collectors.toList());
+    changeLogSchema.setDeletedParams(allDeletedParamLines);
+
+    changeLogSchema.setDeletedEventType(
+        generateDeletedEventLine(
+            oldVersion.extractWebhookInfo(false), newerVersion.extractWebhookInfo(false)));
+
     String content =
         changeLogTemplate.apply(
             changeLogGenerator.getObjectMapper().convertValue(changeLogSchema, Map.class));
+    content = content.replaceAll("(?m)^[ \t]*\r?\n([ \t]*\r?\n)+", "\n\n");
+    content = content.replaceAll("^\\s+", "");
     return new FileOp.WriteString("./", output + "CHANGELOG.md", content);
   }
 
@@ -76,7 +98,7 @@ public class ChangeLogGenerator implements FileGenerator {
     String eventType = event.get("type");
     String resourceSchemaName = event.get("resource_schema_name");
 
-    return String.format("- [%s](%s) has been added.", eventType, getDocsUrlForEvent(eventType));
+    return String.format("- [`%s`](%s) has been added.", eventType, getDocsUrlForEvent(eventType));
   }
 
   private String getDocsUrlForEvent(String eventType) {
@@ -86,7 +108,7 @@ public class ChangeLogGenerator implements FileGenerator {
   private String convertNewResourceToResourceLine(Resource r) {
     String resourceName = r.name;
     String message =
-        String.format("- [%s](%s) has been added.", resourceName, getDocsUrlForResource(r));
+        String.format("- [`%s`](%s) has been added.", resourceName, getDocsUrlForResource(r));
     return message;
   }
 
@@ -161,7 +183,7 @@ public class ChangeLogGenerator implements FileGenerator {
     String resourceName = resource.name;
 
     return String.format(
-        "- [%s](%s) has been added to [%s](%s).",
+        "- [`%s`](%s) has been added to [`%s`](%s).",
         action.id,
         getDocsUrlForActions(resource, action),
         resourceName,
@@ -183,7 +205,7 @@ public class ChangeLogGenerator implements FileGenerator {
     String resourceName = resource.name;
 
     return String.format(
-        "- [%s](%s) has been added to [%s](%s).",
+        "- [`%s`](%s) has been added to [`%s`](%s).",
         attributeName,
         getDocsUrlForAttribute(resource, attribute),
         resourceName,
@@ -249,7 +271,7 @@ public class ChangeLogGenerator implements FileGenerator {
     String resourceName = resource.name;
 
     return String.format(
-        "- [%s](%s) has been added as %s to [%s](%s) in [%s](%s).",
+        "- [`%s`](%s) has been added as %s to [`%s`](%s) in [`%s`](%s).",
         paramName,
         getDocsUrlForParameter(resource, action, param),
         parameterType,
@@ -272,5 +294,220 @@ public class ChangeLogGenerator implements FileGenerator {
     return resources.stream()
         .filter(resource -> !List.of(this.changeLogGenerator.hiddenOverride).contains(resource.id))
         .collect(Collectors.toList());
+  }
+
+  private List<String> generateDeletedResourceLine(
+      List<Resource> oldResources, List<Resource> newResources) {
+    Set<String> newResourceIds =
+        newResources.stream().map(resource -> resource.id).collect(Collectors.toSet());
+
+    Set<String> deletedResource =
+        oldResources.stream()
+            .filter(r -> !newResourceIds.contains(r.id))
+            .map(r -> convertDeletedResourceToResourceLine(r))
+            .collect(Collectors.toCollection(LinkedHashSet::new));
+
+    return deletedResource.stream().toList();
+  }
+
+  private String convertDeletedResourceToResourceLine(Resource r) {
+    String resourceName = r.name;
+    return String.format("- %s has been removed.", resourceName);
+  }
+
+  private List<String> generateDeletedActionLine(
+      List<Resource> oldResources, List<Resource> newResources) {
+    Map<String, Resource> newResourcesMap =
+        newResources.stream()
+            .collect(Collectors.toMap(resource -> resource.id, resource -> resource));
+
+    Set<String> deletedActionLines = new LinkedHashSet<>();
+
+    for (Resource oldResource : oldResources) {
+      Resource newResource = newResourcesMap.get(oldResource.id);
+
+      if (newResource != null) {
+        Set<String> newActions =
+            newResource.actions.stream().map(action -> action.name).collect(Collectors.toSet());
+
+        for (Action action : oldResource.actions) {
+          if (!newActions.contains(action.name)) {
+            deletedActionLines.add(convertDeletedActionToActionLine(newResource, action, true));
+          }
+        }
+      } else {
+        for (Action action : oldResource.actions) {
+          deletedActionLines.add(convertDeletedActionToActionLine(oldResource, action, false));
+        }
+      }
+    }
+    return new ArrayList<>(deletedActionLines);
+  }
+
+  private String convertDeletedActionToActionLine(
+      Resource resource, Action action, boolean hyperlinkResource) {
+    String resourceName = resource.name;
+
+    if (hyperlinkResource) {
+      return String.format(
+          "- `%s` has been removed from [`%s`](%s).",
+          action.id, resourceName, getDocsUrlForResource(resource));
+    } else {
+      return String.format("- `%s` has been removed from `%s`.", action.id, resourceName);
+    }
+  }
+
+  private List<String> generateDeletedAttributeLine(
+      List<Resource> oldResources, List<Resource> newResources) {
+    Map<String, Resource> newResourcesMap =
+        newResources.stream()
+            .collect(Collectors.toMap(resource -> resource.id, resource -> resource));
+
+    Set<String> deletedAttributeLines = new LinkedHashSet<>();
+
+    for (Resource oldResource : oldResources) {
+      Resource newResource = newResourcesMap.get(oldResource.id);
+
+      if (newResource != null) {
+        Set<String> newAttributes =
+            newResource.attributes().stream()
+                .map(attribute -> attribute.name)
+                .collect(Collectors.toSet());
+
+        for (Attribute attribute : oldResource.attributes()) {
+          if (!newAttributes.contains(attribute.name)) {
+            deletedAttributeLines.add(
+                convertDeletedAttributeToAttributeLine(newResource, attribute, true));
+          }
+        }
+      } else {
+        for (Attribute attribute : oldResource.attributes()) {
+          deletedAttributeLines.add(
+              convertDeletedAttributeToAttributeLine(oldResource, attribute, false));
+        }
+      }
+    }
+
+    return new ArrayList<>(deletedAttributeLines);
+  }
+
+  private String convertDeletedAttributeToAttributeLine(
+      Resource resource, Attribute attribute, boolean hyperlinkResource) {
+    String attributeName = attribute.name;
+    String resourceName = resource.name;
+
+    if (hyperlinkResource) {
+      return String.format(
+          "- `%s` has been removed from [`%s`](%s).",
+          attributeName, resourceName, getDocsUrlForResource(resource));
+    } else {
+      return String.format("- `%s` has been removed from `%s`.", attributeName, resourceName);
+    }
+  }
+
+  private List<String> generateDeletedParameterLine(
+      List<Resource> oldResources,
+      List<Resource> newResources,
+      Function<Action, List<Parameter>> parameterExtractor,
+      String parameterType) {
+
+    Map<String, Resource> newResourcesMap =
+        newResources.stream()
+            .collect(Collectors.toMap(resource -> resource.id, resource -> resource));
+
+    Set<String> deletedParamLines = new LinkedHashSet<>();
+
+    for (Resource oldResource : oldResources) {
+      Resource newResource = newResourcesMap.get(oldResource.id);
+
+      if (newResource != null) {
+        Map<String, Action> newActionsMap =
+            newResource.actions.stream()
+                .collect(Collectors.toMap(action -> action.id, action -> action));
+
+        for (Action oldAction : oldResource.actions) {
+          Action newAction = newActionsMap.get(oldAction.id);
+
+          if (newAction != null) {
+            Set<String> newParams =
+                parameterExtractor.apply(newAction).stream()
+                    .map(param -> param.getName())
+                    .collect(Collectors.toSet());
+
+            for (Parameter param : parameterExtractor.apply(oldAction)) {
+              if (!newParams.contains(param.getName())) {
+                deletedParamLines.add(
+                    convertDeletedParameterToLine(
+                        newResource, newAction, param, parameterType, true, true));
+              }
+            }
+          } else {
+            for (Parameter param : parameterExtractor.apply(oldAction)) {
+              deletedParamLines.add(
+                  convertDeletedParameterToLine(
+                      newResource, oldAction, param, parameterType, true, false));
+            }
+          }
+        }
+      } else {
+        for (Action action : oldResource.actions) {
+          for (Parameter param : parameterExtractor.apply(action)) {
+            deletedParamLines.add(
+                convertDeletedParameterToLine(
+                    oldResource, action, param, parameterType, false, false));
+          }
+        }
+      }
+    }
+
+    return new ArrayList<>(deletedParamLines);
+  }
+
+  private String convertDeletedParameterToLine(
+      Resource resource,
+      Action action,
+      Parameter param,
+      String parameterType,
+      boolean hyperlinkResource,
+      boolean hyperlinkAction) {
+    String paramName = param.getName();
+    String resourceName = resource.name;
+
+    if (hyperlinkResource && hyperlinkAction) {
+      return String.format(
+          "- `%s` has been removed as %s from [`%s`](%s) in [`%s`](%s).",
+          paramName,
+          parameterType,
+          action.id,
+          getDocsUrlForActions(resource, action),
+          resourceName,
+          getDocsUrlForResource(resource));
+    } else if (hyperlinkResource && !hyperlinkAction) {
+      return String.format(
+          "- `%s` has been removed as %s from `%s` in [`%s`](%s).",
+          paramName, parameterType, action.id, resourceName, getDocsUrlForResource(resource));
+    } else {
+      return String.format(
+          "- `%s` has been removed as %s from `%s` in `%s`.",
+          paramName, parameterType, action.id, resourceName);
+    }
+  }
+
+  private List<String> generateDeletedEventLine(
+      List<Map<String, String>> oldEvents, List<Map<String, String>> newEvents) {
+    Set<String> newEventTypes =
+        newEvents.stream().map(event -> event.get("type")).collect(Collectors.toSet());
+
+    return oldEvents.stream()
+        .filter(event -> !newEventTypes.contains(event.get("type")))
+        .map(event -> convertDeletedEventToEventLine(event))
+        .collect(Collectors.toCollection(LinkedHashSet::new))
+        .stream()
+        .toList();
+  }
+
+  private String convertDeletedEventToEventLine(Map<String, String> event) {
+    String eventType = event.get("type");
+    return String.format("- `%s` has been removed.", eventType);
   }
 }
