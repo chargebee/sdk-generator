@@ -4,8 +4,6 @@ import java.util.List;
 import lombok.Data;
 import lombok.Getter;
 
-// here all the attributes of model is a key value
-// while key being the name and value being docs url.
 @Getter
 public @Data class ChangeLogSchema {
   List<String> newResource;
@@ -13,4 +11,9 @@ public @Data class ChangeLogSchema {
   List<String> newParams;
   List<String> newResourceAttribute;
   List<String> newEventType;
+  List<String> deletedResource;
+  List<String> deletedActions;
+  List<String> deletedParams;
+  List<String> deletedResourceAttribute;
+  List<String> deletedEventType;
 }
