@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.Callable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -44,49 +45,79 @@ class Generate implements Callable<Integer> {
   @Option(names = "-o", required = true, description = "Output directory path")
   String outputDirectoryPath;
 
-  @Option(names = "-i", required = true, description = "Open API Spec file")
+  @Option(names = "-i", description = "Open API Spec file")
   String openAPISpecFilePath;
 
   @Override
   public Integer call() throws Exception {
-    // Check if the OpenAPI spec file exists
-    File specFile = new File(openAPISpecFilePath);
-    if (!specFile.exists()) {
-      System.err.println("\u001B[31m❌ Error: OpenAPI specification file not found\u001B[0m");
-      System.err.println("\u001B[33m📁 File path: \u001B[0m" + openAPISpecFilePath);
-      System.err.println(
-          "\u001B[36m💡 Please ensure the file path is correct and the file exists.\u001B[0m");
-      return 1;
-    }
-
-    if (!specFile.canRead()) {
-      System.err.println("\u001B[31m❌ Error: Cannot read OpenAPI specification file\u001B[0m");
-      System.err.println("\u001B[33m📁 File path: \u001B[0m" + openAPISpecFilePath);
-      System.err.println("\u001B[36m🔒 Please check file permissions.\u001B[0m");
-      return 1;
-    }
-    var openAPI = new OpenAPIV3Parser().read(openAPISpecFilePath);
-    new JsonSchemaUpcaster(openAPI).upcastAllSchemas();
-
-    var latestCbSpecsurl =
-        "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/main/spec/chargebee_sdk_spec.json";
-    var lastReleasedSpecsurl =
-        "https://raw.githubusercontent.com/chargebee/openapi/refs/heads/mid_may_release_2025/spec/chargebee_sdk_spec.json";
-    var openAPILatest =
-        new OpenAPIV3Parser().readLocation(latestCbSpecsurl, null, null).getOpenAPI();
-    var openAPILastReleased =
-        new OpenAPIV3Parser().readLocation(lastReleasedSpecsurl, null, null).getOpenAPI();
-    new JsonSchemaUpcaster(openAPILatest).upcastAllSchemas();
-    new JsonSchemaUpcaster(openAPILastReleased).upcastAllSchemas();
-
     Language language = Lang.sdkLanguage(lang);
-    if (language.cleanDirectoryBeforeGenerate()) {
-      cleanDirectory(Paths.get(outputDirectoryPath));
+
+    if (lang == Lang.CHANGELOG) {
+      String latestSpecUrl = System.getenv("CHANGELOG_SPEC_LATEST_URL");
+      String lastReleasedSpecUrl = System.getenv("CHANGELOG_SPEC_LAST_RELEASED_URL");
+
+      if (latestSpecUrl == null || lastReleasedSpecUrl == null) {
+        System.err.println(
+            "\u001B[31m❌ Error: Changelog spec URLs not found in environment variables\u001B[0m");
+        System.err.println(
+            "\u001B[36m💡 Please set CHANGELOG_SPEC_LATEST_URL and CHANGELOG_SPEC_LAST_RELEASED_URL"
+                + " environment variables\u001B[0m");
+        return 1;
+      }
+
+      var openAPILatest =
+          new OpenAPIV3Parser().readLocation(latestSpecUrl, null, null).getOpenAPI();
+      var openAPILastReleased =
+          new OpenAPIV3Parser().readLocation(lastReleasedSpecUrl, null, null).getOpenAPI();
+      new JsonSchemaUpcaster(openAPILatest).upcastAllSchemas();
+      new JsonSchemaUpcaster(openAPILastReleased).upcastAllSchemas();
+
+      if (language.cleanDirectoryBeforeGenerate()) {
+        cleanDirectory(Paths.get(outputDirectoryPath));
+      }
+
+      FileOp fileOp =
+          language.generate(
+              outputDirectoryPath, new Spec(openAPILastReleased), new Spec(openAPILatest));
+      fileOp.exec();
+    } else {
+      if (openAPISpecFilePath == null) {
+        System.err.println(
+            "\u001B[31m❌ Error: OpenAPI specification file path is required\u001B[0m");
+        System.err.println(
+            "\u001B[36m💡 Please provide the -i option with the path to the OpenAPI spec"
+                + " file\u001B[0m");
+        return 1;
+      }
+
+      File specFile = new File(openAPISpecFilePath);
+      if (!specFile.exists()) {
+        System.err.println("\u001B[31m❌ Error: OpenAPI specification file not found\u001B[0m");
+        System.err.println("\u001B[33m📁 File path: \u001B[0m" + openAPISpecFilePath);
+        System.err.println(
+            "\u001B[36m💡 Please ensure the file path is correct and the file exists.\u001B[0m");
+        return 1;
+      }
+
+      if (!specFile.canRead()) {
+        System.err.println("\u001B[31m❌ Error: Cannot read OpenAPI specification file\u001B[0m");
+        System.err.println("\u001B[33m📁 File path: \u001B[0m" + openAPISpecFilePath);
+        System.err.println("\u001B[36m🔒 Please check file permissions.\u001B[0m");
+        return 1;
+      }
+
+      var openAPI = new OpenAPIV3Parser().read(openAPISpecFilePath);
+      new JsonSchemaUpcaster(openAPI).upcastAllSchemas();
+
+      if (language.cleanDirectoryBeforeGenerate()) {
+        cleanDirectory(Paths.get(outputDirectoryPath));
+      }
+      List<FileOp> fileOps = language.generate(outputDirectoryPath, new Spec(openAPI));
+      for (var fileOp : fileOps) {
+        fileOp.exec();
+      }
     }
-    FileOp fileOps =
-        language.generate(
-            outputDirectoryPath, new Spec(openAPILastReleased), new Spec(openAPILatest));
-    fileOps.exec();
+
     return 0;
   }
 
