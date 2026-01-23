@@ -7,6 +7,10 @@ declare module 'chargebee' {
     export enum WebhookEventType { {{#each this}}
         {{snakeCaseToPascalCase type}} = '{{type}}',{{/each}}
     }
+    /**
+     * @deprecated Use WebhookEventType instead.
+     */
+    export import WebhookContentType = WebhookEventType;
 
     /**
      * @deprecated Use WebhookEventType instead.
