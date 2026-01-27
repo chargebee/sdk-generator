@@ -1,7 +1,6 @@
 package com.chargebee.sdk.php.v4;
 
-import static com.chargebee.GenUtil.singularize;
-import static com.chargebee.GenUtil.toCamelCase;
+import static com.chargebee.GenUtil.*;
 import static com.chargebee.openapi.Extension.SDK_ENUM_API_NAME;
 import static com.chargebee.openapi.Extension.SUB_RESOURCE_NAME;
 import static com.chargebee.openapi.Resource.*;
@@ -12,12 +11,18 @@ import com.chargebee.openapi.Resource;
 import com.chargebee.sdk.php.v4.models.Column;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.*;
+import java.util.Set;
 
 public class Common {
 
   public static final String CHARGEBEE_ENUMS_BASE_PATH = "\\Chargebee\\Enums\\";
+  public static final String CHARGEBEE_CLASSBASED_ENUMS_BASE_PATH =
+      "\\Chargebee\\ClassBasedEnums\\";
+
   public static final String CHARGEBEE_RESOURCES_BASE_PATH = "\\Chargebee\\Resources\\";
   public static final String ENUMS_DIRECTORY = "Enums";
+
+  public static final String CLASS_BASED_ENUMS_DIRECTORY = "ClassBasedEnums";
 
   public static String dataType(Schema schema) {
     if (schema instanceof StringSchema
@@ -159,6 +164,59 @@ public class Common {
         attribute, CHARGEBEE_ENUMS_BASE_PATH, String.format("%sType", singularize(type)));
   }
 
+  public static Column globalClassBasedEnumParser(Attribute attribute) {
+    return createEnumColumn(attribute, CHARGEBEE_CLASSBASED_ENUMS_BASE_PATH);
+  }
+
+  public static Column localClassBasedEnumParser(
+      Attribute attribute, Resource res, Attribute subResourceAttribute) {
+    String type;
+    String resourceName = res.name;
+
+    if (subResourceAttribute.isDependentAttribute() || attribute.isDependentAttribute()) {
+      type = toCamelCase(res.name) + toCamelCase(attribute.name);
+    } else {
+      if (attribute.isExternalEnum()) {
+        if (Set.of("cn_reason_code", "cn_status").contains(attribute.name)) {
+          resourceName = "CreditNote";
+          type = toCamelCase(attribute.name.substring(3));
+        } else if (Set.of("txn_status").contains(attribute.name)) {
+          resourceName = "Transaction";
+          type = "Status";
+        } else if (Set.of("invoice_status").contains(attribute.name)) {
+          resourceName = "Invoice";
+          type = "Status";
+        } else {
+          if (attribute.getEnumApiName() == null
+              || attribute.getEnumApiName().equalsIgnoreCase(attribute.name)) {
+            type = toCamelCase(attribute.name);
+          } else {
+            type = firstCharLower(attribute.getEnumApiName());
+            resourceName = attribute.getEnumApiName();
+            type =
+                type.contains(".")
+                    ? type.substring(type.lastIndexOf('.') + 1)
+                    : toCamelCase(attribute.name);
+            resourceName =
+                resourceName.contains(".")
+                    ? resourceName.substring(0, resourceName.lastIndexOf('.'))
+                    : res.name;
+          }
+        }
+      } else {
+        type = subResourceName(subResourceAttribute, attribute);
+      }
+    }
+    String basePath =
+        CHARGEBEE_RESOURCES_BASE_PATH
+            + resourceName
+            + BACK_SLASH
+            + CLASS_BASED_ENUMS_DIRECTORY
+            + BACK_SLASH;
+
+    return createEnumColumn(attribute, basePath, type);
+  }
+
   public static Column localEnumParser(Attribute attribute, Resource res) {
     return createEnumColumn(
         attribute,
@@ -179,12 +237,16 @@ public class Common {
     return column;
   }
 
-  private static Column createEnumColumn(
-      Attribute attribute, String basePath, String fieldTypePHP) {
+  private static Column createEnumColumn(Attribute attribute, String basePath, String type) {
+    String enumType = basePath + type;
+    enumType =
+        enumType.replace(
+            "\\Chargebee\\Resources\\QuotedRamp\\ClassBasedEnums\\BillingPeriodUnit",
+            "\\Chargebee\\ClassBasedEnums\\BillingPeriodUnit");
     Column column = new Column();
     column.setName(attribute.name);
-    column.setFieldTypePHP(basePath + fieldTypePHP);
-    column.setPhpDocField(basePath + fieldTypePHP);
+    column.setFieldTypePHP(enumType);
+    column.setPhpDocField(enumType);
     column.setIsOptional(true);
     column.setApiName(attribute.name);
     return column;
@@ -195,5 +257,12 @@ public class Common {
         + subResourceName(schema)
         + BACK_SLASH
         + subResourceName(schema);
+  }
+
+  private static String subResourceName(Attribute subResourceAttribute, Attribute attribute) {
+    if (subResourceAttribute.subResourceName() != null) {
+      return subResourceAttribute.subResourceName() + toCamelCase(attribute.name);
+    }
+    return singularize(toCamelCase(subResourceAttribute.name)) + toCamelCase(attribute.name);
   }
 }
