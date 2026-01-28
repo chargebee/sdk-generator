@@ -11,7 +11,6 @@ import com.chargebee.openapi.Resource;
 import com.chargebee.sdk.php.v4.models.Column;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.*;
-import java.util.Set;
 
 public class Common {
 
@@ -177,42 +176,38 @@ public class Common {
       type = toCamelCase(res.name) + toCamelCase(attribute.name);
     } else {
       if (attribute.isExternalEnum()) {
-        if (Set.of("cn_reason_code", "cn_status").contains(attribute.name)) {
-          resourceName = "CreditNote";
-          type = toCamelCase(attribute.name.substring(3));
-        } else if (Set.of("txn_status").contains(attribute.name)) {
-          resourceName = "Transaction";
-          type = "Status";
-        } else if (Set.of("invoice_status").contains(attribute.name)) {
-          resourceName = "Invoice";
-          type = "Status";
+        if (attribute.getEnumApiName() == null
+            || attribute.getEnumApiName().equalsIgnoreCase(attribute.name)) {
+          type = toCamelCase(attribute.name);
         } else {
-          if (attribute.getEnumApiName() == null
-              || attribute.getEnumApiName().equalsIgnoreCase(attribute.name)) {
-            type = toCamelCase(attribute.name);
-          } else {
-            type = firstCharLower(attribute.getEnumApiName());
-            resourceName = attribute.getEnumApiName();
-            type =
-                type.contains(".")
-                    ? type.substring(type.lastIndexOf('.') + 1)
-                    : toCamelCase(attribute.name);
-            resourceName =
-                resourceName.contains(".")
-                    ? resourceName.substring(0, resourceName.lastIndexOf('.'))
-                    : res.name;
-          }
+          type = firstCharLower(attribute.getEnumApiName());
+          resourceName = attribute.getEnumApiName();
+          type =
+              type.contains(".")
+                  ? type.substring(type.lastIndexOf('.') + 1)
+                  : toCamelCase(attribute.name);
+          resourceName =
+              resourceName.contains(".")
+                  ? resourceName.substring(0, resourceName.lastIndexOf('.'))
+                  : "";
         }
       } else {
         type = subResourceName(subResourceAttribute, attribute);
       }
     }
-    String basePath =
-        CHARGEBEE_RESOURCES_BASE_PATH
-            + resourceName
-            + BACK_SLASH
-            + CLASS_BASED_ENUMS_DIRECTORY
-            + BACK_SLASH;
+    String basePath;
+    // When an enum is marked as external but has no external reference in the OpenAPI specs,
+    // it is treated as a global enum.
+    if (resourceName.equals("")) {
+      basePath = CHARGEBEE_CLASSBASED_ENUMS_BASE_PATH;
+    } else {
+      basePath =
+          CHARGEBEE_RESOURCES_BASE_PATH
+              + resourceName
+              + BACK_SLASH
+              + CLASS_BASED_ENUMS_DIRECTORY
+              + BACK_SLASH;
+    }
 
     return createEnumColumn(attribute, basePath, type);
   }
@@ -239,10 +234,6 @@ public class Common {
 
   private static Column createEnumColumn(Attribute attribute, String basePath, String type) {
     String enumType = basePath + type;
-    enumType =
-        enumType.replace(
-            "\\Chargebee\\Resources\\QuotedRamp\\ClassBasedEnums\\BillingPeriodUnit",
-            "\\Chargebee\\ClassBasedEnums\\BillingPeriodUnit");
     Column column = new Column();
     column.setName(attribute.name);
     column.setFieldTypePHP(enumType);
