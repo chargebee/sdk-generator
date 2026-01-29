@@ -12,6 +12,8 @@ import com.chargebee.v4.filters.StringFilter;
 import com.chargebee.v4.filters.NumberFilter;
 import com.chargebee.v4.filters.TimestampFilter;
 import com.chargebee.v4.filters.EnumFilter;
+import com.chargebee.v4.filters.BooleanFilter;
+import com.chargebee.v4.filters.CustomFieldSelector;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -91,6 +93,20 @@ public final class {{name}}Params {
         }
         {{/if}}{{/if}}{{/if}}
         {{/each}}
+
+        {{#if customFieldsSupported}}
+        /**
+         * Create a filter for a custom field.
+         * @param fieldName the custom field name (must contain "cf_")
+         * @return CustomFieldSelector for choosing filter type
+         */
+        public CustomFieldSelector<{{name}}Builder> customField(String fieldName) {
+            if (fieldName == null || !fieldName.contains("cf_")) {
+                throw new IllegalArgumentException("Custom field name must contain 'cf_'");
+            }
+            return new CustomFieldSelector<>(fieldName, this, queryParams);
+        }
+        {{/if}}
 
         public {{name}}Params build() {
             return new {{name}}Params(this);
