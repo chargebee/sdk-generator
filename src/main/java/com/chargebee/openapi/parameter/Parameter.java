@@ -3,10 +3,14 @@ package com.chargebee.openapi.parameter;
 import static com.chargebee.openapi.Extension.*;
 
 import com.chargebee.openapi.Attribute;
+import com.chargebee.openapi.Enum;
 import com.chargebee.openapi.Extension;
 import com.chargebee.sdk.DataType;
 import com.google.common.base.CaseFormat;
+import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 
@@ -97,5 +101,30 @@ public class Parameter {
             && parameter.schema.getExtensions().get(SORT_ORDER) != null
         ? (int) parameter.schema.getExtensions().get(SORT_ORDER)
         : -1;
+  }
+
+  public boolean isEnum() {
+    return schema instanceof ArraySchema
+        ? schema.getItems().getEnum() != null && !schema.getItems().getEnum().isEmpty()
+        : schema.getEnum() != null && !schema.getEnum().isEmpty();
+  }
+
+  public boolean isGlobalEnum() {
+    return schema instanceof ArraySchema
+        ? isGlobalEnumAttribute(schema.getItems())
+        : isGlobalEnumAttribute(schema);
+  }
+
+  private boolean isGlobalEnumAttribute(Schema schema) {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_GLOBAL_ENUM) != null
+        && (boolean) schema.getExtensions().get(IS_GLOBAL_ENUM);
+  }
+
+  public List<String> getEnumValues() {
+    if (!isEnum()) {
+      return Collections.emptyList();
+    }
+    return new Enum(schema).values();
   }
 }

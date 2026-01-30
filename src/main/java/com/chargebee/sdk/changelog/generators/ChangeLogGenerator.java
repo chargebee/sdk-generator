@@ -2,10 +2,12 @@ package com.chargebee.sdk.changelog.generators;
 
 import static com.chargebee.GenUtil.pluralize;
 import static com.chargebee.GenUtil.singularize;
+import static com.chargebee.openapi.Extension.IS_GLOBAL_ENUM;
 import static com.chargebee.sdk.changelog.Constants.*;
 
 import com.chargebee.openapi.Action;
 import com.chargebee.openapi.Attribute;
+import com.chargebee.openapi.Enum;
 import com.chargebee.openapi.Resource;
 import com.chargebee.openapi.Spec;
 import com.chargebee.openapi.parameter.Parameter;
@@ -14,6 +16,8 @@ import com.chargebee.sdk.changelog.ChangeLog;
 import com.chargebee.sdk.changelog.models.ChangeLogSchema;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
+import io.swagger.v3.oas.models.media.ArraySchema;
+import io.swagger.v3.oas.models.media.Schema;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
@@ -72,6 +76,12 @@ public class ChangeLogGenerator implements FileGenerator {
     changeLogSchema.setDeletedEventType(
         generateDeletedEventLine(
             oldVersion.extractWebhookInfo(false), newerVersion.extractWebhookInfo(false)));
+
+    changeLogSchema.setNewEnumValues(
+        generateEnumValueLines(oldResources, newResources, oldVersion, newerVersion));
+
+    changeLogSchema.setDeletedEnumValues(
+        generateDeletedEnumValueLines(oldResources, newResources, oldVersion, newerVersion));
 
     String content =
         changeLogTemplate.apply(
@@ -509,5 +519,730 @@ public class ChangeLogGenerator implements FileGenerator {
   private String convertDeletedEventToEventLine(Map<String, String> event) {
     String eventType = event.get("type");
     return String.format("- `%s` has been removed.", eventType);
+  }
+
+  /**
+   * Generate lines for new enum values (both global and attribute-level enums)
+   */
+  private List<String> generateEnumValueLines(
+      List<Resource> oldResources, List<Resource> newResources, Spec oldSpec, Spec newSpec) {
+
+    Set<String> enumLines = new LinkedHashSet<>();
+
+    // Handle global enums
+    enumLines.addAll(generateGlobalEnumLines(oldSpec.globalEnums(), newSpec.globalEnums()));
+
+    // Handle attribute-level enums (excluding global enums)
+    enumLines.addAll(generateAttributeEnumLines(oldResources, newResources));
+
+    // Handle parameter enums (both query and request body)
+    enumLines.addAll(generateParameterEnumLines(oldResources, newResources));
+
+    return new ArrayList<>(enumLines);
+  }
+
+  /**
+   * Generate lines for global enum changes (grouped by enum name)
+   */
+  private List<String> generateGlobalEnumLines(
+      List<Enum> oldGlobalEnums, List<Enum> newGlobalEnums) {
+
+    List<String> lines = new ArrayList<>();
+
+    // Build map of old enum values
+    Map<String, Set<String>> oldEnumValuesMap =
+        oldGlobalEnums.stream()
+            .collect(Collectors.toMap(e -> e.name, e -> new HashSet<>(e.values())));
+
+    // Find new values in each global enum and group them
+    for (Enum newEnum : newGlobalEnums) {
+      Set<String> oldValues = oldEnumValuesMap.getOrDefault(newEnum.name, Collections.emptySet());
+
+      List<String> newValues = new ArrayList<>();
+      for (String value : newEnum.values()) {
+        if (!oldValues.contains(value)) {
+          newValues.add(value);
+        }
+      }
+
+      if (!newValues.isEmpty()) {
+        lines.add(formatEnumValuesLine(newValues, newEnum.name, true));
+      }
+    }
+
+    return lines;
+  }
+
+  /**
+   * Format enum values into a single line
+   */
+  private String formatEnumValuesLine(List<String> values, String enumName, boolean isGlobal) {
+    if (values.isEmpty()) {
+      return "";
+    }
+
+    String valuesStr;
+    if (values.size() == 1) {
+      valuesStr = String.format("`%s` has been added as a new value", values.get(0));
+    } else if (values.size() == 2) {
+      valuesStr =
+          String.format(
+              "`%s` and `%s` have been added as new values", values.get(0), values.get(1));
+    } else {
+      String lastValue = values.get(values.size() - 1);
+      String otherValues =
+          values.subList(0, values.size() - 1).stream()
+              .map(v -> String.format("`%s`", v))
+              .collect(Collectors.joining(", "));
+      valuesStr =
+          String.format("%s, and `%s` have been added as new values", otherValues, lastValue);
+    }
+
+    return String.format("- %s to global enum `%s`.", valuesStr, enumName);
+  }
+
+  /**
+   * Generate lines for attribute-level enum changes (excluding global enums)
+   * Grouped by resource and attribute
+   */
+  private List<String> generateAttributeEnumLines(
+      List<Resource> oldResources, List<Resource> newResources) {
+
+    // Build map of old resource attributes and their enum values
+    Map<String, Map<String, Set<String>>> oldEnumsByResource = new HashMap<>();
+
+    for (Resource oldResource : oldResources) {
+      Map<String, Set<String>> attributeEnums = new HashMap<>();
+      for (Attribute attr : oldResource.attributes()) {
+        // Only process non-global enum attributes
+        if (attr.isEnumAttribute() && !attr.isGlobalEnumAttribute()) {
+          attributeEnums.put(attr.name, new HashSet<>(attr.getEnum().values()));
+        }
+      }
+      oldEnumsByResource.put(oldResource.id, attributeEnums);
+    }
+
+    // Check for new enum values in new resources
+    List<String> lines = new ArrayList<>();
+
+    for (Resource newResource : newResources) {
+      Map<String, Set<String>> oldAttributeEnums =
+          oldEnumsByResource.getOrDefault(newResource.id, Collections.emptyMap());
+
+      for (Attribute newAttr : newResource.attributes()) {
+        // Only process non-global enum attributes
+        if (newAttr.isEnumAttribute() && !newAttr.isGlobalEnumAttribute()) {
+          Set<String> oldValues =
+              oldAttributeEnums.getOrDefault(newAttr.name, Collections.emptySet());
+          List<String> newEnumValues = newAttr.getEnum().values();
+
+          // Find new enum values
+          List<String> addedValues = new ArrayList<>();
+          for (String value : newEnumValues) {
+            if (!oldValues.contains(value)) {
+              addedValues.add(value);
+            }
+          }
+
+          if (!addedValues.isEmpty()) {
+            lines.add(formatAttributeEnumValuesLine(addedValues, newResource, newAttr));
+          }
+        }
+      }
+    }
+
+    return lines;
+  }
+
+  /**
+   * Format attribute enum values into a single line
+   */
+  private String formatAttributeEnumValuesLine(
+      List<String> values, Resource resource, Attribute attribute) {
+
+    if (values.isEmpty()) {
+      return "";
+    }
+
+    String valuesStr;
+    if (values.size() == 1) {
+      valuesStr = String.format("`%s` has been added as a new value", values.get(0));
+    } else if (values.size() == 2) {
+      valuesStr =
+          String.format(
+              "`%s` and `%s` have been added as new values", values.get(0), values.get(1));
+    } else {
+      String lastValue = values.get(values.size() - 1);
+      String otherValues =
+          values.subList(0, values.size() - 1).stream()
+              .map(v -> String.format("`%s`", v))
+              .collect(Collectors.joining(", "));
+      valuesStr =
+          String.format("%s, and `%s` have been added as new values", otherValues, lastValue);
+    }
+
+    return String.format(
+        "- %s to enum attribute [`%s`](%s) in [`%s`](%s).",
+        valuesStr,
+        attribute.name,
+        getDocsUrlForAttribute(resource, attribute),
+        resource.name,
+        getDocsUrlForResource(resource));
+  }
+
+  /**
+   * Generate lines for parameter enum changes
+   * Handles both query parameters and request body parameters
+   */
+  private List<String> generateParameterEnumLines(
+      List<Resource> oldResources, List<Resource> newResources) {
+
+    List<String> lines = new ArrayList<>();
+
+    // Build map of old parameters and their enum values
+    Map<String, Map<String, Map<String, Set<String>>>> oldParamEnumsByResource = new HashMap<>();
+
+    for (Resource oldResource : oldResources) {
+      Map<String, Map<String, Set<String>>> actionParams = new HashMap<>();
+
+      for (Action action : oldResource.actions) {
+        Map<String, Set<String>> paramEnums = new HashMap<>();
+
+        // Process query parameters
+        for (Parameter param : action.queryParameters()) {
+          if (param.isEnum() && !param.isGlobalEnum()) {
+            paramEnums.put("query:" + param.getName(), new HashSet<>(param.getEnumValues()));
+          }
+          if (param.schema.getProperties() != null) {
+            param
+                .schema
+                .getProperties()
+                .forEach(
+                    (key, value) -> {
+                      if (isEnumSchema(value) && !isGlobalEnumSchema(value)) {
+                        paramEnums.put(
+                            "query:" + param.getName() + "." + key, getEnumValues(value));
+                      }
+                    });
+          }
+        }
+
+        // Process request body parameters
+        for (Parameter param : action.requestBodyParameters()) {
+          if (param.isEnum() && !param.isGlobalEnum()) {
+            paramEnums.put("body:" + param.getName(), new HashSet<>(param.getEnumValues()));
+          }
+          if (param.schema.getProperties() != null) {
+            param
+                .schema
+                .getProperties()
+                .forEach(
+                    (key, value) -> {
+                      if (isEnumSchema(value) && !isGlobalEnumSchema(value)) {
+                        paramEnums.put("body:" + param.getName() + "." + key, getEnumValues(value));
+                      }
+                    });
+          }
+        }
+
+        actionParams.put(action.id, paramEnums);
+      }
+
+      oldParamEnumsByResource.put(oldResource.id, actionParams);
+    }
+
+    // Check for new enum values in parameters
+    for (Resource newResource : newResources) {
+      Map<String, Map<String, Set<String>>> oldActionParams =
+          oldParamEnumsByResource.getOrDefault(newResource.id, Collections.emptyMap());
+
+      for (Action action : newResource.actions) {
+        Map<String, Set<String>> oldParamEnums =
+            oldActionParams.getOrDefault(action.id, Collections.emptyMap());
+
+        // Process query parameters
+        for (Parameter param : action.queryParameters()) {
+          Set<String> addedValues = new HashSet<>();
+
+          if (param.isEnum() && !param.isGlobalEnum()) {
+            Set<String> oldValues =
+                oldParamEnums.getOrDefault("query:" + param.getName(), Collections.emptySet());
+            for (String value : param.getEnumValues()) {
+              if (!oldValues.contains(value)) {
+                addedValues.add(value);
+              }
+            }
+
+            if (!addedValues.isEmpty()) {
+              lines.add(
+                  formatParameterEnumValuesLine(
+                      addedValues.stream().toList(),
+                      newResource,
+                      action,
+                      param,
+                      "query parameter"));
+            }
+          }
+
+          // Process nested properties separately
+          if (param.schema.getProperties() != null) {
+            param
+                .schema
+                .getProperties()
+                .forEach(
+                    (key, value) -> {
+                      if (isEnumSchema(value) && !isGlobalEnumSchema(value)) {
+                        Set<String> nestedAddedValues = new HashSet<>();
+                        Set<String> oldValues =
+                            oldParamEnums.getOrDefault(
+                                "query:" + param.getName() + "." + key, Collections.emptySet());
+                        for (String enumValue : getEnumValues(value)) {
+                          if (!oldValues.contains(enumValue)) {
+                            nestedAddedValues.add(enumValue);
+                          }
+                        }
+
+                        if (!nestedAddedValues.isEmpty()) {
+                          // Create a parameter with the full nested path
+                          Parameter nestedParam = new Parameter(param.getName() + "." + key, value);
+                          lines.add(
+                              formatParameterEnumValuesLine(
+                                  nestedAddedValues.stream().toList(),
+                                  newResource,
+                                  action,
+                                  nestedParam,
+                                  "query parameter"));
+                        }
+                      }
+                    });
+          }
+        }
+
+        // Process request body parameters
+        for (Parameter param : action.requestBodyParameters()) {
+          Set<String> addedValues = new HashSet<>();
+
+          if (param.isEnum() && !param.isGlobalEnum()) {
+            Set<String> oldValues =
+                oldParamEnums.getOrDefault("body:" + param.getName(), Collections.emptySet());
+            for (String value : param.getEnumValues()) {
+              if (!oldValues.contains(value)) {
+                addedValues.add(value);
+              }
+            }
+
+            if (!addedValues.isEmpty()) {
+              lines.add(
+                  formatParameterEnumValuesLine(
+                      addedValues.stream().toList(),
+                      newResource,
+                      action,
+                      param,
+                      "request body parameter"));
+            }
+          }
+
+          // Process nested properties separately
+          if (param.schema.getProperties() != null) {
+            param
+                .schema
+                .getProperties()
+                .forEach(
+                    (key, value) -> {
+                      if (isEnumSchema(value) && !isGlobalEnumSchema(value)) {
+                        Set<String> nestedAddedValues = new HashSet<>();
+                        Set<String> oldValues =
+                            oldParamEnums.getOrDefault(
+                                "body:" + param.getName() + "." + key, Collections.emptySet());
+                        for (String enumValue : getEnumValues(value)) {
+                          if (!oldValues.contains(enumValue)) {
+                            nestedAddedValues.add(enumValue);
+                          }
+                        }
+
+                        if (!nestedAddedValues.isEmpty()) {
+                          // Create a parameter with the full nested path
+                          Parameter nestedParam = new Parameter(param.getName() + "." + key, value);
+                          lines.add(
+                              formatParameterEnumValuesLine(
+                                  nestedAddedValues.stream().toList(),
+                                  newResource,
+                                  action,
+                                  nestedParam,
+                                  "request body parameter"));
+                        }
+                      }
+                    });
+          }
+        }
+      }
+    }
+
+    return lines;
+  }
+
+  /**
+   * Format parameter enum values into a single line
+   */
+  private String formatParameterEnumValuesLine(
+      List<String> values,
+      Resource resource,
+      Action action,
+      Parameter param,
+      String parameterType) {
+
+    if (values.isEmpty()) {
+      return "";
+    }
+
+    String valuesStr;
+    if (values.size() == 1) {
+      valuesStr = String.format("`%s` has been added as a new value", values.get(0));
+    } else if (values.size() == 2) {
+      valuesStr =
+          String.format(
+              "`%s` and `%s` have been added as new values", values.get(0), values.get(1));
+    } else {
+      String lastValue = values.get(values.size() - 1);
+      String otherValues =
+          values.subList(0, values.size() - 1).stream()
+              .map(v -> String.format("`%s`", v))
+              .collect(Collectors.joining(", "));
+      valuesStr =
+          String.format("%s, and `%s` have been added as new values", otherValues, lastValue);
+    }
+
+    return String.format(
+        "- %s to enum %s `%s` in [`%s`](%s) of [`%s`](%s).",
+        valuesStr,
+        parameterType,
+        param.getName(),
+        action.id,
+        getDocsUrlForActions(resource, action),
+        resource.name,
+        getDocsUrlForResource(resource));
+  }
+
+  /**
+   * Generate lines for deleted enum values
+   */
+  private List<String> generateDeletedEnumValueLines(
+      List<Resource> oldResources, List<Resource> newResources, Spec oldSpec, Spec newSpec) {
+
+    Set<String> enumLines = new LinkedHashSet<>();
+
+    // Handle global enums
+    enumLines.addAll(generateDeletedGlobalEnumLines(oldSpec.globalEnums(), newSpec.globalEnums()));
+
+    // Handle attribute-level enums (excluding global enums)
+    enumLines.addAll(generateDeletedAttributeEnumLines(oldResources, newResources));
+
+    // Handle parameter enums
+    enumLines.addAll(generateDeletedParameterEnumLines(oldResources, newResources));
+
+    return new ArrayList<>(enumLines);
+  }
+
+  /**
+   * Generate lines for deleted global enum values (grouped)
+   */
+  private List<String> generateDeletedGlobalEnumLines(
+      List<Enum> oldGlobalEnums, List<Enum> newGlobalEnums) {
+
+    List<String> lines = new ArrayList<>();
+
+    // Build map of new enum values
+    Map<String, Set<String>> newEnumValuesMap =
+        newGlobalEnums.stream()
+            .collect(Collectors.toMap(e -> e.name, e -> new HashSet<>(e.values())));
+
+    // Find deleted values in each global enum and group them
+    for (Enum oldEnum : oldGlobalEnums) {
+      Set<String> newValues = newEnumValuesMap.getOrDefault(oldEnum.name, Collections.emptySet());
+
+      List<String> deletedValues = new ArrayList<>();
+      for (String value : oldEnum.values()) {
+        if (!newValues.contains(value)) {
+          deletedValues.add(value);
+        }
+      }
+
+      if (!deletedValues.isEmpty()) {
+        lines.add(formatDeletedEnumValuesLine(deletedValues, oldEnum.name));
+      }
+    }
+
+    return lines;
+  }
+
+  /**
+   * Format deleted enum values into a single line
+   */
+  private String formatDeletedEnumValuesLine(List<String> values, String enumName) {
+    if (values.isEmpty()) {
+      return "";
+    }
+
+    String valuesStr;
+    if (values.size() == 1) {
+      valuesStr = String.format("`%s` has been removed", values.get(0));
+    } else if (values.size() == 2) {
+      valuesStr = String.format("`%s` and `%s` have been removed", values.get(0), values.get(1));
+    } else {
+      String lastValue = values.get(values.size() - 1);
+      String otherValues =
+          values.subList(0, values.size() - 1).stream()
+              .map(v -> String.format("`%s`", v))
+              .collect(Collectors.joining(", "));
+      valuesStr = String.format("%s, and `%s` have been removed", otherValues, lastValue);
+    }
+
+    return String.format("- %s from global enum `%s`.", valuesStr, enumName);
+  }
+
+  /**
+   * Generate lines for deleted attribute-level enum values (grouped, excluding global enums)
+   */
+  private List<String> generateDeletedAttributeEnumLines(
+      List<Resource> oldResources, List<Resource> newResources) {
+
+    // Build map of new resource attributes and their enum values
+    Map<String, Map<String, Set<String>>> newEnumsByResource = new HashMap<>();
+
+    for (Resource newResource : newResources) {
+      Map<String, Set<String>> attributeEnums = new HashMap<>();
+      for (Attribute attr : newResource.attributes()) {
+        // Only process non-global enum attributes
+        if (attr.isEnumAttribute() && !attr.isGlobalEnumAttribute()) {
+          attributeEnums.put(attr.name, new HashSet<>(attr.getEnum().values()));
+        }
+      }
+      newEnumsByResource.put(newResource.id, attributeEnums);
+    }
+
+    // Check for deleted enum values
+    List<String> lines = new ArrayList<>();
+
+    for (Resource oldResource : oldResources) {
+      Map<String, Set<String>> newAttributeEnums =
+          newEnumsByResource.getOrDefault(oldResource.id, Collections.emptyMap());
+
+      for (Attribute oldAttr : oldResource.attributes()) {
+        // Only process non-global enum attributes
+        if (oldAttr.isEnumAttribute() && !oldAttr.isGlobalEnumAttribute()) {
+          Set<String> newValues =
+              newAttributeEnums.getOrDefault(oldAttr.name, Collections.emptySet());
+          List<String> oldEnumValues = oldAttr.getEnum().values();
+
+          // Find deleted enum values
+          List<String> deletedValues = new ArrayList<>();
+          for (String value : oldEnumValues) {
+            if (!newValues.contains(value)) {
+              deletedValues.add(value);
+            }
+          }
+
+          if (!deletedValues.isEmpty()) {
+            lines.add(formatDeletedAttributeEnumValuesLine(deletedValues, oldResource, oldAttr));
+          }
+        }
+      }
+    }
+
+    return lines;
+  }
+
+  /**
+   * Format deleted attribute enum values into a single line
+   */
+  private String formatDeletedAttributeEnumValuesLine(
+      List<String> values, Resource resource, Attribute attribute) {
+
+    if (values.isEmpty()) {
+      return "";
+    }
+
+    String valuesStr;
+    if (values.size() == 1) {
+      valuesStr = String.format("`%s` has been removed", values.get(0));
+    } else if (values.size() == 2) {
+      valuesStr = String.format("`%s` and `%s` have been removed", values.get(0), values.get(1));
+    } else {
+      String lastValue = values.get(values.size() - 1);
+      String otherValues =
+          values.subList(0, values.size() - 1).stream()
+              .map(v -> String.format("`%s`", v))
+              .collect(Collectors.joining(", "));
+      valuesStr = String.format("%s, and `%s` have been removed", otherValues, lastValue);
+    }
+
+    return String.format(
+        "- %s from enum attribute [`%s`](%s) in [`%s`](%s).",
+        valuesStr,
+        attribute.name,
+        getDocsUrlForAttribute(resource, attribute),
+        resource.name,
+        getDocsUrlForResource(resource));
+  }
+
+  /**
+   * Generate lines for deleted parameter enum values
+   */
+  private List<String> generateDeletedParameterEnumLines(
+      List<Resource> oldResources, List<Resource> newResources) {
+
+    List<String> lines = new ArrayList<>();
+
+    // Build map of new parameters and their enum values
+    Map<String, Map<String, Map<String, Set<String>>>> newParamEnumsByResource = new HashMap<>();
+
+    for (Resource newResource : newResources) {
+      Map<String, Map<String, Set<String>>> actionParams = new HashMap<>();
+
+      for (Action action : newResource.actions) {
+        Map<String, Set<String>> paramEnums = new HashMap<>();
+
+        // Process query parameters
+        for (Parameter param : action.queryParameters()) {
+          if (param.isEnum() && !param.isGlobalEnum()) {
+            paramEnums.put("query:" + param.getName(), new HashSet<>(param.getEnumValues()));
+          }
+        }
+
+        // Process request body parameters
+        for (Parameter param : action.requestBodyParameters()) {
+          if (param.isEnum() && !param.isGlobalEnum()) {
+            paramEnums.put("body:" + param.getName(), new HashSet<>(param.getEnumValues()));
+          }
+        }
+
+        actionParams.put(action.id, paramEnums);
+      }
+
+      newParamEnumsByResource.put(newResource.id, actionParams);
+    }
+
+    // Check for deleted enum values in parameters
+    for (Resource oldResource : oldResources) {
+      Map<String, Map<String, Set<String>>> newActionParams =
+          newParamEnumsByResource.getOrDefault(oldResource.id, Collections.emptyMap());
+
+      for (Action action : oldResource.actions) {
+        Map<String, Set<String>> newParamEnums =
+            newActionParams.getOrDefault(action.id, Collections.emptyMap());
+
+        // Process query parameters
+        for (Parameter param : action.queryParameters()) {
+          if (param.isEnum() && !param.isGlobalEnum()) {
+            Set<String> newValues =
+                newParamEnums.getOrDefault("query:" + param.getName(), Collections.emptySet());
+
+            List<String> deletedValues = new ArrayList<>();
+            for (String value : param.getEnumValues()) {
+              if (!newValues.contains(value)) {
+                deletedValues.add(value);
+              }
+            }
+
+            if (!deletedValues.isEmpty()) {
+              lines.add(
+                  formatDeletedParameterEnumValuesLine(
+                      deletedValues, oldResource, action, param, "query parameter"));
+            }
+          }
+        }
+
+        // Process request body parameters
+        for (Parameter param : action.requestBodyParameters()) {
+          if (param.isEnum() && !param.isGlobalEnum()) {
+            Set<String> newValues =
+                newParamEnums.getOrDefault("body:" + param.getName(), Collections.emptySet());
+
+            List<String> deletedValues = new ArrayList<>();
+            for (String value : param.getEnumValues()) {
+              if (!newValues.contains(value)) {
+                deletedValues.add(value);
+              }
+            }
+
+            if (!deletedValues.isEmpty()) {
+              lines.add(
+                  formatDeletedParameterEnumValuesLine(
+                      deletedValues, oldResource, action, param, "request body parameter"));
+            }
+          }
+        }
+      }
+    }
+
+    return lines;
+  }
+
+  /**
+   * Format deleted parameter enum values into a single line
+   */
+  private String formatDeletedParameterEnumValuesLine(
+      List<String> values,
+      Resource resource,
+      Action action,
+      Parameter param,
+      String parameterType) {
+
+    if (values.isEmpty()) {
+      return "";
+    }
+
+    String valuesStr;
+    if (values.size() == 1) {
+      valuesStr = String.format("`%s` has been removed", values.get(0));
+    } else if (values.size() == 2) {
+      valuesStr = String.format("`%s` and `%s` have been removed", values.get(0), values.get(1));
+    } else {
+      String lastValue = values.get(values.size() - 1);
+      String otherValues =
+          values.subList(0, values.size() - 1).stream()
+              .map(v -> String.format("`%s`", v))
+              .collect(Collectors.joining(", "));
+      valuesStr = String.format("%s, and `%s` have been removed", otherValues, lastValue);
+    }
+
+    return String.format(
+        "- %s from enum %s [`%s`](%s) in [`%s`](%s) of [`%s`](%s).",
+        valuesStr,
+        parameterType,
+        param.getName(),
+        getDocsUrlForParameter(resource, action, param),
+        action.id,
+        getDocsUrlForActions(resource, action),
+        resource.name,
+        getDocsUrlForResource(resource));
+  }
+
+  public boolean isEnumSchema(Schema schema) {
+    return schema instanceof ArraySchema
+        ? schema.getItems().getEnum() != null && !schema.getItems().getEnum().isEmpty()
+        : schema.getEnum() != null && !schema.getEnum().isEmpty();
+  }
+
+  public boolean isGlobalEnumSchema(Schema schema) {
+    return schema instanceof ArraySchema
+        ? isGlobalEnumAttribute(schema.getItems())
+        : isGlobalEnumAttribute(schema);
+  }
+
+  private boolean isGlobalEnumAttribute(Schema schema) {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_GLOBAL_ENUM) != null
+        && (boolean) schema.getExtensions().get(IS_GLOBAL_ENUM);
+  }
+
+  public Set<String> getEnumValues(Schema schema) {
+    if (isGlobalEnumSchema(schema)) {
+      return Collections.emptySet();
+    }
+    if (!isEnumSchema(schema)) {
+      return Collections.emptySet();
+    }
+    return new HashSet<>(new Enum(schema).values());
   }
 }
