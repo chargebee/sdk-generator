@@ -127,4 +127,28 @@ public class Parameter {
     }
     return new Enum(schema).values();
   }
+
+  public boolean isExternalEnum() {
+    return schema instanceof ArraySchema
+        ? isExternalEnumAttribute(schema.getItems())
+        : isExternalEnumAttribute(schema);
+  }
+
+  private boolean isExternalEnumAttribute(Schema schema) {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_EXTERNAL_ENUM) != null
+        && (boolean) schema.getExtensions().get(IS_EXTERNAL_ENUM);
+  }
+
+  public boolean isGenSeperate() {
+    return schema instanceof ArraySchema
+        ? isGenSeperateAttribute(schema.getItems())
+        : isGenSeperateAttribute(schema);
+  }
+
+  private boolean isGenSeperateAttribute(Schema schema) {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_GEN_SEPARATE) != null
+        && (boolean) schema.getExtensions().get(IS_GEN_SEPARATE);
+  }
 }

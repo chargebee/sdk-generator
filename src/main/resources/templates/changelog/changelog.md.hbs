@@ -18,6 +18,11 @@
 {{{.}}}{{/each}}
 {{/if}}
 
+{{#if parameterRequirementChangesValues}}
+### Parameter Requirement Update:{{#each parameterRequirementChangesValues}}
+{{{.}}}{{/each}}
+{{/if}}
+
 {{#if newEventType}}
 ### New Events:{{#each newEventType}}
 {{{.}}}{{/each}}

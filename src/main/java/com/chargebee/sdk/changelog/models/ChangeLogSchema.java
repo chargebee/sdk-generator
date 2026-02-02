@@ -18,4 +18,5 @@ public @Data class ChangeLogSchema {
   List<String> deletedEventType;
   List<String> newEnumValues;
   List<String> deletedEnumValues;
+  List<String> parameterRequirementChangesValues;
 }
