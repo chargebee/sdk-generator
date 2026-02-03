@@ -159,6 +159,7 @@ public class ChangeLogGenerator implements FileGenerator {
 
   private List<String> generateAttributeLine(
       List<Resource> oldResources, List<Resource> newResources) {
+    ;
     Map<String, Set<String>> oldAttributesByResourceId =
         oldResources.stream()
             .collect(
@@ -188,52 +189,6 @@ public class ChangeLogGenerator implements FileGenerator {
                                 getDocsUrlForResource(resource))))
         .distinct()
         .collect(Collectors.toList());
-  }
-
-  private List<String> generateParameterLine(
-      List<Resource> oldResources,
-      List<Resource> newResources,
-      Function<Action, List<Parameter>> parameterExtractor,
-      String parameterType) {
-
-    Map<String, Map<String, Set<String>>> oldParamsByResourceAndAction =
-        oldResources.stream()
-            .collect(
-                Collectors.toMap(
-                    resource -> resource.id,
-                    resource ->
-                        resource.actions.stream()
-                            .collect(
-                                Collectors.toMap(
-                                    action -> action.id,
-                                    action ->
-                                        parameterExtractor.apply(action).stream()
-                                            .map(Parameter::getName)
-                                            .collect(Collectors.toSet())))));
-
-    Set<String> newParamLines = new LinkedHashSet<>();
-    for (Resource newResource : newResources) {
-      Map<String, Set<String>> oldActionsMap =
-          oldParamsByResourceAndAction.getOrDefault(newResource.id, Collections.emptyMap());
-      for (Action action : newResource.actions) {
-        Set<String> oldParams = oldActionsMap.getOrDefault(action.id, Collections.emptySet());
-        for (Parameter param : parameterExtractor.apply(action)) {
-          if (!oldParams.contains(param.getName())) {
-            newParamLines.add(
-                String.format(
-                    "- [`%s`](%s) has been added as %s to [`%s`](%s) in [`%s`](%s).",
-                    param.getName(),
-                    getDocsUrlForParameter(newResource, action, param),
-                    parameterType,
-                    action.id,
-                    getDocsUrlForActions(newResource, action),
-                    newResource.name,
-                    getDocsUrlForResource(newResource)));
-          }
-        }
-      }
-    }
-    return new ArrayList<>(newParamLines);
   }
 
   private List<String> generateDeletedResourceLine(
@@ -322,59 +277,6 @@ public class ChangeLogGenerator implements FileGenerator {
           attribute.name, resource.name, getDocsUrlForResource(resource));
     }
     return String.format("- `%s` has been removed from `%s`.", attribute.name, resource.name);
-  }
-
-  private List<String> generateDeletedParameterLine(
-      List<Resource> oldResources,
-      List<Resource> newResources,
-      Function<Action, List<Parameter>> parameterExtractor,
-      String parameterType) {
-
-    Map<String, Resource> newResourcesMap =
-        newResources.stream()
-            .collect(Collectors.toMap(resource -> resource.id, resource -> resource));
-
-    Set<String> deletedParamLines = new LinkedHashSet<>();
-    for (Resource oldResource : oldResources) {
-      Resource newResource = newResourcesMap.get(oldResource.id);
-      if (newResource != null) {
-        Map<String, Action> newActionsMap =
-            newResource.actions.stream()
-                .collect(Collectors.toMap(action -> action.id, action -> action));
-
-        for (Action oldAction : oldResource.actions) {
-          Action newAction = newActionsMap.get(oldAction.id);
-          if (newAction != null) {
-            Set<String> newParams =
-                parameterExtractor.apply(newAction).stream()
-                    .map(Parameter::getName)
-                    .collect(Collectors.toSet());
-            for (Parameter param : parameterExtractor.apply(oldAction)) {
-              if (!newParams.contains(param.getName())) {
-                deletedParamLines.add(
-                    convertDeletedParameterToLine(
-                        newResource, newAction, param, parameterType, true, true));
-              }
-            }
-          } else {
-            for (Parameter param : parameterExtractor.apply(oldAction)) {
-              deletedParamLines.add(
-                  convertDeletedParameterToLine(
-                      newResource, oldAction, param, parameterType, true, false));
-            }
-          }
-        }
-      } else {
-        for (Action action : oldResource.actions) {
-          for (Parameter param : parameterExtractor.apply(action)) {
-            deletedParamLines.add(
-                convertDeletedParameterToLine(
-                    oldResource, action, param, parameterType, false, false));
-          }
-        }
-      }
-    }
-    return new ArrayList<>(deletedParamLines);
   }
 
   private String convertDeletedParameterToLine(
@@ -817,12 +719,6 @@ public class ChangeLogGenerator implements FileGenerator {
         pluralize(resource.id), toHyphenCase(singularize(resource.id)), attribute.name);
   }
 
-  private String getDocsUrlForParameter(Resource resource, Action action, Parameter param) {
-    return String.format(
-        "https://apidocs.chargebee.com/docs/api/%s/%s#%s",
-        pluralize(resource.id), toHyphenCase(action.id), param.getName());
-  }
-
   private String toHyphenCase(String s) {
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, s);
   }
@@ -987,5 +883,397 @@ public class ChangeLogGenerator implements FileGenerator {
     return schema.getExtensions() != null
         && schema.getExtensions().get(IS_GEN_SEPARATE) != null
         && (boolean) schema.getExtensions().get((IS_GEN_SEPARATE));
+  }
+
+  private List<String> generateParameterLine(
+      List<Resource> oldResources,
+      List<Resource> newResources,
+      Function<Action, List<Parameter>> parameterExtractor,
+      String parameterType) {
+
+    // Collect all old parameters including nested ones
+    Map<String, Map<String, Set<String>>> oldParamsByResourceAndAction = new HashMap<>();
+
+    for (Resource oldResource : oldResources) {
+      Map<String, Set<String>> actionParams = new HashMap<>();
+
+      for (Action action : oldResource.actions) {
+        Set<String> paramNames = new HashSet<>();
+        for (Parameter param : parameterExtractor.apply(action)) {
+          paramNames.add(param.getName());
+          // Collect nested parameter names
+          collectNestedParamNames(param, param.getName(), paramNames);
+        }
+        actionParams.put(action.id, paramNames);
+      }
+
+      oldParamsByResourceAndAction.put(oldResource.id, actionParams);
+    }
+
+    Set<String> newParamLines = new LinkedHashSet<>();
+    for (Resource newResource : newResources) {
+      Map<String, Set<String>> oldActionsMap =
+          oldParamsByResourceAndAction.getOrDefault(newResource.id, Collections.emptyMap());
+
+      for (Action action : newResource.actions) {
+        Set<String> oldParams = oldActionsMap.getOrDefault(action.id, Collections.emptySet());
+
+        for (Parameter param : parameterExtractor.apply(action)) {
+          // Check top-level parameter
+          if (!oldParams.contains(param.getName())) {
+            // Parent parameter is new - only show the parent, not its children
+            newParamLines.add(
+                String.format(
+                    "- [`%s`](%s) has been added as %s to [`%s`](%s) in [`%s`](%s).",
+                    param.getName(),
+                    getDocsUrlForParameter(newResource, action, param),
+                    parameterType,
+                    action.id,
+                    getDocsUrlForActions(newResource, action),
+                    newResource.name,
+                    getDocsUrlForResource(newResource)));
+          } else {
+            // Parent parameter exists, check for new nested parameters
+            processNewNestedParams(
+                param,
+                param.getName(),
+                oldParams,
+                newResource,
+                action,
+                parameterType,
+                newParamLines);
+          }
+        }
+      }
+    }
+    return new ArrayList<>(newParamLines);
+  }
+
+  /**
+   * Collect all nested parameter names recursively
+   */
+  private void collectNestedParamNames(Parameter param, String parentPath, Set<String> paramNames) {
+    if (param.schema.getProperties() != null) {
+      param
+          .schema
+          .getProperties()
+          .forEach(
+              (key, schema) -> {
+                Schema value = (Schema) schema;
+                String nestedPath = parentPath + "." + key;
+                paramNames.add(nestedPath);
+
+                // Recursively collect deeper nested parameters
+                if (value.getProperties() != null) {
+                  collectNestedParamNamesFromSchema(nestedPath, value, paramNames);
+                }
+              });
+    }
+  }
+
+  /**
+   * Recursively collect nested parameter names from schema
+   */
+  private void collectNestedParamNamesFromSchema(
+      String parentPath, Schema parentSchema, Set<String> paramNames) {
+
+    if (parentSchema.getProperties() == null) {
+      return;
+    }
+
+    parentSchema
+        .getProperties()
+        .forEach(
+            (key, schema) -> {
+              Schema value = (Schema) schema;
+              String nestedPath = parentPath + "." + key;
+              paramNames.add(nestedPath);
+
+              if (value.getProperties() != null) {
+                collectNestedParamNamesFromSchema(nestedPath, value, paramNames);
+              }
+            });
+  }
+
+  /**
+   * Process nested parameters for new additions
+   */
+  private void processNewNestedParams(
+      Parameter param,
+      String parentPath,
+      Set<String> oldParams,
+      Resource resource,
+      Action action,
+      String parameterType,
+      Set<String> newParamLines) {
+
+    if (param.schema.getProperties() != null) {
+      param
+          .schema
+          .getProperties()
+          .forEach(
+              (key, schema) -> {
+                Schema value = (Schema) schema;
+                String nestedPath = parentPath + "." + key;
+
+                if (!oldParams.contains(nestedPath)) {
+                  // This nested parameter is new
+                  Parameter nestedParam = new Parameter(nestedPath, value);
+                  newParamLines.add(
+                      String.format(
+                          "- [`%s`](%s) has been added as %s to [`%s`](%s) in [`%s`](%s).",
+                          nestedPath,
+                          getDocsUrlForParameter(resource, action, nestedParam),
+                          parameterType,
+                          action.id,
+                          getDocsUrlForActions(resource, action),
+                          resource.name,
+                          getDocsUrlForResource(resource)));
+
+                  // Don't process children of this new parameter - already covered by parent
+                } else {
+                  // This nested parameter existed before, check its children
+                  if (value.getProperties() != null) {
+                    processNewNestedParamsFromSchema(
+                        nestedPath,
+                        value,
+                        oldParams,
+                        resource,
+                        action,
+                        parameterType,
+                        newParamLines);
+                  }
+                }
+              });
+    }
+  }
+
+  /**
+   * Recursively process nested parameters from schema for new additions
+   */
+  private void processNewNestedParamsFromSchema(
+      String parentPath,
+      Schema parentSchema,
+      Set<String> oldParams,
+      Resource resource,
+      Action action,
+      String parameterType,
+      Set<String> newParamLines) {
+
+    if (parentSchema.getProperties() == null) {
+      return;
+    }
+
+    parentSchema
+        .getProperties()
+        .forEach(
+            (key, schema) -> {
+              Schema value = (Schema) schema;
+              String nestedPath = parentPath + "." + key;
+
+              if (!oldParams.contains(nestedPath)) {
+                // This nested parameter is new
+                Parameter nestedParam = new Parameter(nestedPath, value);
+                newParamLines.add(
+                    String.format(
+                        "- [`%s`](%s) has been added as %s to [`%s`](%s) in [`%s`](%s).",
+                        nestedPath,
+                        getDocsUrlForParameter(resource, action, nestedParam),
+                        parameterType,
+                        action.id,
+                        getDocsUrlForActions(resource, action),
+                        resource.name,
+                        getDocsUrlForResource(resource)));
+
+                // Don't process children of this new parameter - already covered by parent
+              } else {
+                // This nested parameter existed, check its children
+                if (value.getProperties() != null) {
+                  processNewNestedParamsFromSchema(
+                      nestedPath, value, oldParams, resource, action, parameterType, newParamLines);
+                }
+              }
+            });
+  }
+
+  private String getDocsUrlForParameter(Resource resource, Action action, Parameter param) {
+    String resourcePath = pluralize(resource.id);
+    String actionPath = toHyphenCase(action.id);
+    // Convert dot notation to underscore for URL
+    String paramPath = param.getName().replace(".", "_");
+    return String.format(
+        "https://apidocs.chargebee.com/docs/api/%s/%s#%s",
+        pluralize(resource.id), toHyphenCase(action.id), paramPath);
+  }
+
+  private List<String> generateDeletedParameterLine(
+      List<Resource> oldResources,
+      List<Resource> newResources,
+      Function<Action, List<Parameter>> parameterExtractor,
+      String parameterType) {
+
+    Map<String, Resource> newResourcesMap =
+        newResources.stream()
+            .collect(Collectors.toMap(resource -> resource.id, resource -> resource));
+
+    Set<String> deletedParamLines = new LinkedHashSet<>();
+
+    for (Resource oldResource : oldResources) {
+      Resource newResource = newResourcesMap.get(oldResource.id);
+
+      if (newResource != null) {
+        Map<String, Action> newActionsMap =
+            newResource.actions.stream()
+                .collect(Collectors.toMap(action -> action.id, action -> action));
+
+        for (Action oldAction : oldResource.actions) {
+          Action newAction = newActionsMap.get(oldAction.id);
+
+          if (newAction != null) {
+            // Collect all new parameter names including nested
+            Set<String> newParams = new HashSet<>();
+            for (Parameter param : parameterExtractor.apply(newAction)) {
+              newParams.add(param.getName());
+              collectNestedParamNames(param, param.getName(), newParams);
+            }
+
+            for (Parameter param : parameterExtractor.apply(oldAction)) {
+              // Check top-level parameter
+              if (!newParams.contains(param.getName())) {
+                // Parent parameter was deleted - only show parent, not children
+                deletedParamLines.add(
+                    convertDeletedParameterToLine(
+                        newResource, newAction, param, parameterType, true, true));
+              } else {
+                // Parent parameter still exists, check for deleted nested parameters
+                processDeletedNestedParams(
+                    param,
+                    param.getName(),
+                    newParams,
+                    newResource,
+                    newAction,
+                    parameterType,
+                    deletedParamLines);
+              }
+            }
+          } else {
+            // Action was deleted, so all its parameters are deleted
+            for (Parameter param : parameterExtractor.apply(oldAction)) {
+              deletedParamLines.add(
+                  convertDeletedParameterToLine(
+                      newResource, oldAction, param, parameterType, true, false));
+
+              // Don't show nested params of deleted action - parent deletion covers them
+            }
+          }
+        }
+      } else {
+        // Resource was deleted, so all its parameters are deleted
+        for (Action action : oldResource.actions) {
+          for (Parameter param : parameterExtractor.apply(action)) {
+            deletedParamLines.add(
+                convertDeletedParameterToLine(
+                    oldResource, action, param, parameterType, false, false));
+
+            // Don't show nested params of deleted resource - parent deletion covers them
+          }
+        }
+      }
+    }
+
+    return new ArrayList<>(deletedParamLines);
+  }
+
+  /**
+   * Process nested parameters for deletions
+   */
+  private void processDeletedNestedParams(
+      Parameter param,
+      String parentPath,
+      Set<String> newParams,
+      Resource resource,
+      Action action,
+      String parameterType,
+      Set<String> deletedParamLines) {
+
+    if (param.schema.getProperties() != null) {
+      param
+          .schema
+          .getProperties()
+          .forEach(
+              (key, schema) -> {
+                Schema value = (Schema) schema;
+                String nestedPath = parentPath + "." + key;
+
+                if (!newParams.contains(nestedPath)) {
+                  // This nested parameter was deleted
+                  Parameter nestedParam = new Parameter(nestedPath, value);
+                  deletedParamLines.add(
+                      convertDeletedParameterToLine(
+                          resource, action, nestedParam, parameterType, true, true));
+
+                  // Don't process children - parent deletion covers them
+                } else {
+                  // This nested parameter still exists, check its children
+                  if (value.getProperties() != null) {
+                    processDeletedNestedParamsFromSchema(
+                        nestedPath,
+                        value,
+                        newParams,
+                        resource,
+                        action,
+                        parameterType,
+                        deletedParamLines);
+                  }
+                }
+              });
+    }
+  }
+
+  /**
+   * Recursively process nested parameters from schema for deletions
+   */
+  private void processDeletedNestedParamsFromSchema(
+      String parentPath,
+      Schema parentSchema,
+      Set<String> newParams,
+      Resource resource,
+      Action action,
+      String parameterType,
+      Set<String> deletedParamLines) {
+
+    if (parentSchema.getProperties() == null) {
+      return;
+    }
+
+    parentSchema
+        .getProperties()
+        .forEach(
+            (key, schema) -> {
+              Schema value = (Schema) schema;
+              String nestedPath = parentPath + "." + key;
+
+              if (!newParams.contains(nestedPath)) {
+                // This nested parameter was deleted
+                Parameter nestedParam = new Parameter(nestedPath, value);
+                deletedParamLines.add(
+                    convertDeletedParameterToLine(
+                        resource, action, nestedParam, parameterType, true, true));
+
+                // Don't process children - parent deletion covers them
+              } else {
+                // This nested parameter still exists, check its children
+                if (value.getProperties() != null) {
+                  processDeletedNestedParamsFromSchema(
+                      nestedPath,
+                      value,
+                      newParams,
+                      resource,
+                      action,
+                      parameterType,
+                      deletedParamLines);
+                }
+              }
+            });
   }
 }
