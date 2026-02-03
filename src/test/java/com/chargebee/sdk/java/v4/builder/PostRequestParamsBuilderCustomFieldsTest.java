@@ -239,6 +239,101 @@ class PostRequestParamsBuilderCustomFieldsTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "TestCreateParams.java");
       assertThat(writeOp.fileContent).doesNotContain("customField");
     }
+
+    @Test
+    @DisplayName("Should add custom field methods to sub-params when x-cb-is-custom-fields-supported is true at sub-params level")
+    void shouldAddCustomFieldMethodsToSubParamsWithCustomFieldsExtension() throws IOException {
+      // Create a nested object schema (billing_address) with custom fields support
+      ObjectSchema billingAddressSchema = new ObjectSchema();
+      billingAddressSchema.addProperty("line1", new StringSchema());
+      billingAddressSchema.addProperty("city", new StringSchema());
+      billingAddressSchema.addExtension("x-cb-is-custom-fields-supported", true);
+
+      // Parent request schema without custom fields support
+      ObjectSchema requestSchema = new ObjectSchema();
+      requestSchema.addProperty("first_name", new StringSchema());
+      requestSchema.addProperty("billing_address", billingAddressSchema);
+
+      MediaType mediaType = new MediaType();
+      mediaType.setSchema(requestSchema);
+
+      Content content = new Content();
+      content.addMediaType("application/x-www-form-urlencoded", mediaType);
+
+      RequestBody requestBody = new RequestBody();
+      requestBody.setContent(content);
+
+      Operation postOp = new Operation();
+      postOp.setOperationId("create_customer");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
+      postOp.addExtension(Extension.RESOURCE_ID, "customer");
+      postOp.setRequestBody(requestBody);
+
+      PathItem pathItem = new PathItem();
+      pathItem.setPost(postOp);
+
+      Paths paths = new Paths();
+      paths.addPathItem("/customers", pathItem);
+      openAPI.setPaths(paths);
+
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerCreateParams.java");
+      // Parent should NOT have custom fields
+      assertThat(writeOp.fileContent).doesNotContain("public CustomerCreateBuilder customField(");
+      // Sub-params (BillingAddress) should have custom fields
+      assertThat(writeOp.fileContent).contains("public BillingAddressBuilder customField(");
+      assertThat(writeOp.fileContent).contains("public BillingAddressBuilder customFields(");
+    }
+
+    @Test
+    @DisplayName("Should not add custom field methods to sub-params without x-cb-is-custom-fields-supported")
+    void shouldNotAddCustomFieldMethodsToSubParamsWithoutExtension() throws IOException {
+      // Create a nested object schema (billing_address) without custom fields support
+      ObjectSchema billingAddressSchema = new ObjectSchema();
+      billingAddressSchema.addProperty("line1", new StringSchema());
+      billingAddressSchema.addProperty("city", new StringSchema());
+
+      // Parent request schema with custom fields support
+      ObjectSchema requestSchema = new ObjectSchema();
+      requestSchema.addProperty("first_name", new StringSchema());
+      requestSchema.addProperty("billing_address", billingAddressSchema);
+      requestSchema.addExtension("x-cb-is-custom-fields-supported", true);
+
+      MediaType mediaType = new MediaType();
+      mediaType.setSchema(requestSchema);
+
+      Content content = new Content();
+      content.addMediaType("application/x-www-form-urlencoded", mediaType);
+
+      RequestBody requestBody = new RequestBody();
+      requestBody.setContent(content);
+
+      Operation postOp = new Operation();
+      postOp.setOperationId("create_customer");
+      postOp.addExtension(Extension.SDK_METHOD_NAME, "create");
+      postOp.addExtension(Extension.RESOURCE_ID, "customer");
+      postOp.setRequestBody(requestBody);
+
+      PathItem pathItem = new PathItem();
+      pathItem.setPost(postOp);
+
+      Paths paths = new Paths();
+      paths.addPathItem("/customers", pathItem);
+      openAPI.setPaths(paths);
+
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerCreateParams.java");
+      // Parent should have custom fields
+      assertThat(writeOp.fileContent).contains("public CustomerCreateBuilder customField(");
+      // Sub-params (BillingAddress) should NOT have custom fields
+      assertThat(writeOp.fileContent).doesNotContain("public BillingAddressBuilder customField(");
+    }
   }
 
   private FileOp.WriteString findWriteOp(List<FileOp> fileOps, String fileName) {
