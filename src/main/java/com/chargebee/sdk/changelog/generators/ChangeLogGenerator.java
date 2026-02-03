@@ -352,48 +352,6 @@ public class ChangeLogGenerator implements FileGenerator {
     return lines;
   }
 
-  private List<String> generateAttributeEnumLines(
-      List<Resource> oldResources, List<Resource> newResources) {
-    Map<String, Map<String, Set<String>>> oldEnumsByResource = new HashMap<>();
-    for (Resource oldResource : oldResources) {
-      Map<String, Set<String>> attributeEnums = new HashMap<>();
-      for (Attribute attr : oldResource.attributes()) {
-        if (attr.isEnumAttribute() && !attr.isGlobalEnumAttribute()) {
-          attributeEnums.put(attr.name, new HashSet<>(attr.getEnum().values()));
-        }
-      }
-      oldEnumsByResource.put(oldResource.id, attributeEnums);
-    }
-
-    List<String> lines = new ArrayList<>();
-    for (Resource newResource : newResources) {
-      Map<String, Set<String>> oldAttributeEnums =
-          oldEnumsByResource.getOrDefault(newResource.id, Collections.emptyMap());
-      for (Attribute newAttr : newResource.attributes()) {
-        if (newAttr.isEnumAttribute() && !newAttr.isGlobalEnumAttribute()) {
-          Set<String> oldValues =
-              oldAttributeEnums.getOrDefault(newAttr.name, Collections.emptySet());
-          List<String> addedValues =
-              newAttr.getEnum().values().stream()
-                  .filter(value -> !oldValues.contains(value))
-                  .collect(Collectors.toList());
-
-          if (!addedValues.isEmpty()) {
-            lines.add(
-                String.format(
-                    "- %s to enum attribute [`%s`](%s) in [`%s`](%s).",
-                    formatValuesList(addedValues, true),
-                    newAttr.name,
-                    getDocsUrlForAttribute(newResource, newAttr),
-                    newResource.name,
-                    getDocsUrlForResource(newResource)));
-          }
-        }
-      }
-    }
-    return lines;
-  }
-
   private List<String> generateParameterEnumLines(
       List<Resource> oldResources, List<Resource> newResources) {
     List<String> lines = new ArrayList<>();
@@ -1130,7 +1088,6 @@ public class ChangeLogGenerator implements FileGenerator {
           Action newAction = newActionsMap.get(oldAction.id);
 
           if (newAction != null) {
-            // Collect all new parameter names including nested
             Set<String> newParams = new HashSet<>();
             for (Parameter param : parameterExtractor.apply(newAction)) {
               newParams.add(param.getName());
@@ -1138,14 +1095,11 @@ public class ChangeLogGenerator implements FileGenerator {
             }
 
             for (Parameter param : parameterExtractor.apply(oldAction)) {
-              // Check top-level parameter
               if (!newParams.contains(param.getName())) {
-                // Parent parameter was deleted - only show parent, not children
                 deletedParamLines.add(
                     convertDeletedParameterToLine(
                         newResource, newAction, param, parameterType, true, true));
               } else {
-                // Parent parameter still exists, check for deleted nested parameters
                 processDeletedNestedParams(
                     param,
                     param.getName(),
@@ -1157,25 +1111,19 @@ public class ChangeLogGenerator implements FileGenerator {
               }
             }
           } else {
-            // Action was deleted, so all its parameters are deleted
             for (Parameter param : parameterExtractor.apply(oldAction)) {
               deletedParamLines.add(
                   convertDeletedParameterToLine(
                       newResource, oldAction, param, parameterType, true, false));
-
-              // Don't show nested params of deleted action - parent deletion covers them
             }
           }
         }
       } else {
-        // Resource was deleted, so all its parameters are deleted
         for (Action action : oldResource.actions) {
           for (Parameter param : parameterExtractor.apply(action)) {
             deletedParamLines.add(
                 convertDeletedParameterToLine(
                     oldResource, action, param, parameterType, false, false));
-
-            // Don't show nested params of deleted resource - parent deletion covers them
           }
         }
       }
@@ -1206,15 +1154,11 @@ public class ChangeLogGenerator implements FileGenerator {
                 String nestedPath = parentPath + "." + key;
 
                 if (!newParams.contains(nestedPath)) {
-                  // This nested parameter was deleted
                   Parameter nestedParam = new Parameter(nestedPath, value);
                   deletedParamLines.add(
                       convertDeletedParameterToLine(
                           resource, action, nestedParam, parameterType, true, true));
-
-                  // Don't process children - parent deletion covers them
                 } else {
-                  // This nested parameter still exists, check its children
                   if (value.getProperties() != null) {
                     processDeletedNestedParamsFromSchema(
                         nestedPath,
@@ -1254,15 +1198,11 @@ public class ChangeLogGenerator implements FileGenerator {
               String nestedPath = parentPath + "." + key;
 
               if (!newParams.contains(nestedPath)) {
-                // This nested parameter was deleted
                 Parameter nestedParam = new Parameter(nestedPath, value);
                 deletedParamLines.add(
                     convertDeletedParameterToLine(
                         resource, action, nestedParam, parameterType, true, true));
-
-                // Don't process children - parent deletion covers them
               } else {
-                // This nested parameter still exists, check its children
                 if (value.getProperties() != null) {
                   processDeletedNestedParamsFromSchema(
                       nestedPath,
@@ -1275,5 +1215,81 @@ public class ChangeLogGenerator implements FileGenerator {
                 }
               }
             });
+  }
+
+  private List<String> generateAttributeEnumLines(
+      List<Resource> oldResources, List<Resource> newResources) {
+
+    Map<String, Map<String, Set<String>>> oldEnumsByResource = new HashMap<>();
+    for (Resource oldResource : oldResources) {
+      Map<String, Set<String>> attributeEnums = new HashMap<>();
+      collectAttributeEnumsRecursive(oldResource.attributes(), "", attributeEnums);
+      oldEnumsByResource.put(oldResource.id, attributeEnums);
+    }
+
+    List<String> lines = new ArrayList<>();
+    for (Resource newResource : newResources) {
+      Map<String, Set<String>> oldAttributeEnums =
+          oldEnumsByResource.getOrDefault(newResource.id, Collections.emptyMap());
+
+      processAttributeEnums(newResource, newResource.attributes(), "", oldAttributeEnums, lines);
+    }
+    return lines;
+  }
+
+  private void processAttributeEnums(
+      Resource resource,
+      List<Attribute> attributes,
+      String parentPath,
+      Map<String, Set<String>> oldAttributeEnums,
+      List<String> lines) {
+
+    for (Attribute attr : attributes) {
+      // currentPath uses dots for display: "einvoice.status"
+      String currentPath = parentPath.isEmpty() ? attr.name : parentPath + "." + attr.name;
+
+      // urlPath uses underscores for the anchor: "einvoice_status"
+      String urlPath =
+          parentPath.isEmpty() ? attr.name : parentPath.replace(".", "_") + "_" + attr.name;
+
+      if (attr.isEnumAttribute() && !attr.isGlobalEnumAttribute()) {
+        Set<String> oldValues = oldAttributeEnums.getOrDefault(currentPath, Collections.emptySet());
+        List<String> addedValues =
+            attr.getEnum().values().stream()
+                .filter(v -> !oldValues.contains(v))
+                .collect(Collectors.toList());
+
+        if (!addedValues.isEmpty()) {
+          lines.add(
+              String.format(
+                  "- %s to enum attribute [`%s`](%s#%s) in [`%s`](%s).",
+                  formatValuesList(addedValues, true),
+                  currentPath,
+                  getDocsUrlForResource(resource),
+                  urlPath,
+                  resource.name,
+                  getDocsUrlForResource(resource)));
+        }
+      }
+
+      if (attr.getSubAttributes() != null && !attr.getSubAttributes().isEmpty()) {
+        processAttributeEnums(
+            resource, attr.getSubAttributes(), currentPath, oldAttributeEnums, lines);
+      }
+    }
+  }
+
+  private void collectAttributeEnumsRecursive(
+      List<Attribute> attributes, String parentPath, Map<String, Set<String>> map) {
+
+    for (Attribute attr : attributes) {
+      String currentPath = parentPath.isEmpty() ? attr.name : parentPath + "." + attr.name;
+      if (attr.isEnumAttribute() && !attr.isGlobalEnumAttribute()) {
+        map.put(currentPath, new HashSet<>(attr.getEnum().values()));
+      }
+      if (attr.getSubAttributes() != null) {
+        collectAttributeEnumsRecursive(attr.getSubAttributes(), currentPath, map);
+      }
+    }
   }
 }
