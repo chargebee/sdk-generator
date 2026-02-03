@@ -13,7 +13,9 @@ import com.chargebee.v4.filters.NumberFilter;
 import com.chargebee.v4.filters.TimestampFilter;
 import com.chargebee.v4.filters.EnumFilter;
 import com.chargebee.v4.filters.BooleanFilter;
+{{#if customFieldsSupported}}
 import com.chargebee.v4.filters.CustomFieldSelector;
+{{/if}}
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
