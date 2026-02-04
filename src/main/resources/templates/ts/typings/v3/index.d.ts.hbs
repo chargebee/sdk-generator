@@ -92,7 +92,10 @@ declare module 'chargebee' {
   // Webhook Handler Types
   export type WebhookEventName = EventTypeEnum | 'unhandled_event';
   export type WebhookEventTypeValue = `${WebhookEventType}`;
-  /** @deprecated Use WebhookEventTypeValue instead */
+  /**
+   * @deprecated Renamed to `WebhookEventTypeValue` for clarity. Use `WebhookEventTypeValue` instead.
+   * This alias will be removed in the next major version.
+   */
   export type WebhookContentTypeValue = WebhookEventTypeValue;
 
   /**
