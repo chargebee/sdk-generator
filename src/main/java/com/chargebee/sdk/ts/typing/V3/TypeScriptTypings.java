@@ -28,6 +28,7 @@ public class TypeScriptTypings extends Language {
   public static final List<String> contentFilterResource = Arrays.asList(HOSTED_PAGE, EVENT);
   public List<Map<String, String>> webhookInfo = new ArrayList<>();
   Resource activeResource;
+  Spec spec;
 
   boolean forQa = false;
   boolean forEap = false;
@@ -39,9 +40,11 @@ public class TypeScriptTypings extends Language {
     var createResourcesDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, resourcesDirectoryPath);
     List<FileOp> fileOps = new ArrayList<>(List.of(createResourcesDirectory));
+    this.spec = spec;
     this.webhookInfo = spec.extractWebhookInfo();
     var resources =
         spec.allResources().stream()
+            .filter(resource -> resource.isNotHiddenFromSDKGeneration())
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
     List<String> resourceNamesList = resources.stream().map(r -> r.name).toList();
@@ -121,9 +124,12 @@ public class TypeScriptTypings extends Language {
                   } else {
                     ref = schema.get$ref();
                   }
-
+                  Set<String> hiddenResourceNames = getHiddenResources();
                   if (ref != null && ref.contains("/")) {
                     String schemaName = ref.substring(ref.lastIndexOf("/") + 1);
+                    if (hiddenResourceNames.contains(schemaName)) {
+                      return;
+                    }
                     if (isArray) {
                       resources.add(
                           String.format(
@@ -309,5 +315,12 @@ public class TypeScriptTypings extends Language {
     resource.setAttributesInMultiLine(getAttributesInMultiLine(res, activeResource, webhookInfo));
     ObjectMapper oMapper = new ObjectMapper();
     return oMapper.convertValue(resource, Map.class);
+  }
+
+  private Set<String> getHiddenResources() {
+    return this.spec.allResources().stream()
+        .filter((res) -> !res.isNotHiddenFromSDKGeneration())
+        .map((res) -> res.name)
+        .collect(Collectors.toSet());
   }
 }

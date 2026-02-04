@@ -12,7 +12,7 @@ Interface {{resourceName}}Interface
 {
 {{#each actions}}
     /**
-    *   @see {{{actionDocLink}}}
+    *   {{#if (not deprecated)}}@see {{{actionDocLink}}}{{/if}}
     *   {{#or hasRequestBodyParameters hasQueryParameters}}{{{phpDocField}}}{{/or}}
     *   {{#or hasHandle }}@param string $id  {{/or}}{{#if deprecated}}
     *   @deprecated This method is deprecated and will be removed in a future version.{{/if}}

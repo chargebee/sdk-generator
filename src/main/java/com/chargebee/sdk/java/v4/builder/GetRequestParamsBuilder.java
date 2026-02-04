@@ -98,6 +98,7 @@ public class GetRequestParamsBuilder {
       getAction.setFields(getFilterFields(operation));
       getAction.setEnumFields(getEnumFields(operation));
       getAction.setSubModels(getSubModels(operation));
+      getAction.setCustomFieldsSupported(isCustomFieldsSupported(operation));
 
       var content = template.apply(getAction);
       var formattedContent = JavaFormatter.formatSafely(content);
@@ -327,6 +328,15 @@ public class GetRequestParamsBuilder {
     return parameter != null && QUERY.equals(parameter.getIn()) && parameter.getSchema() != null;
   }
 
+  private boolean isCustomFieldsSupported(Operation operation) {
+    var extensions = operation.getExtensions();
+    if (extensions == null) {
+      return false;
+    }
+    Object value = extensions.get(Extension.IS_CUSTOM_FIELDS_SUPPORTED);
+    return value != null && (boolean) value;
+  }
+
   @lombok.Data
   private static class GetAction {
     private String operationId;
@@ -335,6 +345,7 @@ public class GetRequestParamsBuilder {
     private List<Field> fields;
     private List<EnumFields> enumFields;
     private List<Model> subModels;
+    private boolean customFieldsSupported;
 
     public String getName() {
       var operationIdSnake =

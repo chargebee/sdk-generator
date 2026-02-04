@@ -1600,6 +1600,157 @@ class GetRequestParamsBuilderTest {
     }
   }
 
+  // CUSTOM FIELD FILTER SUPPORT
+
+  @Nested
+  @DisplayName("Custom Field Filter Support")
+  class CustomFieldFilterSupportTests {
+
+    @Test
+    @DisplayName("Should generate customField method when x-cb-is-custom-fields-supported is true")
+    void shouldGenerateCustomFieldMethodWhenSupported() throws IOException {
+      Operation getOperation = createGetOperation("customer", "list");
+      getOperation.getExtensions().put(Extension.IS_CUSTOM_FIELDS_SUPPORTED, true);
+      addStringQueryParam(getOperation, "first_name");
+
+      addPathWithOperation("/customers", getOperation);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
+      assertThat(writeOp.fileContent)
+          .contains("public CustomFieldSelector<CustomerListBuilder> customField(String fieldName)");
+      assertThat(writeOp.fileContent)
+          .contains("return new CustomFieldSelector<>(fieldName, this, queryParams)");
+    }
+
+    @Test
+    @DisplayName("Should not generate customField method when x-cb-is-custom-fields-supported is false")
+    void shouldNotGenerateCustomFieldMethodWhenNotSupported() throws IOException {
+      Operation getOperation = createGetOperation("customer", "list");
+      getOperation.getExtensions().put(Extension.IS_CUSTOM_FIELDS_SUPPORTED, false);
+      addStringQueryParam(getOperation, "first_name");
+
+      addPathWithOperation("/customers", getOperation);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
+      assertThat(writeOp.fileContent).doesNotContain("customField");
+      assertThat(writeOp.fileContent).doesNotContain("CustomFieldSelector");
+    }
+
+    @Test
+    @DisplayName("Should not generate customField method when extension is missing")
+    void shouldNotGenerateCustomFieldMethodWhenExtensionMissing() throws IOException {
+      Operation getOperation = createGetOperation("customer", "list");
+      // Not adding IS_CUSTOM_FIELDS_SUPPORTED extension
+      addStringQueryParam(getOperation, "first_name");
+
+      addPathWithOperation("/customers", getOperation);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
+      assertThat(writeOp.fileContent).doesNotContain("customField");
+      assertThat(writeOp.fileContent).doesNotContain("CustomFieldSelector");
+    }
+
+    @Test
+    @DisplayName("Should import CustomFieldSelector when custom fields are supported")
+    void shouldImportCustomFieldSelectorWhenSupported() throws IOException {
+      Operation getOperation = createGetOperation("subscription", "list");
+      getOperation.getExtensions().put(Extension.IS_CUSTOM_FIELDS_SUPPORTED, true);
+      addStringQueryParam(getOperation, "plan_id");
+
+      addPathWithOperation("/subscriptions", getOperation);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "SubscriptionListParams.java");
+      assertThat(writeOp.fileContent)
+          .contains("import com.chargebee.v4.filters.CustomFieldSelector;");
+      assertThat(writeOp.fileContent)
+          .contains("import com.chargebee.v4.filters.BooleanFilter;");
+    }
+
+    @Test
+    @DisplayName("Should generate customField with correct builder type for different operations")
+    void shouldGenerateCorrectBuilderTypeForDifferentOperations() throws IOException {
+      Operation customerListOp = createGetOperation("customer", "list");
+      customerListOp.getExtensions().put(Extension.IS_CUSTOM_FIELDS_SUPPORTED, true);
+      addStringQueryParam(customerListOp, "name");
+
+      Operation subscriptionListOp = createGetOperation("subscription", "list");
+      subscriptionListOp.getExtensions().put(Extension.IS_CUSTOM_FIELDS_SUPPORTED, true);
+      addStringQueryParam(subscriptionListOp, "status");
+
+      addPathWithOperation("/customers", customerListOp);
+      addPathWithOperation("/subscriptions", subscriptionListOp);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      FileOp.WriteString customerWriteOp = findWriteOp(fileOps, "CustomerListParams.java");
+      assertThat(customerWriteOp.fileContent)
+          .contains("public CustomFieldSelector<CustomerListBuilder> customField(String fieldName)");
+
+      FileOp.WriteString subscriptionWriteOp = findWriteOp(fileOps, "SubscriptionListParams.java");
+      assertThat(subscriptionWriteOp.fileContent)
+          .contains("public CustomFieldSelector<SubscriptionListBuilder> customField(String fieldName)");
+    }
+
+    @Test
+    @DisplayName("Should generate customField method with Javadoc")
+    void shouldGenerateCustomFieldMethodWithJavadoc() throws IOException {
+      Operation getOperation = createGetOperation("customer", "list");
+      getOperation.getExtensions().put(Extension.IS_CUSTOM_FIELDS_SUPPORTED, true);
+      addStringQueryParam(getOperation, "first_name");
+
+      addPathWithOperation("/customers", getOperation);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
+      assertThat(writeOp.fileContent).contains("Create a filter for a custom field");
+      assertThat(writeOp.fileContent).contains("@param fieldName the custom field name");
+      assertThat(writeOp.fileContent).contains("@return CustomFieldSelector for choosing filter type");
+    }
+
+    @Test
+    @DisplayName("Should handle custom field support alongside other features")
+    void shouldHandleCustomFieldSupportWithOtherFeatures() throws IOException {
+      Operation getOperation = createGetOperation("customer", "list");
+      getOperation.getExtensions().put(Extension.IS_CUSTOM_FIELDS_SUPPORTED, true);
+
+      // Add various other features
+      addStringFilterParam(getOperation, "first_name", List.of("is", "starts_with"));
+      addTimestampFilterParam(getOperation, "created_at");
+      addSortByParam(getOperation, List.of("created_at", "updated_at"));
+      addEnumQueryParam(getOperation, "status", List.of("active", "inactive"));
+
+      addPathWithOperation("/customers", getOperation);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
+      // Verify customField method is generated
+      assertThat(writeOp.fileContent)
+          .contains("public CustomFieldSelector<CustomerListBuilder> customField(String fieldName)");
+      // Verify other features are still generated
+      assertThat(writeOp.fileContent).contains("public FirstNameFilter firstName()");
+      assertThat(writeOp.fileContent).contains("public CreatedAtFilter createdAt()");
+      assertThat(writeOp.fileContent).contains("public SortBySortBuilder sortBy()");
+      assertThat(writeOp.fileContent).contains("public enum Status");
+    }
+  }
+
   // COMPLEX INTEGRATION TESTS
 
   @Nested
