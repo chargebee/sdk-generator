@@ -3,7 +3,7 @@
 
 export interface {{snakeCaseToPascalCase type}}Content {
 {{#each resource_schemas}}
-  {{this}}: import('chargebee').{{this}};
+    {{{.}}}
 {{/each}}
 }
 {{/each}}
