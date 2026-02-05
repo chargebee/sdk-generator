@@ -241,7 +241,9 @@ class PostRequestParamsBuilderCustomFieldsTest {
     }
 
     @Test
-    @DisplayName("Should add custom field methods to sub-params when x-cb-is-custom-fields-supported is true at sub-params level")
+    @DisplayName(
+        "Should add custom field methods to sub-params when x-cb-is-custom-fields-supported is true"
+            + " at sub-params level")
     void shouldAddCustomFieldMethodsToSubParamsWithCustomFieldsExtension() throws IOException {
       // Create a nested object schema (billing_address) with custom fields support
       ObjectSchema billingAddressSchema = new ObjectSchema();
@@ -289,7 +291,8 @@ class PostRequestParamsBuilderCustomFieldsTest {
     }
 
     @Test
-    @DisplayName("Should not add custom field methods to sub-params without x-cb-is-custom-fields-supported")
+    @DisplayName(
+        "Should not add custom field methods to sub-params without x-cb-is-custom-fields-supported")
     void shouldNotAddCustomFieldMethodsToSubParamsWithoutExtension() throws IOException {
       // Create a nested object schema (billing_address) without custom fields support
       ObjectSchema billingAddressSchema = new ObjectSchema();
