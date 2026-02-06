@@ -902,7 +902,12 @@ public class Dotnet extends Language {
                           + Inflector.capitalize(toClazName((attribute.name)))))
               + "Enum";
         }
-        return Inflector.capitalize(toClazName(activeResource.name))
+        String prefix = Inflector.capitalize(toClazName(activeResource.name));
+        if (isSubResourcesNameSpaceGlobal(activeResource, attribute.metaModelName())) {
+          prefix = "";
+        }
+        ;
+        return prefix
             + Inflector.capitalize(
                 toClazName(
                     Inflector.singularize(attribute.metaModelName())
@@ -917,6 +922,12 @@ public class Dotnet extends Language {
       }
     }
     return Inflector.capitalize(toClazName(attribute.name)) + "Enum";
+  }
+
+  private boolean isSubResourcesNameSpaceGlobal(
+      Resource activeResource, String subResourceAttributeName) {
+    return activeResource.attributes().stream()
+        .anyMatch(a -> a.name.equals(subResourceAttributeName) && a.isDependentAttribute());
   }
 
   public String parameterPrimitiveDataType(Attribute attribute) {
