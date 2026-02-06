@@ -153,5 +153,12 @@ public enum NameFormatHelpers implements Helper<Object> {
       }
       return result.toString();
     }
+  },
+
+  CONSTANT_CASE {
+    @Override
+    public CharSequence apply(final Object value, final Options options) {
+      return value.toString().toUpperCase().replace("-", "_");
+    }
   }
 }

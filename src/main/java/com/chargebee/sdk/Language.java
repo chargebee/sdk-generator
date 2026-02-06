@@ -59,6 +59,7 @@ public abstract class Language implements DataType {
     handlebars.registerHelper("pascalCase", NameFormatHelpers.TO_PASCAL);
     handlebars.registerHelper(
         "operationNameToPascalCase", NameFormatHelpers.OPERATION_NAME_TO_PASCAL_CASE);
+    handlebars.registerHelper("constantCase", NameFormatHelpers.CONSTANT_CASE);
 
     handlebars.registerHelper(
         "snakeCaseToPascalCaseAndSingularize",
