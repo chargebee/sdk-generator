@@ -307,54 +307,6 @@ public final class {{name}}Params {
             {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
                 super(fieldName, builder, params, {{filterEnumType}}::getValue);
             }
-
-            /**
-             * @deprecated This method accepting raw String will be removed in a future version.
-             * Use the type-safe enum overload instead:
-             * <pre>{@code .{{name}}().is({{filterEnumType}}.YOUR_VALUE)}</pre>
-             * @see #is({{filterEnumType}})
-             */
-            @Deprecated
-            public {{../name}}Builder is(String value) {
-                params.put(fieldName + "[is]", value);
-                return builder;
-            }
-
-            /**
-             * @deprecated This method accepting raw String will be removed in a future version.
-             * Use the type-safe enum overload instead:
-             * <pre>{@code .{{name}}().isNot({{filterEnumType}}.YOUR_VALUE)}</pre>
-             * @see #isNot({{filterEnumType}})
-             */
-            @Deprecated
-            public {{../name}}Builder isNot(String value) {
-                params.put(fieldName + "[is_not]", value);
-                return builder;
-            }
-
-            /**
-             * @deprecated This method accepting raw String will be removed in a future version.
-             * Use the type-safe enum overload instead:
-             * <pre>{@code .{{name}}().in({{filterEnumType}}.VALUE1, {{filterEnumType}}.VALUE2)}</pre>
-             * @see #in({{filterEnumType}}[])
-             */
-            @Deprecated
-            public {{../name}}Builder in(String... values) {
-                params.put(fieldName + "[in]", "[" + String.join(",", values) + "]");
-                return builder;
-            }
-
-            /**
-             * @deprecated This method accepting raw String will be removed in a future version.
-             * Use the type-safe enum overload instead:
-             * <pre>{@code .{{name}}().notIn({{filterEnumType}}.VALUE1, {{filterEnumType}}.VALUE2)}</pre>
-             * @see #notIn({{filterEnumType}}[])
-             */
-            @Deprecated
-            public {{../name}}Builder notIn(String... values) {
-                params.put(fieldName + "[not_in]", "[" + String.join(",", values) + "]");
-                return builder;
-            }
         }
         {{else if numberFilter}}
         public static final class {{filterType}} extends NumberFilter<{{../name}}Builder> {
@@ -372,18 +324,6 @@ public final class {{name}}Params {
         public static final class {{filterType}} extends BooleanFilter<{{../name}}Builder> {
             {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
                 super(fieldName, builder, params);
-            }
-
-            /**
-             * @deprecated This method accepting raw String will be removed in a future version.
-             * Use the type-safe boolean overload instead:
-             * <pre>{@code .{{name}}().is(true)}</pre>
-             * @see #is(boolean)
-             */
-            @Deprecated
-            public {{../name}}Builder is(String value) {
-                params.put(fieldName + "[is]", value);
-                return builder;
             }
         }
         {{else}}
