@@ -299,7 +299,7 @@ class GetRequestParamsBuilderTest {
       assertThat(writeOp.fileContent)
           .contains(
               "public static final class AutoCloseInvoicesFilter extends"
-                  + " StringFilter<CustomerListBuilder>");
+                  + " BooleanFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -1888,6 +1888,7 @@ class GetRequestParamsBuilderTest {
     ObjectSchema filterSchema = new ObjectSchema();
     filterSchema.setType("object");
     filterSchema.addExtension(Extension.IS_FILTER_PARAMETER, true);
+    filterSchema.addExtension(Extension.SDK_FILTER_NAME, "BooleanFilter");
     filterSchema.addProperty("is", new StringSchema());
 
     Parameter param = new Parameter();

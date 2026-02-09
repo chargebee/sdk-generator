@@ -571,7 +571,7 @@ public class PostRequestParamsBuilder {
 
   private List<String> getFilterEnumValues(Schema<?> filterSchema) {
     String sdkFilterName = getFilterSdkName(filterSchema);
-    if ("StringFilter".equals(sdkFilterName)) {
+    if (!"EnumFilter".equals(sdkFilterName)) {
       return null;
     }
 
