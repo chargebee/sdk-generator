@@ -1,6 +1,6 @@
 import { CreateChargebee } from './createChargebee.js';
 import { FetchHttpClient } from './net/FetchClient.js';
-import { WebhookEventType, WebhookContentType } from './resources/webhook/handler.js';
+import { WebhookEventType, WebhookContentType, WebhookError, WebhookAuthenticationError, WebhookPayloadValidationError, WebhookPayloadParseError } from './resources/webhook/handler.js';
 import { basicAuthValidator } from './resources/webhook/auth.js';
 
 const httpClient = new FetchHttpClient();
@@ -13,6 +13,12 @@ module.exports.default = Chargebee;
 module.exports.WebhookEventType = WebhookEventType;
 module.exports.WebhookContentType = WebhookContentType;
 module.exports.basicAuthValidator = basicAuthValidator;
+
+// Export webhook error classes
+module.exports.WebhookError = WebhookError;
+module.exports.WebhookAuthenticationError = WebhookAuthenticationError;
+module.exports.WebhookPayloadValidationError = WebhookPayloadValidationError;
+module.exports.WebhookPayloadParseError = WebhookPayloadParseError;
 
 // Export webhook types
 export type { WebhookEvent, WebhookContext, WebhookHandlerOptions, HandleOptions, RequestValidator } from './resources/webhook/handler.js';

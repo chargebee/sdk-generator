@@ -23,43 +23,33 @@ public class NodeV3 extends Language {
     List<FileOp> fileOps = new ArrayList<>();
     fileOps.add(generateApiEndpointsFile(outputDirectoryPath, resources));
 
-    // Generate webhook files (content, handler, auth, eventType)
+    // Generate webhook files (content, handler, auth, eventType, errors)
     {
-        Template contentTemplate = getTemplateContent("webhookContent");
-        Template handlerTemplate = getTemplateContent("webhookHandler");
-        Template authTemplate = getTemplateContent("webhookAuth");
-        Template eventTypesTemplate = getTemplateContent("webhookEventTypes");
-        fileOps.addAll(
-            WebhookGenerator.generate(
-                outputDirectoryPath,
-                spec,
-                contentTemplate,
-                handlerTemplate,
-                authTemplate,
-                eventTypesTemplate
-            )
-        );
+      Template contentTemplate = getTemplateContent("webhookContent");
+      Template handlerTemplate = getTemplateContent("webhookHandler");
+      Template authTemplate = getTemplateContent("webhookAuth");
+      Template eventTypesTemplate = getTemplateContent("webhookEventTypes");
+      Template errorsTemplate = getTemplateContent("webhookErrors");
+      fileOps.addAll(
+          WebhookGenerator.generate(
+              outputDirectoryPath,
+              spec,
+              contentTemplate,
+              handlerTemplate,
+              authTemplate,
+              eventTypesTemplate,
+              errorsTemplate));
     }
 
     // Generate entry point files (in parent directory of resources)
     {
-        String parentDirectoryPath = outputDirectoryPath.replace("/resources", "");
-        Template esmTemplate = getTemplateContent("chargebeeEsm");
-        Template cjsTemplate = getTemplateContent("chargebeeCjs");
-        fileOps.add(
-            new FileOp.WriteString(
-                parentDirectoryPath,
-                "chargebee.esm.ts",
-                esmTemplate.apply("")
-            )
-        );
-        fileOps.add(
-            new FileOp.WriteString(
-                parentDirectoryPath,
-                "chargebee.cjs.ts",
-                cjsTemplate.apply("")
-            )
-        );
+      String parentDirectoryPath = outputDirectoryPath.replace("/resources", "");
+      Template esmTemplate = getTemplateContent("chargebeeEsm");
+      Template cjsTemplate = getTemplateContent("chargebeeCjs");
+      fileOps.add(
+          new FileOp.WriteString(parentDirectoryPath, "chargebee.esm.ts", esmTemplate.apply("")));
+      fileOps.add(
+          new FileOp.WriteString(parentDirectoryPath, "chargebee.cjs.ts", cjsTemplate.apply("")));
     }
 
     return fileOps;
@@ -73,6 +63,7 @@ public class NodeV3 extends Language {
     templates.put("webhookHandler", "/templates/node/webhook_handler.ts.hbs");
     templates.put("webhookAuth", "/templates/node/webhook_auth.ts.hbs");
     templates.put("webhookEventTypes", "/templates/node/webhook_event_types.ts.hbs");
+    templates.put("webhookErrors", "/templates/node/webhook_errors.ts.hbs");
     templates.put("chargebeeEsm", "/templates/node/chargebee_esm.ts.hbs");
     templates.put("chargebeeCjs", "/templates/node/chargebee_cjs.ts.hbs");
     return templates;
