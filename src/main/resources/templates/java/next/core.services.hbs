@@ -72,7 +72,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return get(path, params != null ? params.toQueryParams() : null);
+        return {{#if hasSubDomain}}getWithSubDomain(path, "{{subDomain}}", params != null ? params.toQueryParams() : null){{else}}get(path, params != null ? params.toQueryParams() : null){{/if}};
     }
 
     /**
@@ -80,7 +80,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return get(path, null);
+        return {{#if hasSubDomain}}getWithSubDomain(path, "{{subDomain}}", null){{else}}get(path, null){{/if}};
     }
 
     /**
@@ -109,9 +109,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     Response {{methodName}}Raw(String {{pathParamName}}) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
         {{#if (eq httpMethod "post")}}
-        return post(path, null);
+        return {{#if hasSubDomain}}postWithSubDomain(path, "{{subDomain}}", null){{else}}post(path, null){{/if}};
         {{else}}
-        return get(path, null);
+        return {{#if hasSubDomain}}getWithSubDomain(path, "{{subDomain}}", null){{else}}get(path, null){{/if}};
         {{/if}}
     }
 
@@ -121,7 +121,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return post(path, params.toFormData());
+        return {{#if hasSubDomain}}postWithSubDomain(path, "{{subDomain}}", params.toFormData()){{else}}post(path, params.toFormData()){{/if}};
     }
 
     /**
@@ -129,7 +129,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}, String jsonPayload) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return postJson(path, jsonPayload);
+        return {{#if hasSubDomain}}postJsonWithSubDomain(path, "{{subDomain}}", jsonPayload){{else}}postJson(path, jsonPayload){{/if}};
     }
 
     public {{returnType}} {{methodName}}(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
@@ -144,7 +144,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return get(path, params != null ? params.toQueryParams() : null);
+        return {{#if hasSubDomain}}getWithSubDomain(path, "{{subDomain}}", params != null ? params.toQueryParams() : null){{else}}get(path, params != null ? params.toQueryParams() : null){{/if}};
     }
 
     public {{returnType}} {{methodName}}(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
@@ -169,9 +169,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw({{paramsClassName}} params) throws ChargebeeException {
         {{#if (eq httpMethod "post")}}
-        return post("{{path}}", params != null ? params.toFormData() : null);
+        return {{#if hasSubDomain}}postWithSubDomain("{{path}}", "{{subDomain}}", params != null ? params.toFormData() : null){{else}}post("{{path}}", params != null ? params.toFormData() : null){{/if}};
         {{else}}
-        return get("{{path}}", params != null ? params.toQueryParams() : null);
+        return {{#if hasSubDomain}}getWithSubDomain("{{path}}", "{{subDomain}}", params != null ? params.toQueryParams() : null){{else}}get("{{path}}", params != null ? params.toQueryParams() : null){{/if}};
         {{/if}}
     }
 
@@ -181,9 +181,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw() throws ChargebeeException {
         {{#if (eq httpMethod "post")}}
-        return post("{{path}}", null);
+        return {{#if hasSubDomain}}postWithSubDomain("{{path}}", "{{subDomain}}", null){{else}}post("{{path}}", null){{/if}};
         {{else}}
-        return get("{{path}}", null);
+        return {{#if hasSubDomain}}getWithSubDomain("{{path}}", "{{subDomain}}", null){{else}}get("{{path}}", null){{/if}};
         {{/if}}
     }
     {{/if}}
@@ -193,7 +193,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String jsonPayload) throws ChargebeeException {
         {{#if (eq httpMethod "post")}}
-        return postJson("{{path}}", jsonPayload);
+        return {{#if hasSubDomain}}postJsonWithSubDomain("{{path}}", "{{subDomain}}", jsonPayload){{else}}postJson("{{path}}", jsonPayload){{/if}};
         {{else}}
         throw new UnsupportedOperationException("JSON payload not supported for GET operations");
         {{/if}}

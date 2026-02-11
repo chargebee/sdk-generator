@@ -175,10 +175,12 @@ public class ServiceBuilder {
     var serviceOp = new ServiceOperation();
 
     String operationId = getExtensionAsString(operation, Extension.SDK_METHOD_NAME);
+    String subDomain = getExtensionAsString(operation, Extension.OPERATION_SUB_DOMAIN);
     serviceOp.setOperationId(operationId);
     serviceOp.setModule(resourceName);
     serviceOp.setPath(path);
     serviceOp.setHttpMethod(httpMethod);
+    serviceOp.setSubDomain(subDomain);
     serviceOp.setOperation(operation);
     return serviceOp;
   }
@@ -236,6 +238,7 @@ public class ServiceBuilder {
     private String module;
     private String path;
     private String httpMethod;
+    private String subDomain;
     private io.swagger.v3.oas.models.Operation
         operation; // Store full operation for response analysis
 
@@ -413,6 +416,11 @@ public class ServiceBuilder {
         }
       }
       return true;
+    }
+
+    @SuppressWarnings("unused")
+    public boolean hasSubDomain() {
+      return subDomain != null && !subDomain.trim().isEmpty();
     }
   }
 }
