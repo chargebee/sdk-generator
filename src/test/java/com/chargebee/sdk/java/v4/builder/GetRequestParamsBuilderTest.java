@@ -299,7 +299,7 @@ class GetRequestParamsBuilderTest {
       assertThat(writeOp.fileContent)
           .contains(
               "public static final class AutoCloseInvoicesFilter extends"
-                  + " StringFilter<CustomerListBuilder>");
+                  + " BooleanFilter<CustomerListBuilder>");
     }
 
     @Test
@@ -1620,13 +1620,15 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent)
-          .contains("public CustomFieldSelector<CustomerListBuilder> customField(String fieldName)");
+          .contains(
+              "public CustomFieldSelector<CustomerListBuilder> customField(String fieldName)");
       assertThat(writeOp.fileContent)
           .contains("return new CustomFieldSelector<>(fieldName, this, queryParams)");
     }
 
     @Test
-    @DisplayName("Should not generate customField method when x-cb-is-custom-fields-supported is false")
+    @DisplayName(
+        "Should not generate customField method when x-cb-is-custom-fields-supported is false")
     void shouldNotGenerateCustomFieldMethodWhenNotSupported() throws IOException {
       Operation getOperation = createGetOperation("customer", "list");
       getOperation.getExtensions().put(Extension.IS_CUSTOM_FIELDS_SUPPORTED, false);
@@ -1674,8 +1676,7 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "SubscriptionListParams.java");
       assertThat(writeOp.fileContent)
           .contains("import com.chargebee.v4.filters.CustomFieldSelector;");
-      assertThat(writeOp.fileContent)
-          .contains("import com.chargebee.v4.filters.BooleanFilter;");
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.filters.BooleanFilter;");
     }
 
     @Test
@@ -1697,11 +1698,13 @@ class GetRequestParamsBuilderTest {
 
       FileOp.WriteString customerWriteOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(customerWriteOp.fileContent)
-          .contains("public CustomFieldSelector<CustomerListBuilder> customField(String fieldName)");
+          .contains(
+              "public CustomFieldSelector<CustomerListBuilder> customField(String fieldName)");
 
       FileOp.WriteString subscriptionWriteOp = findWriteOp(fileOps, "SubscriptionListParams.java");
       assertThat(subscriptionWriteOp.fileContent)
-          .contains("public CustomFieldSelector<SubscriptionListBuilder> customField(String fieldName)");
+          .contains(
+              "public CustomFieldSelector<SubscriptionListBuilder> customField(String fieldName)");
     }
 
     @Test
@@ -1719,7 +1722,8 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       assertThat(writeOp.fileContent).contains("Create a filter for a custom field");
       assertThat(writeOp.fileContent).contains("@param fieldName the custom field name");
-      assertThat(writeOp.fileContent).contains("@return CustomFieldSelector for choosing filter type");
+      assertThat(writeOp.fileContent)
+          .contains("@return CustomFieldSelector for choosing filter type");
     }
 
     @Test
@@ -1742,7 +1746,8 @@ class GetRequestParamsBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerListParams.java");
       // Verify customField method is generated
       assertThat(writeOp.fileContent)
-          .contains("public CustomFieldSelector<CustomerListBuilder> customField(String fieldName)");
+          .contains(
+              "public CustomFieldSelector<CustomerListBuilder> customField(String fieldName)");
       // Verify other features are still generated
       assertThat(writeOp.fileContent).contains("public FirstNameFilter firstName()");
       assertThat(writeOp.fileContent).contains("public CreatedAtFilter createdAt()");
@@ -1883,6 +1888,7 @@ class GetRequestParamsBuilderTest {
     ObjectSchema filterSchema = new ObjectSchema();
     filterSchema.setType("object");
     filterSchema.addExtension(Extension.IS_FILTER_PARAMETER, true);
+    filterSchema.addExtension(Extension.SDK_FILTER_NAME, "BooleanFilter");
     filterSchema.addProperty("is", new StringSchema());
 
     Parameter param = new Parameter();

@@ -198,6 +198,11 @@ public class PostRequestParamsBuilder {
     subModel.setFields(getFields(schema, fullPathSnake, isCompositeArray));
     subModel.setEnumFields(getEnumFields(schema, isCompositeArray));
     subModel.setSubModels(getSubModels(schema, fullPathSnake));
+
+    // Check for custom fields and consent fields support at sub-params level
+    subModel.setCustomFieldsSupported(SchemaUtil.isCustomFieldsSupported(schema));
+    subModel.setConsentFieldsSupported(SchemaUtil.isConsentFieldsSupported(schema));
+
     return subModel;
   }
 
@@ -566,7 +571,7 @@ public class PostRequestParamsBuilder {
 
   private List<String> getFilterEnumValues(Schema<?> filterSchema) {
     String sdkFilterName = getFilterSdkName(filterSchema);
-    if ("StringFilter".equals(sdkFilterName)) {
+    if (!"EnumFilter".equals(sdkFilterName)) {
       return null;
     }
 
