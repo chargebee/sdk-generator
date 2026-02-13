@@ -458,6 +458,73 @@ class PostRequestParamsBuilderTest {
     }
   }
 
+  // BATCH OPERATION HANDLING
+
+  @Nested
+  @DisplayName("Batch Operation Handling")
+  class BatchOperationHandlingTests {
+
+    @Test
+    @DisplayName("Should skip params generation for true batch operations")
+    void shouldSkipParamsForTrueBatchOperations() throws IOException {
+      ObjectSchema requestSchema = new ObjectSchema();
+      requestSchema.addProperty("status", new StringSchema());
+
+      Operation batchOp = createPostOperation("ramp", "update", requestSchema);
+      batchOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithPostOperation("/batch/ramps/update", batchOp);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      // Should NOT generate params for the batch operation
+      assertThat(fileOps.stream()
+          .filter(op -> op instanceof FileOp.WriteString)
+          .map(op -> (FileOp.WriteString) op)
+          .noneMatch(op -> op.fileName.contains("Update"))).isTrue();
+    }
+
+    @Test
+    @DisplayName("Should generate params for /batch/ path without batch extension")
+    void shouldGenerateParamsForBatchPathWithoutExtension() throws IOException {
+      ObjectSchema requestSchema = new ObjectSchema();
+      requestSchema.addProperty("events", new StringSchema());
+
+      Operation batchIngestOp = createPostOperation("usage_event", "batchIngest", requestSchema);
+      addPathWithPostOperation("/batch/usage_events", batchIngestOp);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      assertFileExists(fileOps, "UsageEventBatchIngestParams.java");
+    }
+
+    @Test
+    @DisplayName("Should generate params for non-batch ops alongside true batch ops")
+    void shouldGenerateParamsForNonBatchOpsAlongsideBatchOps() throws IOException {
+      ObjectSchema requestSchema = new ObjectSchema();
+      requestSchema.addProperty("field", new StringSchema());
+
+      // True batch op — should be skipped
+      Operation batchOp = createPostOperation("ramp", "update", requestSchema);
+      batchOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithPostOperation("/batch/ramps/update", batchOp);
+
+      // Regular POST op — should generate params
+      Operation regularOp = createPostOperation("ramp", "create", requestSchema);
+      addPathWithPostOperation("/ramps/create", regularOp);
+      paramsBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = paramsBuilder.build(openAPI);
+
+      assertFileExists(fileOps, "RampCreateParams.java");
+      assertThat(fileOps.stream()
+          .filter(op -> op instanceof FileOp.WriteString)
+          .map(op -> (FileOp.WriteString) op)
+          .noneMatch(op -> op.fileName.contains("RampUpdateParams"))).isTrue();
+    }
+  }
+
   // NULL AND EDGE CASE HANDLING
 
   @Nested

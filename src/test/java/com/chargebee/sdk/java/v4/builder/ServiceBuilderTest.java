@@ -482,6 +482,138 @@ class ServiceBuilderTest {
     }
   }
 
+  // BATCH OPERATIONS (Internal V4)
+
+  @Nested
+  @DisplayName("Batch Operations")
+  class BatchOperationsTests {
+
+    @Test
+    @DisplayName("Should generate BatchRequest method for true batch operations")
+    void shouldGenerateBatchRequestMethodForTrueBatchOperations() throws IOException {
+      Operation batchUpdateOp = createOperation("ramp", "update");
+      batchUpdateOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchUpdateOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).contains("BatchRequest");
+      assertThat(writeOp.fileContent).contains("batchUpdate()");
+      assertThat(writeOp.fileContent).contains("new BatchRequest(\"/ramps/update\", \"id\"");
+    }
+
+    @Test
+    @DisplayName("Should NOT generate BatchRequest for /batch/ path without batch extension")
+    void shouldNotGenerateBatchRequestWithoutBatchExtension() throws IOException {
+      // /batch/usage_events does NOT have x-cb-batch-operation-path-id
+      Operation batchIngestOp =
+          createPostOperationWithRequestBody("usage_event", "batchIngest");
+      addPathWithOperation("/batch/usage_events", PathItem.HttpMethod.POST, batchIngestOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "UsageEventService.java");
+      assertThat(writeOp.fileContent).doesNotContain("BatchRequest");
+      assertThat(writeOp.fileContent).contains("batchIngest");
+    }
+
+    @Test
+    @DisplayName("Should strip /batch prefix from URI in BatchRequest constructor")
+    void shouldStripBatchPrefixFromUri() throws IOException {
+      Operation batchDeleteOp = createOperation("ramp", "delete");
+      batchDeleteOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithOperation("/batch/ramps/delete", PathItem.HttpMethod.POST, batchDeleteOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).contains("\"/ramps/delete\"");
+      assertThat(writeOp.fileContent).doesNotContain("\"/batch/ramps/delete\"");
+    }
+
+    @Test
+    @DisplayName("Should import BatchRequest only when service has batch operations")
+    void shouldImportBatchRequestOnlyWhenNeeded() throws IOException {
+      Operation batchUpdateOp = createOperation("ramp", "update");
+      batchUpdateOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchUpdateOp);
+
+      Operation retrieveOp = createGetOperation("customer", "retrieve");
+      addPathWithOperation("/customers/{customer-id}", PathItem.HttpMethod.GET, retrieveOp);
+
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString rampService = findWriteOp(fileOps, "RampService.java");
+      assertThat(rampService.fileContent).contains("import com.chargebee.v4.internal.BatchRequest");
+
+      FileOp.WriteString customerService = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(customerService.fileContent).doesNotContain("BatchRequest");
+    }
+
+    @Test
+    @DisplayName("Should skip params/response imports for batch operations")
+    void shouldSkipParamsAndResponseImportsForBatchOperations() throws IOException {
+      Operation batchUpdateOp = createOperation("ramp", "update");
+      batchUpdateOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+
+      Operation retrieveOp = createGetOperation("ramp", "retrieve");
+
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchUpdateOp);
+      addPathWithOperation("/ramps/{ramp-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      // Should NOT import params/response for the batch operation
+      assertThat(writeOp.fileContent).doesNotContain("RampUpdateParams");
+      assertThat(writeOp.fileContent).doesNotContain("RampUpdateResponse");
+      // Should still import params/response for the non-batch operation
+      assertThat(writeOp.fileContent).contains("RampRetrieveResponse");
+    }
+
+    @Test
+    @DisplayName("Should generate multiple batch methods in same service")
+    void shouldGenerateMultipleBatchMethodsInSameService() throws IOException {
+      Operation batchUpdateOp = createOperation("ramp", "update");
+      batchUpdateOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+
+      Operation batchDeleteOp = createOperation("ramp", "delete");
+      batchDeleteOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchUpdateOp);
+      addPathWithOperation("/batch/ramps/delete", PathItem.HttpMethod.POST, batchDeleteOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).contains("batchUpdate()");
+      assertThat(writeOp.fileContent).contains("batchDelete()");
+    }
+
+    @Test
+    @DisplayName("Should use subdomain constructor when operation has subdomain")
+    void shouldUseSubdomainConstructorWhenOperationHasSubdomain() throws IOException {
+      Operation batchOp = createOperation("ramp", "update");
+      batchOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      batchOp.addExtension(Extension.OPERATION_SUB_DOMAIN, "integrations");
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent)
+          .contains("new BatchRequest(\"/ramps/update\", \"id\", \"integrations\", client)");
+    }
+  }
+
   // HELPER METHODS
 
   /**
