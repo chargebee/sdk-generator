@@ -11,40 +11,42 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Internal SDK generator that extends the public JavaV4 generator with batch infrastructure
- * support. Generates BatchRequest, BatchEntry, BatchResult, and BatchConstants classes into the
- * {@code com.chargebee.v4.internal} package.
+ * Internal SDK generator that extends the public JavaV4 generator with internal-only
+ * infrastructure. Generates batch classes (BatchRequest, BatchEntry, BatchResult, BatchConstants)
+ * and the InternalChargebeeClient into the {@code com.chargebee.v4.internal} package.
  */
 public class JavaV4Internal extends JavaV4 {
 
-  private static final String[] BATCH_TEMPLATE_FILES = {
-    "batch.request", "batch.entry", "batch.result", "batch.constants"
+  private static final String[] INTERNAL_TEMPLATE_FILES = {
+    "batch.request", "batch.entry", "batch.result", "batch.constants", "internal.client"
   };
 
-  private static final Map<String, String> BATCH_FILE_NAMES =
+  private static final Map<String, String> INTERNAL_FILE_NAMES =
       Map.of(
           "batch.request", "BatchRequest.java",
           "batch.entry", "BatchEntry.java",
           "batch.result", "BatchResult.java",
-          "batch.constants", "BatchConstants.java");
+          "batch.constants", "BatchConstants.java",
+          "internal.client", "InternalChargebeeClient.java");
 
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
     List<FileOp> fileOps = new ArrayList<>(super.generateSDK(outputDirectoryPath, spec));
-    fileOps.addAll(generateBatchInfrastructure(outputDirectoryPath));
+    fileOps.addAll(generateInternalInfrastructure(outputDirectoryPath));
     return fileOps;
   }
 
-  private List<FileOp> generateBatchInfrastructure(String outputDirectoryPath) throws IOException {
+  private List<FileOp> generateInternalInfrastructure(String outputDirectoryPath)
+      throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
     String internalDir = outputDirectoryPath + "/com/chargebee/v4/internal";
     fileOps.add(new FileOp.CreateDirectory(internalDir, ""));
 
-    for (String templateName : BATCH_TEMPLATE_FILES) {
+    for (String templateName : INTERNAL_TEMPLATE_FILES) {
       String resourcePath = "/templates/java/next/" + templateName + ".hbs";
       String content = readResourceFile(resourcePath);
       String formatted = JavaFormatter.formatSafely(content);
-      String fileName = BATCH_FILE_NAMES.get(templateName);
+      String fileName = INTERNAL_FILE_NAMES.get(templateName);
       fileOps.add(new FileOp.WriteString(internalDir, fileName, formatted));
     }
 
@@ -63,7 +65,7 @@ public class JavaV4Internal extends JavaV4 {
   @Override
   protected Map<String, String> templatesDefinition() {
     Map<String, String> templates = new HashMap<>(super.templatesDefinition());
-    // Batch templates are read as raw files, not compiled as Handlebars
+    // Internal templates are read as raw files, not compiled as Handlebars
     // so no need to add them here
     return templates;
   }

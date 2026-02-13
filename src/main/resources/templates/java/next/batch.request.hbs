@@ -79,11 +79,14 @@ public class BatchRequest {
     public BatchResult request() throws ChargebeeException {
         String jsonPayload = buildRequestPayload();
         String fullUrl = UrlBuilder.buildUrl(client.getBaseUrl(), "/batch" + uri, null);
-        Request httpRequest = Request.builder()
+        Request.Builder reqBuilder = Request.builder()
                 .method("POST")
                 .url(fullUrl)
-                .jsonBody(jsonPayload)
-                .build();
+                .jsonBody(jsonPayload);
+        for (Map.Entry<String, String> h : client.getClientHeaders().getHeaders().entrySet()) {
+            reqBuilder.header(h.getKey(), h.getValue());
+        }
+        Request httpRequest = reqBuilder.build();
         Response response = client.executeWithInterceptor(httpRequest);
         return BatchResult.fromJson(response.getBodyAsString(), response);
     }
