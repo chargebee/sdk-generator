@@ -19,10 +19,10 @@ export class ChargeBee {
         ChargeBee._env.timeout = timeout;
     }
 
-    get subscription() {
+    get subscriptions() {
         return resources.Subscription;
     }
-    get contract_term() {
+    get contract_terms() {
         return resources.ContractTerm;
     }
 }

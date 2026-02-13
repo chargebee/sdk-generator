@@ -18,7 +18,7 @@ export class ChargeBee {
         ChargeBee._env.timeout = timeout;
     }
 
-    get subscription() {
+    get subscriptions() {
         return resources.Subscription;
     }
 }
