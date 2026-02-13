@@ -79,6 +79,12 @@ public class PostRequestParamsBuilder {
         if (pathItem.getPost() != null) {
           var operation = pathItem.getPost();
 
+          // Skip true batch operations (those with batch-operation-path-id) -
+          // they use BatchRequest infrastructure, not individual params classes
+          if (isTrueBatchOperation(operation)) {
+            continue;
+          }
+
           var postAction = new PostAction();
           String module = resolveModuleName(entry.getKey(), operation);
 
@@ -129,6 +135,13 @@ public class PostRequestParamsBuilder {
   // =========================================================
   // Extension helpers
   // =========================================================
+
+  /** Returns true if the operation is a true batch operation (has batch-operation-path-id). */
+  private static boolean isTrueBatchOperation(Operation operation) {
+    if (operation == null || operation.getExtensions() == null) return false;
+    return operation.getExtensions().containsKey(Extension.BATCH_OPERATION_PATH_ID)
+        && operation.getExtensions().get(Extension.BATCH_OPERATION_PATH_ID) != null;
+  }
 
   /** Returns the string value of a custom OpenAPI extension or null. */
   private static String readExtensionAsString(Operation operation, String key) {

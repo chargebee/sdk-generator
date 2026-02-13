@@ -437,13 +437,12 @@ class PostResponseBuilderTest {
   class BatchOperationsTests {
 
     @Test
-    @DisplayName("Should generate response for batch operations")
+    @DisplayName("Should generate response for batch operations without batch-operation-path-id")
     void shouldGenerateResponseForBatchOperations() throws IOException {
       ObjectSchema responseSchema = new ObjectSchema();
       responseSchema.addProperty("status", new StringSchema());
 
-      // For batch operations, module is still "customer" and method is "create"
-      // The naming follows the standard module + method pattern
+      // /batch/customers without x-cb-batch-operation-path-id is a regular POST
       Operation postOp = createPostOperationWithResponse("customer", "create", responseSchema);
       addPathWithPostOperation("/batch/customers", postOp);
       responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
@@ -452,6 +451,50 @@ class PostResponseBuilderTest {
 
       // Module "customer" + method "create" = CustomerCreateResponse
       assertFileExists(fileOps, "CustomerCreateResponse.java");
+    }
+
+    @Test
+    @DisplayName("Should skip response generation for true batch operations")
+    void shouldSkipResponseForTrueBatchOperations() throws IOException {
+      ObjectSchema responseSchema = new ObjectSchema();
+      responseSchema.addProperty("status", new StringSchema());
+
+      // True batch operation has x-cb-batch-operation-path-id extension
+      Operation postOp = createPostOperationWithResponse("ramp", "update", responseSchema);
+      postOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithPostOperation("/batch/ramps/update", postOp);
+      responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = responseBuilder.build(openAPI);
+
+      // Should only have base directory — no response class generated
+      assertThat(fileOps).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("Should generate response for non-batch ops even when batch ops exist")
+    void shouldGenerateResponseForNonBatchOpsAlongsideBatchOps() throws IOException {
+      ObjectSchema responseSchema = new ObjectSchema();
+      responseSchema.addProperty("status", new StringSchema());
+
+      // True batch op — should be skipped
+      Operation batchOp = createPostOperationWithResponse("ramp", "update", responseSchema);
+      batchOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithPostOperation("/batch/ramps/update", batchOp);
+
+      // Regular POST op — should generate response
+      Operation regularOp = createPostOperationWithResponse("ramp", "create", responseSchema);
+      addPathWithPostOperation("/ramps/create", regularOp);
+      responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = responseBuilder.build(openAPI);
+
+      // Should generate response only for the regular op
+      assertFileExists(fileOps, "RampCreateResponse.java");
+      assertThat(fileOps.stream()
+          .filter(op -> op instanceof FileOp.WriteString)
+          .map(op -> (FileOp.WriteString) op)
+          .noneMatch(op -> op.fileName.contains("Update"))).isTrue();
     }
   }
 
