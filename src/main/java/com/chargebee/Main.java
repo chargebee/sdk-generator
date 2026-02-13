@@ -11,6 +11,7 @@ import com.chargebee.sdk.java.GenerationMode;
 import com.chargebee.sdk.java.JarType;
 import com.chargebee.sdk.java.Java;
 import com.chargebee.sdk.java.v4.JavaV4;
+import com.chargebee.sdk.java.v4.JavaV4Internal;
 import com.chargebee.sdk.node.Node;
 import com.chargebee.sdk.node.NodeV3;
 import com.chargebee.sdk.php.Php;
@@ -150,7 +151,8 @@ enum Lang {
   JAVA_INTERNAL_INT,
   JAVA_INTERNAL_INT_V2,
   JAVA_INTERNAL_HVC,
-  JAVA_INTERNAL_HVC_V2;
+  JAVA_INTERNAL_HVC_V2,
+  JAVA_V4_INTERNAL_HVC;
 
   public static Language sdkLanguage(Lang lang) {
     if (lang == Lang.TYPESCRIPT_TYPINGS_V3) {
@@ -185,6 +187,9 @@ enum Lang {
     }
     if (lang == Lang.JAVA_V4) {
       return new JavaV4();
+    }
+    if (lang == Lang.JAVA_V4_INTERNAL_HVC) {
+      return new JavaV4Internal();
     }
     if (lang == Lang.JAVA_INTERNAL_INT) {
       return new Java(GenerationMode.INTERNAL, ApiVersion.V1, JarType.INT);
