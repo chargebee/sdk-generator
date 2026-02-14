@@ -37,6 +37,8 @@ public class PHP_V4 extends Language {
         "/templates/php/v4/listResponse.php.hbs",
         CHARGEBEE_CLIENT,
         "/templates/php/v4/chargebeeClient.php.hbs",
+        CLASS_BASED_ENUM,
+        "/templates/php/v4/classBasedEnum.php.hbs",
         LIST_RESPONSE_OBJECT,
         "/templates/php/v4/listResponseObject.php.hbs",
         ACTION_CONTRACT,
@@ -58,7 +60,9 @@ public class PHP_V4 extends Language {
         "client",
         new ClientFileGenerator(this),
         "actionContract",
-        new ActionContractFileGenerator(this));
+        new ActionContractFileGenerator(this),
+        "classBasedEnums",
+        new ClassBasedEnumFileGenerator(this));
   }
 
   @Override
@@ -74,6 +78,10 @@ public class PHP_V4 extends Language {
     fileOps.addAll(
         generators.get("response").generate(outputPath + "/Responses", filteredResources));
     fileOps.addAll(generators.get("enum").generate(outputPath + "/Enums", spec.globalEnums()));
+    fileOps.addAll(
+        generators
+            .get("classBasedEnums")
+            .generate(outputPath + "/ClassBasedEnums", spec.globalEnums()));
     fileOps.add(generators.get("client").generateSingle(outputPath, filteredResources));
     fileOps.addAll(
         generators
@@ -104,7 +112,8 @@ public class PHP_V4 extends Language {
         new FileOp.CreateDirectory(basePath, "/Enums"),
         new FileOp.CreateDirectory(basePath, "/Actions"),
         new FileOp.CreateDirectory(basePath, "/Responses"),
-        new FileOp.CreateDirectory(basePath, "/Actions/Contracts"));
+        new FileOp.CreateDirectory(basePath, "/Actions/Contracts"),
+        new FileOp.CreateDirectory(basePath, "/ClassBasedEnums"));
   }
 
   private List<com.chargebee.openapi.Resource> filterResources(
