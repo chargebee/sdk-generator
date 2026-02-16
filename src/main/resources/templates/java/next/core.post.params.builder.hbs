@@ -164,6 +164,15 @@ public final class {{name}}Params {
         return formData;
     }
 
+    {{#if operationNeedsJsonInput}}
+    /**
+     * Get the JSON string representation for this request.
+     */
+    public String toJsonString() {
+        return JsonUtil.toJson(toFormData());
+    }
+    {{/if}}
+
     /**
      * Create a new builder for {{name}}Params.
      */

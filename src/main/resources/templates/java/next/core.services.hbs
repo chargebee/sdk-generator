@@ -148,7 +148,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return {{#if hasSubDomain}}postWithSubDomain(path, {{subDomainEnumRef}}.getValue(), params.toFormData()){{else}}post(path, params.toFormData()){{/if}};
+        return {{#if isOperationNeedsJsonInput}}{{#if hasSubDomain}}postJsonWithSubDomain(path, {{subDomainEnumRef}}.getValue(), params != null ? params.toJsonString() : null){{else}}postJson(path, params != null ? params.toJsonString() : null){{/if}}{{else}}{{#if hasSubDomain}}postWithSubDomain(path, {{subDomainEnumRef}}.getValue(), params.toFormData()){{else}}post(path, params.toFormData()){{/if}}{{/if}};
     }
 
     /**
@@ -196,7 +196,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw({{paramsClassName}} params) throws ChargebeeException {
         {{#if (eq httpMethod "post")}}
-        return {{#if hasSubDomain}}postWithSubDomain("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toFormData() : null){{else}}post("{{path}}", params != null ? params.toFormData() : null){{/if}};
+        return {{#if isOperationNeedsJsonInput}}{{#if hasSubDomain}}postJsonWithSubDomain("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toJsonString() : null){{else}}postJson("{{path}}", params != null ? params.toJsonString() : null){{/if}}{{else}}{{#if hasSubDomain}}postWithSubDomain("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toFormData() : null){{else}}post("{{path}}", params != null ? params.toFormData() : null){{/if}}{{/if}};
         {{else}}
         return {{#if hasSubDomain}}getWithSubDomain("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toQueryParams() : null){{else}}get("{{path}}", params != null ? params.toQueryParams() : null){{/if}};
         {{/if}}
