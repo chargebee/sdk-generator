@@ -3,6 +3,7 @@ package com.chargebee.sdk.java.v4.builder;
 import com.chargebee.openapi.Extension;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.java.v4.JavaFormatter;
+import com.chargebee.sdk.java.v4.util.CaseFormatUtil;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -210,6 +211,7 @@ public class ServiceBuilder {
       service.setPackageName(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, resourceName));
       service.setName(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, resourceName));
       service.setOperations(operations);
+
       services.add(service);
     }
     return services;
@@ -248,6 +250,11 @@ public class ServiceBuilder {
     @SuppressWarnings("unused")
     public boolean hasBatchOperations() {
       return operations != null && operations.stream().anyMatch(ServiceOperation::isBatchOperation);
+    }
+
+    @SuppressWarnings("unused")
+    public boolean hasSubDomainOperations() {
+      return operations != null && operations.stream().anyMatch(ServiceOperation::hasSubDomain);
     }
   }
 
@@ -443,6 +450,12 @@ public class ServiceBuilder {
     @SuppressWarnings("unused")
     public boolean hasSubDomain() {
       return subDomain != null && !subDomain.trim().isEmpty();
+    }
+
+    @SuppressWarnings("unused")
+    public String getSubDomainEnumRef() {
+      if (!hasSubDomain()) return null;
+      return "SubDomain." + CaseFormatUtil.toUpperUnderscoreSafe(subDomain);
     }
 
     @SuppressWarnings("unused")

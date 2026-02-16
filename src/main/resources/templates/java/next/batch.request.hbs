@@ -32,7 +32,7 @@ public class BatchRequest {
 
     private final String uri;
     private final String pathParamName;
-    private final String subDomain;
+    private final SubDomain subDomain;
     private final ChargebeeClient client;
     private final List<BatchEntry> entries = new ArrayList<>();
 
@@ -40,7 +40,7 @@ public class BatchRequest {
         this(uri, pathParamName, null, client);
     }
 
-    public BatchRequest(String uri, String pathParamName, String subDomain, ChargebeeClient client) {
+    public BatchRequest(String uri, String pathParamName, SubDomain subDomain, ChargebeeClient client) {
         this.uri = uri;
         this.pathParamName = pathParamName;
         this.subDomain = subDomain;
@@ -78,8 +78,8 @@ public class BatchRequest {
      */
     public BatchResult request() throws ChargebeeException {
         String jsonPayload = buildRequestPayload();
-        String baseUrl = (subDomain != null && !subDomain.isEmpty())
-                ? client.getBaseUrlWithSubDomain(subDomain)
+        String baseUrl = (subDomain != null)
+                ? client.getBaseUrlWithSubDomain(subDomain.getValue())
                 : client.getBaseUrl();
         String fullUrl = UrlBuilder.buildUrl(baseUrl, "/batch" + uri, null);
         Request.Builder reqBuilder = Request.builder()

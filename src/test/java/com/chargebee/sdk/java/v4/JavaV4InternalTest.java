@@ -10,7 +10,6 @@ import com.chargebee.openapi.Spec;
 import com.chargebee.sdk.FileOp;
 import java.io.IOException;
 import java.util.List;
-import org.assertj.core.data.MapEntry;
 import org.junit.jupiter.api.*;
 
 /**
@@ -119,8 +118,7 @@ class JavaV4InternalTest {
           fileOps.stream()
               .filter(op -> op instanceof FileOp.CreateDirectory)
               .map(op -> (FileOp.CreateDirectory) op)
-              .anyMatch(
-                  op -> op.basePath.equals(OUTPUT_PATH + "/com/chargebee/v4/internal"));
+              .anyMatch(op -> op.basePath.equals(OUTPUT_PATH + "/com/chargebee/v4/internal"));
       assertThat(hasInternalDir).isTrue();
     }
 
@@ -274,7 +272,8 @@ class JavaV4InternalTest {
       List<FileOp> fileOps = generate();
       FileOp.WriteString writeOp = findWriteOp(fileOps, "BatchRequest.java");
 
-      assertThat(writeOp.fileContent).contains("client.getBaseUrlWithSubDomain(subDomain)");
+      assertThat(writeOp.fileContent)
+          .contains("client.getBaseUrlWithSubDomain(subDomain.getValue())");
     }
 
     @Test
@@ -292,7 +291,7 @@ class JavaV4InternalTest {
       List<FileOp> fileOps = generate();
       FileOp.WriteString writeOp = findWriteOp(fileOps, "BatchRequest.java");
 
-      assertThat(writeOp.fileContent).contains("subDomain != null && !subDomain.isEmpty()");
+      assertThat(writeOp.fileContent).contains("subDomain != null");
     }
 
     @Test
@@ -301,7 +300,7 @@ class JavaV4InternalTest {
       List<FileOp> fileOps = generate();
       FileOp.WriteString writeOp = findWriteOp(fileOps, "BatchRequest.java");
 
-      assertThat(writeOp.fileContent).contains("private final String subDomain");
+      assertThat(writeOp.fileContent).contains("private final SubDomain subDomain");
       assertThat(writeOp.fileContent).contains("this.subDomain = subDomain");
     }
 
@@ -312,7 +311,8 @@ class JavaV4InternalTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "BatchRequest.java");
 
       assertThat(writeOp.fileContent)
-          .contains("public BatchRequest(String uri, String pathParamName, ChargebeeClient client)");
+          .contains(
+              "public BatchRequest(String uri, String pathParamName, ChargebeeClient client)");
       assertThat(writeOp.fileContent).contains("this(uri, pathParamName, null, client)");
     }
   }

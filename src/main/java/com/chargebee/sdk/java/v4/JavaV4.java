@@ -46,6 +46,11 @@ public class JavaV4 extends Language {
             .withOutputDirectoryPath(outputDirectoryPath)
             .withTemplate(getTemplateContent("core.services"))
             .build(spec.openAPI());
+    List<FileOp> subDomainEnumFiles =
+        new SubDomainEnumBuilder()
+            .withOutputDirectoryPath(outputDirectoryPath)
+            .withTemplate(getTemplateContent("subdomain.enum"))
+            .build(spec.openAPI());
     List<FileOp> clientMethodsFiles =
         new ClientMethodsBuilder()
             .withOutputDirectoryPath(outputDirectoryPath)
@@ -80,6 +85,7 @@ public class JavaV4 extends Language {
     allFileOps.add(getResponseFiles);
     allFileOps.add(postResponseFiles);
     allFileOps.add(serviceFiles);
+    allFileOps.add(subDomainEnumFiles);
     allFileOps.add(clientMethodsFiles);
     allFileOps.add(serviceRegistryFiles);
     allFileOps.add(errorEnumFiles);
@@ -108,7 +114,8 @@ public class JavaV4 extends Language {
         Map.entry("api.error.code.interface", "/templates/java/next/api.error.code.interface.hbs"),
         Map.entry("exception", "/templates/java/next/exception.hbs"),
         Map.entry("api.exception", "/templates/java/next/api.exception.hbs"),
-        Map.entry("http.status.handler", "/templates/java/next/http.status.handler.hbs"));
+        Map.entry("http.status.handler", "/templates/java/next/http.status.handler.hbs"),
+        Map.entry("subdomain.enum", "/templates/java/next/subdomain.enum.hbs"));
   }
 
   @Override

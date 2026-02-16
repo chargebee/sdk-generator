@@ -491,10 +491,12 @@ class PostResponseBuilderTest {
 
       // Should generate response only for the regular op
       assertFileExists(fileOps, "RampCreateResponse.java");
-      assertThat(fileOps.stream()
-          .filter(op -> op instanceof FileOp.WriteString)
-          .map(op -> (FileOp.WriteString) op)
-          .noneMatch(op -> op.fileName.contains("Update"))).isTrue();
+      assertThat(
+              fileOps.stream()
+                  .filter(op -> op instanceof FileOp.WriteString)
+                  .map(op -> (FileOp.WriteString) op)
+                  .noneMatch(op -> op.fileName.contains("Update")))
+          .isTrue();
     }
   }
 

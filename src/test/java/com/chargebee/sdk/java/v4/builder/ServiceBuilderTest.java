@@ -498,7 +498,9 @@ class ServiceBuilderTest {
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferEventService.java");
-      assertThat(writeOp.fileContent).contains("getWithSubDomain(path, \"grow\"");
+      assertThat(writeOp.fileContent).doesNotContain("private static final String SUB_DOMAIN");
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
+      assertThat(writeOp.fileContent).contains("getWithSubDomain(path, SubDomain.GROW.getValue()");
     }
 
     @Test
@@ -511,12 +513,15 @@ class ServiceBuilderTest {
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferFulfillmentService.java");
+      assertThat(writeOp.fileContent).doesNotContain("private static final String SUB_DOMAIN");
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
       assertThat(writeOp.fileContent).contains("postWithSubDomain(\"");
-      assertThat(writeOp.fileContent).contains("\"grow\"");
+      assertThat(writeOp.fileContent).contains("SubDomain.GROW.getValue()");
     }
 
     @Test
-    @DisplayName("Should generate postJsonWithSubDomain call for POST JSON operation with subdomain")
+    @DisplayName(
+        "Should generate postJsonWithSubDomain call for POST JSON operation with subdomain")
     void shouldGeneratePostJsonWithSubDomainForPostJsonOperation() throws IOException {
       Operation createOp = createPostOperationWithSubDomain("offer_fulfillment", "create", "grow");
       addPathWithOperation("/offer_fulfillments", PathItem.HttpMethod.POST, createOp);
@@ -548,15 +553,20 @@ class ServiceBuilderTest {
       Operation normalOp = createPostOperationWithRequestBody("offer_event", "update");
       Operation subDomainOp = createGetOperationWithSubDomain("offer_event", "retrieve", "grow");
 
-      addPathWithOperation("/offer_events/{offer-event-id}/update", PathItem.HttpMethod.POST, normalOp);
+      addPathWithOperation(
+          "/offer_events/{offer-event-id}/update", PathItem.HttpMethod.POST, normalOp);
       addPathWithOperation("/offer_events/{offer-event-id}", PathItem.HttpMethod.GET, subDomainOp);
       serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferEventService.java");
-      // Subdomain operation should use getWithSubDomain
-      assertThat(writeOp.fileContent).contains("getWithSubDomain(path, \"grow\"");
+      // Should NOT define SUB_DOMAIN constant
+      assertThat(writeOp.fileContent).doesNotContain("private static final String SUB_DOMAIN");
+      // Should import SubDomain enum
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
+      // Subdomain operation should use SubDomain enum ref
+      assertThat(writeOp.fileContent).contains("getWithSubDomain(path, SubDomain.GROW.getValue()");
       // Normal operation should use regular post
       assertThat(writeOp.fileContent).contains("post(path, ");
     }
@@ -565,13 +575,14 @@ class ServiceBuilderTest {
     @DisplayName("Should generate postWithSubDomain for POST with path params and subdomain")
     void shouldGeneratePostWithSubDomainForPathParams() throws IOException {
       Operation updateOp = createPostOperationWithSubDomain("offer_fulfillment", "fulfill", "grow");
-      addPathWithOperation("/offer_fulfillments/{offer-fulfillment-id}/fulfill", PathItem.HttpMethod.POST, updateOp);
+      addPathWithOperation(
+          "/offer_fulfillments/{offer-fulfillment-id}/fulfill", PathItem.HttpMethod.POST, updateOp);
       serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferFulfillmentService.java");
-      assertThat(writeOp.fileContent).contains("postWithSubDomain(path, \"grow\"");
+      assertThat(writeOp.fileContent).contains("postWithSubDomain(path, SubDomain.GROW.getValue()");
     }
   }
 
@@ -601,8 +612,7 @@ class ServiceBuilderTest {
     @DisplayName("Should NOT generate BatchRequest for /batch/ path without batch extension")
     void shouldNotGenerateBatchRequestWithoutBatchExtension() throws IOException {
       // /batch/usage_events does NOT have x-cb-batch-operation-path-id
-      Operation batchIngestOp =
-          createPostOperationWithRequestBody("usage_event", "batchIngest");
+      Operation batchIngestOp = createPostOperationWithRequestBody("usage_event", "batchIngest");
       addPathWithOperation("/batch/usage_events", PathItem.HttpMethod.POST, batchIngestOp);
       serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
 
@@ -702,8 +712,10 @@ class ServiceBuilderTest {
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).doesNotContain("private static final String SUB_DOMAIN");
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
       assertThat(writeOp.fileContent)
-          .contains("new BatchRequest(\"/ramps/update\", \"id\", \"integrations\", client)");
+          .contains("new BatchRequest(\"/ramps/update\", \"id\", SubDomain.INTEGRATIONS, client)");
     }
 
     @Test
@@ -717,10 +729,8 @@ class ServiceBuilderTest {
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
-      assertThat(writeOp.fileContent)
-          .contains("new BatchRequest(\"/ramps/update\", \"id\"");
-      assertThat(writeOp.fileContent)
-          .doesNotContain("new BatchRequest(\"/ramps/update\", \"id\", \"");
+      assertThat(writeOp.fileContent).contains("new BatchRequest(\"/ramps/update\", \"id\"");
+      assertThat(writeOp.fileContent).doesNotContain("SubDomain.");
     }
   }
 
