@@ -78,7 +78,10 @@ public class BatchRequest {
      */
     public BatchResult request() throws ChargebeeException {
         String jsonPayload = buildRequestPayload();
-        String fullUrl = UrlBuilder.buildUrl(client.getBaseUrl(), "/batch" + uri, null);
+        String baseUrl = (subDomain != null && !subDomain.isEmpty())
+                ? client.getBaseUrlWithSubDomain(subDomain)
+                : client.getBaseUrl();
+        String fullUrl = UrlBuilder.buildUrl(baseUrl, "/batch" + uri, null);
         Request.Builder reqBuilder = Request.builder()
                 .method("POST")
                 .url(fullUrl)

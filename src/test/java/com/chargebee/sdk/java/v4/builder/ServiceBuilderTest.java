@@ -705,6 +705,23 @@ class ServiceBuilderTest {
       assertThat(writeOp.fileContent)
           .contains("new BatchRequest(\"/ramps/update\", \"id\", \"integrations\", client)");
     }
+
+    @Test
+    @DisplayName("Should use non-subdomain constructor when operation has no subdomain")
+    void shouldUseNonSubdomainConstructorWhenNoSubdomain() throws IOException {
+      Operation batchOp = createOperation("ramp", "update");
+      batchOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent)
+          .contains("new BatchRequest(\"/ramps/update\", \"id\"");
+      assertThat(writeOp.fileContent)
+          .doesNotContain("new BatchRequest(\"/ramps/update\", \"id\", \"");
+    }
   }
 
   // HELPER METHODS

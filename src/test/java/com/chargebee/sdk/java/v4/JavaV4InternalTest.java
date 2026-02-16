@@ -261,4 +261,59 @@ class JavaV4InternalTest {
       assertThat(writeOp.fileContent).contains("reqBuilder.header(h.getKey(), h.getValue())");
     }
   }
+
+  // === BatchRequest Subdomain Support ===
+
+  @Nested
+  @DisplayName("BatchRequest Subdomain Routing")
+  class BatchRequestSubdomainTests {
+
+    @Test
+    @DisplayName("Should use getBaseUrlWithSubDomain when subdomain is present")
+    void shouldUseSubDomainBaseUrlWhenSubDomainPresent() throws IOException {
+      List<FileOp> fileOps = generate();
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "BatchRequest.java");
+
+      assertThat(writeOp.fileContent).contains("client.getBaseUrlWithSubDomain(subDomain)");
+    }
+
+    @Test
+    @DisplayName("Should fall back to getBaseUrl when subdomain is null")
+    void shouldFallBackToBaseUrlWhenSubDomainNull() throws IOException {
+      List<FileOp> fileOps = generate();
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "BatchRequest.java");
+
+      assertThat(writeOp.fileContent).contains("client.getBaseUrl()");
+    }
+
+    @Test
+    @DisplayName("Should check subdomain for null and empty before using it")
+    void shouldCheckSubDomainForNullAndEmpty() throws IOException {
+      List<FileOp> fileOps = generate();
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "BatchRequest.java");
+
+      assertThat(writeOp.fileContent).contains("subDomain != null && !subDomain.isEmpty()");
+    }
+
+    @Test
+    @DisplayName("Should store subdomain field from constructor")
+    void shouldStoreSubDomainFromConstructor() throws IOException {
+      List<FileOp> fileOps = generate();
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "BatchRequest.java");
+
+      assertThat(writeOp.fileContent).contains("private final String subDomain");
+      assertThat(writeOp.fileContent).contains("this.subDomain = subDomain");
+    }
+
+    @Test
+    @DisplayName("Should have constructor overload without subdomain that defaults to null")
+    void shouldHaveConstructorOverloadWithoutSubDomain() throws IOException {
+      List<FileOp> fileOps = generate();
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "BatchRequest.java");
+
+      assertThat(writeOp.fileContent)
+          .contains("public BatchRequest(String uri, String pathParamName, ChargebeeClient client)");
+      assertThat(writeOp.fileContent).contains("this(uri, pathParamName, null, client)");
+    }
+  }
 }
