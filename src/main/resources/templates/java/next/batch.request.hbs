@@ -79,7 +79,7 @@ public class BatchRequest {
     public BatchResult request() throws ChargebeeException {
         String jsonPayload = buildRequestPayload();
         String baseUrl = (subDomain != null)
-                ? client.getBaseUrlWithSubDomain(subDomain.getValue())
+                ? baseUrlWithSubDomain(subDomain.getValue())
                 : client.getBaseUrl();
         String fullUrl = UrlBuilder.buildUrl(baseUrl, "/batch" + uri, null);
         Request.Builder reqBuilder = Request.builder()
@@ -92,6 +92,18 @@ public class BatchRequest {
         Request httpRequest = reqBuilder.build();
         Response response = client.executeWithInterceptor(httpRequest);
         return BatchResult.fromJson(response.getBodyAsString(), response);
+    }
+
+    /**
+     * Build base URL with subdomain prefix for routing.
+     */
+    private String baseUrlWithSubDomain(String subDomainValue) {
+        String endpoint = client.getEndpoint();
+        if (endpoint != null && !endpoint.trim().isEmpty()) {
+            return endpoint;
+        }
+        return String.format("%s://%s-%s.%s/api/v2",
+                client.getProtocol(), subDomainValue, client.getSiteName(), client.getDomainSuffix());
     }
 
     /**

@@ -267,13 +267,13 @@ class JavaV4InternalTest {
   class BatchRequestSubdomainTests {
 
     @Test
-    @DisplayName("Should use getBaseUrlWithSubDomain when subdomain is present")
-    void shouldUseSubDomainBaseUrlWhenSubDomainPresent() throws IOException {
+    @DisplayName("Should build subdomain URL internally without exposing it on client")
+    void shouldBuildSubDomainUrlInternally() throws IOException {
       List<FileOp> fileOps = generate();
       FileOp.WriteString writeOp = findWriteOp(fileOps, "BatchRequest.java");
 
-      assertThat(writeOp.fileContent)
-          .contains("client.getBaseUrlWithSubDomain(subDomain.getValue())");
+      assertThat(writeOp.fileContent).contains("baseUrlWithSubDomain(subDomain.getValue())");
+      assertThat(writeOp.fileContent).doesNotContain("client.getBaseUrlWithSubDomain");
     }
 
     @Test

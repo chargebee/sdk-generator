@@ -500,7 +500,7 @@ class ServiceBuilderTest {
       FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferEventService.java");
       assertThat(writeOp.fileContent).doesNotContain("private static final String SUB_DOMAIN");
       assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
-      assertThat(writeOp.fileContent).contains("getWithSubDomain(path, SubDomain.GROW.getValue()");
+      assertThat(writeOp.fileContent).contains("getWithSubDomain(path, SubDomain.GROW.getValue(),");
     }
 
     @Test
@@ -516,7 +516,7 @@ class ServiceBuilderTest {
       assertThat(writeOp.fileContent).doesNotContain("private static final String SUB_DOMAIN");
       assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
       assertThat(writeOp.fileContent).contains("postWithSubDomain(\"");
-      assertThat(writeOp.fileContent).contains("SubDomain.GROW.getValue()");
+      assertThat(writeOp.fileContent).contains("SubDomain.GROW.getValue(),");
     }
 
     @Test
@@ -566,7 +566,7 @@ class ServiceBuilderTest {
       // Should import SubDomain enum
       assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
       // Subdomain operation should use SubDomain enum ref
-      assertThat(writeOp.fileContent).contains("getWithSubDomain(path, SubDomain.GROW.getValue()");
+      assertThat(writeOp.fileContent).contains("getWithSubDomain(path, SubDomain.GROW.getValue(),");
       // Normal operation should use regular post
       assertThat(writeOp.fileContent).contains("post(path, ");
     }
@@ -582,7 +582,8 @@ class ServiceBuilderTest {
       List<FileOp> fileOps = serviceBuilder.build(openAPI);
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferFulfillmentService.java");
-      assertThat(writeOp.fileContent).contains("postWithSubDomain(path, SubDomain.GROW.getValue()");
+      assertThat(writeOp.fileContent)
+          .contains("postWithSubDomain(path, SubDomain.GROW.getValue(),");
     }
   }
 
