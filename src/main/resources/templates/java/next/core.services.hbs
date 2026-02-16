@@ -16,11 +16,18 @@ import com.chargebee.v4.transport.Response;
 import java.util.Map;
 import java.util.List;
 {{#each operations}}
+{{#unless batchOperation}}
 import com.chargebee.v4.models.{{../packageName}}.params.{{paramsClassName}};
+{{/unless}}
 {{/each}}
 {{#each operations}}
+{{#unless batchOperation}}
 import com.chargebee.v4.models.{{../packageName}}.responses.{{returnType}};
+{{/unless}}
 {{/each}}
+{{#if hasBatchOperations}}
+import com.chargebee.v4.internal.BatchRequest;
+{{/if}}
 {{#if (eq name "TimeMachine")}}
 import com.chargebee.v4.models.timeMachine.TimeMachine;
 import com.chargebee.v4.models.timeMachine.TimeMachine.TimeTravelStatus;
@@ -64,6 +71,23 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     
     // === Operations ===
     {{#each operations}}
+    {{#if batchOperation}}
+
+    /**
+     * Batch {{methodName}} operation for {{../packageName}}.
+     * Returns a BatchRequest that can be populated with entries and executed.
+     *
+     * @return BatchRequest builder for batch execution
+     */
+    public BatchRequest {{batchMethodName}}() {
+        {{#if hasSubDomain}}
+        return new BatchRequest("{{batchUri}}", {{#if batchPathId}}"{{batchPathId}}"{{else}}null{{/if}}, "{{subDomain}}", client);
+        {{else}}
+        return new BatchRequest("{{batchUri}}", {{#if batchPathId}}"{{batchPathId}}"{{else}}null{{/if}}, client);
+        {{/if}}
+    }
+
+    {{else}}
     {{#if hasPathParams}}
     {{#if isListResponse}}
     
@@ -219,6 +243,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     }
     {{/if}}
 
+    {{/if}}
     {{/if}}
     {{/each}}
 {{#if (eq name "Export")}}
