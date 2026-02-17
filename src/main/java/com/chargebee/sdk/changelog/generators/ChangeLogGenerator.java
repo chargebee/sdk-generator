@@ -116,9 +116,15 @@ public class ChangeLogGenerator implements FileGenerator {
   private List<String> generateNewActions(
       List<Resource> oldResources, List<Resource> newResources) {
     Map<String, Set<String>> oldActionsByResource = buildActionMap(oldResources);
+    Set<String> oldResourceIds = extractResourceIds(oldResources);
     Set<String> lines = new LinkedHashSet<>();
 
     for (Resource newResource : newResources) {
+      // Skip new resources - they will be listed in the new resources section
+      if (!oldResourceIds.contains(newResource.id)) {
+        continue;
+      }
+
       Set<String> existingActions =
           oldActionsByResource.getOrDefault(newResource.id, Collections.emptySet());
 
@@ -144,8 +150,10 @@ public class ChangeLogGenerator implements FileGenerator {
   private List<String> generateNewAttributes(
       List<Resource> oldResources, List<Resource> newResources) {
     Map<String, Set<String>> oldAttributesByResource = buildAttributeMap(oldResources);
+    Set<String> oldResourceIds = extractResourceIds(oldResources);
 
     return newResources.stream()
+        .filter(resource -> oldResourceIds.contains(resource.id)) // Skip new resources
         .flatMap(resource -> findNewAttributes(resource, oldAttributesByResource))
         .distinct()
         .collect(Collectors.toList());
@@ -190,9 +198,15 @@ public class ChangeLogGenerator implements FileGenerator {
       String parameterType) {
     Map<String, Map<String, Set<String>>> oldParametersByResource =
         buildParameterMap(oldResources, parameterExtractor);
+    Set<String> oldResourceIds = extractResourceIds(oldResources);
     Set<String> lines = new LinkedHashSet<>();
 
     for (Resource newResource : newResources) {
+      // Skip new resources - they will be listed in the new resources section
+      if (!oldResourceIds.contains(newResource.id)) {
+        continue;
+      }
+
       Map<String, Set<String>> oldActionParameters =
           oldParametersByResource.getOrDefault(newResource.id, Collections.emptyMap());
 
