@@ -129,11 +129,17 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         return {{returnType}}.fromJson(response.getBodyAsString(), this, null, {{pathParamName}}, response);
     }
 
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} with params.
+     */
     public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}, {{paramsClassName}} params) {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
         return {{#if hasSubDomain}}getWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), params != null ? params.toQueryParams() : null){{else}}getAsync(path, params != null ? params.toQueryParams() : null){{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), this, params, {{pathParamName}}, response));
     }
 
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} without params.
+     */
     public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}) {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
         return {{#if hasSubDomain}}getWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), null){{else}}getAsync(path, null){{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), this, null, {{pathParamName}}, response));
@@ -175,6 +181,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         return {{returnType}}.fromJson(response.getBodyAsString(), response);
     }
 
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} with params.
+     */
     public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}, {{paramsClassName}} params) {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
         return {{#if isOperationNeedsJsonInput}}{{#if hasSubDomain}}postJsonWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), params != null ? params.toJsonString() : null){{else}}postJsonAsync(path, params != null ? params.toJsonString() : null){{/if}}{{else}}{{#if hasSubDomain}}postWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), params.toFormData()){{else}}postAsync(path, params.toFormData()){{/if}}{{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), response));
@@ -195,6 +204,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         return {{returnType}}.fromJson(response.getBodyAsString(), response);
     }
 
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} with params.
+     */
     public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}, {{paramsClassName}} params) {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
         return {{#if hasSubDomain}}getWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), params != null ? params.toQueryParams() : null){{else}}getAsync(path, params != null ? params.toQueryParams() : null){{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), response));
@@ -208,6 +220,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         return {{returnType}}.fromJson(response.getBodyAsString(), response);
     }
 
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} without params.
+     */
     public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}) {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
         {{#if (eq httpMethod "post")}}
@@ -265,6 +280,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         {{/if}}
     }
 
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} with params.
+     */
     public CompletableFuture<{{returnType}}> {{methodName}}Async({{paramsClassName}} params) {
         {{#if (eq httpMethod "post")}}
         return {{#if isOperationNeedsJsonInput}}{{#if hasSubDomain}}postJsonWithSubDomainAsync("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toJsonString() : null){{else}}postJsonAsync("{{path}}", params != null ? params.toJsonString() : null){{/if}}{{else}}{{#if hasSubDomain}}postWithSubDomainAsync("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toFormData() : null){{else}}postAsync("{{path}}", params != null ? params.toFormData() : null){{/if}}{{/if}}.thenApply(response -> {{#if isListResponse}}{{returnType}}.fromJson(response.getBodyAsString(), this, params, response){{else}}{{returnType}}.fromJson(response.getBodyAsString(), response){{/if}});
@@ -283,6 +301,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         {{/if}}
     }
 
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} without params.
+     */
     public CompletableFuture<{{returnType}}> {{methodName}}Async() {
         {{#if (eq httpMethod "post")}}
         return {{#if hasSubDomain}}postWithSubDomainAsync("{{path}}", {{subDomainEnumRef}}.getValue(), null){{else}}postAsync("{{path}}", null){{/if}}.thenApply(response -> {{#if isListResponse}}{{returnType}}.fromJson(response.getBodyAsString(), this, null, response){{else}}{{returnType}}.fromJson(response.getBodyAsString(), response){{/if}});
