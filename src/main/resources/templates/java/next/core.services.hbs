@@ -226,7 +226,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}) {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
         {{#if (eq httpMethod "post")}}
-        return {{#if hasSubDomain}}postWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), null){{else}}postAsync(path, null){{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), response));
+        return {{#if isOperationNeedsJsonInput}}{{#if hasSubDomain}}postJsonWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), null){{else}}postJsonAsync(path, null){{/if}}{{else}}{{#if hasSubDomain}}postWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), null){{else}}postAsync(path, null){{/if}}{{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), response));
         {{else}}
         return {{#if hasSubDomain}}getWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), null){{else}}getAsync(path, null){{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), response));
         {{/if}}
