@@ -735,6 +735,161 @@ class ServiceBuilderTest {
     }
   }
 
+  // ASYNC METHOD GENERATION
+
+  @Nested
+  @DisplayName("Async Method Generation")
+  class AsyncMethodGenerationTests {
+
+    @Test
+    @DisplayName("Should generate async method for POST operation")
+    void shouldGenerateAsyncMethodForPostOperation() throws IOException {
+      Operation createOp = createPostOperationWithRequestBody("customer", "create");
+      addPathWithOperation("/customers", PathItem.HttpMethod.POST, createOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<CustomerCreateResponse> createAsync(CustomerCreateParams"
+                  + " params)");
+      assertThat(writeOp.fileContent).contains("postAsync(");
+      assertThat(writeOp.fileContent)
+          .contains(
+              ".thenApply(response -> CustomerCreateResponse.fromJson(response.getBodyAsString(),"
+                  + " response))");
+    }
+
+    @Test
+    @DisplayName("Should generate async method for GET retrieve operation")
+    void shouldGenerateAsyncMethodForGetOperation() throws IOException {
+      Operation retrieveOp = createGetOperationWithResponse("customer", "retrieve");
+      addPathWithOperation("/customers/{customer-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<CustomerRetrieveResponse> retrieveAsync(String"
+                  + " customerId)");
+      assertThat(writeOp.fileContent).contains("getAsync(path, null)");
+    }
+
+    @Test
+    @DisplayName("Should generate async methods for list operation")
+    void shouldGenerateAsyncMethodForListOperation() throws IOException {
+      Operation listOp = createListOperation("customer", "list");
+      addPathWithOperation("/customers", PathItem.HttpMethod.GET, listOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<CustomerListResponse> listAsync(CustomerListParams"
+                  + " params)");
+      assertThat(writeOp.fileContent)
+          .contains("public CompletableFuture<CustomerListResponse> listAsync()");
+    }
+
+    @Test
+    @DisplayName("Should generate async method for POST update with path param")
+    void shouldGenerateAsyncMethodWithPathParamsAndRequestBody() throws IOException {
+      Operation updateOp = createPostOperationWithRequestBody("customer", "update");
+      addPathWithOperation("/customers/{customer-id}/update", PathItem.HttpMethod.POST, updateOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<CustomerUpdateResponse> updateAsync(String customerId,"
+                  + " CustomerUpdateParams params)");
+      assertThat(writeOp.fileContent).contains("postAsync(path, params.toFormData())");
+    }
+
+    @Test
+    @DisplayName("Should generate async method for GET with query params and path params")
+    void shouldGenerateAsyncMethodForGetWithQueryParamsAndPathParams() throws IOException {
+      Operation retrieveOp = createGetOperationWithQueryParams("invoice", "retrieve");
+      addPathWithOperation("/invoices/{invoice-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "InvoiceService.java");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<InvoiceRetrieveResponse> retrieveAsync(String invoiceId,"
+                  + " InvoiceRetrieveParams params)");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<InvoiceRetrieveResponse> retrieveAsync(String invoiceId)");
+    }
+
+    @Test
+    @DisplayName("Should import CompletableFuture")
+    void shouldImportCompletableFuture() throws IOException {
+      Operation createOp = createPostOperationWithRequestBody("customer", "create");
+      addPathWithOperation("/customers", PathItem.HttpMethod.POST, createOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent).contains("import java.util.concurrent.CompletableFuture;");
+    }
+
+    @Test
+    @DisplayName("Should NOT generate async for batch operations")
+    void shouldNotGenerateAsyncForBatchOperations() throws IOException {
+      Operation batchUpdateOp = createOperation("ramp", "update");
+      batchUpdateOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchUpdateOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).doesNotContain("batchUpdateAsync");
+      assertThat(writeOp.fileContent).contains("batchUpdate()");
+    }
+
+    @Test
+    @DisplayName("Should generate async with subdomain for POST operation")
+    void shouldGenerateAsyncWithSubDomainForPost() throws IOException {
+      Operation createOp = createPostOperationWithSubDomain("offer_fulfillment", "create", "grow");
+      addPathWithOperation("/offer_fulfillments", PathItem.HttpMethod.POST, createOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferFulfillmentService.java");
+      assertThat(writeOp.fileContent).contains("postWithSubDomainAsync(\"");
+      assertThat(writeOp.fileContent).contains("SubDomain.GROW.getValue(),");
+    }
+
+    @Test
+    @DisplayName("Should generate async with subdomain for GET operation")
+    void shouldGenerateAsyncWithSubDomainForGet() throws IOException {
+      Operation retrieveOp = createGetOperationWithSubDomain("offer_event", "retrieve", "grow");
+      addPathWithOperation("/offer_events/{offer-event-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferEventService.java");
+      assertThat(writeOp.fileContent)
+          .contains("getWithSubDomainAsync(path, SubDomain.GROW.getValue(),");
+    }
+  }
+
   // HELPER METHODS
 
   /**
