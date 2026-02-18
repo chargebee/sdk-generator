@@ -95,11 +95,11 @@ public class PostRequestParamsBuilder {
           postAction.setPath(entry.getKey());
 
           // Set JSON input flag from x-cb-is-operation-needs-json-input extension
-          Object needsJsonInput = operation.getExtensions() != null
-              ? operation.getExtensions().get(Extension.IS_OPERATION_NEEDS_JSON_INPUT)
-              : null;
-          postAction.setOperationNeedsJsonInput(
-              needsJsonInput != null && (boolean) needsJsonInput);
+          Object needsJsonInput =
+              operation.getExtensions() != null
+                  ? operation.getExtensions().get(Extension.IS_OPERATION_NEEDS_JSON_INPUT)
+                  : null;
+          postAction.setOperationNeedsJsonInput(needsJsonInput != null && (boolean) needsJsonInput);
 
           Schema<?> requestSchema = resolveRequestSchema(operation);
           if (requestSchema != null) {

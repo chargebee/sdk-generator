@@ -185,9 +185,10 @@ public class ServiceBuilder {
     serviceOp.setOperation(operation);
 
     // Set JSON input flag from x-cb-is-operation-needs-json-input extension
-    Object needsJsonInput = operation.getExtensions() != null
-        ? operation.getExtensions().get(Extension.IS_OPERATION_NEEDS_JSON_INPUT)
-        : null;
+    Object needsJsonInput =
+        operation.getExtensions() != null
+            ? operation.getExtensions().get(Extension.IS_OPERATION_NEEDS_JSON_INPUT)
+            : null;
     serviceOp.setOperationNeedsJsonInput(needsJsonInput != null && (boolean) needsJsonInput);
 
     // Detect true batch operations by x-cb-batch-operation-path-id extension
