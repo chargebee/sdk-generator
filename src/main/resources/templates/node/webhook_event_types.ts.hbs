@@ -1,0 +1,15 @@
+/**
+ * Enum representing all possible webhook event types from Chargebee.
+ * This enum provides both compile-time type safety and runtime values.
+ */
+export enum WebhookEventType {
+{{#each events}}
+  {{snakeCaseToPascalCase type}} = '{{type}}',
+{{/each}}
+}
+
+/**
+ * @deprecated Use WebhookEventType instead.
+ */
+export const WebhookContentType = WebhookEventType;
+

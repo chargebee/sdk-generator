@@ -20,6 +20,7 @@ type {{camelCaseToPascalCase name}}Service struct {
 }
 
 {{#each actions}}
+{{#if isDeprecated}}// Deprecated: This function is deprecated.{{/if}}
 func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}req *{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Request{{/or}}) (*{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Response, error) {
     {{~#if (not (or hasRequestBodyParameters hasQueryParameters))}}
     req := &BlankRequest{}

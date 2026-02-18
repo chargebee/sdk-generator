@@ -68,7 +68,7 @@ This project uses **Spotless** for code formatting. Before submitting any change
 ./gradlew build
 
 # Run the generator
-./gradlew run --args="-i spec.json -l JAVA -o output/"
+./gradlew run --args="-i spec.json -l JAVA_V4 -o output/"
 ```
 
 ## 📝 Making Contributions

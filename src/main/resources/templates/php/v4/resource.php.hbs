@@ -7,7 +7,7 @@ use Chargebee\Resources\Content\Content;{{/or}}{{#if customFieldSupported}}
 use Chargebee\ValueObjects\SupportsCustomFields;{{/if}}
 class {{clazName}} {{#if customFieldSupported}} extends SupportsCustomFields {{/if}} {{curly "open"}} {{#each cols}}
     /**
-    *
+    *{{#if deprecated}}@deprecated This attribute is deprecated and will be removed in future version.{{/if}}
     * @var {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{{phpDocField}}} ${{name}}
     */
     public {{#if (and isOptional (not (eq phpDocField "mixed")))}}?{{/if}}{{{fieldTypePHP}}} ${{name}};

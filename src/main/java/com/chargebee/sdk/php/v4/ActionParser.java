@@ -10,6 +10,7 @@ import com.chargebee.openapi.Action;
 import com.chargebee.openapi.Extension;
 import com.chargebee.openapi.Resource;
 import com.chargebee.sdk.php.v4.models.ResourceAction;
+import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.*;
 
@@ -60,7 +61,13 @@ public class ActionParser {
         .setJsonKeys(action.getJsonKeysInRequestBody())
         .setReturnType(toCamelCase(action.name) + res.name + "Response")
         .setPhpDocField(PHPDocSerializer.serializeActionParameter(action))
-        .setActionDocLink(API_DOCS_URL + pluralize(res.id) + API_DOCS_QUERY + action.id)
+        .setActionDocLink(
+            API_DOCS_URL
+                + pluralize(res.id)
+                + '/'
+                + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, action.id)
+                + API_DOCS_QUERY)
+        .setDeprecated(action.isOperationDeprecated())
         .setIdempotent(action.isIdempotent());
   }
 

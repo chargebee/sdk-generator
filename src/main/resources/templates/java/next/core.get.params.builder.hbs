@@ -5,9 +5,15 @@
  * Copyright 2025 Chargebee Inc.
  */
 
-package com.chargebee.v4.core.models.{{module}}.params;
+package com.chargebee.v4.models.{{module}}.params;
 
 import com.chargebee.v4.internal.Recommended;
+import com.chargebee.v4.filters.StringFilter;
+import com.chargebee.v4.filters.NumberFilter;
+import com.chargebee.v4.filters.TimestampFilter;
+import com.chargebee.v4.filters.EnumFilter;
+import com.chargebee.v4.filters.BooleanFilter;
+import com.chargebee.v4.filters.CustomFieldSelector;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -66,7 +72,7 @@ public final class {{name}}Params {
         {{#if isFilter}}{{#if deprecated}}
         @Deprecated
 {{/if}}        public {{filterType}} {{name}}() {
-            return new {{filterType}}("{{curlName}}", this);
+            return new {{filterType}}("{{curlName}}", this, queryParams);
         }
         {{else}}{{#if isSort}}{{#if deprecated}}
         @Deprecated
@@ -88,96 +94,51 @@ public final class {{name}}Params {
         {{/if}}{{/if}}{{/if}}
         {{/each}}
 
+        {{#if customFieldsSupported}}
+        /**
+         * Create a filter for a custom field.
+         * @param fieldName the custom field name (must contain "cf_")
+         * @return CustomFieldSelector for choosing filter type
+         */
+        public CustomFieldSelector<{{name}}Builder> customField(String fieldName) {
+            if (fieldName == null || !fieldName.contains("cf_")) {
+                throw new IllegalArgumentException("Custom field name must contain 'cf_'");
+            }
+            return new CustomFieldSelector<>(fieldName, this, queryParams);
+        }
+        {{/if}}
+
         public {{name}}Params build() {
             return new {{name}}Params(this);
         }
 
         {{#each fields}}
         {{#if isFilter}}
-        public static final class {{filterType}} {
-            private final String fieldName;
-            private final {{../name}}Builder builder;
-
-            {{filterType}}(String fieldName, {{../name}}Builder builder) {
-                this.fieldName = fieldName;
-                this.builder = builder;
+        {{#if hasFilterEnum}}
+        public static final class {{filterType}} extends EnumFilter<{{filterEnumType}}, {{../name}}Builder> {
+            {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
+                super(fieldName, builder, params, {{filterEnumType}}::getValue);
             }
-
-            {{#each supportedOperations}}
-            {{#if (eq this "is")}}
-            public {{../../../name}}Builder is(String value) {
-                builder.queryParams.put(fieldName + "[is]", value);
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "is_not")}}
-            public {{../../../name}}Builder isNot(String value) {
-                builder.queryParams.put(fieldName + "[is_not]", value);
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "starts_with")}}
-            public {{../../../name}}Builder startsWith(String value) {
-                builder.queryParams.put(fieldName + "[starts_with]", value);
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "in")}}
-            public {{../../../name}}Builder in(String... values) {
-                builder.queryParams.put(fieldName + "[in]", "[" + String.join(",", values) + "]");
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "not_in")}}
-            public {{../../../name}}Builder notIn(String... values) {
-                builder.queryParams.put(fieldName + "[not_in]", "[" + String.join(",", values) + "]");
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "is_present")}}
-            public {{../../../name}}Builder isPresent(boolean value) {
-                builder.queryParams.put(fieldName + "[is_present]", String.valueOf(value));
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "after")}}
-            public {{../../../name}}Builder after(Timestamp timestamp) {
-                builder.queryParams.put(fieldName + "[after]", timestamp.getTime() / 1000);
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "before")}}
-            public {{../../../name}}Builder before(Timestamp timestamp) {
-                builder.queryParams.put(fieldName + "[before]", timestamp.getTime() / 1000);
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "on")}}
-            public {{../../../name}}Builder on(Timestamp timestamp) {
-                builder.queryParams.put(fieldName + "[on]", timestamp.getTime() / 1000);
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "between")}}
-            public {{../../../name}}Builder between(Timestamp start, Timestamp end) {
-                builder.queryParams.put(fieldName + "[between]", "[" + (start.getTime() / 1000) + "," + (end.getTime() / 1000) + "]");
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "asc")}}
-            public {{../../../name}}Builder asc() {
-                builder.queryParams.put(fieldName + "[asc]", "true");
-                return builder;
-            }
-            {{/if}}
-            {{#if (eq this "desc")}}
-            public {{../../../name}}Builder desc() {
-                builder.queryParams.put(fieldName + "[desc]", "true");
-                return builder;
-            }
-            {{/if}}
-            {{/each}}
         }
+        {{else if numberFilter}}
+        public static final class {{filterType}} extends NumberFilter<{{../name}}Builder> {
+            {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
+                super(fieldName, builder, params);
+            }
+        }
+        {{else if timestampFilter}}
+        public static final class {{filterType}} extends TimestampFilter<{{../name}}Builder> {
+            {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
+                super(fieldName, builder, params);
+            }
+        }
+        {{else}}
+        public static final class {{filterType}} extends StringFilter<{{../name}}Builder> {
+            {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
+                super(fieldName, builder, params);
+            }
+        }
+        {{/if}}
         {{/if}}
         {{/each}}
 

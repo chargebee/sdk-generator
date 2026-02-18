@@ -25,7 +25,8 @@ final class {{resourceName}} implements {{resourceName}}Interface
     /**
     *   @see {{{actionDocLink}}}
     *   {{#or hasRequestBodyParameters hasQueryParameters}}{{{phpDocField}}}{{/or}}
-    *   {{#or hasHandle }}@param string $id  {{/or}}
+    *   {{#or hasHandle }}@param string $id  {{/or}}{{#if deprecated}}
+    *   @deprecated This method is deprecated and will be removed in a future version.{{/if}}
     *   @param array<string, string> $headers
     *   @return {{returnType}}
     *   @throws PaymentException

@@ -127,7 +127,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(4);
   }
 
   @Test

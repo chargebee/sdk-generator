@@ -145,6 +145,7 @@ public class Common {
     column.setApiName(attribute.name);
     column.setArrayOfSubResources(isArrayOfSubResources(attribute));
     column.setSubResourceName(getSubResourceName(attribute));
+    column.setDeprecated(attribute.isDeprecated());
     return column;
   }
 

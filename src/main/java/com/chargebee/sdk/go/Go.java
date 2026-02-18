@@ -23,6 +23,7 @@ import com.chargebee.sdk.dotnet.models.OperationRequestParameter;
 import com.chargebee.sdk.go.model.InputSubResParam;
 import com.chargebee.sdk.go.model.ResponseParser;
 import com.chargebee.sdk.go.model.SubResource;
+import com.chargebee.sdk.go.webhook.WebhookGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
@@ -104,6 +105,24 @@ public class Go extends Language {
     fileOps.addAll(generateServices(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath, resources, spec));
     fileOps.add(generateClientFile(outputDirectoryPath));
+    // Generate webhook event type enum
+
+      // var webhookInfo = spec.extractWebhookInfo(true);
+      // if (!webhookInfo.isEmpty()) {
+      //   fileOps.add(
+      //       generateWebhookEventTypeEnum(outputDirectoryPath + enumsDirectoryPath, webhookInfo));
+      // }
+
+    // Generate webhook files (parser, content, handler)
+    {
+      Template parserTemplate = getTemplateContent("webhook");
+      Template contentTemplate = getTemplateContent("webhookContent");
+      Template handlerTemplate = getTemplateContent("webhookHandler");
+      fileOps.addAll(
+          WebhookGenerator.generate(
+              outputDirectoryPath, spec, parserTemplate, contentTemplate, handlerTemplate));
+    }
+
     return fileOps;
   }
 
@@ -441,7 +460,13 @@ public class Go extends Language {
         "client",
         "/templates/go/client.go.hbs",
         "exceptions",
-        "/templates/go/api_error.go.hbs");
+        "/templates/go/api_error.go.hbs",
+        "webhook",
+        "/templates/go/webhook.go.hbs",
+        "webhookContent",
+        "/templates/go/webhookContent.go.hbs",
+        "webhookHandler",
+        "/templates/go/webhookHandler.go.hbs");
   }
 
   private FileOp generateClientFile(String outputDirectoryPath) throws IOException {
@@ -467,13 +492,49 @@ public class Go extends Language {
     return new GlobalEnum(e).template();
   }
 
+
   private Map<String, Object> resourceEnumTemplate(Enum e, String resourceName) {
     var _enum = new GlobalEnum(e);
     _enum.setResourceName(resourceName);
     return _enum.template();
   }
 
-  private List<FileOp> generateServices(
+
+  private FileOp generateWebhookEventTypeEnum(
+      String outDirectoryPath, List<Map<String, String>> webhookInfo) throws IOException {
+    Template globalEnumTemplate = getTemplateContent("globalEnums");
+
+    // Collect unique event types and sort them
+    Set<String> seenTypes = new HashSet<>();
+    List<Map<String, String>> eventTypes = new ArrayList<>();
+    for (Map<String, String> info : webhookInfo) {
+      String type = info.get("type");
+      if (!seenTypes.contains(type)) {
+        seenTypes.add(type);
+        Map<String, String> eventType = new HashMap<>();
+        eventType.put("name", type);
+        eventTypes.add(eventType);
+      }
+    }
+    eventTypes.sort(Comparator.comparing(e -> e.get("name")));
+
+    // Create enum structure similar to GlobalEnum
+    Map<String, Object> enumData = new HashMap<>();
+    enumData.put("name", "EventType");
+    List<Map<String, String>> possibleValues = new ArrayList<>();
+    for (Map<String, String> eventType : eventTypes) {
+      Map<String, String> value = new HashMap<>();
+      value.put("name", eventType.get("name"));
+      possibleValues.add(value);
+    }
+    enumData.put("possibleValues", possibleValues);
+
+    var content = globalEnumTemplate.apply(enumData);
+    return new FileOp.WriteString(outDirectoryPath, "event_type.go", content);
+  }
+
+
+private List<FileOp> generateServices(
       String outputDirectoryPath, List<Resource> resources) throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
 
@@ -897,8 +958,9 @@ public class Go extends Language {
     String type = "";
     List<Attribute> attributes = activeResource.getSortedResourceAttributes();
     for (Attribute a : attributes) {
-      if (a.isDeprecated())
-        continue;
+      if (a.isDeprecated()) {
+        buf.add("\t//Deprecated: this field is deprecated");
+      }
       if (a.isEnumAttribute()) {
         if (a.isListOfEnum()) {
           type = "[]" + Constants.ENUM_WITH_DELIMITER + getListOfEnumTypeForAttribute(a);
@@ -974,6 +1036,9 @@ public class Go extends Language {
     StringJoiner buf = new StringJoiner("\n");
     List<Attribute> attributes = subResource.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList();
     for (Attribute attribute : attributes) {
+      if (attribute.isDeprecated()) {
+        buf.add("\t//Deprecated: this field is deprecated");
+      }
       if (attribute.isEnumAttribute()) {
         if (attribute.isGlobalEnumAttribute()) {
           // For global enums, use the global type name from the spec

@@ -4,17 +4,22 @@
 
 declare module 'chargebee' {
 
-    export enum WebhookContentType { {{#each this}}
+    export enum WebhookEventType { {{#each this}}
         {{snakeCaseToPascalCase type}} = '{{type}}',{{/each}}
     }
 
+    /**
+     * @deprecated Use WebhookEventType instead.
+     */
+    export import WebhookContentType = WebhookEventType;
+
     export type WebhookContentMap = { {{#each this}}
-        [WebhookContentType.{{snakeCaseToPascalCase type}}] : {{snakeCaseToPascalCase type}}Content;{{/each}}
+        [WebhookEventType.{{snakeCaseToPascalCase type}}] : {{snakeCaseToPascalCase type}}Content;{{/each}}
     };
 
-    export type ContentFor<T extends WebhookContentType> = WebhookContentMap[T];
+    export type ContentFor<T extends WebhookEventType> = WebhookContentMap[T];
 
-    export interface WebhookEvent<T extends WebhookContentType = WebhookContentType> {
+    export interface WebhookEvent<T extends WebhookEventType = WebhookEventType> {
         content: ContentFor<T>;
         id:string;
         occurred_at:number;
@@ -28,7 +33,7 @@ declare module 'chargebee' {
         origin_user?:string;
     }
     {{#each this }} export type {{snakeCaseToPascalCase type}}Content = { {{#each resource_schemas}}
-        {{pascalCaseToSnakeCase .}}: {{.}};
+        {{.}}
     {{/each}}
     }
     {{/each}}
