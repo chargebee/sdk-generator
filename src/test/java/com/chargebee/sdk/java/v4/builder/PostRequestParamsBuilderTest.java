@@ -478,10 +478,12 @@ class PostRequestParamsBuilderTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       // Should NOT generate params for the batch operation
-      assertThat(fileOps.stream()
-          .filter(op -> op instanceof FileOp.WriteString)
-          .map(op -> (FileOp.WriteString) op)
-          .noneMatch(op -> op.fileName.contains("Update"))).isTrue();
+      assertThat(
+              fileOps.stream()
+                  .filter(op -> op instanceof FileOp.WriteString)
+                  .map(op -> (FileOp.WriteString) op)
+                  .noneMatch(op -> op.fileName.contains("Update")))
+          .isTrue();
     }
 
     @Test
@@ -518,10 +520,12 @@ class PostRequestParamsBuilderTest {
       List<FileOp> fileOps = paramsBuilder.build(openAPI);
 
       assertFileExists(fileOps, "RampCreateParams.java");
-      assertThat(fileOps.stream()
-          .filter(op -> op instanceof FileOp.WriteString)
-          .map(op -> (FileOp.WriteString) op)
-          .noneMatch(op -> op.fileName.contains("RampUpdateParams"))).isTrue();
+      assertThat(
+              fileOps.stream()
+                  .filter(op -> op instanceof FileOp.WriteString)
+                  .map(op -> (FileOp.WriteString) op)
+                  .noneMatch(op -> op.fileName.contains("RampUpdateParams")))
+          .isTrue();
     }
   }
 

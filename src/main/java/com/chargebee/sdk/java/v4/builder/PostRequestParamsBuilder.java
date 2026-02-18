@@ -94,6 +94,13 @@ public class PostRequestParamsBuilder {
           postAction.setModule(module);
           postAction.setPath(entry.getKey());
 
+          // Set JSON input flag from x-cb-is-operation-needs-json-input extension
+          Object needsJsonInput =
+              operation.getExtensions() != null
+                  ? operation.getExtensions().get(Extension.IS_OPERATION_NEEDS_JSON_INPUT)
+                  : null;
+          postAction.setOperationNeedsJsonInput(needsJsonInput != null && (boolean) needsJsonInput);
+
           Schema<?> requestSchema = resolveRequestSchema(operation);
           if (requestSchema != null) {
             postAction.setFields(getFields(requestSchema, null));
@@ -623,6 +630,7 @@ public class PostRequestParamsBuilder {
     private List<Model> subModels;
     private boolean customFieldsSupported;
     private boolean consentFieldsSupported;
+    private boolean operationNeedsJsonInput;
 
     public String getName() {
       String opSnake = CaseFormatUtil.toSnakeCaseSafe(getOperationId());
