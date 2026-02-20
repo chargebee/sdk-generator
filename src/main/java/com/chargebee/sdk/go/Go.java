@@ -106,13 +106,13 @@ public class Go extends Language {
     fileOps.addAll(genModels(outputDirectoryPath, resources, spec));
     fileOps.add(generateClientFile(outputDirectoryPath));
     // Generate webhook event type enum
-
-      // var webhookInfo = spec.extractWebhookInfo(true);
-      // if (!webhookInfo.isEmpty()) {
-      //   fileOps.add(
-      //       generateWebhookEventTypeEnum(outputDirectoryPath + enumsDirectoryPath, webhookInfo));
-      // }
-
+    {
+      var webhookInfo = spec.extractWebhookInfo(true);
+      if (!webhookInfo.isEmpty()) {
+        fileOps.add(
+            generateWebhookEventTypeEnum(outputDirectoryPath, webhookInfo));
+      }
+    }
     // Generate webhook files (parser, content, handler)
     {
       Template parserTemplate = getTemplateContent("webhook");
@@ -483,6 +483,8 @@ public class Go extends Language {
     Template globalEnumTemplate = getTemplateContent("globalEnums");
     List<Map<String, Object>> enumList = globalEnums.stream()
         .sorted(Comparator.comparing(e -> e.name))
+        // Exclude EventType as it's generated in the webhook package
+        .filter(e -> !e.name.equals("EventType"))
         .map(this::globalEnumTemplate).toList();
     var content = globalEnumTemplate.apply(Map.of("globalEnums", enumList));
     return new FileOp.WriteString(outDirectoryPath, "types.go", content);
@@ -502,7 +504,7 @@ public class Go extends Language {
 
   private FileOp generateWebhookEventTypeEnum(
       String outDirectoryPath, List<Map<String, String>> webhookInfo) throws IOException {
-    Template globalEnumTemplate = getTemplateContent("globalEnums");
+    Template enumTemplate = getTemplateContent("globalEnums");
 
     // Collect unique event types and sort them
     Set<String> seenTypes = new HashSet<>();
@@ -529,7 +531,7 @@ public class Go extends Language {
     }
     enumData.put("possibleValues", possibleValues);
 
-    var content = globalEnumTemplate.apply(enumData);
+    var content = enumTemplate.apply(Map.of("globalEnums", List.of(enumData)));
     return new FileOp.WriteString(outDirectoryPath, "event_type.go", content);
   }
 

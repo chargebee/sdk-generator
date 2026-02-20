@@ -7,13 +7,13 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/chargebee/chargebee-go/v3/enum"
+	"github.com/chargebee/chargebee-go/v4"
 )
 
 type WebhookHandler struct {
 	RequestValidator func(*http.Request) error
 	OnError          func(http.ResponseWriter, *http.Request, error)
-	OnUnhandledEvent func(enum.EventType, []byte) error
+	OnUnhandledEvent func(chargebee.EventType, []byte) error
 {{#each events}}
 	On{{snakeCaseToPascalCase type}} func({{snakeCaseToPascalCase type}}Event) error
 {{/each}}
@@ -29,7 +29,7 @@ func (h *WebhookHandler) ParseAndDispatch(body []byte) error {
 	}
 	switch eventType {
 {{#each events}}
-	case enum.EventType{{snakeCaseToPascalCase type}}:
+	case chargebee.EventType{{snakeCaseToPascalCase type}}:
 		if h.On{{snakeCaseToPascalCase type}} != nil {
 			var e {{snakeCaseToPascalCase type}}Event
 			if err := json.Unmarshal(body, &e); err != nil {
@@ -80,7 +80,7 @@ func (h *WebhookHandler) handleError(w http.ResponseWriter, r *http.Request, err
 	http.Error(w, err.Error(), http.StatusInternalServerError)
 }
 
-func (h *WebhookHandler) handleUnhandledEvent(eventType enum.EventType, body []byte) error {
+func (h *WebhookHandler) handleUnhandledEvent(eventType chargebee.EventType, body []byte) error {
 	if h.OnUnhandledEvent != nil {
 		return h.OnUnhandledEvent(eventType, body)
 	}
