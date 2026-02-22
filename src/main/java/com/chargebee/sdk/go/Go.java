@@ -472,9 +472,9 @@ public class Go extends Language {
   private FileOp generateClientFile(String outputDirectoryPath) throws IOException {
     Template clientTemplate = getTemplateContent("client");
     List<Map<String, String>> resourceNames = this.resourceList.stream()
-      .filter(Resource::hasAnyAction)
-      .map(r -> Map.of("name", r.name))
-      .toList();
+        .filter(Resource::hasAnyAction)
+        .map(r -> Map.of("name", r.name))
+        .toList();
     String content = clientTemplate.apply(Map.of("resources", resourceNames));
     return new FileOp.WriteString(outputDirectoryPath, "client.go", content);
   }
@@ -494,49 +494,33 @@ public class Go extends Language {
     return new GlobalEnum(e).template();
   }
 
-
   private Map<String, Object> resourceEnumTemplate(Enum e, String resourceName) {
     var _enum = new GlobalEnum(e);
     _enum.setResourceName(resourceName);
     return _enum.template();
   }
 
-
   private FileOp generateWebhookEventTypeEnum(
       String outDirectoryPath, List<Map<String, String>> webhookInfo) throws IOException {
     Template enumTemplate = getTemplateContent("globalEnums");
 
-    // Collect unique event types and sort them
-    Set<String> seenTypes = new HashSet<>();
-    List<Map<String, String>> eventTypes = new ArrayList<>();
-    for (Map<String, String> info : webhookInfo) {
-      String type = info.get("type");
-      if (!seenTypes.contains(type)) {
-        seenTypes.add(type);
-        Map<String, String> eventType = new HashMap<>();
-        eventType.put("name", type);
-        eventTypes.add(eventType);
-      }
-    }
-    eventTypes.sort(Comparator.comparing(e -> e.get("name")));
+    List<Map<String, String>> possibleValues = webhookInfo.stream()
+        .map(info -> info.get("type"))
+        .filter(Objects::nonNull)
+        .distinct()
+        .sorted()
+        .map(type -> Map.of("name", type))
+        .toList();
 
-    // Create enum structure similar to GlobalEnum
-    Map<String, Object> enumData = new HashMap<>();
-    enumData.put("name", "EventType");
-    List<Map<String, String>> possibleValues = new ArrayList<>();
-    for (Map<String, String> eventType : eventTypes) {
-      Map<String, String> value = new HashMap<>();
-      value.put("name", eventType.get("name"));
-      possibleValues.add(value);
-    }
-    enumData.put("possibleValues", possibleValues);
+    Map<String, Object> enumData = Map.of(
+        "name", "EventType",
+        "possibleValues", possibleValues);
 
     var content = enumTemplate.apply(Map.of("globalEnums", List.of(enumData)));
     return new FileOp.WriteString(outDirectoryPath, "event_type.go", content);
   }
 
-
-private List<FileOp> generateServices(
+  private List<FileOp> generateServices(
       String outputDirectoryPath, List<Resource> resources) throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
 
