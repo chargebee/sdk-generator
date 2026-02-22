@@ -381,4 +381,19 @@ public class Attribute {
   public boolean isSortAttribute() {
     return name.equals("sort_by");
   }
+
+  public List<Attribute> getSubAttributes() {
+    List<Attribute> attributes = new ArrayList<>();
+    if (schema.getProperties() != null) {
+      schema
+          .getProperties()
+          .forEach(
+              (key, value) -> {
+                boolean isRequired =
+                    schema.getRequired() != null && schema.getRequired().contains(key);
+                attributes.add(new Attribute(key, value, isRequired));
+              });
+    }
+    return attributes;
+  }
 }

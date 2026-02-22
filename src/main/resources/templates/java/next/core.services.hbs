@@ -15,12 +15,23 @@ import com.chargebee.v4.exceptions.ChargebeeException;
 import com.chargebee.v4.transport.Response;
 import java.util.Map;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 {{#each operations}}
+{{#unless batchOperation}}
 import com.chargebee.v4.models.{{../packageName}}.params.{{paramsClassName}};
+{{/unless}}
 {{/each}}
 {{#each operations}}
+{{#unless batchOperation}}
 import com.chargebee.v4.models.{{../packageName}}.responses.{{returnType}};
+{{/unless}}
 {{/each}}
+{{#if hasBatchOperations}}
+import com.chargebee.v4.internal.BatchRequest;
+{{/if}}
+{{#if hasSubDomainOperations}}
+import com.chargebee.v4.internal.SubDomain;
+{{/if}}
 {{#if (eq name "TimeMachine")}}
 import com.chargebee.v4.models.timeMachine.TimeMachine;
 import com.chargebee.v4.models.timeMachine.TimeMachine.TimeTravelStatus;
@@ -33,7 +44,7 @@ import com.chargebee.v4.internal.JsonUtil;
 public final class {{name}}Service extends BaseService<{{name}}Service> {
     
     private final ServiceConfig config;
-    
+
     public {{name}}Service(ChargebeeClient client) {
         super(client);
         this.config = ServiceConfig.defaultConfig();
@@ -64,6 +75,23 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     
     // === Operations ===
     {{#each operations}}
+    {{#if batchOperation}}
+
+    /**
+     * Batch {{methodName}} operation for {{../packageName}}.
+     * Returns a BatchRequest that can be populated with entries and executed.
+     *
+     * @return BatchRequest builder for batch execution
+     */
+    public BatchRequest {{batchMethodName}}() {
+        {{#if hasSubDomain}}
+        return new BatchRequest("{{batchUri}}", {{#if batchPathId}}"{{batchPathId}}"{{else}}null{{/if}}, {{subDomainEnumRef}}, client);
+        {{else}}
+        return new BatchRequest("{{batchUri}}", {{#if batchPathId}}"{{batchPathId}}"{{else}}null{{/if}}, client);
+        {{/if}}
+    }
+
+    {{else}}
     {{#if hasPathParams}}
     {{#if isListResponse}}
     
@@ -72,7 +100,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return get(path, params != null ? params.toQueryParams() : null);
+        return {{#if hasSubDomain}}getWithSubDomain(path, {{subDomainEnumRef}}.getValue(), params != null ? params.toQueryParams() : null){{else}}get(path, params != null ? params.toQueryParams() : null){{/if}};
     }
 
     /**
@@ -80,7 +108,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return get(path, null);
+        return {{#if hasSubDomain}}getWithSubDomain(path, {{subDomainEnumRef}}.getValue(), null){{else}}get(path, null){{/if}};
     }
 
     /**
@@ -101,6 +129,22 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         return {{returnType}}.fromJson(response.getBodyAsString(), this, null, {{pathParamName}}, response);
     }
 
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} with params.
+     */
+    public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}, {{paramsClassName}} params) {
+        String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
+        return {{#if hasSubDomain}}getWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), params != null ? params.toQueryParams() : null){{else}}getAsync(path, params != null ? params.toQueryParams() : null){{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), this, params, {{pathParamName}}, response));
+    }
+
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} without params.
+     */
+    public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}) {
+        String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
+        return {{#if hasSubDomain}}getWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), null){{else}}getAsync(path, null){{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), this, null, {{pathParamName}}, response));
+    }
+
     {{else}}
     
     /**
@@ -109,9 +153,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     Response {{methodName}}Raw(String {{pathParamName}}) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
         {{#if (eq httpMethod "post")}}
-        return post(path, null);
+        return {{#if hasSubDomain}}postWithSubDomain(path, {{subDomainEnumRef}}.getValue(), null){{else}}post(path, null){{/if}};
         {{else}}
-        return get(path, null);
+        return {{#if hasSubDomain}}getWithSubDomain(path, {{subDomainEnumRef}}.getValue(), null){{else}}get(path, null){{/if}};
         {{/if}}
     }
 
@@ -121,7 +165,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return post(path, params.toFormData());
+        return {{#if isOperationNeedsJsonInput}}{{#if hasSubDomain}}postJsonWithSubDomain(path, {{subDomainEnumRef}}.getValue(), params != null ? params.toJsonString() : null){{else}}postJson(path, params != null ? params.toJsonString() : null){{/if}}{{else}}{{#if hasSubDomain}}postWithSubDomain(path, {{subDomainEnumRef}}.getValue(), params.toFormData()){{else}}post(path, params.toFormData()){{/if}}{{/if}};
     }
 
     /**
@@ -129,12 +173,20 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}, String jsonPayload) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return postJson(path, jsonPayload);
+        return {{#if hasSubDomain}}postJsonWithSubDomain(path, {{subDomainEnumRef}}.getValue(), jsonPayload){{else}}postJson(path, jsonPayload){{/if}};
     }
 
     public {{returnType}} {{methodName}}(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
         Response response = {{methodName}}Raw({{pathParamName}}, params);
         return {{returnType}}.fromJson(response.getBodyAsString(), response);
+    }
+
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} with params.
+     */
+    public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}, {{paramsClassName}} params) {
+        String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
+        return {{#if isOperationNeedsJsonInput}}{{#if hasSubDomain}}postJsonWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), params != null ? params.toJsonString() : null){{else}}postJsonAsync(path, params != null ? params.toJsonString() : null){{/if}}{{else}}{{#if hasSubDomain}}postWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), params.toFormData()){{else}}postAsync(path, params.toFormData()){{/if}}{{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), response));
     }
     {{/if}}
 
@@ -144,12 +196,20 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
         String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
-        return get(path, params != null ? params.toQueryParams() : null);
+        return {{#if hasSubDomain}}getWithSubDomain(path, {{subDomainEnumRef}}.getValue(), params != null ? params.toQueryParams() : null){{else}}get(path, params != null ? params.toQueryParams() : null){{/if}};
     }
 
     public {{returnType}} {{methodName}}(String {{pathParamName}}, {{paramsClassName}} params) throws ChargebeeException {
         Response response = {{methodName}}Raw({{pathParamName}}, params);
         return {{returnType}}.fromJson(response.getBodyAsString(), response);
+    }
+
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} with params.
+     */
+    public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}, {{paramsClassName}} params) {
+        String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
+        return {{#if hasSubDomain}}getWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), params != null ? params.toQueryParams() : null){{else}}getAsync(path, params != null ? params.toQueryParams() : null){{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), response));
     }
     {{/if}}
 
@@ -158,6 +218,18 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
     public {{returnType}} {{methodName}}(String {{pathParamName}}) throws ChargebeeException {
         Response response = {{methodName}}Raw({{pathParamName}});
         return {{returnType}}.fromJson(response.getBodyAsString(), response);
+    }
+
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} without params.
+     */
+    public CompletableFuture<{{returnType}}> {{methodName}}Async(String {{pathParamName}}) {
+        String path = buildPathWithParams("{{path}}", "{{pathParam}}", {{pathParamName}});
+        {{#if (eq httpMethod "post")}}
+        return {{#if isOperationNeedsJsonInput}}{{#if hasSubDomain}}postJsonWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), null){{else}}postJsonAsync(path, null){{/if}}{{else}}{{#if hasSubDomain}}postWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), null){{else}}postAsync(path, null){{/if}}{{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), response));
+        {{else}}
+        return {{#if hasSubDomain}}getWithSubDomainAsync(path, {{subDomainEnumRef}}.getValue(), null){{else}}getAsync(path, null){{/if}}.thenApply(response -> {{returnType}}.fromJson(response.getBodyAsString(), response));
+        {{/if}}
     }
     {{/if}}
 
@@ -169,9 +241,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw({{paramsClassName}} params) throws ChargebeeException {
         {{#if (eq httpMethod "post")}}
-        return post("{{path}}", params != null ? params.toFormData() : null);
+        return {{#if isOperationNeedsJsonInput}}{{#if hasSubDomain}}postJsonWithSubDomain("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toJsonString() : null){{else}}postJson("{{path}}", params != null ? params.toJsonString() : null){{/if}}{{else}}{{#if hasSubDomain}}postWithSubDomain("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toFormData() : null){{else}}post("{{path}}", params != null ? params.toFormData() : null){{/if}}{{/if}};
         {{else}}
-        return get("{{path}}", params != null ? params.toQueryParams() : null);
+        return {{#if hasSubDomain}}getWithSubDomain("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toQueryParams() : null){{else}}get("{{path}}", params != null ? params.toQueryParams() : null){{/if}};
         {{/if}}
     }
 
@@ -181,9 +253,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw() throws ChargebeeException {
         {{#if (eq httpMethod "post")}}
-        return post("{{path}}", null);
+        return {{#if hasSubDomain}}postWithSubDomain("{{path}}", {{subDomainEnumRef}}.getValue(), null){{else}}post("{{path}}", null){{/if}};
         {{else}}
-        return get("{{path}}", null);
+        return {{#if hasSubDomain}}getWithSubDomain("{{path}}", {{subDomainEnumRef}}.getValue(), null){{else}}get("{{path}}", null){{/if}};
         {{/if}}
     }
     {{/if}}
@@ -193,7 +265,7 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
      */
     Response {{methodName}}Raw(String jsonPayload) throws ChargebeeException {
         {{#if (eq httpMethod "post")}}
-        return postJson("{{path}}", jsonPayload);
+        return {{#if hasSubDomain}}postJsonWithSubDomain("{{path}}", {{subDomainEnumRef}}.getValue(), jsonPayload){{else}}postJson("{{path}}", jsonPayload){{/if}};
         {{else}}
         throw new UnsupportedOperationException("JSON payload not supported for GET operations");
         {{/if}}
@@ -208,6 +280,17 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         {{/if}}
     }
 
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} with params.
+     */
+    public CompletableFuture<{{returnType}}> {{methodName}}Async({{paramsClassName}} params) {
+        {{#if (eq httpMethod "post")}}
+        return {{#if isOperationNeedsJsonInput}}{{#if hasSubDomain}}postJsonWithSubDomainAsync("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toJsonString() : null){{else}}postJsonAsync("{{path}}", params != null ? params.toJsonString() : null){{/if}}{{else}}{{#if hasSubDomain}}postWithSubDomainAsync("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toFormData() : null){{else}}postAsync("{{path}}", params != null ? params.toFormData() : null){{/if}}{{/if}}.thenApply(response -> {{#if isListResponse}}{{returnType}}.fromJson(response.getBodyAsString(), this, params, response){{else}}{{returnType}}.fromJson(response.getBodyAsString(), response){{/if}});
+        {{else}}
+        return {{#if hasSubDomain}}getWithSubDomainAsync("{{path}}", {{subDomainEnumRef}}.getValue(), params != null ? params.toQueryParams() : null){{else}}getAsync("{{path}}", params != null ? params.toQueryParams() : null){{/if}}.thenApply(response -> {{#if isListResponse}}{{returnType}}.fromJson(response.getBodyAsString(), this, params, response){{else}}{{returnType}}.fromJson(response.getBodyAsString(), response){{/if}});
+        {{/if}}
+    }
+
     {{#if (or isListResponse isAllQueryParamsOptional)}}
     public {{returnType}} {{methodName}}() throws ChargebeeException {
         Response response = {{methodName}}Raw();
@@ -217,8 +300,20 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         return {{returnType}}.fromJson(response.getBodyAsString(), response);
         {{/if}}
     }
+
+    /**
+     * Async variant of {{methodName}} for {{../packageName}} without params.
+     */
+    public CompletableFuture<{{returnType}}> {{methodName}}Async() {
+        {{#if (eq httpMethod "post")}}
+        return {{#if hasSubDomain}}postWithSubDomainAsync("{{path}}", {{subDomainEnumRef}}.getValue(), null){{else}}postAsync("{{path}}", null){{/if}}.thenApply(response -> {{#if isListResponse}}{{returnType}}.fromJson(response.getBodyAsString(), this, null, response){{else}}{{returnType}}.fromJson(response.getBodyAsString(), response){{/if}});
+        {{else}}
+        return {{#if hasSubDomain}}getWithSubDomainAsync("{{path}}", {{subDomainEnumRef}}.getValue(), null){{else}}getAsync("{{path}}", null){{/if}}.thenApply(response -> {{#if isListResponse}}{{returnType}}.fromJson(response.getBodyAsString(), this, null, response){{else}}{{returnType}}.fromJson(response.getBodyAsString(), response){{/if}});
+        {{/if}}
+    }
     {{/if}}
 
+    {{/if}}
     {{/if}}
     {{/each}}
 {{#if (eq name "Export")}}

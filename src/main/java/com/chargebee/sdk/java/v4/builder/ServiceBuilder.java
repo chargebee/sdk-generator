@@ -3,6 +3,7 @@ package com.chargebee.sdk.java.v4.builder;
 import com.chargebee.openapi.Extension;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.java.v4.JavaFormatter;
+import com.chargebee.sdk.java.v4.util.CaseFormatUtil;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -175,11 +176,34 @@ public class ServiceBuilder {
     var serviceOp = new ServiceOperation();
 
     String operationId = getExtensionAsString(operation, Extension.SDK_METHOD_NAME);
+    String subDomain = getExtensionAsString(operation, Extension.OPERATION_SUB_DOMAIN);
     serviceOp.setOperationId(operationId);
     serviceOp.setModule(resourceName);
     serviceOp.setPath(path);
     serviceOp.setHttpMethod(httpMethod);
+    serviceOp.setSubDomain(subDomain);
     serviceOp.setOperation(operation);
+
+    // Set JSON input flag from x-cb-is-operation-needs-json-input extension
+    Object needsJsonInput =
+        operation.getExtensions() != null
+            ? operation.getExtensions().get(Extension.IS_OPERATION_NEEDS_JSON_INPUT)
+            : null;
+    serviceOp.setOperationNeedsJsonInput(needsJsonInput != null && (boolean) needsJsonInput);
+
+    // Detect true batch operations by x-cb-batch-operation-path-id extension
+    String batchPathId = getExtensionAsString(operation, Extension.BATCH_OPERATION_PATH_ID);
+    if (batchPathId != null) {
+      serviceOp.setBatchOperation(true);
+      serviceOp.setBatchPathId(batchPathId);
+      // Store the non-batch URI for BatchRequest construction (strip /batch prefix)
+      if (path != null && path.startsWith("/batch")) {
+        serviceOp.setBatchUri(path.substring("/batch".length()));
+      } else {
+        serviceOp.setBatchUri(path);
+      }
+    }
+
     return serviceOp;
   }
 
@@ -194,6 +218,7 @@ public class ServiceBuilder {
       service.setPackageName(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, resourceName));
       service.setName(CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, resourceName));
       service.setOperations(operations);
+
       services.add(service);
     }
     return services;
@@ -228,6 +253,16 @@ public class ServiceBuilder {
     private String packageName;
     private String name;
     private List<ServiceOperation> operations;
+
+    @SuppressWarnings("unused")
+    public boolean hasBatchOperations() {
+      return operations != null && operations.stream().anyMatch(ServiceOperation::isBatchOperation);
+    }
+
+    @SuppressWarnings("unused")
+    public boolean hasSubDomainOperations() {
+      return operations != null && operations.stream().anyMatch(ServiceOperation::hasSubDomain);
+    }
   }
 
   @lombok.Data
@@ -236,6 +271,11 @@ public class ServiceBuilder {
     private String module;
     private String path;
     private String httpMethod;
+    private String subDomain;
+    private boolean batchOperation;
+    private String batchPathId;
+    private String batchUri;
+    private boolean operationNeedsJsonInput;
     private io.swagger.v3.oas.models.Operation
         operation; // Store full operation for response analysis
 
@@ -413,6 +453,24 @@ public class ServiceBuilder {
         }
       }
       return true;
+    }
+
+    @SuppressWarnings("unused")
+    public boolean hasSubDomain() {
+      return subDomain != null && !subDomain.trim().isEmpty();
+    }
+
+    @SuppressWarnings("unused")
+    public String getSubDomainEnumRef() {
+      if (!hasSubDomain()) return null;
+      return "SubDomain." + CaseFormatUtil.toUpperUnderscoreSafe(subDomain);
+    }
+
+    @SuppressWarnings("unused")
+    public String getBatchMethodName() {
+      if (!batchOperation) return null;
+      // Prefix with "batch" and capitalize the first letter of operationId
+      return "batch" + Character.toUpperCase(operationId.charAt(0)) + operationId.substring(1);
     }
   }
 }

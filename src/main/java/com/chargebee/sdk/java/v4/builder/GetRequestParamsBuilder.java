@@ -139,6 +139,10 @@ public class GetRequestParamsBuilder {
             field.setFilterType(filterTypeName);
             field.setSupportedOperations(getSupportedOperations(schema));
             field.setFilterSdkName(getFilterSdkName(schema));
+            List<String> enumValues = getFilterEnumValues(schema);
+            if (enumValues != null && !enumValues.isEmpty()) {
+              field.setFilterEnumValues(enumValues);
+            }
           } else {
             field.setSubModelField(true);
           }
@@ -168,6 +172,37 @@ public class GetRequestParamsBuilder {
     }
     Object sdkFilterName = filterSchema.getExtensions().get(Extension.SDK_FILTER_NAME);
     return sdkFilterName != null ? sdkFilterName.toString() : null;
+  }
+
+  private List<String> getFilterEnumValues(Schema<?> filterSchema) {
+    String sdkFilterName = getFilterSdkName(filterSchema);
+    if (!"EnumFilter".equals(sdkFilterName)) {
+      return null;
+    }
+
+    if (filterSchema.getProperties() == null) {
+      return null;
+    }
+
+    for (var entry : filterSchema.getProperties().entrySet()) {
+      String propName = entry.getKey();
+      @SuppressWarnings("unchecked")
+      Schema<Object> propSchema = (Schema<Object>) entry.getValue();
+
+      if ("is_present".equals(propName)) {
+        continue;
+      }
+
+      if (propSchema.getEnum() != null && !propSchema.getEnum().isEmpty()) {
+        return propSchema.getEnum().stream().map(String::valueOf).collect(Collectors.toList());
+      }
+      if (propSchema.getItems() != null && propSchema.getItems().getEnum() != null) {
+        return propSchema.getItems().getEnum().stream()
+            .map(String::valueOf)
+            .collect(Collectors.toList());
+      }
+    }
+    return null;
   }
 
   private boolean isSortParameter(String paramName, Schema<Object> schema) {
@@ -278,6 +313,10 @@ public class GetRequestParamsBuilder {
           field.setFilterType(filterTypeName);
           field.setSupportedOperations(getSupportedOperations(propSchema));
           field.setFilterSdkName(getFilterSdkName(propSchema));
+          List<String> enumValues = getFilterEnumValues(propSchema);
+          if (enumValues != null && !enumValues.isEmpty()) {
+            field.setFilterEnumValues(enumValues);
+          }
         }
       }
 

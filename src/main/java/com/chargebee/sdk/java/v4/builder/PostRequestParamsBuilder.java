@@ -79,6 +79,12 @@ public class PostRequestParamsBuilder {
         if (pathItem.getPost() != null) {
           var operation = pathItem.getPost();
 
+          // Skip true batch operations (those with batch-operation-path-id) -
+          // they use BatchRequest infrastructure, not individual params classes
+          if (isTrueBatchOperation(operation)) {
+            continue;
+          }
+
           var postAction = new PostAction();
           String module = resolveModuleName(entry.getKey(), operation);
 
@@ -87,6 +93,13 @@ public class PostRequestParamsBuilder {
           postAction.setOperationId(opId);
           postAction.setModule(module);
           postAction.setPath(entry.getKey());
+
+          // Set JSON input flag from x-cb-is-operation-needs-json-input extension
+          Object needsJsonInput =
+              operation.getExtensions() != null
+                  ? operation.getExtensions().get(Extension.IS_OPERATION_NEEDS_JSON_INPUT)
+                  : null;
+          postAction.setOperationNeedsJsonInput(needsJsonInput != null && (boolean) needsJsonInput);
 
           Schema<?> requestSchema = resolveRequestSchema(operation);
           if (requestSchema != null) {
@@ -129,6 +142,13 @@ public class PostRequestParamsBuilder {
   // =========================================================
   // Extension helpers
   // =========================================================
+
+  /** Returns true if the operation is a true batch operation (has batch-operation-path-id). */
+  private static boolean isTrueBatchOperation(Operation operation) {
+    if (operation == null || operation.getExtensions() == null) return false;
+    return operation.getExtensions().containsKey(Extension.BATCH_OPERATION_PATH_ID)
+        && operation.getExtensions().get(Extension.BATCH_OPERATION_PATH_ID) != null;
+  }
 
   /** Returns the string value of a custom OpenAPI extension or null. */
   private static String readExtensionAsString(Operation operation, String key) {
@@ -198,6 +218,11 @@ public class PostRequestParamsBuilder {
     subModel.setFields(getFields(schema, fullPathSnake, isCompositeArray));
     subModel.setEnumFields(getEnumFields(schema, isCompositeArray));
     subModel.setSubModels(getSubModels(schema, fullPathSnake));
+
+    // Check for custom fields and consent fields support at sub-params level
+    subModel.setCustomFieldsSupported(SchemaUtil.isCustomFieldsSupported(schema));
+    subModel.setConsentFieldsSupported(SchemaUtil.isConsentFieldsSupported(schema));
+
     return subModel;
   }
 
@@ -566,7 +591,7 @@ public class PostRequestParamsBuilder {
 
   private List<String> getFilterEnumValues(Schema<?> filterSchema) {
     String sdkFilterName = getFilterSdkName(filterSchema);
-    if ("StringFilter".equals(sdkFilterName)) {
+    if (!"EnumFilter".equals(sdkFilterName)) {
       return null;
     }
 
@@ -605,6 +630,7 @@ public class PostRequestParamsBuilder {
     private List<Model> subModels;
     private boolean customFieldsSupported;
     private boolean consentFieldsSupported;
+    private boolean operationNeedsJsonInput;
 
     public String getName() {
       String opSnake = CaseFormatUtil.toSnakeCaseSafe(getOperationId());

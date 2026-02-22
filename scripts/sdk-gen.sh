@@ -10,6 +10,7 @@ function _gradlew() {
     args=("-i ${BASE_DIR}/chargebee_sdk_spec.json")
     case "$1" in
         java) args+=("-l JAVA_V4 -o $BASE_DIR/chargebee-java/src/main/java/");;
+        java-internal-v4-hvc) args=("-i ${BASE_DIR}/chargebee_internal_sdk_spec.json" "-l JAVA_V4_INTERNAL_HVC -o $BASE_DIR/chargebee-java-v4-internal/src/main/java/");;
         php) args+=("-l PHP_V4 -o $BASE_DIR/chargebee-php/src");;
         python) args+=("-l PYTHON_V3 -o $BASE_DIR/chargebee-python/chargebee");;
         node) args+=("-l NODE_V3 -o $BASE_DIR/chargebee-node/src/resources");;

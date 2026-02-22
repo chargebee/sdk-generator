@@ -12,6 +12,7 @@ import com.chargebee.v4.filters.StringFilter;
 import com.chargebee.v4.filters.NumberFilter;
 import com.chargebee.v4.filters.TimestampFilter;
 import com.chargebee.v4.filters.EnumFilter;
+import com.chargebee.v4.filters.BooleanFilter;
 
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -162,6 +163,15 @@ public final class {{name}}Params {
 
         return formData;
     }
+
+    {{#if operationNeedsJsonInput}}
+    /**
+     * Get the JSON string representation for this request.
+     */
+    public String toJsonString() {
+        return JsonUtil.toJson(toFormData());
+    }
+    {{/if}}
 
     /**
      * Create a new builder for {{name}}Params.
@@ -315,6 +325,12 @@ public final class {{name}}Params {
         }
         {{else if timestampFilter}}
         public static final class {{filterType}} extends TimestampFilter<{{../name}}Builder> {
+            {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
+                super(fieldName, builder, params);
+            }
+        }
+        {{else if booleanFilter}}
+        public static final class {{filterType}} extends BooleanFilter<{{../name}}Builder> {
             {{filterType}}(String fieldName, {{../name}}Builder builder, Map<String, Object> params) {
                 super(fieldName, builder, params);
             }

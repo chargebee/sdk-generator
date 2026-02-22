@@ -148,6 +148,10 @@ public class PostResponseBuilder {
         PathItem pathItem = entry.getValue();
         if (pathItem == null || pathItem.getPost() == null) continue;
 
+        // Skip true batch operations (those with batch-operation-path-id) -
+        // they use BatchResult infrastructure, not individual response classes
+        if (isTrueBatchOperation(pathItem.getPost())) continue;
+
         var operation = pathItem.getPost();
         var successResponse = findSuccessResponse(operation);
         if (successResponse == null) continue;
@@ -386,6 +390,13 @@ public class PostResponseBuilder {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /** Returns true if the operation is a true batch operation (has batch-operation-path-id). */
+  private static boolean isTrueBatchOperation(Operation operation) {
+    if (operation == null || operation.getExtensions() == null) return false;
+    return operation.getExtensions().containsKey(Extension.BATCH_OPERATION_PATH_ID)
+        && operation.getExtensions().get(Extension.BATCH_OPERATION_PATH_ID) != null;
+  }
 
   /** Selects the first available success response among 200, 202, or 204. */
   private ApiResponse findSuccessResponse(Operation operation) {

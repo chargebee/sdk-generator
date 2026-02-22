@@ -252,6 +252,13 @@ public class Field {
   }
 
   /**
+   * Returns true if this is a BooleanFilter (uses Boolean for values).
+   */
+  public boolean isBooleanFilter() {
+    return "BooleanFilter".equals(filterSdkName);
+  }
+
+  /**
    * Returns the enum type name for this filter field (e.g., "Status" for status filter).
    */
   public String getFilterEnumType() {

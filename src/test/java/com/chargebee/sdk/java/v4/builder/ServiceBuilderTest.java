@@ -482,6 +482,414 @@ class ServiceBuilderTest {
     }
   }
 
+  // SUBDOMAIN SUPPORT
+
+  @Nested
+  @DisplayName("Subdomain Support")
+  class SubDomainSupportTests {
+
+    @Test
+    @DisplayName("Should generate getWithSubDomain call for GET operation with subdomain")
+    void shouldGenerateGetWithSubDomainForGetOperation() throws IOException {
+      Operation retrieveOp = createGetOperationWithSubDomain("offer_event", "retrieve", "grow");
+      addPathWithOperation("/offer_events/{offer-event-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferEventService.java");
+      assertThat(writeOp.fileContent).doesNotContain("private static final String SUB_DOMAIN");
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
+      assertThat(writeOp.fileContent).contains("getWithSubDomain(path, SubDomain.GROW.getValue(),");
+    }
+
+    @Test
+    @DisplayName("Should generate postWithSubDomain call for POST operation with subdomain")
+    void shouldGeneratePostWithSubDomainForPostOperation() throws IOException {
+      Operation createOp = createPostOperationWithSubDomain("offer_fulfillment", "create", "grow");
+      addPathWithOperation("/offer_fulfillments", PathItem.HttpMethod.POST, createOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferFulfillmentService.java");
+      assertThat(writeOp.fileContent).doesNotContain("private static final String SUB_DOMAIN");
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
+      assertThat(writeOp.fileContent).contains("postWithSubDomain(\"");
+      assertThat(writeOp.fileContent).contains("SubDomain.GROW.getValue(),");
+    }
+
+    @Test
+    @DisplayName(
+        "Should generate postJsonWithSubDomain call for POST JSON operation with subdomain")
+    void shouldGeneratePostJsonWithSubDomainForPostJsonOperation() throws IOException {
+      Operation createOp = createPostOperationWithSubDomain("offer_fulfillment", "create", "grow");
+      addPathWithOperation("/offer_fulfillments", PathItem.HttpMethod.POST, createOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferFulfillmentService.java");
+      assertThat(writeOp.fileContent).contains("postJsonWithSubDomain(\"");
+    }
+
+    @Test
+    @DisplayName("Should NOT generate subdomain calls for operation without subdomain")
+    void shouldNotGenerateSubDomainCallsForNormalOperation() throws IOException {
+      Operation createOp = createPostOperationWithRequestBody("customer", "create");
+      addPathWithOperation("/customers", PathItem.HttpMethod.POST, createOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent).doesNotContain("WithSubDomain");
+      assertThat(writeOp.fileContent).contains("post(\"");
+    }
+
+    @Test
+    @DisplayName("Should handle mixed operations with and without subdomain in same service")
+    void shouldHandleMixedOperationsInSameService() throws IOException {
+      Operation normalOp = createPostOperationWithRequestBody("offer_event", "update");
+      Operation subDomainOp = createGetOperationWithSubDomain("offer_event", "retrieve", "grow");
+
+      addPathWithOperation(
+          "/offer_events/{offer-event-id}/update", PathItem.HttpMethod.POST, normalOp);
+      addPathWithOperation("/offer_events/{offer-event-id}", PathItem.HttpMethod.GET, subDomainOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferEventService.java");
+      // Should NOT define SUB_DOMAIN constant
+      assertThat(writeOp.fileContent).doesNotContain("private static final String SUB_DOMAIN");
+      // Should import SubDomain enum
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
+      // Subdomain operation should use SubDomain enum ref
+      assertThat(writeOp.fileContent).contains("getWithSubDomain(path, SubDomain.GROW.getValue(),");
+      // Normal operation should use regular post
+      assertThat(writeOp.fileContent).contains("post(path, ");
+    }
+
+    @Test
+    @DisplayName("Should generate postWithSubDomain for POST with path params and subdomain")
+    void shouldGeneratePostWithSubDomainForPathParams() throws IOException {
+      Operation updateOp = createPostOperationWithSubDomain("offer_fulfillment", "fulfill", "grow");
+      addPathWithOperation(
+          "/offer_fulfillments/{offer-fulfillment-id}/fulfill", PathItem.HttpMethod.POST, updateOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferFulfillmentService.java");
+      assertThat(writeOp.fileContent)
+          .contains("postWithSubDomain(path, SubDomain.GROW.getValue(),");
+    }
+  }
+
+  // BATCH OPERATIONS (Internal V4)
+
+  @Nested
+  @DisplayName("Batch Operations")
+  class BatchOperationsTests {
+
+    @Test
+    @DisplayName("Should generate BatchRequest method for true batch operations")
+    void shouldGenerateBatchRequestMethodForTrueBatchOperations() throws IOException {
+      Operation batchUpdateOp = createOperation("ramp", "update");
+      batchUpdateOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchUpdateOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).contains("BatchRequest");
+      assertThat(writeOp.fileContent).contains("batchUpdate()");
+      assertThat(writeOp.fileContent).contains("new BatchRequest(\"/ramps/update\", \"id\"");
+    }
+
+    @Test
+    @DisplayName("Should NOT generate BatchRequest for /batch/ path without batch extension")
+    void shouldNotGenerateBatchRequestWithoutBatchExtension() throws IOException {
+      // /batch/usage_events does NOT have x-cb-batch-operation-path-id
+      Operation batchIngestOp = createPostOperationWithRequestBody("usage_event", "batchIngest");
+      addPathWithOperation("/batch/usage_events", PathItem.HttpMethod.POST, batchIngestOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "UsageEventService.java");
+      assertThat(writeOp.fileContent).doesNotContain("BatchRequest");
+      assertThat(writeOp.fileContent).contains("batchIngest");
+    }
+
+    @Test
+    @DisplayName("Should strip /batch prefix from URI in BatchRequest constructor")
+    void shouldStripBatchPrefixFromUri() throws IOException {
+      Operation batchDeleteOp = createOperation("ramp", "delete");
+      batchDeleteOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithOperation("/batch/ramps/delete", PathItem.HttpMethod.POST, batchDeleteOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).contains("\"/ramps/delete\"");
+      assertThat(writeOp.fileContent).doesNotContain("\"/batch/ramps/delete\"");
+    }
+
+    @Test
+    @DisplayName("Should import BatchRequest only when service has batch operations")
+    void shouldImportBatchRequestOnlyWhenNeeded() throws IOException {
+      Operation batchUpdateOp = createOperation("ramp", "update");
+      batchUpdateOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchUpdateOp);
+
+      Operation retrieveOp = createGetOperation("customer", "retrieve");
+      addPathWithOperation("/customers/{customer-id}", PathItem.HttpMethod.GET, retrieveOp);
+
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString rampService = findWriteOp(fileOps, "RampService.java");
+      assertThat(rampService.fileContent).contains("import com.chargebee.v4.internal.BatchRequest");
+
+      FileOp.WriteString customerService = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(customerService.fileContent).doesNotContain("BatchRequest");
+    }
+
+    @Test
+    @DisplayName("Should skip params/response imports for batch operations")
+    void shouldSkipParamsAndResponseImportsForBatchOperations() throws IOException {
+      Operation batchUpdateOp = createOperation("ramp", "update");
+      batchUpdateOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+
+      Operation retrieveOp = createGetOperation("ramp", "retrieve");
+
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchUpdateOp);
+      addPathWithOperation("/ramps/{ramp-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      // Should NOT import params/response for the batch operation
+      assertThat(writeOp.fileContent).doesNotContain("RampUpdateParams");
+      assertThat(writeOp.fileContent).doesNotContain("RampUpdateResponse");
+      // Should still import params/response for the non-batch operation
+      assertThat(writeOp.fileContent).contains("RampRetrieveResponse");
+    }
+
+    @Test
+    @DisplayName("Should generate multiple batch methods in same service")
+    void shouldGenerateMultipleBatchMethodsInSameService() throws IOException {
+      Operation batchUpdateOp = createOperation("ramp", "update");
+      batchUpdateOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+
+      Operation batchDeleteOp = createOperation("ramp", "delete");
+      batchDeleteOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchUpdateOp);
+      addPathWithOperation("/batch/ramps/delete", PathItem.HttpMethod.POST, batchDeleteOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).contains("batchUpdate()");
+      assertThat(writeOp.fileContent).contains("batchDelete()");
+    }
+
+    @Test
+    @DisplayName("Should use subdomain constructor when operation has subdomain")
+    void shouldUseSubdomainConstructorWhenOperationHasSubdomain() throws IOException {
+      Operation batchOp = createOperation("ramp", "update");
+      batchOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      batchOp.addExtension(Extension.OPERATION_SUB_DOMAIN, "integrations");
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).doesNotContain("private static final String SUB_DOMAIN");
+      assertThat(writeOp.fileContent).contains("import com.chargebee.v4.internal.SubDomain");
+      assertThat(writeOp.fileContent)
+          .contains("new BatchRequest(\"/ramps/update\", \"id\", SubDomain.INTEGRATIONS, client)");
+    }
+
+    @Test
+    @DisplayName("Should use non-subdomain constructor when operation has no subdomain")
+    void shouldUseNonSubdomainConstructorWhenNoSubdomain() throws IOException {
+      Operation batchOp = createOperation("ramp", "update");
+      batchOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).contains("new BatchRequest(\"/ramps/update\", \"id\"");
+      assertThat(writeOp.fileContent).doesNotContain("SubDomain.");
+    }
+  }
+
+  // ASYNC METHOD GENERATION
+
+  @Nested
+  @DisplayName("Async Method Generation")
+  class AsyncMethodGenerationTests {
+
+    @Test
+    @DisplayName("Should generate async method for POST operation")
+    void shouldGenerateAsyncMethodForPostOperation() throws IOException {
+      Operation createOp = createPostOperationWithRequestBody("customer", "create");
+      addPathWithOperation("/customers", PathItem.HttpMethod.POST, createOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<CustomerCreateResponse> createAsync(CustomerCreateParams"
+                  + " params)");
+      assertThat(writeOp.fileContent).contains("postAsync(");
+      assertThat(writeOp.fileContent)
+          .contains(
+              ".thenApply(response -> CustomerCreateResponse.fromJson(response.getBodyAsString(),"
+                  + " response))");
+    }
+
+    @Test
+    @DisplayName("Should generate async method for GET retrieve operation")
+    void shouldGenerateAsyncMethodForGetOperation() throws IOException {
+      Operation retrieveOp = createGetOperationWithResponse("customer", "retrieve");
+      addPathWithOperation("/customers/{customer-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<CustomerRetrieveResponse> retrieveAsync(String"
+                  + " customerId)");
+      assertThat(writeOp.fileContent).contains("getAsync(path, null)");
+    }
+
+    @Test
+    @DisplayName("Should generate async methods for list operation")
+    void shouldGenerateAsyncMethodForListOperation() throws IOException {
+      Operation listOp = createListOperation("customer", "list");
+      addPathWithOperation("/customers", PathItem.HttpMethod.GET, listOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<CustomerListResponse> listAsync(CustomerListParams"
+                  + " params)");
+      assertThat(writeOp.fileContent)
+          .contains("public CompletableFuture<CustomerListResponse> listAsync()");
+    }
+
+    @Test
+    @DisplayName("Should generate async method for POST update with path param")
+    void shouldGenerateAsyncMethodWithPathParamsAndRequestBody() throws IOException {
+      Operation updateOp = createPostOperationWithRequestBody("customer", "update");
+      addPathWithOperation("/customers/{customer-id}/update", PathItem.HttpMethod.POST, updateOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<CustomerUpdateResponse> updateAsync(String customerId,"
+                  + " CustomerUpdateParams params)");
+      assertThat(writeOp.fileContent).contains("postAsync(path, params.toFormData())");
+    }
+
+    @Test
+    @DisplayName("Should generate async method for GET with query params and path params")
+    void shouldGenerateAsyncMethodForGetWithQueryParamsAndPathParams() throws IOException {
+      Operation retrieveOp = createGetOperationWithQueryParams("invoice", "retrieve");
+      addPathWithOperation("/invoices/{invoice-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "InvoiceService.java");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<InvoiceRetrieveResponse> retrieveAsync(String invoiceId,"
+                  + " InvoiceRetrieveParams params)");
+      assertThat(writeOp.fileContent)
+          .contains(
+              "public CompletableFuture<InvoiceRetrieveResponse> retrieveAsync(String invoiceId)");
+    }
+
+    @Test
+    @DisplayName("Should import CompletableFuture")
+    void shouldImportCompletableFuture() throws IOException {
+      Operation createOp = createPostOperationWithRequestBody("customer", "create");
+      addPathWithOperation("/customers", PathItem.HttpMethod.POST, createOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "CustomerService.java");
+      assertThat(writeOp.fileContent).contains("import java.util.concurrent.CompletableFuture;");
+    }
+
+    @Test
+    @DisplayName("Should NOT generate async for batch operations")
+    void shouldNotGenerateAsyncForBatchOperations() throws IOException {
+      Operation batchUpdateOp = createOperation("ramp", "update");
+      batchUpdateOp.addExtension(Extension.BATCH_OPERATION_PATH_ID, "id");
+      addPathWithOperation("/batch/ramps/update", PathItem.HttpMethod.POST, batchUpdateOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "RampService.java");
+      assertThat(writeOp.fileContent).doesNotContain("batchUpdateAsync");
+      assertThat(writeOp.fileContent).contains("batchUpdate()");
+    }
+
+    @Test
+    @DisplayName("Should generate async with subdomain for POST operation")
+    void shouldGenerateAsyncWithSubDomainForPost() throws IOException {
+      Operation createOp = createPostOperationWithSubDomain("offer_fulfillment", "create", "grow");
+      addPathWithOperation("/offer_fulfillments", PathItem.HttpMethod.POST, createOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferFulfillmentService.java");
+      assertThat(writeOp.fileContent).contains("postWithSubDomainAsync(\"");
+      assertThat(writeOp.fileContent).contains("SubDomain.GROW.getValue(),");
+    }
+
+    @Test
+    @DisplayName("Should generate async with subdomain for GET operation")
+    void shouldGenerateAsyncWithSubDomainForGet() throws IOException {
+      Operation retrieveOp = createGetOperationWithSubDomain("offer_event", "retrieve", "grow");
+      addPathWithOperation("/offer_events/{offer-event-id}", PathItem.HttpMethod.GET, retrieveOp);
+      serviceBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = serviceBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "OfferEventService.java");
+      assertThat(writeOp.fileContent)
+          .contains("getWithSubDomainAsync(path, SubDomain.GROW.getValue(),");
+    }
+  }
+
   // HELPER METHODS
 
   /**
@@ -564,6 +972,22 @@ class ServiceBuilderTest {
     operation.addParametersItem(limitParam);
     operation.addParametersItem(offsetParam);
 
+    return operation;
+  }
+
+  /** Creates a GET operation with subdomain extension. */
+  private Operation createGetOperationWithSubDomain(
+      String resourceId, String methodName, String subDomain) {
+    Operation operation = createGetOperationWithResponse(resourceId, methodName);
+    operation.addExtension(Extension.OPERATION_SUB_DOMAIN, subDomain);
+    return operation;
+  }
+
+  /** Creates a POST operation with request body and subdomain extension. */
+  private Operation createPostOperationWithSubDomain(
+      String resourceId, String methodName, String subDomain) {
+    Operation operation = createPostOperationWithRequestBody(resourceId, methodName);
+    operation.addExtension(Extension.OPERATION_SUB_DOMAIN, subDomain);
     return operation;
   }
 

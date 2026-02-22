@@ -59,6 +59,7 @@ public abstract class Language implements DataType {
     handlebars.registerHelper("pascalCase", NameFormatHelpers.TO_PASCAL);
     handlebars.registerHelper(
         "operationNameToPascalCase", NameFormatHelpers.OPERATION_NAME_TO_PASCAL_CASE);
+    handlebars.registerHelper("constantCase", NameFormatHelpers.CONSTANT_CASE);
 
     handlebars.registerHelper(
         "snakeCaseToPascalCaseAndSingularize",
@@ -101,6 +102,12 @@ public abstract class Language implements DataType {
   public List<FileOp> generate(String outputDirectoryPath, Spec spec) throws IOException {
     initialise();
     return generateSDK(outputDirectoryPath, spec);
+  }
+
+  public FileOp generate(String outputDirectoryPath, Spec oldVersion, Spec newerVersion)
+      throws IOException {
+    initialise();
+    return generateChangeLog(outputDirectoryPath, oldVersion, newerVersion);
   }
 
   protected Map<String, Object> resourceResponses(List<Resource> resources) {
@@ -178,6 +185,11 @@ public abstract class Language implements DataType {
 
   public Map<String, Object> additionalTemplateParams(Resource resource) {
     return Map.of();
+  }
+
+  protected FileOp generateChangeLog(String outputDirectoryPath, Spec oldVersion, Spec newerVersion)
+      throws IOException {
+    return null;
   }
 
   public boolean cleanDirectoryBeforeGenerate() {
