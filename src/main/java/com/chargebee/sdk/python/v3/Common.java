@@ -10,7 +10,7 @@ import com.chargebee.openapi.Enum;
 import com.chargebee.openapi.Resource;
 import com.chargebee.sdk.common.GlobalEnum;
 import com.chargebee.sdk.common.ResourceAssist;
-import com.chargebee.sdk.go.SchemaLessEnumParser;
+import com.chargebee.sdk.go.v3.SchemaLessEnumParser;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.Schema;
 import java.util.List;

@@ -1,0 +1,7 @@
+package enum
+
+type {{ name }} string
+
+const ({{#each possibleValues}}
+    {{ ../name }}{{ snakeCaseToPascalCase name }} {{ ../name }} = "{{ name }}"{{/each}}
+)

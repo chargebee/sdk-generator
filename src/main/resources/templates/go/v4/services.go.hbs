@@ -45,5 +45,5 @@ func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if has
 }
 {{/each}}
 
-{{#if isExport}}{{{includeFile "src/main/resources/templates/go/export.go.hbs"}}}{{/if}}
-{{#if isTimeMachine}}{{{includeFile "src/main/resources/templates/go/timeMachine.go.hbs"}}}{{/if}}
+{{#if isExport}}{{{includeFile "src/main/resources/templates/go/v4/export.go.hbs"}}}{{/if}}
+{{#if isTimeMachine}}{{{includeFile "src/main/resources/templates/go/v4/timeMachine.go.hbs"}}}{{/if}}

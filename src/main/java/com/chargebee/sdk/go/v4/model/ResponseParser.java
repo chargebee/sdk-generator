@@ -1,11 +1,11 @@
-package com.chargebee.sdk.go.model;
+package com.chargebee.sdk.go.v4.model;
 
 import static com.chargebee.handlebar.Inflector.capitalize;
 
 import com.chargebee.openapi.Action;
 import com.chargebee.sdk.common.model.OperationResponse;
-import com.chargebee.sdk.go.Constants;
-import com.chargebee.sdk.go.Formatter;
+import com.chargebee.sdk.go.v4.Constants;
+import com.chargebee.sdk.go.v4.Formatter;
 import com.google.common.base.CaseFormat;
 import java.util.*;
 

@@ -1,4 +1,4 @@
-package com.chargebee.sdk.go.webhook;
+package com.chargebee.sdk.go.v4.webhook;
 
 import com.chargebee.openapi.Attribute;
 import com.chargebee.openapi.Resource;

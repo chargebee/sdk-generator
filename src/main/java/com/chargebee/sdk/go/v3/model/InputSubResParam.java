@@ -1,4 +1,4 @@
-package com.chargebee.sdk.go.model;
+package com.chargebee.sdk.go.v3.model;
 
 import lombok.Data;
 import lombok.Getter;

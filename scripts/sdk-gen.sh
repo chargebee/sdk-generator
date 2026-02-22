@@ -16,7 +16,8 @@ function _gradlew() {
         node) args+=("-l NODE_V3 -o $BASE_DIR/chargebee-node/src/resources");;
         ruby) args+=("-l RUBY -o $BASE_DIR/chargebee-ruby/lib/chargebee");;
         dotnet) args+=("-l DOTNET -o $BASE_DIR/chargebee-dotnet/ChargeBee");;
-        go) args+=("-l GO -o $BASE_DIR/chargebee-go");;
+        go) args+=("-l GO_V3 -o $BASE_DIR/chargebee-go");;
+        go-v4) args+=("-l GO_V4 -o $BASE_DIR/chargebee-go");;
         *) echo "Unknown language"; exit 1;;
     esac
 
@@ -27,7 +28,7 @@ function _format() {
     local lang="$1"
     local dir="$2"
     case "$lang" in
-        go) pushd "$dir"
+        go*) pushd "$dir"
             make format
             popd;;
         *) echo "Formatter not available for $lang";;

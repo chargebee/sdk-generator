@@ -1,4 +1,4 @@
-package com.chargebee.sdk.go;
+package com.chargebee.sdk.go.v4;
 
 import static com.chargebee.GenUtil.singularize;
 

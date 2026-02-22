@@ -27,14 +27,13 @@ public class ResourceAssist {
         .toList();
   }
 
-  public List<Enum> enumsHelper(boolean includeGlobals) {
+  public List<Enum> enumsHelper() {
     List<Enum> enums =
         new java.util.ArrayList<>(
             new java.util.ArrayList<>(
                 this.resource.attributes().stream()
                     .filter(Attribute::isNotHiddenAttribute)
-                    // .filter(attr -> attr.isEnumAttribute() && (includeGlobals ? true : !attr.isGlobalEnumAttribute()))
-                    .filter(attr -> attr.isEnumAttribute())
+                    .filter(attr -> !attr.isGlobalEnumAttribute() && attr.isEnumAttribute())
                     .map(attr -> new Enum(attr.name, attr.getSchema()))
                     .toList()));
 
@@ -42,7 +41,7 @@ public class ResourceAssist {
   }
 
   public List<Enum> enums() {
-    List<Enum> enums = enumsHelper(false);
+    List<Enum> enums = enumsHelper();
 
     for (Attribute attribute : this.resource.attributes()) {
       for (Attribute subAttribute :
@@ -68,7 +67,7 @@ public class ResourceAssist {
   }
 
   public List<Enum> pyEnums() {
-    List<Enum> enums = enumsHelper(false);
+    List<Enum> enums = enumsHelper();
 
     for (Attribute attribute : this.resource.attributes()) {
       if (!attribute.isNotHiddenAttribute()) continue;

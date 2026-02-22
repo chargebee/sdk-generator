@@ -1,0 +1,31 @@
+package {{pkgName}}
+{{#if importFiles}}{{{importFiles}}}{{/if}}
+type {{clazName}} struct {
+{{{cols}}}
+{{#if (eq clazName "Subscription")}}
+    // Deprecated: MetaData is deprecated please use MetaData instead.
+    Metadata              json.RawMessage        `json:"metadata"`
+{{/if}}
+}
+{{~#each subResources}}
+type {{clazName}} struct {
+{{{cols}}}
+}{{/each}}
+{{~#each operRequestClasses}}{{#if hasInputParams}}
+type {{clazName}}Params struct {
+{{~#if inputParams}}
+{{{inputParams}}}
+{{~/if}}
+}
+{{~/if}}
+{{~#each inputSubResParams}}
+{{~#if multi}}
+type {{methodName}}{{camelSingularResName}}Params struct {
+{{~else}}
+type {{methodName}}{{camelResName}}Params struct {
+{{~/if}}
+{{{subParams}}}
+}
+{{~/each}}
+{{~/each}}
+{{NonBreakingSpace}}

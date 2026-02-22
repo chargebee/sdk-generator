@@ -1,12 +1,12 @@
-package com.chargebee.sdk.go;
+package com.chargebee.sdk.go.v4;
 
 import static com.chargebee.GenUtil.*;
 import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.openapi.Resource.isListOfSubResourceSchema;
 import static com.chargebee.openapi.Resource.isSubResourceSchema;
 import static com.chargebee.sdk.common.Constant.*;
-import static com.chargebee.sdk.go.Formatter.delimiter;
-import static com.chargebee.sdk.go.Formatter.formatUsingDelimiter;
+import static com.chargebee.sdk.go.v4.Formatter.delimiter;
+import static com.chargebee.sdk.go.v4.Formatter.formatUsingDelimiter;
 
 import com.chargebee.GenUtil;
 import com.chargebee.handlebar.Inflector;
@@ -20,10 +20,10 @@ import com.chargebee.sdk.common.GlobalEnum;
 import com.chargebee.sdk.common.ResourceAssist;
 import com.chargebee.sdk.dotnet.models.OperationRequest;
 import com.chargebee.sdk.dotnet.models.OperationRequestParameter;
-import com.chargebee.sdk.go.model.InputSubResParam;
-import com.chargebee.sdk.go.model.ResponseParser;
-import com.chargebee.sdk.go.model.SubResource;
-import com.chargebee.sdk.go.webhook.WebhookGenerator;
+import com.chargebee.sdk.go.v4.model.InputSubResParam;
+import com.chargebee.sdk.go.v4.model.ResponseParser;
+import com.chargebee.sdk.go.v4.model.SubResource;
+import com.chargebee.sdk.go.v4.webhook.WebhookGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Go extends Language {
+public class Go_V4 extends Language {
 
   Resource activeResource;
 
@@ -101,18 +101,10 @@ public class Go extends Language {
     List<FileOp> fileOps = new ArrayList<>();
 
     fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, ""));
-    fileOps.add(generateGlobalEnumFiles(outputDirectoryPath, spec.globalEnums()));
+    fileOps.add(generateGlobalEnumFiles(outputDirectoryPath, spec));
     fileOps.addAll(generateServices(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath, resources, spec));
     fileOps.add(generateClientFile(outputDirectoryPath));
-    // Generate webhook event type enum
-    {
-      var webhookInfo = spec.extractWebhookInfo(true);
-      if (!webhookInfo.isEmpty()) {
-        fileOps.add(
-            generateWebhookEventTypeEnum(outputDirectoryPath, webhookInfo));
-      }
-    }
     // Generate webhook files (parser, content, handler)
     {
       Template parserTemplate = getTemplateContent("webhook");
@@ -448,25 +440,25 @@ public class Go extends Language {
   protected Map<String, String> templatesDefinition() {
     return Map.of(
         "globalEnums",
-        "/templates/go/globalEnums.go.hbs",
+        "/templates/go/v4/globalEnums.go.hbs",
         "enums",
-        "/templates/go/enums.go.hbs",
+        "/templates/go/v4/enums.go.hbs",
         "services",
-        "/templates/go/services.go.hbs",
+        "/templates/go/v4/services.go.hbs",
         "models",
-        "/templates/go/models.go.hbs",
+        "/templates/go/v4/models.go.hbs",
         "responses",
-        "/templates/go/responses.go.hbs",
+        "/templates/go/v4/responses.go.hbs",
         "client",
-        "/templates/go/client.go.hbs",
+        "/templates/go/v4/client.go.hbs",
         "exceptions",
-        "/templates/go/api_error.go.hbs",
+        "/templates/go/v4/api_error.go.hbs",
         "webhook",
-        "/templates/go/webhook.go.hbs",
+        "/templates/go/v4/webhook.go.hbs",
         "webhookContent",
-        "/templates/go/webhookContent.go.hbs",
+        "/templates/go/v4/webhookContent.go.hbs",
         "webhookHandler",
-        "/templates/go/webhookHandler.go.hbs");
+        "/templates/go/v4/webhookHandler.go.hbs");
   }
 
   private FileOp generateClientFile(String outputDirectoryPath) throws IOException {
@@ -479,19 +471,25 @@ public class Go extends Language {
     return new FileOp.WriteString(outputDirectoryPath, "client.go", content);
   }
 
-  private FileOp generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums) throws IOException {
+  private FileOp generateGlobalEnumFiles(String outDirectoryPath, Spec spec) throws IOException {
+    List<Enum> globalEnums = spec.globalEnums();
     Template globalEnumTemplate = getTemplateContent("globalEnums");
-    List<Map<String, Object>> enumList = globalEnums.stream()
+
+    List<Map<String, Object>> enumList = new ArrayList<>(globalEnums.stream()
         .sorted(Comparator.comparing(e -> e.name))
         // Exclude EventType as it's generated in the webhook package
         .filter(e -> !e.name.equals("EventType"))
-        .map(this::globalEnumTemplate).toList();
+        .map(e -> new GlobalEnum(e).template())
+        .toList());
+
+    // Generate webhook event type enum
+    var webhookInfo = spec.extractWebhookInfo(true);
+    if (!webhookInfo.isEmpty()) {
+      enumList.addAll(generateWebhookEventTypeEnum(webhookInfo));
+    }
+
     var content = globalEnumTemplate.apply(Map.of("globalEnums", enumList));
     return new FileOp.WriteString(outDirectoryPath, "types.go", content);
-  }
-
-  private Map<String, Object> globalEnumTemplate(Enum e) {
-    return new GlobalEnum(e).template();
   }
 
   private Map<String, Object> resourceEnumTemplate(Enum e, String resourceName) {
@@ -500,10 +498,8 @@ public class Go extends Language {
     return _enum.template();
   }
 
-  private FileOp generateWebhookEventTypeEnum(
-      String outDirectoryPath, List<Map<String, String>> webhookInfo) throws IOException {
-    Template enumTemplate = getTemplateContent("globalEnums");
-
+  private List<Map<String, Object>> generateWebhookEventTypeEnum(
+      List<Map<String, String>> webhookInfo) {
     List<Map<String, String>> possibleValues = webhookInfo.stream()
         .map(info -> info.get("type"))
         .filter(Objects::nonNull)
@@ -512,12 +508,11 @@ public class Go extends Language {
         .map(type -> Map.of("name", type))
         .toList();
 
-    Map<String, Object> enumData = Map.of(
+    List<Map<String, Object>> enumData = List.of(Map.of(
         "name", "EventType",
-        "possibleValues", possibleValues);
+        "possibleValues", possibleValues));
 
-    var content = enumTemplate.apply(Map.of("globalEnums", List.of(enumData)));
-    return new FileOp.WriteString(outDirectoryPath, "event_type.go", content);
+    return enumData;
   }
 
   private List<FileOp> generateServices(
@@ -580,7 +575,7 @@ public class Go extends Language {
       enumImport.clear();
 
       // main resource
-      com.chargebee.sdk.go.model.Resource goRes = new com.chargebee.sdk.go.model.Resource();
+      com.chargebee.sdk.go.v4.model.Resource goRes = new com.chargebee.sdk.go.v4.model.Resource();
       goRes.setPkgName(
           CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_", ""));
       goRes.setClazName(res.name);
@@ -601,9 +596,9 @@ public class Go extends Language {
       goRes.setSubResources(subResourceList);
 
       // operations
-      List<com.chargebee.sdk.go.model.Operation> operations = new ArrayList<>();
+      List<com.chargebee.sdk.go.v4.model.Operation> operations = new ArrayList<>();
       for (Action action : activeResource.getSortedAction()) {
-        com.chargebee.sdk.go.model.Operation operation = new com.chargebee.sdk.go.model.Operation();
+        com.chargebee.sdk.go.v4.model.Operation operation = new com.chargebee.sdk.go.v4.model.Operation();
         List<InputSubResParam> inputSubResParamList = new ArrayList<>();
         operation.setClazName(toClazName(action.name, "Request"));
         operation.setHasInputParams(hasInputParams(action));
@@ -612,7 +607,7 @@ public class Go extends Language {
 
         ResponseParser goOperationResponse = new ResponseParser(
             action, activeResource.name, action.response().responseParameters(this));
-        com.chargebee.sdk.go.model.Response goResponse = new com.chargebee.sdk.go.model.Response();
+        com.chargebee.sdk.go.v4.model.Response goResponse = new com.chargebee.sdk.go.v4.model.Response();
         goResponse.setClassName(goOperationResponse.className());
         goResponse.setResponseParams(goOperationResponse.actionResponseParams());
         goResponse.setSubResponseClassName(goOperationResponse.subResponseClassName());
