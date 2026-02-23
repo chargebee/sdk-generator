@@ -8,6 +8,7 @@ package com.chargebee.v4.transport;
 import com.chargebee.v4.exceptions.*;
 import com.chargebee.v4.exceptions.codes.*;
 import com.chargebee.v4.internal.JsonUtil;
+import com.chargebee.v4.internal.ParseContext;
 
 /**
  * Utility class for handling HTTP status codes and creating appropriate exceptions.
@@ -36,9 +37,10 @@ public final class HttpStatusHandler {
 
         String body = response.getBodyAsString();
         if (body != null && !body.trim().isEmpty() && body.trim().startsWith("{")) {
-            boolean hasType = JsonUtil.hasValue(body, "type");
-            boolean hasMessage = JsonUtil.hasValue(body, "message");
-            boolean hasApiErrorCode = JsonUtil.hasValue(body, "api_error_code");
+            ParseContext ctx = new ParseContext(body);
+            boolean hasType = JsonUtil.hasValue(ctx, "type");
+            boolean hasMessage = JsonUtil.hasValue(ctx, "message");
+            boolean hasApiErrorCode = JsonUtil.hasValue(ctx, "api_error_code");
 
             if (hasType || (hasMessage && hasApiErrorCode)) {
                 throwAPIException(statusCode, body, request, response);
@@ -60,9 +62,10 @@ public final class HttpStatusHandler {
      */
     private static void throwAPIException(int statusCode, String jsonResponse, Request request, Response response)
             throws APIException {
-        String type = JsonUtil.getString(jsonResponse, "type");
-        String apiErrorCodeStr = JsonUtil.getString(jsonResponse, "api_error_code");
-        String message = JsonUtil.getString(jsonResponse, "message");
+        ParseContext ctx = new ParseContext(jsonResponse);
+        String type = JsonUtil.getString(ctx, "type");
+        String apiErrorCodeStr = JsonUtil.getString(ctx, "api_error_code");
+        String message = JsonUtil.getString(ctx, "message");
         if (message == null) {
             message = "API Error";
         }

@@ -7,6 +7,7 @@
 
 package com.chargebee.v4.internal;
 
+import com.chargebee.v4.internal.ParseContext;
 import com.chargebee.v4.transport.Response;
 
 import java.util.ArrayList;
@@ -36,12 +37,14 @@ public class BatchResult {
      */
     public static BatchResult fromJson(String json, Response response) {
         List<BatchResponse> results = new ArrayList<>();
-        String resultsArray = JsonUtil.getArray(json, BatchConstants.RESULTS_KEY);
+        ParseContext ctx = new ParseContext(json);
+        String resultsArray = JsonUtil.getArray(ctx, BatchConstants.RESULTS_KEY);
         if (resultsArray != null) {
             List<String> items = JsonUtil.parseObjectArray(resultsArray);
             for (String item : items) {
-                String correlationId = JsonUtil.getString(item, BatchConstants.CORRELATION_ID);
-                String content = JsonUtil.getObject(item, BatchConstants.RESULT_CONTENT_KEY);
+                ParseContext itemCtx = new ParseContext(item);
+                String correlationId = JsonUtil.getString(itemCtx, BatchConstants.CORRELATION_ID);
+                String content = JsonUtil.getObject(itemCtx, BatchConstants.RESULT_CONTENT_KEY);
                 results.add(new BatchResponse(correlationId, content));
             }
         }

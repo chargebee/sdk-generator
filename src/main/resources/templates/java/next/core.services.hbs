@@ -38,6 +38,7 @@ import com.chargebee.v4.models.timeMachine.TimeMachine.TimeTravelStatus;
 import com.chargebee.v4.exceptions.OperationFailedException;
 import com.chargebee.v4.exceptions.codes.BadRequestApiErrorCode;
 import com.chargebee.v4.internal.JsonUtil;
+import com.chargebee.v4.internal.ParseContext;
 {{/if}}
 
 
@@ -393,8 +394,9 @@ public final class {{name}}Service extends BaseService<{{name}}Service> {
         
         if (timeMachine.getTimeTravelStatus() == TimeTravelStatus.FAILED) {
             String errorJson = timeMachine.getErrorJson();
-            int httpStatusCode = JsonUtil.getInteger(errorJson, "http_code");
-            String exceptionMessage = JsonUtil.getString(errorJson, "message");
+            ParseContext errorCtx = new ParseContext(errorJson);
+            int httpStatusCode = JsonUtil.getInteger(errorCtx, "http_code");
+            String exceptionMessage = JsonUtil.getString(errorCtx, "message");
             throw new OperationFailedException(
                 httpStatusCode,
                 "operation_failed",
