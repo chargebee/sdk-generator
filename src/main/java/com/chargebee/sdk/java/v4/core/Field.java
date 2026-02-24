@@ -153,9 +153,9 @@ public class Field {
         return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, listType.fieldName());
       }
 
-      // Check if items has no type specified (generic array)
+      // Items with no type specified → generic array, matching List<Object> from display()
       if (items == null || items.getType() == null || items.getType().isEmpty()) {
-        return "java.util.Map<String, Object>";
+        return "Object";
       }
 
       // For primitive types like string, integer, etc.

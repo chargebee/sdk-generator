@@ -8,6 +8,8 @@
 package com.chargebee.v4.models.{{packageName}};
 
 import com.chargebee.v4.internal.JsonUtil;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.List;
@@ -121,15 +123,17 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
   }
 {{/each}}
  public static {{name}} fromJson(String json) {
+  return fromJson(JsonUtil.parse(json));
+ }
+
+ public static {{name}} fromJson(JsonObject jsonObj) {
   {{name}} obj = new {{name}}();
   {{#if customFieldsSupported}}
-  // Parse JSON to extract all keys for custom field extraction
   java.util.Set<String> knownFields = new java.util.HashSet<>();
   {{#each fields}}
   knownFields.add("{{curlName}}");
   {{/each}}
   {{else if consentFieldsSupported}}
-  // Parse JSON to extract all keys for consent field extraction
   java.util.Set<String> knownFields = new java.util.HashSet<>();
   {{#each fields}}
   knownFields.add("{{curlName}}");
@@ -138,117 +142,49 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
 
   {{#each fields}}
   {{#if isMapType}}
-  String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
-  obj.{{name}} = __{{name}}Json != null ? JsonUtil.parseJsonObjectToMap(__{{name}}Json) : new java.util.HashMap<>();
+  JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
+  obj.{{name}} = __{{name}}Obj != null ? JsonUtil.parseJsonObjectToMap(__{{name}}Obj) : new java.util.HashMap<>();
   {{else if isComplexObjectType}}
-  String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
-  if (__{{name}}Json != null) {
-  obj.{{name}} = {{type}}.fromJson(__{{name}}Json);
+  JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
+  if (__{{name}}Obj != null) {
+  obj.{{name}} = {{type}}.fromJson(__{{name}}Obj);
   }
   {{else if isObjectType}}
   {{#if isPlainObjectType}}
-  obj.{{name}} = JsonUtil.getObject(json, "{{curlName}}");
+  obj.{{name}} = JsonUtil.getObject(jsonObj, "{{curlName}}");
   {{else}}
-  String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
-  if (__{{name}}Json != null) {
-  obj.{{name}} = {{type}}.fromJson(__{{name}}Json);
+  JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
+  if (__{{name}}Obj != null) {
+  obj.{{name}} = {{type}}.fromJson(__{{name}}Obj);
   }
   {{/if}}
   {{else if isEnumType}}
-  obj.{{name}} = {{type}}.fromString(JsonUtil.getString(json, "{{curlName}}"));
+  obj.{{name}} = {{type}}.fromString(JsonUtil.getString(jsonObj, "{{curlName}}"));
   {{else if isListOfObjects}}
-  obj.{{name}} = JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")).stream().map({{listElementType}}::fromJson).collect(java.util.stream.Collectors.toList());
+  obj.{{name}} = JsonUtil.mapArray(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"), {{listElementType}}::fromJson);
   {{else if isListType}}
   {{#if (eq listElementType "Object")}}
-  String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-  obj.{{name}} = __{{name}}Json != null ?
-      JsonUtil.parseObjectArray(__{{name}}Json).stream()
-          .map(JsonUtil::parseJsonObjectToMap)
-          .collect(java.util.stream.Collectors.toList()) : null;
+  obj.{{name}} = JsonUtil.mapArrayToObjects(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
   {{else if (eq listElementType "java.util.Map<String, Object>")}}
-  String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}}");
-  obj.{{name}} = __{{name}}Json != null ?
-      JsonUtil.parseObjectArray(__{{name}}Json).stream()
-          .map(JsonUtil::parseJsonObjectToMap)
-          .collect(java.util.stream.Collectors.toList()) : null;
+  obj.{{name}} = JsonUtil.mapArrayToMaps(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
   {{else}}
-  obj.{{name}} = JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}"));
+  JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+  if (__{{name}}Arr != null) {
+  obj.{{name}} = JsonUtil.parseArrayOfString(__{{name}}Arr);
+  }
   {{/if}}
   {{else}}
-  obj.{{name}} = JsonUtil.get{{type}}(json, "{{curlName}}");
+  obj.{{name}} = JsonUtil.get{{type}}(jsonObj, "{{curlName}}");
   {{/if}}
   {{/each}}
   {{#if customFieldsSupported}}
-  // Extract custom fields (fields starting with cf_)
-  obj.customFields = extractCustomFields(json, knownFields);
+  obj.customFields = JsonUtil.extractCustomFields(jsonObj, knownFields);
   {{/if}}
   {{#if consentFieldsSupported}}
-  // Extract consent fields (fields starting with cs_)
-  obj.consentFields = extractConsentFields(json, knownFields);
+  obj.consentFields = JsonUtil.extractConsentFields(jsonObj, knownFields);
   {{/if}}
   return obj;
  }
-{{#if customFieldsSupported}}
-
- /**
-  * Helper method to extract custom fields from JSON.
-  * Custom fields are fields that start with "cf_" and are not in the known fields set.
-  *
-  * @param json JSON string to parse
-  * @param knownFields set of known field names
-  * @return map of custom fields
-  */
- private static java.util.Map<String, String> extractCustomFields(String json, java.util.Set<String> knownFields) {
-  java.util.Map<String, String> customFields = new java.util.HashMap<>();
-  try {
-    // Parse the entire JSON as a map
-    java.util.Map<String, Object> allFields = JsonUtil.parseJsonObjectToMap(json);
-    if (allFields != null) {
-      for (java.util.Map.Entry<String, Object> entry : allFields.entrySet()) {
-        String key = entry.getKey();
-        // Include fields that start with "cf_" and are not in knownFields
-        if (key != null && key.startsWith("cf_") && !knownFields.contains(key)) {
-          customFields.put(key, entry.getValue() != null ? String.valueOf(entry.getValue()) : null);
-        }
-      }
-    }
-  } catch (Exception e) {
-    // If parsing fails, return empty map
-  }
-  return customFields;
- }
-{{/if}}
-{{#if consentFieldsSupported}}
-
- /**
-  * Helper method to extract consent fields from JSON.
-  * Consent fields are fields that start with "cs_" and are not in the known fields set.
-  * They typically contain boolean values or options.
-  *
-  * @param json JSON string to parse
-  * @param knownFields set of known field names
-  * @return map of consent fields
-  */
- private static java.util.Map<String, Object> extractConsentFields(String json, java.util.Set<String> knownFields) {
-  java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
-  try {
-    // Parse the entire JSON as a map
-    java.util.Map<String, Object> allFields = JsonUtil.parseJsonObjectToMap(json);
-    if (allFields != null) {
-      for (java.util.Map.Entry<String, Object> entry : allFields.entrySet()) {
-        String key = entry.getKey();
-        // Include fields that start with "cs_" and are not in knownFields
-        if (key != null && key.startsWith("cs_") && !knownFields.contains(key)) {
-          consentFields.put(key, entry.getValue());
-        }
-      }
-    }
-  } catch (Exception e) {
-    // If parsing fails, return empty map
-  }
-  return consentFields;
- }
-{{/if}}
 
  @Override
  public String toString() {
