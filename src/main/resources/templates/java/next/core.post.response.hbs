@@ -63,11 +63,20 @@ public final class {{name}}Response extends BaseResponse {
             {{/if}}
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
-            builder.{{name}}(JsonUtil.mapArrayToObjects(JsonUtil.getJsonArray(jsonObj, "{{curlName}}")));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            builder.{{name}}(JsonUtil.mapArrayToObjects(__{{name}}Arr));
+            }
             {{else if (eq listElementType "java.util.Map<String, Object>")}}
-            builder.{{name}}(JsonUtil.mapArrayToMaps(JsonUtil.getJsonArray(jsonObj, "{{curlName}}")));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            builder.{{name}}(JsonUtil.mapArrayToMaps(__{{name}}Arr));
+            }
             {{else}}
-            builder.{{name}}(JsonUtil.parseArrayOfString(JsonUtil.getJsonArray(jsonObj, "{{curlName}}")));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            builder.{{name}}(JsonUtil.parseArrayOfString(__{{name}}Arr));
+            }
             {{/if}}
             {{else if isObjectType}}
             {{#if (eq type "Object")}}

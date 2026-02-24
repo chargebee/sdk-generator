@@ -70,11 +70,20 @@ public final class {{name}}Response extends BaseResponse {
             builder.{{name}}(JsonUtil.parseArrayOfString(JsonUtil.getJsonArray(jsonObj, "{{curlName}}")));
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
-            builder.{{name}}(JsonUtil.mapArrayToObjects(JsonUtil.getJsonArray(jsonObj, "{{curlName}}")));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            builder.{{name}}(JsonUtil.mapArrayToObjects(__{{name}}Arr));
+            }
             {{else if (eq listElementType "java.util.Map<String, Object>")}}
-            builder.{{name}}(JsonUtil.mapArrayToMaps(JsonUtil.getJsonArray(jsonObj, "{{curlName}}")));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            builder.{{name}}(JsonUtil.mapArrayToMaps(__{{name}}Arr));
+            }
             {{else}}
-            builder.{{name}}(JsonUtil.parseArrayOfString(JsonUtil.getJsonArray(jsonObj, "{{curlName}}")));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            builder.{{name}}(JsonUtil.parseArrayOfString(__{{name}}Arr));
+            }
             {{/if}}
             {{else if isObjectType}}
             {{#if isPlainObjectType}}
@@ -221,11 +230,20 @@ public final class {{name}}Response extends BaseResponse {
             item.{{name}} = JsonUtil.parseArrayOfString(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
-            item.{{name}} = JsonUtil.mapArrayToObjects(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            item.{{name}} = JsonUtil.mapArrayToObjects(__{{name}}Arr);
+            }
             {{else if (eq listElementType "java.util.Map<String, Object>")}}
-            item.{{name}} = JsonUtil.mapArrayToMaps(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            item.{{name}} = JsonUtil.mapArrayToMaps(__{{name}}Arr);
+            }
             {{else}}
-            item.{{name}} = JsonUtil.parseArrayOfString(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            item.{{name}} = JsonUtil.parseArrayOfString(__{{name}}Arr);
+            }
             {{/if}}
             {{else if isObjectType}}
             {{#if (eq type "Object")}}

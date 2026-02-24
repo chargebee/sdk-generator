@@ -164,9 +164,15 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
   obj.{{name}} = JsonUtil.mapArray(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"), {{listElementType}}::fromJson);
   {{else if isListType}}
   {{#if (eq listElementType "Object")}}
-  obj.{{name}} = JsonUtil.mapArrayToObjects(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+  JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+  if (__{{name}}Arr != null) {
+  obj.{{name}} = JsonUtil.mapArrayToObjects(__{{name}}Arr);
+  }
   {{else if (eq listElementType "java.util.Map<String, Object>")}}
-  obj.{{name}} = JsonUtil.mapArrayToMaps(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+  JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+  if (__{{name}}Arr != null) {
+  obj.{{name}} = JsonUtil.mapArrayToMaps(__{{name}}Arr);
+  }
   {{else}}
   JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
   if (__{{name}}Arr != null) {

@@ -80,12 +80,14 @@ public final class {{name}}Response {
                 JsonUtil.parseArrayOfString(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
-            {{{type}}} {{name}} = JsonUtil.mapArrayToObjects(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+            JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            {{{type}}} {{name}} = __{{name}}Arr != null ? JsonUtil.mapArrayToObjects(__{{name}}Arr) : null;
             {{else if (eq listElementType "java.util.Map<String, Object>")}}
-            {{{type}}} {{name}} = JsonUtil.mapArrayToMaps(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+            JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            {{{type}}} {{name}} = __{{name}}Arr != null ? JsonUtil.mapArrayToMaps(__{{name}}Arr) : null;
             {{else}}
-            {{{type}}} {{name}} =
-                JsonUtil.parseArrayOfString(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+            JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            {{{type}}} {{name}} = __{{name}}Arr != null ? JsonUtil.parseArrayOfString(__{{name}}Arr) : null;
             {{/if}}
             {{else if isObjectType}}
             {{#unless (eq type "Object")}}
@@ -135,12 +137,14 @@ public final class {{name}}Response {
                 JsonUtil.parseArrayOfString(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
-            {{{type}}} {{name}} = JsonUtil.mapArrayToObjects(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+            JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            {{{type}}} {{name}} = __{{name}}Arr != null ? JsonUtil.mapArrayToObjects(__{{name}}Arr) : null;
             {{else if (eq listElementType "java.util.Map<String, Object>")}}
-            {{{type}}} {{name}} = JsonUtil.mapArrayToMaps(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+            JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            {{{type}}} {{name}} = __{{name}}Arr != null ? JsonUtil.mapArrayToMaps(__{{name}}Arr) : null;
             {{else}}
-            {{{type}}} {{name}} =
-                JsonUtil.parseArrayOfString(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+            JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            {{{type}}} {{name}} = __{{name}}Arr != null ? JsonUtil.parseArrayOfString(__{{name}}Arr) : null;
             {{/if}}
             {{else if isObjectType}}
             {{#unless (eq type "Object")}}
@@ -297,9 +301,15 @@ public final class {{name}}Response {
         item.{{name}} = JsonUtil.mapArray(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"), {{listElementType}}::fromJson);
         {{else if isListType}}
         {{#if (eq listElementType "Object")}}
-        item.{{name}} = new ArrayList<>(JsonUtil.parseObjectArray(JsonUtil.getJsonArray(jsonObj, "{{curlName}}")));
+        JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+        if (__{{name}}Arr != null) {
+        item.{{name}} = new ArrayList<>(JsonUtil.parseObjectArray(__{{name}}Arr));
+        }
         {{else}}
-        item.{{name}} = JsonUtil.parseArrayOfString(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"));
+        JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+        if (__{{name}}Arr != null) {
+        item.{{name}} = JsonUtil.parseArrayOfString(__{{name}}Arr);
+        }
         {{/if}}
         {{else}}
         item.{{name}} = JsonUtil.get{{type}}(jsonObj, "{{curlName}}");
