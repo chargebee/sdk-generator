@@ -1,0 +1,7 @@
+type {{ camelCaseToPascalCase resourceName }}{{ snakeCaseToPascalCase name }} string
+
+const ({{#each possibleValues}}
+    {{ camelCaseToPascalCase resourceName }}{{ snakeCaseToPascalCase @root.name }}{{ snakeCaseToPascalCase name }} {{ camelCaseToPascalCase resourceName }}{{snakeCaseToPascalCase @root.name}} = "{{ name }}"{{/each}}
+{{~#if deprecatedEnums}}{{~#each deprecatedEnums}}
+    {{ camelCaseToPascalCase resourceName }}{{ snakeCaseToPascalCase @root.name }}{{ snakeCaseToPascalCase name }} {{ camelCaseToPascalCase resourceName }}{{snakeCaseToPascalCase @root.name}} = "{{ name }}"{{/each}}{{/if}}
+)

@@ -1,0 +1,90 @@
+package webhook
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+
+	"github.com/chargebee/chargebee-go/v4"
+)
+
+type WebhookHandler struct {
+	RequestValidator func(*http.Request) error
+	OnError          func(http.ResponseWriter, *http.Request, error)
+	OnUnhandledEvent func(chargebee.EventType, []byte) error
+{{#each events}}
+	On{{snakeCaseToPascalCase type}} func({{snakeCaseToPascalCase type}}Event) error
+{{/each}}
+}
+
+func (h *WebhookHandler) ParseAndDispatch(body []byte) error {
+	if h == nil {
+		return errors.New("webhook handler not configured")
+	}
+	eventType, err := ParseEventType(body)
+	if err != nil {
+		return err
+	}
+	switch eventType {
+{{#each events}}
+	case chargebee.EventType{{snakeCaseToPascalCase type}}:
+		if h.On{{snakeCaseToPascalCase type}} != nil {
+			var e {{snakeCaseToPascalCase type}}Event
+			if err := json.Unmarshal(body, &e); err != nil {
+				return err
+			}
+			return h.On{{snakeCaseToPascalCase type}}(e)
+		} else {
+			return h.handleUnhandledEvent(eventType, body)
+		}
+{{/each}}
+	default:
+		return h.handleUnhandledEvent(eventType, body)
+	}
+	return nil
+}
+
+func (h *WebhookHandler) HTTPHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if h == nil {
+			http.Error(w, "webhook handler not configured", http.StatusInternalServerError)
+			return
+		}
+		if h.RequestValidator != nil {
+			if err := h.RequestValidator(r); err != nil {
+				h.handleError(w, r, err)
+				return
+			}
+		}
+		defer r.Body.Close()
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			h.handleError(w, r, err)
+			return
+		}
+		if err := h.ParseAndDispatch(body); err != nil {
+			h.handleError(w, r, err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	})
+}
+
+func (h *WebhookHandler) handleError(w http.ResponseWriter, r *http.Request, err error) {
+	if h.OnError != nil {
+		h.OnError(w, r, err)
+		return
+	}
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+
+func (h *WebhookHandler) handleUnhandledEvent(eventType chargebee.EventType, body []byte) error {
+	if h.OnUnhandledEvent != nil {
+		return h.OnUnhandledEvent(eventType, body)
+	}
+	return fmt.Errorf("unhandled event type: %s", eventType)
+}
+
+

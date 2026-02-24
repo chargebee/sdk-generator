@@ -1,12 +1,12 @@
-package com.chargebee.sdk.go;
+package com.chargebee.sdk.go.v4;
 
 import static com.chargebee.GenUtil.*;
 import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.openapi.Resource.isListOfSubResourceSchema;
 import static com.chargebee.openapi.Resource.isSubResourceSchema;
 import static com.chargebee.sdk.common.Constant.*;
-import static com.chargebee.sdk.go.Formatter.delimiter;
-import static com.chargebee.sdk.go.Formatter.formatUsingDelimiter;
+import static com.chargebee.sdk.go.v4.Formatter.delimiter;
+import static com.chargebee.sdk.go.v4.Formatter.formatUsingDelimiter;
 
 import com.chargebee.GenUtil;
 import com.chargebee.handlebar.Inflector;
@@ -20,9 +20,10 @@ import com.chargebee.sdk.common.GlobalEnum;
 import com.chargebee.sdk.common.ResourceAssist;
 import com.chargebee.sdk.dotnet.models.OperationRequest;
 import com.chargebee.sdk.dotnet.models.OperationRequestParameter;
-import com.chargebee.sdk.go.model.InputSubResParam;
-import com.chargebee.sdk.go.model.SubResource;
-import com.chargebee.sdk.go.webhook.WebhookGenerator;
+import com.chargebee.sdk.go.v4.model.InputSubResParam;
+import com.chargebee.sdk.go.v4.model.ResponseParser;
+import com.chargebee.sdk.go.v4.model.SubResource;
+import com.chargebee.sdk.go.v4.webhook.WebhookGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
@@ -32,12 +33,54 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Go extends Language {
+public class Go_V4 extends Language {
 
   Resource activeResource;
 
   List<Resource> resourceList = new ArrayList<>();
   List<String> enumImport = new ArrayList<>();
+
+  // Mapping for global enum names that differ from their x-cb-sdk-enum-api-name
+  private static final Map<String, String> GLOBAL_ENUM_NAME_MAPPING = Map.of(
+      "JurisType", "TaxJurisType",
+      "Status", "GiftStatus" // Gift.status has enum api name "Status" but global is GiftStatus
+  );
+
+  /**
+   * Get the correct global enum type name for an attribute.
+   * Some global enums have x-cb-sdk-enum-api-name that doesn't match the actual
+   * global enum name.
+   * For arrays, we need to check the items schema for the enum api name.
+   */
+  private String getGlobalEnumTypeName(Attribute attr) {
+    String enumApiName = attr.getEnumApiName();
+    // For array schemas, the enum api name is in the items, not the array itself
+    if ((enumApiName == null || enumApiName.isEmpty())
+        && attr.schema instanceof io.swagger.v3.oas.models.media.ArraySchema
+        && attr.schema.getItems() != null
+        && attr.schema.getItems().getExtensions() != null) {
+      enumApiName = (String) attr.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME);
+    }
+    if (enumApiName != null && !enumApiName.isEmpty()) {
+      String cleanName = enumApiName.replace(".", "");
+      // Check if there's a mapping for this enum name
+      return GLOBAL_ENUM_NAME_MAPPING.getOrDefault(cleanName, cleanName);
+    }
+    // Fallback to attribute name
+    return toCamelCase(attr.name);
+  }
+
+  /**
+   * Check if a resource has an enum with the given name.
+   * This checks if the resource has an attribute of the same name that is an
+   * enum.
+   */
+  private boolean resourceHasEnum(String resourceName, String enumName) {
+    return resourceList.stream()
+        .filter(r -> r.name.equalsIgnoreCase(resourceName))
+        .flatMap(r -> r.attributes().stream())
+        .anyMatch(a -> a.name.equalsIgnoreCase(enumName) && a.isEnumAttribute());
+  }
 
   public static String getJsonVal(Attribute a, boolean req) {
     String json = "`json:\"";
@@ -51,40 +94,17 @@ public class Go extends Language {
 
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
-    final String enumsDirectoryPath = "/enum";
-    final String actionsDirectoryPath = "/actions";
-    String modelsDirectoryPath = "/models";
-    var globalEnums = spec.globalEnums();
-    var resources =
-        spec.resources().stream()
-            .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
-            .toList();
-    resourceList = resources;
-    var createEnumsDirectory = new FileOp.CreateDirectory(outputDirectoryPath, enumsDirectoryPath);
-    var createActionsDirectoryPath =
-        new FileOp.CreateDirectory(outputDirectoryPath, actionsDirectoryPath);
-    var createModelsDirectory =
-        new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
+    var resources = spec.resources().stream()
+        .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
+        .toList();
+    this.resourceList = resources;
     List<FileOp> fileOps = new ArrayList<>();
 
-    fileOps.addAll(
-        List.of(createEnumsDirectory, createActionsDirectoryPath, createModelsDirectory));
-    fileOps.addAll(generateGlobalEnumFiles(outputDirectoryPath + enumsDirectoryPath, globalEnums));
-
-    // Generate webhook event type enum
-    {
-      var webhookInfo = spec.extractWebhookInfo(true);
-      if (!webhookInfo.isEmpty()) {
-        fileOps.add(
-            generateWebhookEventTypeEnum(outputDirectoryPath + enumsDirectoryPath, webhookInfo));
-      }
-    }
-
-    fileOps.addAll(
-        generateActionsDirectories(outputDirectoryPath + actionsDirectoryPath, resources));
-    fileOps.add(generateResultFile(outputDirectoryPath, resources));
-    fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
-
+    fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, ""));
+    fileOps.add(generateGlobalEnumFiles(outputDirectoryPath, spec));
+    fileOps.addAll(generateServices(outputDirectoryPath, resources));
+    fileOps.addAll(genModels(outputDirectoryPath, resources, spec));
+    fileOps.add(generateClientFile(outputDirectoryPath));
     // Generate webhook files (parser, content, handler)
     {
       Template parserTemplate = getTemplateContent("webhook");
@@ -95,35 +115,22 @@ public class Go extends Language {
               outputDirectoryPath, spec, parserTemplate, contentTemplate, handlerTemplate));
     }
 
-    //    fileOps.add(generateErrorExceptions(outputDirectoryPath + "/", exceptionsResources));
     return fileOps;
   }
 
-  private FileOp generateErrorExceptions(
-      String outDirectoryPath, List<com.chargebee.openapi.Error> errorsResources)
-      throws IOException {
-    Template exceptionTemplate = getTemplateContent("exceptions");
-    var templateParams = errorSchemas(errorsResources);
-    return new FileOp.WriteString(
-        outDirectoryPath, "api_error.go", exceptionTemplate.apply(templateParams));
-  }
-
   private boolean hasJSONObjectCols(Resource r) {
-    boolean hasJsonAttr =
-        r.attributes().stream()
-            .filter(com.chargebee.openapi.Attribute::isNotHiddenAttribute)
-            .anyMatch(a -> dataType(a.schema, a.name).equals(Constants.JSON_RAW_MESSAGE));
+    boolean hasJsonAttr = r.attributes().stream()
+        .filter(com.chargebee.openapi.Attribute::isNotHiddenAttribute)
+        .anyMatch(a -> dataType(a.schema, a.name).equals(Constants.JSON_RAW_MESSAGE));
 
-    boolean hasJsonSubResAttr =
-        !r.subResources().stream()
-            .filter(
-                sr ->
-                    sr.attributes().stream()
-                        .filter(com.chargebee.openapi.Attribute::isNotHiddenAttribute)
-                        .anyMatch(
-                            a -> dataType(a.schema, a.name).equals(Constants.JSON_RAW_MESSAGE)))
-            .toList()
-            .isEmpty();
+    boolean hasJsonSubResAttr = !r.subResources().stream()
+        .filter(
+            sr -> sr.attributes().stream()
+                .filter(com.chargebee.openapi.Attribute::isNotHiddenAttribute)
+                .anyMatch(
+                    a -> dataType(a.schema, a.name).equals(Constants.JSON_RAW_MESSAGE)))
+        .toList()
+        .isEmpty();
 
     return hasJsonAttr || hasJsonSubResAttr;
   }
@@ -137,8 +144,8 @@ public class Go extends Language {
     }
     for (Action action : res.getSortedAction()) {
       for (Parameter requestParams : action.requestBodyParameters()) {
-        com.chargebee.openapi.Attribute attribute =
-            new Attribute(requestParams.getName(), requestParams.schema, requestParams.isRequired);
+        com.chargebee.openapi.Attribute attribute = new Attribute(requestParams.getName(), requestParams.schema,
+            requestParams.isRequired);
         if (attribute.isEnumAttribute() && attribute.isExternalEnum()) {
           return true;
         }
@@ -149,8 +156,8 @@ public class Go extends Language {
         }
       }
       for (Parameter requestParams : action.queryParameters()) {
-        com.chargebee.openapi.Attribute attribute =
-            new Attribute(requestParams.getName(), requestParams.schema, requestParams.isRequired);
+        com.chargebee.openapi.Attribute attribute = new Attribute(requestParams.getName(), requestParams.schema,
+            requestParams.isRequired);
         if (attribute.isEnumAttribute() && attribute.isExternalEnum()) {
           return true;
         }
@@ -190,55 +197,63 @@ public class Go extends Language {
     if (hasJSONObjectCols(activeResource)) {
       buf.add("\t\"encoding/json\"");
     }
-    if (hasExternalEnumCols(activeResource)) {
-      buf.add("\t\"github.com/chargebee/chargebee-go/v3/enum\"");
-    }
-    if (!getOperRequestClasses(activeResource).isEmpty()
-        && (hasFilterParams() || isExportResource())) {
-      buf.add("\t\"github.com/chargebee/chargebee-go/v3/filter\"");
-    }
-    if (!getDependentResource(activeResource).isEmpty()) {
-      for (Attribute dr : getDependentResource(activeResource)) {
-        var refModelName = singularize(dr.name.replace("_", ""));
-        if (dr.isDependentAttribute()
-            && resourceList.stream().noneMatch(r -> r.id.contains(singularize(dr.name)))) {
-          if (dr.subResourceName() != null) {
-            refModelName = dr.subResourceName().toLowerCase();
-          } else {
-            refModelName = refModelName.replace(activeResource.id, "");
-          }
-        }
-        buf.add("\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
-      }
-    }
-    if (!getSubResource(activeResource).isEmpty()) {
-      for (Attribute sr : getSubResource(activeResource)) {
-        for (Attribute nestedSubRes :
-            sr.attributes().stream()
-                .filter(
-                    (attr ->
-                        attr.isDependentAttribute()
-                            || attr.isGlobalResourceReference()
-                                && attr.name != "error_detail")) // error detail is handled below
-                .toList()) {
-          buf.add(
-              "\t\"github.com/chargebee/chargebee-go/v3/models/"
-                  + singularize(nestedSubRes.name.replace("_", "").toLowerCase())
-                  + "\"");
-        }
-      }
-    }
-    if (activeResource.name.equalsIgnoreCase("PaymentIntent")) {
-      buf.add("\t\"github.com/chargebee/chargebee-go/v3/models/gatewayerrordetail\"");
-    }
-    consolidatedEnum.forEach(
-        a ->
-            buf.add(
-                "\t"
-                    + getCamelClazName(a)
-                    + Constants.ENUM_MODEL_IMPORT
-                    + getCamelClazName(a).toLowerCase()
-                    + Constants.ENUM));
+    // if (hasExternalEnumCols(activeResource)) {
+    // buf.add("\t\"github.com/chargebee/chargebee-go/v3/enum\"");
+    // }
+    // if (!getOperRequestClasses(activeResource).isEmpty()
+    // && (hasFilterParams() || isExportResource())) {
+    // buf.add("\t\"github.com/chargebee/chargebee-go/v3/filter\"");
+    // }
+    // if (!getDependentResource(activeResource).isEmpty()) {
+    // for (Attribute dr : getDependentResource(activeResource)) {
+    // var refModelName = singularize(dr.name.replace("_", ""));
+    // if (dr.isDependentAttribute()
+    // && resourceList.stream().noneMatch(r -> r.id.contains(singularize(dr.name))))
+    // {
+    // if (dr.subResourceName() != null) {
+    // refModelName = dr.subResourceName().toLowerCase();
+    // } else {
+    // refModelName = refModelName.replace(activeResource.id, "");
+    // }
+    // }
+    // buf.add("\t\"github.com/chargebee/chargebee-go/v3/" + refModelName + "\"");
+    // }
+    // }
+    // if (!getSubResource(activeResource).isEmpty()) {
+    // for (Attribute sr : getSubResource(activeResource)) {
+    // for (Attribute nestedSubRes :
+    // sr.attributes().stream()
+    // .filter(
+    // (attr ->
+    // attr.isDependentAttribute()
+    // || attr.isGlobalResourceReference()
+    // && attr.name != "error_detail")) // error detail is handled below
+    // .toList()) {
+    // buf.add(
+    // "\t\"github.com/chargebee/chargebee-go/v3/"
+    // + singularize(nestedSubRes.name.replace("_", "").toLowerCase())
+    // + "\"");
+    // }
+    // }
+    // }
+    // if (activeResource.name.equalsIgnoreCase("PaymentIntent")) {
+    // buf.add("\t\"github.com/chargebee/chargebee-go/v3/gatewayerrordetail\"");
+    // }
+    // String currentPkg =
+    // CaseFormat.UPPER_CAMEL
+    // .to(CaseFormat.LOWER_UNDERSCORE, activeResource.name)
+    // .replace("_", "");
+    // consolidatedEnum.forEach(
+    // a -> {
+    // if (!getCamelClazName(a).toLowerCase().equals(currentPkg)) {
+    // buf.add(
+    // "\t"
+    // + getCamelClazName(a)
+    // + Constants.ENUM_MODEL_IMPORT
+    // + getCamelClazName(a).toLowerCase()
+    // + Constants.ENUM);
+    // }
+    // });
     if (buf.toString().isEmpty()) {
       return "";
     } else {
@@ -311,7 +326,9 @@ public class Go extends Language {
         return "ChargeBee.Models.Enums." + getName(attribute.name + Constants.UNDERSCORE_ENUM);
       }
 
-      return (activeResource.name) + "." + getName(attribute.name + Constants.UNDERSCORE_ENUM);
+      // return (activeResource.name) + "." + getName(attribute.name +
+      // Constants.UNDERSCORE_ENUM);
+      return getName(attribute.name + Constants.UNDERSCORE_ENUM);
     }
     return dataType(attribute.schema, attribute.name);
   }
@@ -323,8 +340,7 @@ public class Go extends Language {
   }
 
   private boolean isMultiFilterAttribute(Parameter queryParameter) {
-    Attribute attribute =
-        new Attribute(queryParameter.getName(), queryParameter.schema, queryParameter.isRequired);
+    Attribute attribute = new Attribute(queryParameter.getName(), queryParameter.schema, queryParameter.isRequired);
     return attribute.isMultiAttribute();
   }
 
@@ -333,13 +349,15 @@ public class Go extends Language {
       Parameter queryParameter,
       List<OperationRequestParameter> operationRequestParameters,
       String parentName) {
-    Attribute attribute =
-        new Attribute(queryParameter.getName(), queryParameter.schema, queryParameter.isRequired);
-    if (queryParameter.isHiddenFromSDK()) return;
-    if (queryParameter.isPaginationProperty()) return;
+    Attribute attribute = new Attribute(queryParameter.getName(), queryParameter.schema, queryParameter.isRequired);
+    if (queryParameter.isHiddenFromSDK())
+      return;
+    if (queryParameter.isPaginationProperty())
+      return;
     if (!attribute.attributes().isEmpty()
         && attribute.attributes().stream()
-            .noneMatch(com.chargebee.openapi.Attribute::isNotHiddenAttribute)) return;
+            .noneMatch(com.chargebee.openapi.Attribute::isNotHiddenAttribute))
+      return;
     OperationRequestParameter operationRequestParameter = new OperationRequestParameter();
     operationRequestParameter.setHidden(queryParameter.isHiddenFromSDK());
     operationRequestParameter.setDeprecated(queryParameter.isDeprecated());
@@ -386,15 +404,18 @@ public class Go extends Language {
       handleOperationListAttribute(action, queryParameter, operationRequestParameters, null);
     }
     for (Parameter requestBodyParameter : action.requestBodyParameters()) {
-      Attribute attribute =
-          new Attribute(
-              requestBodyParameter.getName(),
-              requestBodyParameter.schema,
-              requestBodyParameter.isRequired);
-      if (requestBodyParameter.isHiddenFromSDK()) continue;
-      if (requestBodyParameter.isCompositeArrayBody()) continue;
-      if (requestBodyParameter.isCompositeArrayBody()) continue;
-      if (!attribute.isFilterAttribute() && !attribute.attributes().isEmpty()) continue;
+      Attribute attribute = new Attribute(
+          requestBodyParameter.getName(),
+          requestBodyParameter.schema,
+          requestBodyParameter.isRequired);
+      if (requestBodyParameter.isHiddenFromSDK())
+        continue;
+      if (requestBodyParameter.isCompositeArrayBody())
+        continue;
+      if (requestBodyParameter.isCompositeArrayBody())
+        continue;
+      if (!attribute.isFilterAttribute() && !attribute.attributes().isEmpty())
+        continue;
       if (attribute.isFilterAttribute()) {
         handleOperationListAttribute(
             action, requestBodyParameter, operationRequestParameters, null);
@@ -419,86 +440,90 @@ public class Go extends Language {
   protected Map<String, String> templatesDefinition() {
     return Map.of(
         "globalEnums",
-        "/templates/go/globalEnums.go.hbs",
+        "/templates/go/v4/globalEnums.go.hbs",
         "enums",
-        "/templates/go/enums.go.hbs",
-        "actions",
-        "/templates/go/actions.go.hbs",
-        "result",
-        "/templates/go/result.go.hbs",
+        "/templates/go/v4/enums.go.hbs",
+        "services",
+        "/templates/go/v4/services.go.hbs",
         "models",
-        "/templates/go/models.go.hbs",
+        "/templates/go/v4/models.go.hbs",
+        "responses",
+        "/templates/go/v4/responses.go.hbs",
+        "client",
+        "/templates/go/v4/client.go.hbs",
         "exceptions",
-        "/templates/go/api_error.go.hbs",
+        "/templates/go/v4/api_error.go.hbs",
         "webhook",
-        "/templates/go/webhook.go.hbs",
+        "/templates/go/v4/webhook.go.hbs",
         "webhookContent",
-        "/templates/go/webhookContent.go.hbs",
+        "/templates/go/v4/webhookContent.go.hbs",
         "webhookHandler",
-        "/templates/go/webhookHandler.go.hbs");
+        "/templates/go/v4/webhookHandler.go.hbs");
   }
 
-  private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)
-      throws IOException {
-    List<FileOp> fileOps = new ArrayList<>();
-
-    Template globalEnumTemplate = getTemplateContent("globalEnums");
-    globalEnums = globalEnums.stream().sorted(Comparator.comparing(e -> e.name)).toList();
-    for (var _enum : globalEnums) {
-      var content = globalEnumTemplate.apply(globalEnumTemplate(_enum));
-      String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, _enum.name);
-      fileOps.add(new FileOp.WriteString(outDirectoryPath, fileName + ".go", content));
-    }
-    return fileOps;
+  private FileOp generateClientFile(String outputDirectoryPath) throws IOException {
+    Template clientTemplate = getTemplateContent("client");
+    List<Map<String, String>> resourceNames = this.resourceList.stream()
+        .filter(Resource::hasAnyAction)
+        .map(r -> Map.of("name", r.name))
+        .toList();
+    String content = clientTemplate.apply(Map.of("resources", resourceNames));
+    return new FileOp.WriteString(outputDirectoryPath, "client.go", content);
   }
 
-  private Map<String, Object> globalEnumTemplate(Enum e) {
-    return new GlobalEnum(e).template();
-  }
-
-  private FileOp generateWebhookEventTypeEnum(
-      String outDirectoryPath, List<Map<String, String>> webhookInfo) throws IOException {
+  private FileOp generateGlobalEnumFiles(String outDirectoryPath, Spec spec) throws IOException {
+    List<Enum> globalEnums = spec.globalEnums();
     Template globalEnumTemplate = getTemplateContent("globalEnums");
 
-    // Collect unique event types and sort them
-    Set<String> seenTypes = new HashSet<>();
-    List<Map<String, String>> eventTypes = new ArrayList<>();
-    for (Map<String, String> info : webhookInfo) {
-      String type = info.get("type");
-      if (!seenTypes.contains(type)) {
-        seenTypes.add(type);
-        Map<String, String> eventType = new HashMap<>();
-        eventType.put("name", type);
-        eventTypes.add(eventType);
-      }
-    }
-    eventTypes.sort(Comparator.comparing(e -> e.get("name")));
+    List<Map<String, Object>> enumList = new ArrayList<>(globalEnums.stream()
+        .sorted(Comparator.comparing(e -> e.name))
+        // Exclude EventType as it's generated in the webhook package
+        .filter(e -> !e.name.equals("EventType"))
+        .map(e -> new GlobalEnum(e).template())
+        .toList());
 
-    // Create enum structure similar to GlobalEnum
-    Map<String, Object> enumData = new HashMap<>();
-    enumData.put("name", "EventType");
-    List<Map<String, String>> possibleValues = new ArrayList<>();
-    for (Map<String, String> eventType : eventTypes) {
-      Map<String, String> value = new HashMap<>();
-      value.put("name", eventType.get("name"));
-      possibleValues.add(value);
+    // Generate webhook event type enum
+    var webhookInfo = spec.extractWebhookInfo(true);
+    if (!webhookInfo.isEmpty()) {
+      enumList.addAll(generateWebhookEventTypeEnum(webhookInfo));
     }
-    enumData.put("possibleValues", possibleValues);
 
-    var content = globalEnumTemplate.apply(enumData);
-    return new FileOp.WriteString(outDirectoryPath, "event_type.go", content);
+    var content = globalEnumTemplate.apply(Map.of("globalEnums", enumList));
+    return new FileOp.WriteString(outDirectoryPath, "types.go", content);
   }
 
-  private List<FileOp> generateActionsDirectories(
+  private Map<String, Object> resourceEnumTemplate(Enum e, String resourceName) {
+    var _enum = new GlobalEnum(e);
+    _enum.setResourceName(resourceName);
+    return _enum.template();
+  }
+
+  private List<Map<String, Object>> generateWebhookEventTypeEnum(
+      List<Map<String, String>> webhookInfo) {
+    List<Map<String, String>> possibleValues = webhookInfo.stream()
+        .map(info -> info.get("type"))
+        .filter(Objects::nonNull)
+        .distinct()
+        .sorted()
+        .map(type -> Map.of("name", type))
+        .toList();
+
+    List<Map<String, Object>> enumData = List.of(Map.of(
+        "name", "EventType",
+        "possibleValues", possibleValues));
+
+    return enumData;
+  }
+
+  private List<FileOp> generateServices(
       String outputDirectoryPath, List<Resource> resources) throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
 
-    Template actionTemplates = getTemplateContent("actions");
+    Template actionTemplates = getTemplateContent("services");
     for (var resource : resources) {
       if (!resource.actions.isEmpty()) {
         var actionPayload = resource.templateParams(this);
-        List<Map<String, Object>> actions =
-            (List<Map<String, Object>>) actionPayload.get("actions");
+        List<Map<String, Object>> actions = (List<Map<String, Object>>) actionPayload.get("actions");
         List<Map<String, Object>> mutableActions = new ArrayList<>();
 
         for (Map<String, Object> action : actions) {
@@ -509,51 +534,60 @@ public class Go extends Language {
         }
 
         actionPayload.put("actions", mutableActions);
-        if (mutableActions.isEmpty()) continue;
+        if (mutableActions.isEmpty())
+          continue;
         var content = actionTemplates.apply(actionPayload);
-        String dirName =
-            CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name).replace("_", "");
+        String dirName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name).replace("_", "");
         String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name);
-        fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, dirName));
         fileOps.add(
-            new FileOp.WriteString(outputDirectoryPath + "/" + dirName, fileName + ".go", content));
+            new FileOp.WriteString(outputDirectoryPath, fileName + "_service.go", content));
       }
     }
     return fileOps;
   }
 
-  private List<FileOp> genModels(String outputDirectoryPath, List<Resource> resources)
+  private List<FileOp> genModels(String outputDirectoryPath, List<Resource> resources, Spec spec)
       throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
 
-    Template resourceTemplate = getTemplateContent("models");
-    for (var res : resources) {
-      if (SDK_DEBUG && !DEBUG_RESOURCE.contains(res.name)) continue;
+    // Get global enum names to avoid collisions
+    Set<String> globalEnumNames = spec.globalEnums().stream()
+        .map(e -> e.name)
+        .collect(java.util.stream.Collectors.toSet());
 
-      String resourceDirName =
-          CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_", "");
-      fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, resourceDirName));
-      List<Enum> resourceAssistEnums = new ResourceAssist().setResource(res).enums();
+    Template modelTemplate = getTemplateContent("models");
+    Template responseTemplate = getTemplateContent("responses");
+    for (var res : resources) {
+      if (SDK_DEBUG && !DEBUG_RESOURCE.contains(res.name))
+        continue;
+      activeResource = res;
+
+      StringBuffer buf = new StringBuffer(Constants.FILE_HEADER);
+      buf.append(getImportFiles());
+
+      // enums
+      List<Enum> resourceAssistEnums = new ResourceAssist().setResource(res).goEnums();
       List<Enum> schemaLessEnums = SchemaLessEnumParser.getSchemalessEnum(res, resourceList);
       if (!resourceAssistEnums.isEmpty() || !schemaLessEnums.isEmpty()) {
-        fileOps.addAll(
-            genModelEnums(
-                outputDirectoryPath, resourceDirName, resourceAssistEnums, schemaLessEnums));
+        buf.append(genModelEnums(res.name, resourceAssistEnums, schemaLessEnums, globalEnumNames));
       }
-      activeResource = res;
+
       enumImport.clear();
-      com.chargebee.sdk.go.model.Resource goRes = new com.chargebee.sdk.go.model.Resource();
+
+      // main resource
+      com.chargebee.sdk.go.v4.model.Resource goRes = new com.chargebee.sdk.go.v4.model.Resource();
       goRes.setPkgName(
           CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_", ""));
       goRes.setClazName(res.name);
       goRes.setCols(getCols());
+      goRes.setHasCustomFields(activeResource.isCustomFieldSupported());
 
       List<SubResource> subResourceList = new ArrayList<>();
       for (Resource subResource : activeResource.subResources()) {
         String clazName = singularize(subResource.name);
-        boolean alreadyExists =
-            subResourceList.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
-        if (alreadyExists) continue;
+        boolean alreadyExists = subResourceList.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
+        if (alreadyExists)
+          continue;
         SubResource sr = new SubResource();
         sr.setClazName(clazName);
         sr.setCols(getSubResourceCols(subResource));
@@ -561,19 +595,29 @@ public class Go extends Language {
       }
       goRes.setSubResources(subResourceList);
 
-      List<com.chargebee.sdk.go.model.OperationRequest> operationRequests = new ArrayList<>();
+      // operations
+      List<com.chargebee.sdk.go.v4.model.Operation> operations = new ArrayList<>();
       for (Action action : activeResource.getSortedAction()) {
-        com.chargebee.sdk.go.model.OperationRequest opRequest =
-            new com.chargebee.sdk.go.model.OperationRequest();
+        com.chargebee.sdk.go.v4.model.Operation operation = new com.chargebee.sdk.go.v4.model.Operation();
         List<InputSubResParam> inputSubResParamList = new ArrayList<>();
-        opRequest.setClazName(toClazName(action.name, "Request"));
-        opRequest.setHasInputParams(hasInputParams(action));
-        opRequest.setInputParams(inputParams(action));
-        ActionAssist actionAssist =
-            ActionAssist.of(action)
-                .withFlatMultiAttribute(false)
-                .withPagination(true)
-                .withFilterSubResource(true);
+        operation.setClazName(toClazName(action.name, "Request"));
+        operation.setHasInputParams(hasInputParams(action));
+        operation.setInputParams(inputParams(action));
+        operation.setHttpRequestType(action.httpRequestType.toString());
+
+        ResponseParser goOperationResponse = new ResponseParser(
+            action, activeResource.name, action.response().responseParameters(this));
+        com.chargebee.sdk.go.v4.model.Response goResponse = new com.chargebee.sdk.go.v4.model.Response();
+        goResponse.setClassName(goOperationResponse.className());
+        goResponse.setResponseParams(goOperationResponse.actionResponseParams());
+        goResponse.setSubResponseClassName(goOperationResponse.subResponseClassName());
+        goResponse.setSubResponseParams(goOperationResponse.subResponseParams());
+        operation.setOperationResponses(goResponse);
+
+        ActionAssist actionAssist = ActionAssist.of(action)
+            .withFlatMultiAttribute(false)
+            .withPagination(true)
+            .withFilterSubResource(true);
         for (Attribute subResource : actionAssist.consolidatedSubParams()) {
           InputSubResParam inputSubResParam = new InputSubResParam();
           inputSubResParam.setMethodName(toCamelCase(action.name));
@@ -583,28 +627,76 @@ public class Go extends Language {
           inputSubResParam.setSubParams(subParams(subResource));
           inputSubResParamList.add(inputSubResParam);
         }
-        opRequest.setInputSubResParams(inputSubResParamList);
-        operationRequests.add(opRequest);
+        operation.setInputSubResParams(inputSubResParamList);
+        operations.add(operation);
       }
-      goRes.setOperRequestClasses(operationRequests);
+      goRes.setOperations(operations);
       goRes.setImportFiles(getImportFiles());
+      // if (goRes.getImportFiles() != null && !goRes.getImportFiles().isEmpty()) {
+      // buf.insert(0, goRes.getImportFiles());
+      // }
+      goRes.setResponseImports(getResponseImports(res));
       ObjectMapper oMapper = new ObjectMapper();
-      var content = resourceTemplate.apply(oMapper.convertValue(goRes, Map.class));
+      // models and enums
+      buf.append(modelTemplate.apply(oMapper.convertValue(goRes, Map.class)));
+      // request and response
+      if (!goRes.getOperations().isEmpty()) {
+        buf.append(responseTemplate.apply(oMapper.convertValue(goRes, Map.class)));
+      }
+
       String modelFileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name);
       fileOps.add(
           new FileOp.WriteString(
-              outputDirectoryPath + "/" + resourceDirName, modelFileName + ".go", content));
+              outputDirectoryPath, modelFileName + ".go", buf.toString()));
     }
     return fileOps;
+  }
+
+  private String getResponseImports(Resource res) {
+    Set<String> imports = new HashSet<>();
+    for (Action action : res.getSortedAction()) {
+      for (com.chargebee.sdk.common.model.OperationResponse r : action.response().responseParameters(this)) {
+        extractImports(r, res.name, imports);
+      }
+    }
+    StringJoiner buf = new StringJoiner("\n");
+    for (String imp : imports) {
+      buf.add("\t\"" + imp + "\"");
+    }
+    if (buf.length() > 0) {
+      return "\nimport (\n" + buf.toString() + "\n)";
+    }
+    return "";
+  }
+
+  private void extractImports(
+      com.chargebee.sdk.common.model.OperationResponse r, String activeResourceName,
+      Set<String> imports) {
+    String type = r.getType();
+    if (type != null
+        && !type.equals("Any")
+        && !type.equals("unknown")
+        && !ResponseParser.isGoDataType(type)) {
+      if (!type.equalsIgnoreCase(activeResourceName)) {
+        String pkg = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, type).toLowerCase();
+        imports.add("github.com/chargebee/chargebee-go/v3/" + pkg);
+      }
+    }
+    if (r.isListResponse() && r.getListResponse() != null) {
+      for (com.chargebee.sdk.common.model.OperationResponse sub : r.getListResponse()) {
+        extractImports(sub, activeResourceName, imports);
+      }
+    }
   }
 
   private String subParams(Attribute subParam) {
     String type = "";
     StringJoiner buf = new StringJoiner("\n");
-    for (Attribute attribute :
-        subParam.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList()) {
-      if (!attribute.isSubResource()) continue;
-      if (attribute.isHiddenParameter()) continue;
+    String subResName = toCamelCase(singularize(subParam.name));
+
+    for (Attribute attribute : subParam.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList()) {
+      if (attribute.isHiddenParameter())
+        continue;
       if (attribute.isFilterAttribute()) {
         buf.add(
             "\t"
@@ -615,46 +707,27 @@ public class Go extends Language {
                     getJsonVal(attribute, attribute.isRequired)));
       } else if (attribute.isEnumAttribute()) {
         if (attribute.isGlobalEnumAttribute()) {
-          if (attribute.name.equals("juris_type")) type = "enum.Tax" + toClazName(attribute.name);
-          else type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+          // For global enums, use the global enum type name from the spec
+          type = getGlobalEnumTypeName(attribute);
+        } else if (attribute.isExternalEnum() || resourceHasEnum(subResName, attribute.name)) {
+          // For external enums (explicitly marked in spec) or when a matching resource
+          // has this enum defined, use the sub-resource name as the prefix.
+          // e.g., payment_reference_numbers.type -> PaymentReferenceNumberType
+          // e.g., contract_terms.action_at_term_end -> ContractTermActionAtTermEnd
+          // e.g., unbilled_charges.entity_type -> UnbilledChargeEntityType
+          type = subResName + toCamelCase(attribute.name);
         } else {
-          ResourceAssist resourceAssist = new ResourceAssist().setResource(activeResource);
-
-          if (resourceAssist.enums().stream()
-              .anyMatch(a -> a.name.equals(singularize(subParam.name) + "_" + attribute.name))) {
-            type =
-                firstCharLower(toCamelCase(activeResource.name))
-                    + Constants.ENUM_DOT
-                    + toCamelCase(singularize(attribute.metaModelName()))
-                    + toClazName(attribute.name);
-          } else if (attribute.isSubResource() && attribute.metaModelName() != null) {
-            type =
-                firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
-                    + Constants.ENUM_DOT
-                    + toClazName(attribute.name);
-
-          } else if (attribute.metaModelName() != null && !attribute.isSubResource()) {
-            type =
-                firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
-                    + Constants.ENUM_DOT
-                    + toClazName(attribute.name);
+          // For non-global enums in sub-resources, the enum type name follows the
+          // pattern:
+          // ResourceName + SubResourceName (singularized) + AttributeName
+          // But if SubResourceName singularizes to ResourceName, avoid duplication
+          if (subResName.equals(activeResource.name)) {
+            type = activeResource.name + toCamelCase(attribute.name);
           } else {
-            type =
-                firstCharLower(toCamelCase(activeResource.name))
-                    + Constants.ENUM_DOT
-                    + toClazName(
-                        attribute.getEnumApiName() != null
-                            ? attribute.getEnumApiName()
-                            : attribute.name);
+            type = activeResource.name + subResName + toCamelCase(attribute.name);
           }
         }
-        if (type.equalsIgnoreCase("paymentSourceEnum.CardFundingType")) {
-          type = "cardEnum.FundingType";
-        }
-        if (type.equalsIgnoreCase("discountEnum.EntityType")) {
-          type = "invoiceEnum.DiscountEntityType";
-        }
-        addEnumImport(type);
+        // addEnumImport(type);
         buf.add(
             "\t"
                 + String.join(
@@ -688,12 +761,11 @@ public class Go extends Language {
     List<Parameter> params = new ArrayList<>();
     params.addAll(action.requestBodyParameters());
     params.addAll(action.queryParameters());
-    List<Attribute> attributes =
-        params.stream()
-            .map(p -> new Attribute(p.getName(), p.schema, p.isRequired))
-            .filter(Attribute::isNotHiddenAttribute)
-            .sorted(Comparator.comparing(Attribute::sortOrder))
-            .toList();
+    List<Attribute> attributes = params.stream()
+        .map(p -> new Attribute(p.getName(), p.schema, p.isRequired))
+        .filter(Attribute::isNotHiddenAttribute)
+        .sorted(Comparator.comparing(Attribute::sortOrder))
+        .toList();
     for (Attribute attribute : attributes) {
       if (attribute.isSubResource()
           || attribute.isCompositeArrayRequestBody()
@@ -714,29 +786,30 @@ public class Go extends Language {
     String type = "";
     StringJoiner buf = new StringJoiner("\n");
     HashMap<String, Integer> m = new HashMap<>();
-    ActionAssist actionAssist =
-        ActionAssist.of(action)
-            .withFlatOuterEntries(true)
-            .withPagination(true)
-            .withOnlyPagination(true)
-            .withFilterSubResource(true);
+    ActionAssist actionAssist = ActionAssist.of(action)
+        .withFlatOuterEntries(true)
+        .withPagination(true)
+        .withOnlyPagination(true)
+        .withFilterSubResource(true);
     for (Attribute attribute : actionAssist.getAllAttribute()) {
+      if (attribute.isDeprecated())
+        continue;
       if (attribute.isSubResource() || attribute.isCompositeArrayRequestBody()) {
         if (m.containsKey(attribute.name)) {
           continue;
         } else {
           m.put(attribute.name, 1);
-          type = "*" + firstCharUpper(action.name) + toCamelCase(singularize(attribute.name));
+          type = "*" + activeResource.name + firstCharUpper(action.name) + toCamelCase(singularize(attribute.name));
           if (attribute.isCompositeArrayRequestBody()) {
             type = "[]" + type;
           }
-          addEnumImport(type);
+          // addEnumImport(type);
           buf.add(
               "\t"
                   + String.join(
                       delimiter,
                       toCamelCase(attribute.name),
-                      type + "Params",
+                      type,
                       "`json:\"" + attribute.name + ",omitempty\"`"));
           continue;
         }
@@ -763,16 +836,16 @@ public class Go extends Language {
                       getJsonVal(attribute, req)));
       } else if (attribute.isEnumAttribute() && !attribute.isFilterAttribute()) {
         if (attribute.isListOfEnum()) {
-          type = "[]enum." + getListOfEnumTypeForAttribute(attribute);
+          type = getListOfEnumTypeForAttribute(attribute);
+        } else if (attribute.isGlobalEnumAttribute()) {
+          // For global enums, use the global type name from the spec
+          type = getGlobalEnumTypeName(attribute);
         } else if (attribute.isGenSeparate()) {
-          type = Constants.ENUM_WITH_DELIMITER + toClazName(attribute.name);
+          type = activeResource.name + toClazName(attribute.name);
         } else {
-          type =
-              firstCharLower(toCamelCase(activeResource.name))
-                  + Constants.ENUM_DOT
-                  + toClazName(attribute.name);
+          // Non-global resource-specific enums
+          type = activeResource.name + toClazName(attribute.name);
         }
-        addEnumImport(type);
         buf.add(
             "\t"
                 + String.join(
@@ -784,7 +857,7 @@ public class Go extends Language {
                   + String.join(
                       delimiter,
                       toCamelCase(attribute.name),
-                      "*" + toCamelCase(action.name) + toCamelCase(attribute.name) + "Params",
+                      "*" + activeResource.name + toCamelCase(action.name) + toCamelCase(attribute.name),
                       getJsonVal(attribute, req)));
         } else {
           buf.add(
@@ -808,34 +881,57 @@ public class Go extends Language {
     return formatUsingDelimiter(buf.toString());
   }
 
-  private List<FileOp> genModelEnums(
-      String outputDirectoryPath,
-      String resourceDirName,
+  private StringBuffer genModelEnums(
+      String resourceName,
       List<Enum> resourceAssistEnums,
-      List<Enum> schemaLessEnums)
+      List<Enum> schemaLessEnums,
+      Set<String> globalEnumNames)
       throws IOException {
-    List<FileOp> fileOps = new ArrayList<>();
+    StringBuffer buf = new StringBuffer();
     Template enumTemplate = getTemplateContent("enums");
-    String enumDirPath = outputDirectoryPath + "/" + resourceDirName + "/enum";
-    fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath + "/" + resourceDirName, "enum"));
-    var enums =
-        resourceAssistEnums.stream()
-            .map(this::globalEnumTemplate)
-            .filter(m -> !m.isEmpty())
-            .toList();
-    var schemalessEnum =
-        schemaLessEnums.stream().map(this::globalEnumTemplate).filter(m -> !m.isEmpty()).toList();
-    for (var _enum : enums) {
-      var content = enumTemplate.apply(_enum);
-      String fileName = _enum.get("name").toString();
-      fileOps.add(new FileOp.WriteString(enumDirPath, fileName + ".go", content));
+
+    // Combine all enums and deduplicate by name, also skip if collides with global
+    // enum
+    Set<String> seenEnumNames = new HashSet<>();
+    List<Map<String, Object>> allEnums = new ArrayList<>();
+
+    for (Enum e : resourceAssistEnums) {
+      Map<String, Object> enumMap = this.resourceEnumTemplate(e, resourceName);
+      if (!enumMap.isEmpty()) {
+        String enumName = (String) enumMap.get("name");
+        String fullName = resourceName + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, enumName);
+        // Skip if this enum name collides with a global enum
+        if (globalEnumNames.contains(fullName)) {
+          continue;
+        }
+        if (!seenEnumNames.contains(fullName)) {
+          seenEnumNames.add(fullName);
+          allEnums.add(enumMap);
+        }
+      }
     }
-    for (var _enum : schemalessEnum) {
-      var content = enumTemplate.apply(_enum);
-      String fileName = _enum.get("name").toString();
-      fileOps.add(new FileOp.WriteString(enumDirPath, fileName + ".go", content));
+
+    for (Enum e : schemaLessEnums) {
+      Map<String, Object> enumMap = this.resourceEnumTemplate(e, resourceName);
+      if (!enumMap.isEmpty()) {
+        String enumName = (String) enumMap.get("name");
+        String fullName = resourceName + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, enumName);
+        // Skip if this enum name collides with a global enum
+        if (globalEnumNames.contains(fullName)) {
+          continue;
+        }
+        if (!seenEnumNames.contains(fullName)) {
+          seenEnumNames.add(fullName);
+          allEnums.add(enumMap);
+        }
+      }
     }
-    return fileOps;
+
+    for (var _enum : allEnums) {
+      buf.append(enumTemplate.apply(_enum));
+    }
+
+    return buf;
   }
 
   public String getCols() {
@@ -849,17 +945,17 @@ public class Go extends Language {
       if (a.isEnumAttribute()) {
         if (a.isListOfEnum()) {
           type = "[]" + Constants.ENUM_WITH_DELIMITER + getListOfEnumTypeForAttribute(a);
+        } else if (a.isGlobalEnumAttribute()) {
+          // For global enums, use the global type name from the spec
+          type = getGlobalEnumTypeName(a);
         } else if (a.isGenSeparate()) {
-          type =
-              Constants.ENUM_WITH_DELIMITER
-                  + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
+          type = activeResource.name
+              + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
         } else {
-          type =
-              getCamelClazName(activeResource.name)
-                  + Constants.ENUM_DOT
-                  + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
+          // Non-global resource-specific enums get the resource prefix
+          type = activeResource.name
+              + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
         }
-        addEnumImport(type);
         buf.add("\t" + String.join(delimiter, toCamelCase(a.name), type, getJsonVal(a, true)));
       } else {
         if (a.isSubResource() && a.subResourceName() != null) {
@@ -896,9 +992,9 @@ public class Go extends Language {
           "\t"
               + String.join(
                   delimiter,
-                  "CustomField",
-                  Constants.MAP_STRING_INTERFACE,
-                  "`json:\"custom_field\"`"));
+                  "CustomFields",
+                  "*customFields",
+                  "`json:\"-\"`"));
     if (activeResource.name.equals("Customer"))
       buf.add(
           "\t"
@@ -911,83 +1007,80 @@ public class Go extends Language {
 
   private String getListOfEnumTypeForAttribute(Attribute a) {
     return CaseFormat.LOWER_UNDERSCORE.to(
-            CaseFormat.UPPER_CAMEL,
-            singularize((String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME)))
+        CaseFormat.UPPER_CAMEL,
+        singularize((String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME)))
         + "Type";
   }
 
   public String getSubResourceCols(Resource subResource) {
     String type = "";
     StringJoiner buf = new StringJoiner("\n");
-    List<Attribute> attributes =
-        subResource.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList();
+    List<Attribute> attributes = subResource.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList();
     for (Attribute attribute : attributes) {
       if (attribute.isDeprecated()) {
         buf.add("\t//Deprecated: this field is deprecated");
       }
       if (attribute.isEnumAttribute()) {
-        if (attribute.isGenSeparate()) {
-          type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
+        if (attribute.isGlobalEnumAttribute()) {
+          // For global enums, use the global type name from the spec
+          type = getGlobalEnumTypeName(attribute);
+        } else if (attribute.isGenSeparate()) {
+          type = activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name);
         } else if (attribute.isDependentAttribute()) {
-          type = activeResource.name + Constants.ENUM_DOT + attribute.name;
+          type = toCamelCase(attribute.name);
+        } else if (attribute.isExternalEnum()) {
+          // For external enums, use standard naming: ResourceName + SubResourceName +
+          // AttributeName
+          type = activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name);
         } else {
-          if (attribute.isExternalEnum()) {
-            if (attribute.getEnumApiName() == null
-                || attribute.getEnumApiName().equalsIgnoreCase(attribute.name)) {
-              type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
-            } else {
-              type = firstCharLower(attribute.getEnumApiName());
-              type =
-                  type.contains(".")
-                      ? type.replace(".", Constants.ENUM_DOT)
-                      : Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
-            }
-            type = enumTypeCustomLogic(type);
-          } else {
-            type =
-                firstCharLower(activeResource.name)
-                    + Constants.ENUM_DOT
-                    + singularize(subResource.name)
-                    + toCamelCase(attribute.name);
-          }
+          // Non-global resource-specific sub-resource enums
+          type = activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name);
         }
         // Patch to match cb-app based enum naming
-        type =
-            switch (type) {
-              case "creditNoteEnum.TxnStatus",
-                      "invoiceEnum.TxnStatus",
-                      "transactionEnum.TxnStatus" ->
-                  "transactionEnum.Status";
-              case "invoiceEnum.CnReasonCode", "transactionEnum.CnReasonCode" ->
-                  "creditNoteEnum.ReasonCode";
-              case "invoiceEnum.CnStatus", "transactionEnum.CnStatus" -> "creditNoteEnum.Status";
-              case "creditNoteEnum.InvoiceStatus", "transactionEnum.InvoiceStatus" ->
-                  "invoiceEnum.Status";
-              case "orderEnum.LinkedCreditNoteType" -> "orderEnum.OrderLineItemLinkedCreditType";
-              case "orderEnum.LinkedCreditNoteStatus" ->
-                  "orderEnum.OrderLineItemLinkedCreditStatus";
-              case "discountEnum.EntityType" -> "invoiceEnum.DiscountEntityType";
-              case "omnichannelSubscriptionEnum.OmnichannelTransactionType" ->
-                  "omnichannelSubscriptionEnum.InitialPurchaseTransactionType";
-              default -> type;
-            };
-        if (Set.of("QuotedSubscription", "Subscription", "Gift").contains(activeResource.name)
-            && Set.of("SubscriptionItems", "GiftTimelines").contains(subResource.name)) {
+        // type =
+        // switch (type) {
+        // case "creditNoteEnum.TxnStatus",
+        // "invoiceEnum.TxnStatus",
+        // "transactionEnum.TxnStatus" ->
+        // "transactionEnum.Status";
+        // case "invoiceEnum.CnReasonCode", "transactionEnum.CnReasonCode" ->
+        // "creditNoteEnum.ReasonCode";
+        // case "invoiceEnum.CnStatus", "transactionEnum.CnStatus" ->
+        // "creditNoteEnum.Status";
+        // case "creditNoteEnum.InvoiceStatus", "transactionEnum.InvoiceStatus" ->
+        // "invoiceEnum.Status";
+        // case "orderEnum.LinkedCreditNoteType" ->
+        // "orderEnum.OrderLineItemLinkedCreditType";
+        // case "orderEnum.LinkedCreditNoteStatus" ->
+        // "orderEnum.OrderLineItemLinkedCreditStatus";
+        // case "discountEnum.EntityType" -> "invoiceEnum.DiscountEntityType";
+        // case "omnichannelSubscriptionEnum.OmnichannelTransactionType" ->
+        // "omnichannelSubscriptionEnum.InitialPurchaseTransactionType";
+        // default -> type;
+        // };
+        // if (Set.of("QuotedSubscription", "Subscription",
+        // "Gift").contains(activeResource.name)
+        // && Set.of("SubscriptionItems", "GiftTimelines").contains(subResource.name)) {
 
-          type =
-              switch (activeResource.name) {
-                case "QuotedSubscription" ->
-                    type.replace(
-                            "enum.BillingPeriodUnit", "quotedSubscriptionEnum.BillingPeriodUnit")
-                        .replace("enum.Status", "giftEnum.Status");
-                case "Subscription" ->
-                    type.replace("enum.BillingPeriodUnit", "subscriptionEnum.BillingPeriodUnit")
-                        .replace("enum.Status", "giftEnum.Status");
-                case "Gift" -> type.replace("enum.Status", "giftEnum.Status");
-                default -> type;
-              };
-        }
-        addEnumImport(type);
+        // type =
+        // switch (activeResource.name) {
+        // case "QuotedSubscription" ->
+        // type.replace(
+        // "enum.BillingPeriodUnit", "quotedSubscriptionEnum.BillingPeriodUnit")
+        // .replace("enum.Status", "giftEnum.Status");
+        // case "Subscription" ->
+        // type.replace("enum.BillingPeriodUnit", "subscriptionEnum.BillingPeriodUnit")
+        // .replace("enum.Status", "giftEnum.Status");
+        // case "Gift" -> type.replace("enum.Status", "giftEnum.Status");
+        // default -> type;
+        // };
+        // }
+        // addEnumImport(type);
+        // if (type.startsWith(getCamelClazName(activeResource.name) +
+        // Constants.ENUM_DOT)) {
+        // type = type.replace(getCamelClazName(activeResource.name) +
+        // Constants.ENUM_DOT, "");
+        // }
         buf.add(
             "\t"
                 + String.join(
@@ -1009,6 +1102,7 @@ public class Go extends Language {
                     dataType(attribute.schema, attribute.name),
                     getJsonVal(attribute, true)));
       }
+
     }
     buf.add("\t" + String.join(delimiter, "Object", Constants.STRING_TYPE, "`json:\"object\"`"));
     return formatUsingDelimiter(buf.toString());
@@ -1020,8 +1114,7 @@ public class Go extends Language {
       colsRetType = colsRetType.replace("enum.InvoiceStatus", "invoiceEnum.Status");
       colsRetType = colsRetType.replace("enum.CnReasonCode", "creditNoteEnum.ReasonCode");
       colsRetType = colsRetType.replace("enum.CnStatus", "creditNoteEnum.Status");
-      colsRetType =
-          colsRetType.replace("enum.PaymentMethodType", "paymentIntentEnum.PaymentMethodType");
+      colsRetType = colsRetType.replace("enum.PaymentMethodType", "paymentIntentEnum.PaymentMethodType");
     }
     return colsRetType;
   }
@@ -1068,34 +1161,30 @@ public class Go extends Language {
     }
 
     if (isListOfSubResourceSchema(schema)) {
-      if (!getDependentResource(activeResource).isEmpty()) {
-        String dep =
-            getCamelClazName(singularize(attributeName)).toLowerCase().replace("_", "") + ".";
-        return "[]*" + dep + toCamelCase(singularize(attributeName));
-      } else {
+      // Check if it's a dependent/external resource (defined in its own file)
+      if (isDependedAttribute(schema) || isGobalResourceReference(schema)) {
+        // Use x-cb-sub-resource-name if available for global resource references
+        String subResName = subResourceName(schema);
+        if (subResName != null) {
+          return "[]*" + toCamelCase(subResName);
+        }
         return "[]*" + toCamelCase(singularize(attributeName));
       }
+      // Local sub-resource - include the resource prefix
+      return "[]*" + activeResource.name + toCamelCase(singularize(attributeName));
     }
     if (isSubResourceSchema(schema)) {
-      String dep = "";
-      if (!getDependentResource(activeResource).isEmpty()) {
-        if (schemaNamespaceIsLocal(schema)) {
-          return toCamelCase(attributeName);
+      // Check if it's a dependent/external resource (defined in its own file)
+      if (isDependedAttribute(schema) || isGobalResourceReference(schema)) {
+        // Use x-cb-sub-resource-name if available for global resource references
+        String subResName = subResourceName(schema);
+        if (subResName != null) {
+          return "*" + toCamelCase(subResName);
         }
-        dep = toCamelCase(attributeName).toLowerCase() + ".";
-        return "*" + dep + toCamelCase(attributeName);
+        return "*" + toCamelCase(attributeName);
       }
-      // Patch to match cb-app based naming
-      if ((activeResource.name.equalsIgnoreCase("PaymentIntent")
-              && attributeName.equals("error_detail"))
-          || (activeResource.name.equalsIgnoreCase("SubscriptionEntitlement")
-              && attributeName.equalsIgnoreCase("entitlement_overrides"))) {
-        return "*"
-            + toCamelCase(subResourceName(schema)).toLowerCase()
-            + "."
-            + toCamelCase(subResourceName(schema));
-      }
-      return "*" + toCamelCase(attributeName);
+      // Local sub-resource - include the resource prefix
+      return "*" + activeResource.name + toCamelCase(attributeName);
     }
     if (schema.getItems() != null
         && dataType(schema.getItems(), attributeName).equals(Constants.STRING_TYPE)) {
@@ -1212,7 +1301,8 @@ public class Go extends Language {
       return (String) schema.getExtensions().get(SDK_FILTER_NAME);
     }
     Optional<Schema> filterSch = schema.getProperties().values().stream().findFirst();
-    if (filterSch.isEmpty()) return null;
+    if (filterSch.isEmpty())
+      return null;
     Schema filterSchema = filterSch.get();
     if (filterSchema.getEnum() != null) {
       if (filterSchema.getFormat() != null && filterSchema.getFormat().equals("boolean")) {
@@ -1234,8 +1324,10 @@ public class Go extends Language {
 
   private FileOp generateResultFile(String outputDirectory, List<Resource> resources)
       throws IOException {
-    Map<String, Object> templateParams = resourceResponses(resources);
-    Template resultTemplate = getTemplateContent("result");
+    Map<String, Object> templateParams = this.resourceResponses(resources);
+    // ObjectMapper mapper = new
+    // ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    Template resultTemplate = this.getTemplateContent("result");
     return new FileOp.WriteString(
         outputDirectory, "result.go", resultTemplate.apply(templateParams));
   }
@@ -1247,9 +1339,12 @@ public class Go extends Language {
   }
 
   public boolean isGobalResourceReference(Schema schema) {
+    if (schema instanceof io.swagger.v3.oas.models.media.ArraySchema && schema.getItems() != null) {
+      schema = schema.getItems();
+    }
     return schema.getExtensions() != null
         && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
-        && ((boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE));
+        && ((boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE));
   }
 
   public boolean schemaNamespaceIsLocal(Schema schema) {

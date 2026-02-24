@@ -21,11 +21,11 @@ import ({{#if isEvent}}
 // Deprecated: This function is deprecated.{{/if}}
 func {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}params *{{golangCase ../name}}.{{camelCaseToPascalCase goParamName}}RequestParams{{/or}}) chargebee.{{#if isListResourceAction}}List{{/if}}Request {
     return chargebee.Send{{#if isOperationNeedsJsonInput}}JsonRequest{{/if}}{{#if isListResourceAction}}List{{/if}}("{{httpRequestType}}", fmt.Sprintf("/{{urlPrefix}}{{#if hasPathParameters}}/%v{{/if}}{{#if urlSuffix}}/{{urlSuffix}}{{/if}}"{{#if hasPathParameters}}, url.PathEscape(id){{/if}}), {{#or hasRequestBodyParameters hasQueryParameters}}params{{else}}nil{{/or}}){{#if subDomain}}.SetSubDomain("{{subDomain}}"){{/if}}{{#if options.isIdempotent}}.SetIdempotency({{options.isIdempotent}}){{/if}}
-}{{/each}}{{#if isExport}}{{{includeFile "src/main/resources/templates/go/export.go.hbs"}}}{{/if}}{{#if isTimeMachine}}
-{{{includeFile "src/main/resources/templates/go/timeMachine.go.hbs"}}}{{/if}}{{#if isEvent}}
-{{{includeFile "src/main/resources/templates/go/event.go.hbs"}}}{{/if}}{{#if isHostedPage}}
-{{{includeFile "src/main/resources/templates/go/hostedPage.go.hbs"}}}{{/if}}{{#if isSession}}
-{{{includeFile "src/main/resources/templates/go/session.go.hbs"}}}{{/if}}{{#if (eq name "PaymentVoucher")}}
+}{{/each}}{{#if isExport}}{{{includeFile "src/main/resources/templates/go/v3/export.go.hbs"}}}{{/if}}{{#if isTimeMachine}}
+{{{includeFile "src/main/resources/templates/go/v3/timeMachine.go.hbs"}}}{{/if}}{{#if isEvent}}
+{{{includeFile "src/main/resources/templates/go/v3/event.go.hbs"}}}{{/if}}{{#if isHostedPage}}
+{{{includeFile "src/main/resources/templates/go/v3/hostedPage.go.hbs"}}}{{/if}}{{#if isSession}}
+{{{includeFile "src/main/resources/templates/go/v3/session.go.hbs"}}}{{/if}}{{#if (eq name "PaymentVoucher")}}
 // Deprecated: This function is deprecated. Please use PaymentVouchersForInvoice instead.
 func Payment_vouchersForInvoice(id string, params *paymentvoucher.PaymentVouchersForInvoiceRequestParams) chargebee.ListRequest {
     return chargebee.SendList("GET", fmt.Sprintf("/invoices/%v/payment_vouchers", url.PathEscape(id)), params)

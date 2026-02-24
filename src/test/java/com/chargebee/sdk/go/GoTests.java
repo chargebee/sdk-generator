@@ -9,6 +9,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.LanguageTests;
+import com.chargebee.sdk.go.v3.Go_V3;
+
 import io.swagger.v3.oas.models.media.*;
 import java.io.IOException;
 import java.util.List;
@@ -19,12 +21,12 @@ import org.junit.jupiter.api.Test;
 public class GoTests extends LanguageTests {
   private static final String basePath = "/go";
   private static final String enumsDirectoryPath = "/go/enum";
-  public static Go goSdkGen;
+  public static Go_V3 goSdkGen;
   private final String modelsDirectoryPath = "/go/models";
 
   @BeforeAll
   static void beforeAll() {
-    goSdkGen = new Go();
+    goSdkGen = new Go_V3();
   }
 
   void assertGoEnumFileContent(FileOp.WriteString fileOp, String body) {

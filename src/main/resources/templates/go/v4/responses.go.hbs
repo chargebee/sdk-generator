@@ -1,0 +1,12 @@
+{{#each operations}}
+{{#if operationResponses.subResponseClassName}}
+type {{@root.clazName}}{{ operationResponses.subResponseClassName }} struct {
+{{{ operationResponses.subResponseParams }}}
+}
+{{/if}}
+
+type {{@root.clazName}}{{ operationResponses.className }} struct {
+{{{ operationResponses.responseParams }}}
+    apiResponse
+}
+{{/each}}
