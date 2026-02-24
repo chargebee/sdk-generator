@@ -6,6 +6,7 @@ import com.chargebee.v4.models.{{moduleName}}.{{name}};
 {{/each}}
 import com.chargebee.v4.models.BaseResponse;
 import com.chargebee.v4.internal.JsonUtil;
+import com.google.gson.JsonObject;
 import com.chargebee.v4.transport.Response;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -40,54 +41,54 @@ public final class {{name}}Response extends BaseResponse {
      */
     public static {{name}}Response fromJson(String json, Response httpResponse) {
         try {
+            JsonObject jsonObj = JsonUtil.parse(json);
             Builder builder = builder();
             {{#each fields}}
             {{#if isComplexObjectType}}
-            String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}({{{type}}}.fromJson(__{{name}}Json));
+            JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
+            if (__{{name}}Obj != null) {
+            builder.{{name}}({{{type}}}.fromJson(__{{name}}Obj));
             }
             {{else if isEnumType}}
-            builder.{{name}}({{{type}}}.fromString(JsonUtil.getString(json, "{{curlName}}")));
+            builder.{{name}}({{{type}}}.fromString(JsonUtil.getString(jsonObj, "{{curlName}}")));
             {{else if isListOfObjects}}
             {{#if listElementType}}
             {{#unless (eq listElementType "Object")}}
-            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")).stream().map({{listElementType}}::fromJson).collect(java.util.stream.Collectors.toList()));
+            builder.{{name}}(JsonUtil.mapArray(JsonUtil.getJsonArray(jsonObj, "{{curlName}}"), {{listElementType}}::fromJson));
             {{else}}
-            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getJsonArray(jsonObj, "{{curlName}}")));
             {{/unless}}
             {{else}}
-            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getArray(json, "{{curlName}}")));
+            builder.{{name}}(JsonUtil.parseObjectArray(JsonUtil.getJsonArray(jsonObj, "{{curlName}}")));
             {{/if}}
             {{else if isListType}}
             {{#if (eq listElementType "Object")}}
-            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}});");
-            if (__{{name}}Json != null) {
-            builder.{{name}}(JsonUtil.parseObjectArray(__{{name}}Json).stream()
-                .map(JsonUtil::parseJsonObjectToMap)
-                .collect(java.util.stream.Collectors.toList()));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            builder.{{name}}(JsonUtil.mapArrayToObjects(__{{name}}Arr));
             }
             {{else if (eq listElementType "java.util.Map<String, Object>")}}
-            String __{{name}}Json = JsonUtil.getArray(json, "{{curlName}});");
-            if (__{{name}}Json != null) {
-            builder.{{name}}(JsonUtil.parseObjectArray(__{{name}}Json).stream()
-                .map(JsonUtil::parseJsonObjectToMap)
-                .collect(java.util.stream.Collectors.toList()));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            builder.{{name}}(JsonUtil.mapArrayToMaps(__{{name}}Arr));
             }
             {{else}}
-            builder.{{name}}(JsonUtil.parseArrayOfString(JsonUtil.getArray(json, "{{curlName}}")));
+            com.google.gson.JsonArray __{{name}}Arr = JsonUtil.getJsonArray(jsonObj, "{{curlName}}");
+            if (__{{name}}Arr != null) {
+            builder.{{name}}(JsonUtil.parseArrayOfString(__{{name}}Arr));
+            }
             {{/if}}
             {{else if isObjectType}}
             {{#if (eq type "Object")}}
-            builder.{{name}}(JsonUtil.getObject(json, "{{curlName}}"));
+            builder.{{name}}(JsonUtil.getObject(jsonObj, "{{curlName}}"));
             {{else}}
-            String __{{name}}Json = JsonUtil.getObject(json, "{{curlName}}");
-            if (__{{name}}Json != null) {
-            builder.{{name}}({{{type}}}.fromJson(__{{name}}Json));
+            JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
+            if (__{{name}}Obj != null) {
+            builder.{{name}}({{{type}}}.fromJson(__{{name}}Obj));
             }
             {{/if}}
             {{else}}
-            builder.{{name}}(JsonUtil.get{{{type}}}(json, "{{curlName}}"));
+            builder.{{name}}(JsonUtil.get{{{type}}}(jsonObj, "{{curlName}}"));
             {{/if}}
             {{/each}}
             
