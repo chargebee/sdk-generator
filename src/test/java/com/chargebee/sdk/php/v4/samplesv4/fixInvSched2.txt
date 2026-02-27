@@ -5,9 +5,9 @@ namespace Chargebee\Resources\AdvanceInvoiceSchedule;
 class FixedIntervalSchedule  {
     /**
     *
-    * @var ?string $end_schedule_on
+    * @var string $end_schedule_on
     */
-    public ?string $end_schedule_on;
+    public string $end_schedule_on;
 
     /**
     *
@@ -29,9 +29,9 @@ class FixedIntervalSchedule  {
 
     /**
     *
-    * @var ?string $created_at
+    * @var string $created_at
     */
-    public ?string $created_at;
+    public string $created_at;
 
     /**
     *
@@ -51,11 +51,11 @@ class FixedIntervalSchedule  {
     protected $_data = [];
 
     private function __construct(
-        ?string $end_schedule_on,
+        string $end_schedule_on,
         ?string $number_of_occurrences,
         ?string $days_before_renewal,
         ?string $end_date,
-        ?string $created_at,
+        string $created_at,
         ?string $terms_to_change,
     )
     {
@@ -69,11 +69,11 @@ class FixedIntervalSchedule  {
 
     public static function from(array $resourceAttributes): self
     {
-        $returnData = new self( $resourceAttributes['end_schedule_on'] ?? null,
+        $returnData = new self( $resourceAttributes['end_schedule_on'] ,
         $resourceAttributes['number_of_occurrences'] ?? null,
         $resourceAttributes['days_before_renewal'] ?? null,
         $resourceAttributes['end_date'] ?? null,
-        $resourceAttributes['created_at'] ?? null,
+        $resourceAttributes['created_at'] ,
         $resourceAttributes['terms_to_change'] ?? null,
 
 

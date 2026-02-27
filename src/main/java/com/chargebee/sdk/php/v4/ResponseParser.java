@@ -56,7 +56,7 @@ public class ResponseParser {
     column.setApiName(key);
     column.setFieldTypePHP(referredResourceName(schema));
     column.setPhpDocField(referredResourceName(schema));
-    column.setIsOptional(true);
+    column.setIsOptional(!isRequired);
     column.setPrimitiveDataType(isPrimitiveDataType(schema));
     column.setArrayOfSubResources(!isPrimitiveDataType(schema) && isArrayType(schema));
     return column;
