@@ -5,15 +5,15 @@ namespace Chargebee\Resources\Customer;
 class Customer  {
     /**
     *
-    * @var ?string $id
+    * @var string $id
     */
-    public ?string $id;
+    public string $id;
 
     /**
     *
-    * @var ?int $net_term_days
+    * @var int $net_term_days
     */
-    public ?int $net_term_days;
+    public int $net_term_days;
 
     /**
     *
@@ -63,8 +63,8 @@ class Customer  {
     protected $_data = [];
 
     private function __construct(
-        ?string $id,
-        ?int $net_term_days,
+        string $id,
+        int $net_term_days,
         ?int $vat_number_validated_time,
         ?int $resource_version,
         ?bool $auto_close_invoices,
@@ -85,8 +85,8 @@ class Customer  {
 
     public static function from(array $resourceAttributes): self
     {
-        $returnData = new self( $resourceAttributes['id'] ?? null,
-        $resourceAttributes['net_term_days'] ?? null,
+        $returnData = new self( $resourceAttributes['id'] ,
+        $resourceAttributes['net_term_days'] ,
         $resourceAttributes['vat_number_validated_time'] ?? null,
         $resourceAttributes['resource_version'] ?? null,
         $resourceAttributes['auto_close_invoices'] ?? null,

@@ -140,7 +140,9 @@ public class Common {
     column.setName(attribute.name);
     column.setFieldTypePHP(dataTypeForMultiLineAttributes(attribute));
     column.setPhpDocField(PHPDocForAttribute(attribute));
-    column.setIsOptional(true);
+    column.setIsOptional(
+        !attribute.isRequired
+            || attribute.isPcv1Attribute()); // always make it optional if its pcv1 resources
     column.setSubResources(attribute.isSubResource());
     column.setApiName(attribute.name);
     column.setArrayOfSubResources(isArrayOfSubResources(attribute));
@@ -174,7 +176,7 @@ public class Common {
     column.setName(attribute.name);
     column.setFieldTypePHP(basePath + toCamelCase(attribute.name));
     column.setPhpDocField(basePath + toCamelCase(attribute.name));
-    column.setIsOptional(true);
+    column.setIsOptional(!attribute.isRequired || attribute.isPcv1Attribute());
     column.setApiName(attribute.name);
     return column;
   }
