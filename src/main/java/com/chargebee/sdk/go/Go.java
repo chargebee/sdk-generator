@@ -83,6 +83,7 @@ public class Go extends Language {
     fileOps.addAll(
         generateActionsDirectories(outputDirectoryPath + actionsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
+    fileOps.add(generateUtilFile(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
 
     // Generate webhook files (parser, content, handler)
@@ -435,7 +436,9 @@ public class Go extends Language {
         "webhookContent",
         "/templates/go/webhookContent.go.hbs",
         "webhookHandler",
-        "/templates/go/webhookHandler.go.hbs");
+        "/templates/go/webhookHandler.go.hbs",
+        "util",
+        "/templates/go/util.go.hbs");
   }
 
   private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)
@@ -1238,6 +1241,22 @@ public class Go extends Language {
     Template resultTemplate = getTemplateContent("result");
     return new FileOp.WriteString(
         outputDirectory, "result.go", resultTemplate.apply(templateParams));
+  }
+
+  private FileOp generateUtilFile(String outputDirectory, List<Resource> resources)
+      throws IOException {
+    List<Map<String, Object>> customFieldResources =
+        resources.stream()
+            .filter(Resource::isNotDependentResource)
+            .filter(Resource::isNotThirdPartyResource)
+            .filter(Resource::isCustomFieldSupported)
+            .map(r -> Map.<String, Object>of("id", r.id, "name", r.name))
+            .toList();
+    Template utilTemplate = getTemplateContent("util");
+    return new FileOp.WriteString(
+        outputDirectory,
+        "util.go",
+        utilTemplate.apply(Map.of("customFieldResources", customFieldResources)));
   }
 
   public boolean isDependedAttribute(Schema schema) {
