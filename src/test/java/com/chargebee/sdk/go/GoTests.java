@@ -609,7 +609,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -639,7 +639,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -664,7 +664,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -691,7 +691,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -721,7 +721,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -751,7 +751,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -790,7 +790,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -831,7 +831,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -866,7 +866,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -923,7 +923,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -936,7 +936,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
         }
         """);
 
-    writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -959,7 +959,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
         }
         """);
 
-    writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
+    writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -991,7 +991,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1032,7 +1032,7 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1079,7 +1079,7 @@ type ChangeBillingDateRequestParams struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1118,7 +1118,7 @@ type ChangeBillingDateRequestParams struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1169,7 +1169,7 @@ type ChangeBillingDateRequestParams struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1223,7 +1223,7 @@ type ChangeBillingDateRequestParams struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1267,7 +1267,7 @@ type CreateForChargeItemsAndChargesPaymentIntentParams struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
     assertThat(writeStringFileOp.fileName).isEqualTo("line_item_discount_discount_type.go");
     assertGoModelFileContent(
         writeStringFileOp,
@@ -1316,7 +1316,7 @@ const (
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1379,7 +1379,7 @@ type CreateForChargeItemsAndChargesPaymentIntentParams struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1436,7 +1436,7 @@ type CreateEntityIdentifierParams struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1497,7 +1497,7 @@ type CreateEntityIdentifierParams struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1644,7 +1644,7 @@ type Result struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    assertCreateDirectoryFileOp(fileOps.get(4), modelsDirectoryPath, "customer");
+    assertCreateDirectoryFileOp(fileOps.get(5), modelsDirectoryPath, "customer");
   }
 
   @Test
@@ -1659,7 +1659,7 @@ type Result struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    assertCreateDirectoryFileOp(fileOps.get(5), modelsDirectoryPath + "/customer", "enum");
+    assertCreateDirectoryFileOp(fileOps.get(6), modelsDirectoryPath + "/customer", "enum");
   }
 
   @Test
@@ -1674,7 +1674,7 @@ type Result struct {
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
     assertWriteStringFileOp(
-        fileOps.get(6), modelsDirectoryPath + "/customer/enum", "card_status.go");
+        fileOps.get(7), modelsDirectoryPath + "/customer/enum", "card_status.go");
   }
 
   @Test
@@ -1683,7 +1683,7 @@ type Result struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    assertWriteStringFileOp(fileOps.get(5), "/go/models/customer", "customer.go");
+    assertWriteStringFileOp(fileOps.get(6), "/go/models/customer", "customer.go");
   }
 
   @Test
@@ -1697,7 +1697,7 @@ type Result struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
     assertGoModelEnumFileContent(
         writeStringFileOp,
         """
@@ -1723,7 +1723,7 @@ type Result struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
     assertGoModelEnumFileContent(
         writeStringFileOp,
         """
@@ -1815,7 +1815,7 @@ type Result struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertGoModelFileContent(
         writeStringFileOp,
         """
@@ -1898,7 +1898,7 @@ type Result struct {
             .withPostOperation("/customer/create", createCustomer)
             .done();
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     assertGoModelFileContent(
         writeStringFileOp,
         "packageenumtypePreferredSchemestringconst(PreferredSchemePlanPreferredScheme=\"plan\"PreferredSchemePlanSetupPreferredScheme=\"plan_setup\")");
@@ -1955,7 +1955,7 @@ type Result struct {
             .withPostOperation("/customer/create", createCustomer)
             .done();
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(11);
     assertGoModelFileContent(
         writeStringFileOp,
         "packageenumtypeAutocollectionstringconst(AutocollectionOnAutocollection=\"On\"AutocollectionOffAutocollection=\"Off\")");
