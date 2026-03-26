@@ -697,6 +697,48 @@ public class Php_v4Tests extends LanguageTests {
   }
 
   @Test
+  void globalEnumAttributeShouldUseEnumApiNameForTypePath() throws IOException {
+    var alertStatusEnum =
+        buildEnum("alert_status", List.of("within_limit", "in_alarm"))
+            .setEnumApiName("AlertStatus")
+            .asGlobalEnum(true)
+            .asGenSeparate()
+            .done();
+    var alertStatus =
+        buildResource("alert_status")
+            .withAttribute("alert_id", true)
+            .withEnumAttribute(alertStatusEnum, true)
+            .done();
+
+    var spec = buildSpec().withResources(alertStatus).done();
+
+    List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
+
+    // Verify the global enum file is generated with within_limit and in_alarm values
+    var enumFileOp =
+        fileOps.stream()
+            .filter(f -> f instanceof FileOp.WriteString)
+            .map(f -> (FileOp.WriteString) f)
+            .filter(f -> f.fileName.equals("AlertStatus.php") && f.baseFilePath.contains("Enums"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(enumFileOp.fileContent).contains("within_limit");
+    assertThat(enumFileOp.fileContent).contains("in_alarm");
+
+    // Verify the resource file references the enum with correct casing
+    var resourceFileOp =
+        fileOps.stream()
+            .filter(f -> f instanceof FileOp.WriteString)
+            .map(f -> (FileOp.WriteString) f)
+            .filter(
+                f -> f.fileName.equals("AlertStatus.php") && f.baseFilePath.contains("Resources"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(resourceFileOp.fileContent).contains("\\Chargebee\\Enums\\AlertStatus");
+    assertThat(resourceFileOp.fileContent).doesNotContain("\\Chargebee\\Enums\\alertStatus");
+  }
+
+  @Test
   void shouldCreateListResponseObjectForListRequests() throws IOException {
     var customer =
         buildResource("customer").withAttribute("id", true).withAttribute("email", true).done();

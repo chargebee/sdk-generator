@@ -1213,6 +1213,73 @@ public class Coupon extends Resource<Coupon> {
   }
 
   @Test
+  void globalEnumAttributeShouldUseFullyQualifiedNameWhenClashesWithResourceName()
+      throws IOException {
+    var alertStatusEnum =
+        buildEnum("alert_status", List.of("within_limit", "in_alarm"))
+            .setEnumApiName("AlertStatus")
+            .asGlobalEnum(true)
+            .asGenSeparate()
+            .done();
+    var alertStatus =
+        buildResource("alert_status")
+            .withAttribute("alert_id", true)
+            .withEnumAttribute(alertStatusEnum, true)
+            .done();
+
+    var spec = buildSpec().withResource(alertStatus).done();
+
+    List<FileOp> fileOps = javaSdkGen.generate(basePath, spec);
+
+    // fileOps.get(2) is the enum file, fileOps.get(3) is the model file
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(3);
+    assertJavaModelFileContent(
+        writeStringFileOp,
+        "alert_status.txt",
+        """
+            public String alertId() {
+                return reqString("alert_id");
+            }
+
+            public com.chargebee.models.enums.AlertStatus alertStatus() {
+                return reqEnum("alert_status", com.chargebee.models.enums.AlertStatus.class);
+            }\
+        """);
+  }
+
+  @Test
+  void shouldGenerateGlobalEnumFileFromResourceAttributeWhenNotInTopLevelSchema()
+      throws IOException {
+    var alertStatusEnum =
+        buildEnum("alert_status", List.of("within_limit", "in_alarm"))
+            .setEnumApiName("AlertStatus")
+            .asGlobalEnum(true)
+            .asGenSeparate()
+            .done();
+    var alertStatus =
+        buildResource("alert_status")
+            .withAttribute("alert_id", true)
+            .withEnumAttribute(alertStatusEnum, true)
+            .done();
+
+    var spec = buildSpec().withResource(alertStatus).done();
+
+    List<FileOp> fileOps = javaSdkGen.generate(basePath, spec);
+
+    assertWriteStringFileOp(fileOps.get(2), enumsDirectoryPath, "AlertStatus.java");
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(2);
+    assertJavaEnumFileContent(
+        writeStringFileOp,
+        """
+public enum AlertStatus {
+    WITHIN_LIMIT,
+    IN_ALARM,
+    _UNKNOWN; /*Indicates unexpected value for this enum. You can get this when there is a
+    java-client version incompatibility. We suggest you to upgrade to the latest version */
+}""");
+  }
+
+  @Test
   void enumAttributeShouldHaveQuestionMarkIfOptional() throws IOException {
     var pii_cleared =
         buildEnum("pii_cleared", List.of("active", "cleared")).setEnumApiName("PiiCleared").done();

@@ -108,16 +108,16 @@ public class Java extends Language {
       throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
 
-    if (generationMode.equals(GenerationMode.INTERNAL)) {
-      for (var res : resources) {
-        for (var attribute : res.getSortedResourceAttributes()) {
-          processEnumAttribute(attribute, globalEnums);
-          if (attribute.isSubResource()) {
-            for (var enumAttribute : attribute.attributes()) {
-              processEnumAttribute(enumAttribute, globalEnums);
-            }
+    for (var res : resources) {
+      for (var attribute : res.getSortedResourceAttributes()) {
+        processEnumAttribute(attribute, globalEnums);
+        if (attribute.isSubResource()) {
+          for (var enumAttribute : attribute.attributes()) {
+            processEnumAttribute(enumAttribute, globalEnums);
           }
         }
+      }
+      if (generationMode.equals(GenerationMode.INTERNAL)) {
         for (var action : res.actions) {
           ActionAssist actionEnum = ActionAssist.of(action).withSortBy(true);
           for (Attribute attribute : actionEnum.getAllAttribute().stream().toList()) {
@@ -149,6 +149,13 @@ public class Java extends Language {
         globalEnums.add(new Enum(attributeName, attribute.schema));
       }
     }
+  }
+
+  private String qualifyEnumIfClashesWithResource(String enumApiName) {
+    if (activeResource != null && activeResource.name.equals(enumApiName)) {
+      return getEnumsPkg() + "." + enumApiName;
+    }
+    return enumApiName;
   }
 
   private String getEnumsPkg() {
@@ -376,8 +383,9 @@ public class Java extends Language {
       return "JArray";
     }
     if (attribute.isEnumAttribute()) {
-      if (attribute.attributes().isEmpty()) return attribute.getEnumApiName();
-      return attribute.attributes().get(0).getEnumApiName();
+      if (attribute.attributes().isEmpty())
+        return qualifyEnumIfClashesWithResource(attribute.getEnumApiName());
+      return qualifyEnumIfClashesWithResource(attribute.attributes().get(0).getEnumApiName());
     }
     if (attribute.schema instanceof ArraySchema) {
       return "JSONArray";
@@ -438,7 +446,7 @@ public class Java extends Language {
             .append("(\"")
             .append(name)
             .append("\", ")
-            .append(attribute.getEnumApiName())
+            .append(qualifyEnumIfClashesWithResource(attribute.getEnumApiName()))
             .append(".class")
             .append(")");
       }

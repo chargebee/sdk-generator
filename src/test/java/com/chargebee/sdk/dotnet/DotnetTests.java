@@ -835,6 +835,38 @@ using System.Net;"""
   }
 
   @Test
+  void globalEnumAttributeShouldUseSuffixToAvoidClashWithResourceName() throws IOException {
+    var alertStatusEnum =
+        buildEnum("alert_status", List.of("within_limit", "in_alarm"))
+            .setEnumApiName("AlertStatus")
+            .asGlobalEnum(true)
+            .asGenSeparate()
+            .done();
+    var alertStatus =
+        buildResource("alert_status")
+            .withAttribute("alert_id", true)
+            .withEnumAttribute(alertStatusEnum, true)
+            .done();
+
+    var spec = buildSpec().withResource(alertStatus).done();
+
+    List<FileOp> fileOps = dotnetSdkGen.generate(basePath, spec);
+
+    // Verify the global enum file is generated with correct values
+    assertWriteStringFileOp(fileOps.get(2), enumsDirectoryPath, "AlertStatusEnum.cs");
+    var enumFileOp = (FileOp.WriteString) fileOps.get(2);
+    assertThat(enumFileOp.fileContent).contains("within_limit");
+    assertThat(enumFileOp.fileContent).contains("in_alarm");
+    assertThat(enumFileOp.fileContent).contains("AlertStatusEnum");
+
+    // Verify the model file references the enum with Enum suffix (no name clash)
+    var modelFileOp = (FileOp.WriteString) fileOps.get(3);
+    assertThat(modelFileOp.fileContent).contains("AlertStatusEnum AlertStatus");
+    assertThat(modelFileOp.fileContent)
+        .contains("GetEnum<AlertStatusEnum>(\"alert_status\", true)");
+  }
+
+  @Test
   void typeEnumAttributeShouldHaveResourceNamePrepended() throws IOException {
     var type = buildEnum("type", List.of("quantity", "tiered")).setEnumApiName("Type").done();
     var addon =
