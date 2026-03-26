@@ -220,6 +220,35 @@ public class PythonV3Tests extends LanguageTests {
   }
 
   @Test
+  void shouldGenerateGlobalEnumFromResourceAttributeWhenNotInTopLevelSchema() throws IOException {
+    var alertStatusEnum =
+        buildEnum("alert_status", List.of("within_limit", "in_alarm"))
+            .setEnumApiName("AlertStatus")
+            .asGlobalEnum(true)
+            .asGenSeparate()
+            .done();
+    var alertStatus =
+        buildResource("alert_status")
+            .withAttribute("alert_id", true)
+            .withEnumAttribute(alertStatusEnum, true)
+            .done();
+
+    var spec = buildSpec().withResource(alertStatus).done();
+
+    List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
+
+    var enumFileOp = (FileOp.WriteString) fileOps.get(2);
+    assertPythonGlobalEnumFileContent(
+        enumFileOp,
+        "class AlertStatus(Enum):\n"
+            + "    WITHIN_LIMIT = \"within_limit\"\n"
+            + "    IN_ALARM = \"in_alarm\"\n"
+            + "\n"
+            + "    def __str__(self):\n"
+            + "        return self.value\n");
+  }
+
+  @Test
   void shouldCreateSeparatePackageForEachResource() throws IOException {
     var spec = buildSpec().withResources("customer", "subscription").done();
 

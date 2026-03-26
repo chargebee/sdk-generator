@@ -37,12 +37,22 @@ public class Dotnet extends Language {
 
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
-    globalEnums = spec.globalEnums();
+    globalEnums = new ArrayList<>(spec.globalEnums());
     var resources =
         spec.resources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
     resourceList = resources;
+    for (var res : resources) {
+      for (var attribute : res.getSortedResourceAttributes()) {
+        addGlobalEnumIfMissing(attribute, globalEnums);
+        if (attribute.isSubResource()) {
+          for (var subAttribute : attribute.attributes()) {
+            addGlobalEnumIfMissing(subAttribute, globalEnums);
+          }
+        }
+      }
+    }
     var createModelsDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, "/" + MODELS_DIRECTORY_PATH);
     var createEnumsDirectory =
@@ -79,6 +89,17 @@ public class Dotnet extends Language {
         "/templates/dotnet/resultBase.cs.hbs",
         "exceptions",
         "/templates/dotnet/exception.cs.hbs");
+  }
+
+  private void addGlobalEnumIfMissing(Attribute attribute, List<Enum> globalEnums) {
+    if (attribute.isGlobalEnumAttribute()
+        && attribute.isGenSeparate()
+        && attribute.getEnum() != null) {
+      String enumName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, attribute.name);
+      if (globalEnums.stream().noneMatch(e -> e.name != null && e.name.equals(enumName))) {
+        globalEnums.add(new Enum(enumName, attribute.schema));
+      }
+    }
   }
 
   private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)
@@ -497,10 +518,13 @@ public class Dotnet extends Language {
       column.setReturnType(getColsRetType(attribute));
       column.setGetterCode(getGetterCode(attribute));
       column.setSubResource(attribute.isSubResource());
+      String propName = getName(attribute.name);
       if (attribute.name.equals("type")) {
         column.setMethName(activeResource.name + "Type");
+      } else if (propName.equals(activeResource.name)) {
+        column.setMethName(activeResource.name + propName);
       } else {
-        column.setMethName(getName(attribute.name));
+        column.setMethName(propName);
       }
       cols.add(column);
     }
