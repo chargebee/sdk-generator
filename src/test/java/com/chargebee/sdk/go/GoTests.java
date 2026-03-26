@@ -740,6 +740,60 @@ func Hierarchy(id string, params *customer.HierarchyRequestParams) chargebee.Req
   }
 
   @Test
+  void globalEnumAttributeShouldUseGlobalEnumPackageWhenClashesWithResourceName()
+      throws IOException {
+    var alertStatusEnum =
+        buildEnum("alert_status", List.of("within_limit", "in_alarm"))
+            .setEnumApiName("AlertStatus")
+            .asGlobalEnum(true)
+            .asGenSeparate()
+            .done();
+    var alertStatus =
+        buildResource("alert_status")
+            .withAttribute("alert_id", true)
+            .withEnumAttribute(alertStatusEnum, true)
+            .done();
+
+    var spec = buildSpec().withResource(alertStatus).done();
+
+    List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
+
+    // Verify the global enum file is generated with within_limit and in_alarm values
+    var enumFileOp =
+        fileOps.stream()
+            .filter(f -> f instanceof FileOp.WriteString)
+            .map(f -> (FileOp.WriteString) f)
+            .filter(f -> f.fileName.equals("alert_status.go") && f.baseFilePath.contains("enum"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(enumFileOp.fileContent).contains("AlertStatusWithinLimit");
+    assertThat(enumFileOp.fileContent).contains("AlertStatusInAlarm");
+
+    // Verify the model file references the global enum package
+    var modelFileOp =
+        fileOps.stream()
+            .filter(f -> f instanceof FileOp.WriteString)
+            .map(f -> (FileOp.WriteString) f)
+            .filter(f -> f.fileName.equals("alert_status.go") && f.baseFilePath.contains("models"))
+            .findFirst()
+            .orElseThrow();
+    assertGoModelFileContent(
+        modelFileOp,
+        """
+        package alertstatus
+
+        import(
+        \t"github.com/chargebee/chargebee-go/v3/enum"
+        )
+
+        type AlertStatus struct {
+        \tAlertId     string           `json:"alert_id"`
+        \tAlertStatus enum.AlertStatus `json:"alert_status"`
+        \tObject      string           `json:"object"`
+        }""");
+  }
+
+  @Test
   void shouldHaveAttributeDeclarationForSubResource() throws IOException {
     var billingAddress = buildResource("billing_address").withAttribute("first_name").done();
     var customer =

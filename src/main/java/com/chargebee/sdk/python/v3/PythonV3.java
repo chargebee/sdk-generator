@@ -42,12 +42,22 @@ public class PythonV3 extends Language {
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
     String modelsDirectoryPath = "/models";
-    List<Enum> globalEnums = spec.globalEnums();
+    List<Enum> globalEnums = new ArrayList<>(spec.globalEnums());
     var resources =
         spec.resources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
     resourceList = resources;
+    for (var res : resources) {
+      for (var attribute : res.getSortedResourceAttributes()) {
+        addGlobalEnumIfMissing(attribute, globalEnums);
+        if (attribute.isSubResource()) {
+          for (var subAttribute : attribute.attributes()) {
+            addGlobalEnumIfMissing(subAttribute, globalEnums);
+          }
+        }
+      }
+    }
     var exceptionsResources = spec.errorResources();
     var createModelsDirectory =
         new FileOp.CreateDirectory(outputDirectoryPath, modelsDirectoryPath);
@@ -93,6 +103,17 @@ public class PythonV3 extends Language {
     globalEnums = globalEnums.stream().sorted(Comparator.comparing(e -> e.name)).toList();
     var content = globalEnumTemplate.apply(Map.of("globalEnums", globalEnumTemplate(globalEnums)));
     return new FileOp.WriteString(outDirectoryPath, "enums.py", content);
+  }
+
+  private void addGlobalEnumIfMissing(Attribute attribute, List<Enum> globalEnums) {
+    if (attribute.isGlobalEnumAttribute()
+        && attribute.isGenSeparate()
+        && attribute.getEnum() != null) {
+      String enumName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, attribute.name);
+      if (globalEnums.stream().noneMatch(e -> e.name != null && e.name.equals(enumName))) {
+        globalEnums.add(new Enum(enumName, attribute.schema));
+      }
+    }
   }
 
   private FileOp genMain(String outputDirectoryPath, List<Resource> resources) throws IOException {

@@ -1114,4 +1114,33 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
       assertThat(err.getMessage()).isEqualTo("Operation Extensions not found");
     }
   }
+
+  @Test
+  void shouldGenerateGlobalEnumFromResourceAttributeInCoreFile() throws IOException {
+    var alertStatusEnum =
+        buildEnum("alert_status", List.of("within_limit", "in_alarm"))
+            .setEnumApiName("AlertStatus")
+            .asGlobalEnum(true)
+            .asGenSeparate()
+            .done();
+    var alertStatus =
+        buildResource("alert_status")
+            .withAttribute("alert_id", true)
+            .withEnumAttribute(alertStatusEnum, true)
+            .done();
+
+    var spec = buildSpec().withResource(alertStatus).done();
+
+    List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
+
+    var coreFileOp =
+        fileOps.stream()
+            .filter(f -> f instanceof FileOp.WriteString)
+            .map(f -> (FileOp.WriteString) f)
+            .filter(f -> f.fileName.equals("core.d.ts"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(coreFileOp.fileContent).contains("within_limit");
+    assertThat(coreFileOp.fileContent).contains("in_alarm");
+  }
 }
