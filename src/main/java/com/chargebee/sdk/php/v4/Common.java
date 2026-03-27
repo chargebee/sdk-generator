@@ -172,8 +172,12 @@ public class Common {
   private static Column createEnumColumn(Attribute attribute, String basePath) {
     Column column = new Column();
     column.setName(attribute.name);
-    column.setFieldTypePHP(basePath + toCamelCase(attribute.name));
-    column.setPhpDocField(basePath + toCamelCase(attribute.name));
+    String enumTypeName =
+        attribute.getEnumApiName() != null
+            ? attribute.getEnumApiName()
+            : toCamelCase(attribute.name);
+    column.setFieldTypePHP(basePath + enumTypeName);
+    column.setPhpDocField(basePath + enumTypeName);
     column.setIsOptional(true);
     column.setApiName(attribute.name);
     return column;

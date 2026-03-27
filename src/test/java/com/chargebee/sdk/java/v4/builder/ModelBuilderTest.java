@@ -943,10 +943,7 @@ class ModelBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "Invoice.java");
       assertThat(writeOp.fileContent)
-          .contains("private static java.util.Map<String, String> extractCustomFields");
-      assertThat(writeOp.fileContent)
-          .contains("obj.customFields = extractCustomFields(json, knownFields)");
-      assertThat(writeOp.fileContent).contains("key.startsWith(\"cf_\")");
+          .contains("obj.customFields = JsonUtil.extractCustomFields(jsonObj, knownFields)");
     }
 
     @Test
@@ -1279,10 +1276,7 @@ class ModelBuilderTest {
 
       FileOp.WriteString writeOp = findWriteOp(fileOps, "Invoice.java");
       assertThat(writeOp.fileContent)
-          .contains("private static java.util.Map<String, Object> extractConsentFields");
-      assertThat(writeOp.fileContent)
-          .contains("obj.consentFields = extractConsentFields(json, knownFields)");
-      assertThat(writeOp.fileContent).contains("key.startsWith(\"cs_\")");
+          .contains("obj.consentFields = JsonUtil.extractConsentFields(jsonObj, knownFields)");
     }
 
     @Test

@@ -73,7 +73,18 @@ public class PHP_V4 extends Language {
     fileOps.addAll(generators.get("action").generate(outputPath + "/Actions", filteredResources));
     fileOps.addAll(
         generators.get("response").generate(outputPath + "/Responses", filteredResources));
-    fileOps.addAll(generators.get("enum").generate(outputPath + "/Enums", spec.globalEnums()));
+    List<com.chargebee.openapi.Enum> globalEnums = new ArrayList<>(spec.globalEnums());
+    for (var res : filteredResources) {
+      for (var attribute : res.getSortedResourceAttributes()) {
+        addGlobalEnumIfMissing(attribute, globalEnums);
+        if (attribute.isSubResource()) {
+          for (var subAttribute : attribute.attributes()) {
+            addGlobalEnumIfMissing(subAttribute, globalEnums);
+          }
+        }
+      }
+    }
+    fileOps.addAll(generators.get("enum").generate(outputPath + "/Enums", globalEnums));
     fileOps.add(generators.get("client").generateSingle(outputPath, filteredResources));
     fileOps.addAll(
         generators
@@ -112,6 +123,22 @@ public class PHP_V4 extends Language {
     return resources.stream()
         .filter(resource -> !List.of(this.hiddenOverride).contains(resource.id))
         .collect(Collectors.toList());
+  }
+
+  private void addGlobalEnumIfMissing(
+      Attribute attribute, List<com.chargebee.openapi.Enum> globalEnums) {
+    if (attribute.isGlobalEnumAttribute()
+        && attribute.isGenSeparate()
+        && attribute.getEnum() != null) {
+      String enumName =
+          attribute.getEnumApiName() != null
+              ? attribute.getEnumApiName()
+              : com.google.common.base.CaseFormat.LOWER_UNDERSCORE.to(
+                  com.google.common.base.CaseFormat.UPPER_CAMEL, attribute.name);
+      if (globalEnums.stream().noneMatch(e -> e.name != null && e.name.equals(enumName))) {
+        globalEnums.add(new com.chargebee.openapi.Enum(enumName, attribute.schema));
+      }
+    }
   }
 
   public ObjectMapper getObjectMapper() {

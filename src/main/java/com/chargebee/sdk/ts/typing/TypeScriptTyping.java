@@ -37,7 +37,18 @@ public class TypeScriptTyping extends Language {
         generateResourceTypings(outputDirectoryPath + resourcesDirectoryPath, resources);
     fileOps.addAll(generateResourceTypings);
 
-    fileOps.add(generateCoreFile(outputDirectoryPath, spec));
+    List<Enum> globalEnums = new ArrayList<>(spec.globalEnums());
+    for (var res : resources) {
+      for (var attribute : res.getSortedResourceAttributes()) {
+        addGlobalEnumIfMissing(attribute, globalEnums);
+        if (attribute.isSubResource()) {
+          for (var subAttribute : attribute.attributes()) {
+            addGlobalEnumIfMissing(subAttribute, globalEnums);
+          }
+        }
+      }
+    }
+    fileOps.add(generateCoreFile(outputDirectoryPath, globalEnums));
     fileOps.add(generateIndexFile(outputDirectoryPath, resources));
     return fileOps;
   }
@@ -63,8 +74,18 @@ public class TypeScriptTyping extends Language {
         outputDirectoryPath, "index.d.ts", indexTemplate.apply(templateParams));
   }
 
-  private FileOp generateCoreFile(String outputDirectoryPath, Spec spec) throws IOException {
-    List<Enum> enums = spec.globalEnums();
+  private void addGlobalEnumIfMissing(Attribute attribute, List<Enum> globalEnums) {
+    if (attribute.isGlobalEnumAttribute()
+        && attribute.isGenSeparate()
+        && attribute.getEnum() != null) {
+      String enumName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, attribute.name);
+      if (globalEnums.stream().noneMatch(e -> e.name != null && e.name.equals(enumName))) {
+        globalEnums.add(new Enum(enumName, attribute.schema));
+      }
+    }
+  }
+
+  private FileOp generateCoreFile(String outputDirectoryPath, List<Enum> enums) throws IOException {
     Template coreTemplate = getTemplateContent("core");
     return new FileOp.WriteString(
         outputDirectoryPath,

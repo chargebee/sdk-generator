@@ -877,4 +877,33 @@ public class TypeScriptTypingTests extends LanguageTests {
         "Quote.d.ts",
         "declare__module__'chargebee'__{__export__interface__Quote__{__id:string;__}__export__namespace__Quote__{__export__class__QuoteResource__{__create_for_charge_items_and_charges(input?:CreateForChargeItemsAndChargesInputParam):ChargebeeRequest<CreateForChargeItemsAndChargesResponse>;__}__export__interface__CreateForChargeItemsAndChargesResponse__{__quote:Quote;__}__export__interface__CreateForChargeItemsAndChargesInputParam__{__charges?:{date_from?:number,date_to?:number}[];__}__}__}");
   }
+
+  @Test
+  void shouldGenerateGlobalEnumFromResourceAttributeInCoreFile() throws IOException {
+    var alertStatusEnum =
+        buildEnum("alert_status", List.of("within_limit", "in_alarm"))
+            .setEnumApiName("AlertStatus")
+            .asGlobalEnum(true)
+            .asGenSeparate()
+            .done();
+    var alertStatus =
+        buildResource("alert_status")
+            .withAttribute("alert_id", true)
+            .withEnumAttribute(alertStatusEnum, true)
+            .done();
+
+    var spec = buildSpec().withResource(alertStatus).done();
+
+    List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
+
+    var coreFileOp =
+        fileOps.stream()
+            .filter(f -> f instanceof FileOp.WriteString)
+            .map(f -> (FileOp.WriteString) f)
+            .filter(f -> f.fileName.equals("core.d.ts"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(coreFileOp.fileContent).contains("within_limit");
+    assertThat(coreFileOp.fileContent).contains("in_alarm");
+  }
 }

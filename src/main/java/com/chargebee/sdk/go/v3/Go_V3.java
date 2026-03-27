@@ -54,12 +54,22 @@ public class Go_V3 extends Language {
     final String enumsDirectoryPath = "/enum";
     final String actionsDirectoryPath = "/actions";
     String modelsDirectoryPath = "/models";
-    var globalEnums = spec.globalEnums();
+    List<Enum> globalEnums = new ArrayList<>(spec.globalEnums());
     var resources =
         spec.resources().stream()
             .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
             .toList();
     resourceList = resources;
+    for (var res : resources) {
+      for (var attribute : res.getSortedResourceAttributes()) {
+        addGlobalEnumIfMissing(attribute, globalEnums);
+        if (attribute.isSubResource()) {
+          for (var subAttribute : attribute.attributes()) {
+            addGlobalEnumIfMissing(subAttribute, globalEnums);
+          }
+        }
+      }
+    }
     var createEnumsDirectory = new FileOp.CreateDirectory(outputDirectoryPath, enumsDirectoryPath);
     var createActionsDirectoryPath =
         new FileOp.CreateDirectory(outputDirectoryPath, actionsDirectoryPath);
@@ -83,6 +93,7 @@ public class Go_V3 extends Language {
     fileOps.addAll(
         generateActionsDirectories(outputDirectoryPath + actionsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
+    fileOps.add(generateUtilFile(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
 
     // Generate webhook files (parser, content, handler)
@@ -435,7 +446,9 @@ public class Go_V3 extends Language {
         "webhookContent",
         "/templates/go/v3/webhookContent.go.hbs",
         "webhookHandler",
-        "/templates/go/v3/webhookHandler.go.hbs");
+        "/templates/go/v3/webhookHandler.go.hbs",
+        "util",
+        "/templates/go/v3/util.go.hbs");
   }
 
   private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)
@@ -450,6 +463,17 @@ public class Go_V3 extends Language {
       fileOps.add(new FileOp.WriteString(outDirectoryPath, fileName + ".go", content));
     }
     return fileOps;
+  }
+
+  private void addGlobalEnumIfMissing(Attribute attribute, List<Enum> globalEnums) {
+    if (attribute.isGlobalEnumAttribute()
+        && attribute.isGenSeparate()
+        && attribute.getEnum() != null) {
+      String enumName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, attribute.name);
+      if (globalEnums.stream().noneMatch(e -> e.name != null && e.name.equals(enumName))) {
+        globalEnums.add(new Enum(enumName, attribute.schema));
+      }
+    }
   }
 
   private Map<String, Object> globalEnumTemplate(Enum e) {
@@ -849,7 +873,7 @@ public class Go_V3 extends Language {
       if (a.isEnumAttribute()) {
         if (a.isListOfEnum()) {
           type = "[]" + Constants.ENUM_WITH_DELIMITER + getListOfEnumTypeForAttribute(a);
-        } else if (a.isGenSeparate()) {
+        } else if (a.isGenSeparate() || a.isGlobalEnumAttribute()) {
           type =
               Constants.ENUM_WITH_DELIMITER
                   + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
@@ -1238,6 +1262,22 @@ public class Go_V3 extends Language {
     Template resultTemplate = getTemplateContent("result");
     return new FileOp.WriteString(
         outputDirectory, "result.go", resultTemplate.apply(templateParams));
+  }
+
+  private FileOp generateUtilFile(String outputDirectory, List<Resource> resources)
+      throws IOException {
+    List<Map<String, Object>> customFieldResources =
+        resources.stream()
+            .filter(Resource::isNotDependentResource)
+            .filter(Resource::isNotThirdPartyResource)
+            .filter(Resource::isCustomFieldSupported)
+            .map(r -> Map.<String, Object>of("id", r.id, "name", r.name))
+            .toList();
+    Template utilTemplate = getTemplateContent("util");
+    return new FileOp.WriteString(
+        outputDirectory,
+        "util.go",
+        utilTemplate.apply(Map.of("customFieldResources", customFieldResources)));
   }
 
   public boolean isDependedAttribute(Schema schema) {

@@ -8,6 +8,9 @@
 package com.chargebee.v4.internal;
 
 import com.chargebee.v4.transport.Response;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,13 +39,16 @@ public class BatchResult {
      */
     public static BatchResult fromJson(String json, Response response) {
         List<BatchResponse> results = new ArrayList<>();
-        String resultsArray = JsonUtil.getArray(json, BatchConstants.RESULTS_KEY);
+        JsonObject jsonObj = JsonUtil.parse(json);
+        JsonArray resultsArray = JsonUtil.getJsonArray(jsonObj, BatchConstants.RESULTS_KEY);
         if (resultsArray != null) {
-            List<String> items = JsonUtil.parseObjectArray(resultsArray);
-            for (String item : items) {
-                String correlationId = JsonUtil.getString(item, BatchConstants.CORRELATION_ID);
-                String content = JsonUtil.getObject(item, BatchConstants.RESULT_CONTENT_KEY);
-                results.add(new BatchResponse(correlationId, content));
+            for (JsonElement elem : resultsArray) {
+                if (elem != null && elem.isJsonObject()) {
+                    JsonObject item = elem.getAsJsonObject();
+                    String correlationId = JsonUtil.getString(item, BatchConstants.CORRELATION_ID);
+                    String content = JsonUtil.getObject(item, BatchConstants.RESULT_CONTENT_KEY);
+                    results.add(new BatchResponse(correlationId, content));
+                }
             }
         }
         return new BatchResult(response.getStatusCode(), json, response, results);

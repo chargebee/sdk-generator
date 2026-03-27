@@ -289,10 +289,11 @@ public class ReturnTypeBuilder {
               .findFirst();
       if (resourceLevelAttributeOption.isPresent()) {
         Attribute resourceLevelAttribute = resourceLevelAttributeOption.get();
-        if (dataTypeMethod.apply(resourceLevelAttribute.schema).equals("Timestamp")) {
+        String dataType = dataTypeMethod.apply(resourceLevelAttribute.schema);
+        if (dataType.equals("Timestamp") || dataType.equals("String")) {
           return getClazName(action);
         }
-        return dataTypeMethod.apply(resourceLevelAttribute.schema) + ", " + getClazName(action);
+        return dataType + ", " + getClazName(action);
       }
     }
     return null;
