@@ -231,6 +231,33 @@ class ModelBuilderTest {
   }
 
   @Nested
+  @DisplayName("Enum Name Clash with Model Name")
+  class EnumNameClashTests {
+
+    @Test
+    void shouldRenameEnumWhenNameClashesWithEnclosingClass() throws IOException {
+      Schema<?> alertStatusSchema =
+          new ObjectSchema()
+              .addProperty("alert_id", new StringSchema())
+              .addProperty(
+                  "alert_status", new StringSchema()._enum(List.of("within_limit", "in_alarm")));
+
+      openAPI.getComponents().addSchemas("AlertStatus", alertStatusSchema);
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "AlertStatus.java");
+      // The enum should be prefixed with model name to avoid clash with enclosing class
+      assertThat(writeOp.fileContent).contains("enum AlertStatusAlertStatus {");
+      // The field type should reference the prefixed enum
+      assertThat(writeOp.fileContent).contains("private AlertStatusAlertStatus alertStatus");
+      // JSON key should still be alert_status
+      assertThat(writeOp.fileContent).contains("\"alert_status\"");
+    }
+  }
+
+  @Nested
   @DisplayName("Nested Objects and Sub-Models")
   class NestedObjectsTests {
 

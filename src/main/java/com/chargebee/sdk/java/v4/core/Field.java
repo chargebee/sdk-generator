@@ -30,6 +30,10 @@ public class Field {
   private boolean compositeArrayField;
   private boolean required;
 
+  public String getRawName() {
+    return name;
+  }
+
   public String getName() {
     if (name == null) return null;
     // Replace dots with underscores to handle field names like "card.copy_billing_info"

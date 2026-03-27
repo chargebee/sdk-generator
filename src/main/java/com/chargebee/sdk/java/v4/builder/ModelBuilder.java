@@ -61,9 +61,22 @@ public class ModelBuilder {
       String packageName = isWebhookEvent ? EVENTS_PACKAGE : toLowerCamel(modelName);
       model.setPackageName(packageName);
       model.setName(modelName);
-      model.setFields(getFields(entry.getValue()));
+      List<Field> fields = getFields(entry.getValue());
+      List<EnumFields> enumFieldsList = getEnumFields(entry.getValue(), modelName);
+      // When an enum name clashes with the model name, prefix with model name
+      String modelSnake = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, modelName);
+      for (Field field : fields) {
+        String fieldPascal =
+            CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, field.getRawName());
+        if (field.isEnumType() && fieldPascal.equals(modelName)) {
+          field.setType(
+              new com.chargebee.sdk.java.v4.datatype.EnumType(
+                  modelSnake + "_" + field.getRawName()));
+        }
+      }
+      model.setFields(fields);
       model.setImports(getImports(entry.getValue()));
-      model.setEnumFields(getEnumFields(entry.getValue()));
+      model.setEnumFields(enumFieldsList);
       model.setSubModels(getSubModels(entry.getValue()));
       model.setCustomFieldsSupported(SchemaUtil.isCustomFieldsSupported(entry.getValue()));
       model.setConsentFieldsSupported(SchemaUtil.isConsentFieldsSupported(entry.getValue()));
@@ -204,13 +217,23 @@ public class ModelBuilder {
   }
 
   private List<EnumFields> getEnumFields(Schema schema) {
+    return getEnumFields(schema, null);
+  }
+
+  private List<EnumFields> getEnumFields(Schema schema, String modelName) {
     var enumFields = new ArrayList<EnumFields>();
     if (schema.getProperties() == null) return enumFields;
     for (var fieldName : schema.getProperties().keySet()) {
       Schema schemaDefn = (Schema) schema.getProperties().get(fieldName);
       if (schemaDefn.getEnum() != null) {
         var enumField = new EnumFields();
-        enumField.setName(fieldName.toString());
+        String enumName = fieldName.toString();
+        String pascalName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, enumName);
+        if (modelName != null && pascalName.equals(modelName)) {
+          String modelSnake = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, modelName);
+          enumName = modelSnake + "_" + enumName;
+        }
+        enumField.setName(enumName);
         enumField.setEnums(schemaDefn.getEnum());
         enumFields.add(enumField);
       }
