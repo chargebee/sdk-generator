@@ -12,6 +12,10 @@ public class EnumFields {
   private List<String> enums;
   private AbstractMap.SimpleEntry<String, String> values;
 
+  public String getRawName() {
+    return name;
+  }
+
   public String getName() {
     return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, name);
   }
