@@ -1,17 +1,20 @@
-package com.chargebee.sdk.go.webhook;
+package com.chargebee.sdk.go.v4.webhook;
 
 import com.chargebee.openapi.Attribute;
 import com.chargebee.openapi.Resource;
 import com.chargebee.openapi.Spec;
 import com.chargebee.sdk.FileOp;
 import com.github.jknack.handlebars.Template;
-import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.io.IOException;
 import java.util.*;
 
 public class WebhookGenerator {
+  // These event attributes are not rendered as types as they are marked as hidden
+  // for sdk generation. So just create an empty struct for them (e.g. SalesOrderCreatedContent)
+  private static List<String> hiddenResourceNames = Arrays.asList("product", "variant", "usage_reminder_info",
+      "sales_order");
 
   private static List<Map<String, Object>> getEventResourcesForAEvent(Resource eventResource) {
     List<Map<String, Object>> resources = new ArrayList<>();
@@ -22,6 +25,9 @@ public class WebhookGenerator {
               .attributes()
               .forEach(
                   (innerAttribute -> {
+                    if (hiddenResourceNames.contains(innerAttribute.name)) {
+                      return;
+                    }
                     Schema<?> schema = innerAttribute.schema;
                     String ref = null;
                     boolean isArray = false;
@@ -62,7 +68,8 @@ public class WebhookGenerator {
     // Ensure webhook directory exists
     fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, webhookDirectoryPath));
 
-    // Include deprecated webhook events (like PCV1) since customers may still receive them
+    // Include deprecated webhook events (like PCV1) since customers may still
+    // receive them
     var webhookInfo = spec.extractWebhookInfo(true);
     var eventSchema = spec.resourcesForEvents();
 
@@ -79,14 +86,6 @@ public class WebhookGenerator {
       List<Map<String, Object>> events = new ArrayList<>();
       Set<String> seenTypes = new HashSet<>();
 
-      // Compute models directory by taking parent of webhook output dir
-      java.io.File webhookDir = new java.io.File(outputDirectoryPath + webhookDirectoryPath);
-      java.io.File chargebeeRoot = webhookDir.getParentFile();
-      java.io.File modelsDir = new java.io.File(chargebeeRoot, "models");
-
-      // Collect unique imports across all events
-      Set<String> uniqueImports = new HashSet<>();
-
       if (!eventSchema.isEmpty()) {
         for (Map<String, String> info : webhookInfo) {
           String type = info.get("type");
@@ -96,26 +95,17 @@ public class WebhookGenerator {
           seenTypes.add(type);
 
           String resourceSchemaName = info.get("resource_schema_name");
-          Resource matchedSchema =
-              eventSchema.stream()
-                  .filter(schema -> schema.name.equals(resourceSchemaName))
-                  .findFirst()
-                  .orElse(null);
+          Resource matchedSchema = eventSchema.stream()
+              .filter(schema -> schema.name.equals(resourceSchemaName))
+              .findFirst()
+              .orElse(null);
 
           List<Map<String, Object>> allSchemas = getEventResourcesForAEvent(matchedSchema);
 
           // Filter schemas by presence of model directory to avoid missing imports
           List<Map<String, Object>> filteredSchemas = new ArrayList<>();
           for (var schema : allSchemas) {
-            // Convert to models directory name: lower_underscore then remove underscores
-            String schemaName = (String) schema.get("resource_schema_name");
-            String snake = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, schemaName);
-            String folder = snake.replace("_", "");
-            java.io.File schemaDir = new java.io.File(modelsDir, folder);
-            if (schemaDir.exists() && schemaDir.isDirectory()) {
-              filteredSchemas.add(schema);
-              uniqueImports.add(schemaName);
-            }
+            filteredSchemas.add(schema);
           }
 
           Map<String, Object> params = new HashMap<>();
@@ -128,9 +118,6 @@ public class WebhookGenerator {
 
       Map<String, Object> ctx = new HashMap<>();
       ctx.put("events", events);
-      List<String> importsList = new ArrayList<>(uniqueImports);
-      java.util.Collections.sort(importsList);
-      ctx.put("unique_imports", importsList);
 
       fileOps.add(
           new FileOp.WriteString(

@@ -1,4 +1,4 @@
-package com.chargebee.sdk.go;
+package com.chargebee.sdk.go.v3;
 
 public class Constants {
   public static final String INT_SIXTY_FOUR = "int64";

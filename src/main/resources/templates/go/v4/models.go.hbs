@@ -1,0 +1,41 @@
+type {{clazName}} struct {
+{{{cols}}}
+{{#if (eq clazName "Subscription")}}
+    // Deprecated: MetaData is deprecated please use MetaData instead.
+    Metadata              json.RawMessage        `json:"metadata"`
+{{/if}}
+}
+{{#if hasCustomFields}}
+func (r *{{clazName}}) setCustomFields(cf *customFields) { r.CustomFields = cf }
+
+func (r *{{clazName}}) UnmarshalJSON(data []byte) error {
+    type Alias {{clazName}}
+    return unmarshalObjectWithCustomField(data, r, (*Alias)(r))
+}
+{{/if}}
+{{~#each subResources}}
+type {{@root.clazName}}{{clazName}} struct {
+{{{cols}}}
+}{{/each}}
+{{~#each operations}}{{#if hasInputParams}}
+type {{@root.clazName}}{{clazName}} struct {
+{{~#if inputParams}}
+{{{inputParams}}}
+    apiRequest `json:"-" form:"-"`
+{{~/if}}
+}
+
+func (r *{{@root.clazName}}{{clazName}}) payload() any { return r }
+
+{{~/if}}
+{{~#each inputSubResParams}}
+{{~#if multi}}
+type {{@root.clazName}}{{methodName}}{{camelSingularResName}} struct {
+{{~else}}
+type {{@root.clazName}}{{methodName}}{{camelResName}} struct {
+{{~/if}}
+{{{subParams}}}
+}
+{{~/each}}
+{{~/each}}
+{{NonBreakingSpace}}
