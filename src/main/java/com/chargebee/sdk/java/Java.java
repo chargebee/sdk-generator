@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 public class Java extends Language {
 
+  protected final String[] hiddenOverride = {"alert"};
   public final ApiVersion apiVersion;
   GenerationMode generationMode;
   JarType jarType;
@@ -61,7 +62,7 @@ public class Java extends Language {
     }
     var resources =
         generationMode.equals(GenerationMode.INTERNAL)
-            ? spec.resources()
+            ? spec.resources().stream().filter(resource -> !resource.id.equals("alert")).toList()
             : spec.resources().stream()
                 .filter(
                     resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
