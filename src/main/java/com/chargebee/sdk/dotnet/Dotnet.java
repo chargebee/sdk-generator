@@ -518,10 +518,13 @@ public class Dotnet extends Language {
       column.setReturnType(getColsRetType(attribute));
       column.setGetterCode(getGetterCode(attribute));
       column.setSubResource(attribute.isSubResource());
+      String propName = getName(attribute.name);
       if (attribute.name.equals("type")) {
         column.setMethName(activeResource.name + "Type");
+      } else if (propName.equals(activeResource.name)) {
+        column.setMethName(activeResource.name + propName);
       } else {
-        column.setMethName(getName(attribute.name));
+        column.setMethName(propName);
       }
       cols.add(column);
     }

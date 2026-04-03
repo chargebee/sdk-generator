@@ -859,9 +859,9 @@ using System.Net;"""
     assertThat(enumFileOp.fileContent).contains("in_alarm");
     assertThat(enumFileOp.fileContent).contains("AlertStatusEnum");
 
-    // Verify the model file references the enum with Enum suffix (no name clash)
+    // Verify the model property name is disambiguated to avoid C# CS0542 error
     var modelFileOp = (FileOp.WriteString) fileOps.get(3);
-    assertThat(modelFileOp.fileContent).contains("AlertStatusEnum AlertStatus");
+    assertThat(modelFileOp.fileContent).contains("AlertStatusEnum AlertStatusAlertStatus");
     assertThat(modelFileOp.fileContent)
         .contains("GetEnum<AlertStatusEnum>(\"alert_status\", true)");
   }
