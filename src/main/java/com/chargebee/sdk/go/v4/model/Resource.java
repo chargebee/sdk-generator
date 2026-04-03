@@ -1,4 +1,4 @@
-package com.chargebee.sdk.go.model;
+package com.chargebee.sdk.go.v4.model;
 
 import java.util.List;
 import lombok.Data;
@@ -10,5 +10,7 @@ public class Resource {
   private String clazName;
   private String cols;
   private List<SubResource> subResources;
-  private List<OperationRequest> operRequestClasses;
+  private List<Operation> operations;
+  private String responseImports;
+  private Boolean hasCustomFields;
 }

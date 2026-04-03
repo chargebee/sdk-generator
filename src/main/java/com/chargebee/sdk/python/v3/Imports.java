@@ -11,7 +11,7 @@ import com.chargebee.openapi.Attribute;
 import com.chargebee.openapi.Resource;
 import com.chargebee.sdk.Language;
 import com.chargebee.sdk.common.model.OperationResponse;
-import com.chargebee.sdk.go.SchemaLessEnumParser;
+import com.chargebee.sdk.go.v3.SchemaLessEnumParser;
 import com.chargebee.sdk.python.v3.model.ResponseParser;
 import com.google.common.base.CaseFormat;
 import java.util.ArrayList;

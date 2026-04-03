@@ -6,7 +6,8 @@ import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.Language;
 import com.chargebee.sdk.changelog.ChangeLog;
 import com.chargebee.sdk.dotnet.Dotnet;
-import com.chargebee.sdk.go.Go;
+import com.chargebee.sdk.go.v3.Go_V3;
+import com.chargebee.sdk.go.v4.Go_V4;
 import com.chargebee.sdk.java.GenerationMode;
 import com.chargebee.sdk.java.JarType;
 import com.chargebee.sdk.java.Java;
@@ -148,6 +149,7 @@ enum Lang {
   JAVA_V4,
   DOTNET,
   GO,
+  GO_V4,
   JAVA_INTERNAL_INT,
   JAVA_INTERNAL_INT_V2,
   JAVA_INTERNAL_HVC,
@@ -207,7 +209,10 @@ enum Lang {
       return new Dotnet();
     }
     if (lang == Lang.GO) {
-      return new Go();
+      return new Go_V3();
+    }
+    if (lang == Lang.GO_V4) {
+      return new Go_V4();
     }
     if (lang == Lang.PHP_V4) {
       return new PHP_V4();

@@ -15,6 +15,7 @@ public class GlobalEnum {
   private List<Map<String, String>> possibleValues;
   private List<Map<String, String>> deprecatedEnums;
   private boolean isParamBlankOption;
+  private String resourceName;
 
   public GlobalEnum(Enum e) {
     this.setName(e.name);
@@ -33,6 +34,7 @@ public class GlobalEnum {
   public Map<String, Object> template() {
     return Map.ofEntries(
         new AbstractMap.SimpleEntry<>("name", this.name),
+        new AbstractMap.SimpleEntry<>("resourceName", this.resourceName != null ? this.resourceName : ""),
         new AbstractMap.SimpleEntry<>("possibleValues", this.possibleValues),
         new AbstractMap.SimpleEntry<>("deprecatedEnums", this.deprecatedEnums),
         new AbstractMap.SimpleEntry<>("isParamBlankOption", this.isParamBlankOption));
