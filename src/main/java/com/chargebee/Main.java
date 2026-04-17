@@ -22,6 +22,8 @@ import com.chargebee.sdk.ruby.Ruby;
 import com.chargebee.sdk.ts.TypeScript;
 import com.chargebee.sdk.ts.typing.TypeScriptTyping;
 import com.chargebee.sdk.ts.typing.V3.TypeScriptTypings;
+import com.chargebee.sdk.validator.ValidatorJoi;
+import com.chargebee.sdk.validator.ValidatorJoiTs;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import java.io.File;
 import java.io.IOException;
@@ -152,7 +154,9 @@ enum Lang {
   JAVA_INTERNAL_INT_V2,
   JAVA_INTERNAL_HVC,
   JAVA_INTERNAL_HVC_V2,
-  JAVA_V4_INTERNAL_HVC;
+  JAVA_V4_INTERNAL_HVC,
+  VALIDATOR_JOI,
+  VALIDATOR_JOI_TS;
 
   public static Language sdkLanguage(Lang lang) {
     if (lang == Lang.TYPESCRIPT_TYPINGS_V3) {
@@ -214,6 +218,12 @@ enum Lang {
     }
     if (lang == Lang.CHANGELOG) {
       return new ChangeLog();
+    }
+    if (lang == Lang.VALIDATOR_JOI) {
+      return new ValidatorJoi();
+    }
+    if (lang == Lang.VALIDATOR_JOI_TS) {
+      return new ValidatorJoiTs();
     }
     throw new IllegalArgumentException("Lang " + lang + " not supported");
   }
