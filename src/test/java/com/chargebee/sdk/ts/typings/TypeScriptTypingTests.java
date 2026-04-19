@@ -29,7 +29,7 @@ public class TypeScriptTypingTests extends LanguageTests {
   }
 
   private String coreFileContent(String bodyToAppend) {
-    return "declare__module__'chargebee'__{__export__class__RequestConfig__{__site__?:__string__api_key__?:__string__timeout__?:__number__timemachineWaitInMillis__?:__number__exportWaitInMillis__?:__number__}__export__class__ChargebeeRequest<T>__{__setIdempotencyKey(idempotencyKey:__string):__this;__request(config__?:__RequestConfig):__Promise<T>;__headers(headers__:__{[key__:__string]__:__string}):__this;__}"
+    return "declare__module__'chargebee'__{__export__class__RequestConfig__{__site__?:__string__api_key__?:__string__timeout__?:__number__timemachineWaitInMillis__?:__number__exportWaitInMillis__?:__number__/**__When__true,__request__params__are__validated__against__Joi__schemas__before__the__HTTP__call.__*/__enableValidation__?:__boolean__}__export__class__ChargebeeRequest<T>__{__setIdempotencyKey(idempotencyKey:__string):__this;__request(config__?:__RequestConfig):__Promise<T>;__headers(headers__:__{[key__:__string]__:__string}):__this;__}"
         + (bodyToAppend.equals("") ? "" : "__" + bodyToAppend)
         + "__}";
   }

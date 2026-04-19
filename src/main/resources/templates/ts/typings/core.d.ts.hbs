@@ -5,6 +5,8 @@ declare module 'chargebee' {
     timeout ?: number
     timemachineWaitInMillis ?: number
     exportWaitInMillis ?: number
+    /** When true, request params are validated against Joi schemas before the HTTP call. */
+    enableValidation ?: boolean
   }
   export class ChargebeeRequest<T> {
     setIdempotencyKey(idempotencyKey: string): this;
