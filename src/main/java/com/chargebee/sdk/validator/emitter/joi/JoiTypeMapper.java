@@ -6,8 +6,10 @@ import com.chargebee.sdk.validator.ir.PropertyEntry;
 import com.chargebee.sdk.validator.ir.SharedSchemaRegistry;
 import com.chargebee.sdk.validator.ir.ValidationNode;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Maps IR ValidationNodes to Joi method-chain AST expressions.
@@ -20,6 +22,8 @@ public class JoiTypeMapper {
   private final SharedSchemaRegistry registry;
   /** Accumulates inline nested const declarations to be emitted before the main schema. */
   private final List<JsNode.VariableDeclaration> nestedDecls;
+  /** Tracks which const names have already been declared to prevent duplicate declarations. */
+  private final Set<String> declaredNames = new HashSet<>();
 
   private final String actionName;
   private final String resourceName;
@@ -136,16 +140,15 @@ public class JoiTypeMapper {
   }
 
   private JsNode objectToJoi(ValidationNode.ObjectNode on, String propName) {
-    // Extract into a named const to keep things readable
     String constName = JoiNamingStrategy.nestedSchemaName(actionName, resourceName, propName);
 
-    // Build the Joi.object({...}) expression inline (without required/optional wrapper)
-    JsNode objectExpr = buildJoiObjectExpr(on, propName);
+    // Only declare once – if already declared, just return the reference
+    if (!declaredNames.contains(constName)) {
+      declaredNames.add(constName);
+      JsNode objectExpr = buildJoiObjectExpr(on, propName);
+      nestedDecls.add(JsBuilder.constDecl(constName, objectExpr));
+    }
 
-    // Register as a nested declaration
-    nestedDecls.add(JsBuilder.constDecl(constName, objectExpr));
-
-    // Return a reference to the const
     return JsBuilder.id(constName);
   }
 

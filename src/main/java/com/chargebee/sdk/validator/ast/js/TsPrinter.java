@@ -47,15 +47,16 @@ public class TsPrinter {
     return indent(depth) + v.kind() + " " + v.name() + " = " + print(v.init(), depth) + ";";
   }
 
-  /** Emit ES import. If destructured, emits `import { A, B } from 'module';` else a side-effect import. */
+  /** Emit ES import. If destructured, emits `import { A, B } from 'module';` else namespace import. */
   private String printImport(JsNode.RequireCall r) {
     if (r.destructured() != null && !r.destructured().isEmpty()) {
       String names = String.join(", ", r.destructured());
       return "import { " + names + " } from '" + r.module() + "';";
     }
-    // default import: import Joi from 'joi';
+    // Use namespace import (import * as X) to be compatible with esModuleInterop: false
+    // and CJS modules like joi that use `export = Joi`
     String alias = moduleAlias(r.module());
-    return "import " + alias + " from '" + r.module() + "';";
+    return "import * as " + alias + " from '" + r.module() + "';";
   }
 
   private String moduleAlias(String module) {
@@ -63,10 +64,17 @@ public class TsPrinter {
     return Character.toUpperCase(base.charAt(0)) + base.substring(1);
   }
 
-  /** Named export: `export const name = value;` */
+  /**
+   * Named export. When value is an Identifier with the same name, emits `export { name };`
+   * to avoid the self-referential `export const x = x` pattern.
+   * Otherwise emits `export const name = value;`.
+   */
   private String printExport(JsNode.ExportAssignment e, int depth) {
     if (e.name() == null || e.name().isBlank()) {
       return "export default " + print(e.value(), depth) + ";";
+    }
+    if (e.value() instanceof JsNode.Identifier id && id.name().equals(e.name())) {
+      return "export { " + e.name() + " };";
     }
     return "export const " + e.name() + " = " + print(e.value(), depth) + ";";
   }
