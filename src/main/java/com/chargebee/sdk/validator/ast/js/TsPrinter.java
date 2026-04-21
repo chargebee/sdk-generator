@@ -6,11 +6,9 @@ import java.util.stream.Collectors;
 /**
  * Converts a {@link JsNode} AST into formatted TypeScript source code.
  *
- * <p>Differences from {@link JsPrinter}:
  * <ul>
  *   <li>{@link JsNode.RequireCall} → ES {@code import} statement</li>
- *   <li>{@link JsNode.ExportAssignment} → named {@code export const}</li>
- *   <li>Preserves all other JS semantics (Joi API is identical in TS)</li>
+ *   <li>{@link JsNode.ExportAssignment} → named {@code export const} or re-export</li>
  * </ul>
  */
 public class TsPrinter {
