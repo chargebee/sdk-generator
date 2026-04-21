@@ -146,7 +146,16 @@ public class ZodTypeMapper {
     return JsBuilder.id(ZodNamingStrategy.sharedSchemaName(rn.targetName()));
   }
 
-  /** Build a z.object({...}).passthrough() expression. */
+  /**
+   * Build a Zod object expression.
+   *
+   * <ul>
+   *   <li>allowUnknown=true  → {@code z.looseObject({...})}  (extra keys passed through)
+   *   <li>allowUnknown=false → {@code z.object({...})}       (extra keys stripped, Zod v4 default)
+   * </ul>
+   *
+   * <p>Note: {@code .passthrough()} is deprecated in Zod v4 — use {@code z.looseObject()} instead.
+   */
   public JsNode buildZodObjectExpr(ValidationNode.ObjectNode on, String contextName) {
     List<JsNode.ObjectExpression.ObjectProperty> props = new ArrayList<>();
     for (Map.Entry<String, PropertyEntry> entry : on.properties().entrySet()) {
@@ -156,13 +165,9 @@ public class ZodTypeMapper {
       props.add(JsBuilder.prop(key, valExpr));
     }
     JsNode propsObj = JsBuilder.obj(props);
-    // z.object({...})
-    JsNode base = JsBuilder.callExpr(JsBuilder.member("z", "object"), propsObj);
-    // always add .passthrough() so unknown keys are allowed
-    if (on.allowUnknown()) {
-      return JsBuilder.chain(base, List.of(JsBuilder.call("passthrough")));
-    }
-    return base;
+    // z.looseObject allows unknown keys; z.object strips them (Zod v4 default)
+    String factory = on.allowUnknown() ? "looseObject" : "object";
+    return JsBuilder.callExpr(JsBuilder.member("z", factory), propsObj);
   }
 
   private JsNode applyOptional(JsNode base, boolean required) {
