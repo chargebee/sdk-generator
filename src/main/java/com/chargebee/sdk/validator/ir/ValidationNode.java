@@ -17,18 +17,11 @@ public sealed interface ValidationNode
         ValidationNode.MapNode,
         ValidationNode.RefNode {
 
-  record ObjectNode(
-      Map<String, PropertyEntry> properties,
-      boolean allowUnknown,
-      String ref)
+  record ObjectNode(Map<String, PropertyEntry> properties, boolean allowUnknown, String ref)
       implements ValidationNode {}
 
   record StringNode(
-      Integer maxLength,
-      Integer minLength,
-      String pattern,
-      String format,
-      List<String> enumValues)
+      Integer maxLength, Integer minLength, String pattern, String format, List<String> enumValues)
       implements ValidationNode {}
 
   record NumberNode(boolean integer, Number minimum, Number maximum) implements ValidationNode {}

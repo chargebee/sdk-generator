@@ -75,7 +75,8 @@ public class ValidationIRBuilder {
 
     if ("integer".equals(type)) {
       return new ValidationNode.NumberNode(
-          true, schema.getMinimum() != null ? schema.getMinimum().intValue() : null,
+          true,
+          schema.getMinimum() != null ? schema.getMinimum().intValue() : null,
           schema.getMaximum() != null ? schema.getMaximum().intValue() : null);
     }
 
@@ -84,8 +85,7 @@ public class ValidationIRBuilder {
     }
 
     if ("boolean".equals(type)) {
-      return new ValidationNode.BooleanNode(
-          schema.getDefault() instanceof Boolean b ? b : null);
+      return new ValidationNode.BooleanNode(schema.getDefault() instanceof Boolean b ? b : null);
     }
 
     // Fallback – treat as opaque string
@@ -111,15 +111,14 @@ public class ValidationIRBuilder {
 
         if (isHidden(propSchema)) continue;
 
-        boolean isRequired =
-            requiredSet.contains(propName)
-                || isMetaCommentRequired(propSchema);
+        boolean isRequired = requiredSet.contains(propName) || isMetaCommentRequired(propSchema);
         boolean isOptional = !isRequired;
         Object defaultVal = propSchema.getDefault();
         String desc = propSchema.getDescription();
 
         ValidationNode childNode = buildNode(propSchema, visiting);
-        propEntries.put(propName, new PropertyEntry(childNode, isRequired, isOptional, defaultVal, desc));
+        propEntries.put(
+            propName, new PropertyEntry(childNode, isRequired, isOptional, defaultVal, desc));
       }
     }
 
@@ -146,7 +145,14 @@ public class ValidationIRBuilder {
 
         boolean isRequired = requiredSet.contains(propName) || isMetaCommentRequired(propSchema);
         ValidationNode childNode = buildNode(propSchema, visiting);
-        propEntries.put(propName, new PropertyEntry(childNode, isRequired, !isRequired, propSchema.getDefault(), propSchema.getDescription()));
+        propEntries.put(
+            propName,
+            new PropertyEntry(
+                childNode,
+                isRequired,
+                !isRequired,
+                propSchema.getDefault(),
+                propSchema.getDescription()));
       }
     }
 

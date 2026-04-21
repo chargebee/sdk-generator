@@ -61,8 +61,7 @@ public class JoiEmitter implements ValidatorEmitter {
         if (bodySchema == null) continue;
 
         List<JsNode.VariableDeclaration> nestedDecls = new ArrayList<>();
-        JoiTypeMapper mapper =
-            new JoiTypeMapper(action.name, resource.name, registry, nestedDecls);
+        JoiTypeMapper mapper = new JoiTypeMapper(action.name, resource.name, registry, nestedDecls);
 
         ValidationNode irNode = irBuilder.buildNode(bodySchema, new HashSet<>());
 
@@ -70,13 +69,10 @@ public class JoiEmitter implements ValidatorEmitter {
         if (rootObj == null) continue;
 
         // Force allowUnknown=true on top-level body schema for forward compatibility
-        rootObj =
-            new ValidationNode.ObjectNode(
-                rootObj.properties(), true, rootObj.ref());
+        rootObj = new ValidationNode.ObjectNode(rootObj.properties(), true, rootObj.ref());
 
         JsNode bodyExpr = mapper.buildJoiObjectExpr(rootObj, "");
-        String bodySchemaConstName =
-            JoiNamingStrategy.bodySchemaName(action.name, resource.name);
+        String bodySchemaConstName = JoiNamingStrategy.bodySchemaName(action.name, resource.name);
 
         // Collect shared schema imports needed by this file
         Set<String> usedRefs = collectRefs(irNode);
@@ -93,8 +89,7 @@ public class JoiEmitter implements ValidatorEmitter {
                   constName,
                   new JsNode.MemberAccess(
                       new JsNode.CallExpression(
-                          JsBuilder.id("require"),
-                          List.of(JsBuilder.lit("../shared.validation"))),
+                          JsBuilder.id("require"), List.of(JsBuilder.lit("../shared.validation"))),
                       constName)));
         }
 
@@ -112,7 +107,8 @@ public class JoiEmitter implements ValidatorEmitter {
         String filePath = Paths.get(resourceDir, fileName).toString();
         ops.add(new FileOp.WriteString(outputDir, filePath, fileContent + "\n"));
 
-        indexExports.add("./" + resourceDir + "/" + JoiNamingStrategy.fileName(action.name).replace(".js", ""));
+        indexExports.add(
+            "./" + resourceDir + "/" + JoiNamingStrategy.fileName(action.name).replace(".js", ""));
       }
     }
 
@@ -225,8 +221,7 @@ public class JoiEmitter implements ValidatorEmitter {
   private String buildIndexFile(
       List<String> actionFiles, Set<String> sharedRefs, JsPrinter printer) {
     List<JsNode> body = new ArrayList<>();
-    body.add(
-        new JsNode.Identifier("// Auto-generated barrel export for Joi validators\n"));
+    body.add(new JsNode.Identifier("// Auto-generated barrel export for Joi validators\n"));
 
     if (!sharedRefs.isEmpty()) {
       body.add(
@@ -236,15 +231,17 @@ public class JoiEmitter implements ValidatorEmitter {
 
     for (String filePath : actionFiles) {
       // e.g. './customer/create'
-      String varName =
-          filePath
-              .replace("./", "")
-              .replace("/", "_")
-              .replace("-", "_");
+      String varName = filePath.replace("./", "").replace("/", "_").replace("-", "_");
       body.add(
           new JsNode.Identifier(
-              "const " + varName + " = require('" + filePath + "');\n"
-              + "Object.assign(module.exports, " + varName + ");"));
+              "const "
+                  + varName
+                  + " = require('"
+                  + filePath
+                  + "');\n"
+                  + "Object.assign(module.exports, "
+                  + varName
+                  + ");"));
     }
 
     return printer.print(JsBuilder.program(body));

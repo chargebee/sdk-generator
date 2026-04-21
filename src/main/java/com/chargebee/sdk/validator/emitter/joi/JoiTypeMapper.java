@@ -20,8 +20,10 @@ import java.util.Set;
 public class JoiTypeMapper {
 
   private final SharedSchemaRegistry registry;
+
   /** Accumulates inline nested const declarations to be emitted before the main schema. */
   private final List<JsNode.VariableDeclaration> nestedDecls;
+
   /** Tracks which const names have already been declared to prevent duplicate declarations. */
   private final Set<String> declaredNames = new HashSet<>();
 
@@ -96,9 +98,7 @@ public class JoiTypeMapper {
       if (sn.minLength() != null) calls.add(JsBuilder.call("min", JsBuilder.lit(sn.minLength())));
       if (sn.pattern() != null) {
         // emit as Joi.string().pattern(new RegExp('...'))
-        JsNode regex =
-            JsBuilder.callExpr(
-                JsBuilder.id("RegExp"), JsBuilder.lit(sn.pattern()));
+        JsNode regex = JsBuilder.callExpr(JsBuilder.id("RegExp"), JsBuilder.lit(sn.pattern()));
         calls.add(JsBuilder.call("pattern", regex));
       }
     }
@@ -123,7 +123,8 @@ public class JoiTypeMapper {
   private JsNode booleanToJoi(ValidationNode.BooleanNode bn) {
     JsNode receiver = JsBuilder.member("Joi", "boolean");
     List<JsNode.MethodChain.MethodCall> calls = new ArrayList<>();
-    if (bn.defaultValue() != null) calls.add(JsBuilder.call("default", JsBuilder.lit(bn.defaultValue())));
+    if (bn.defaultValue() != null)
+      calls.add(JsBuilder.call("default", JsBuilder.lit(bn.defaultValue())));
     return calls.isEmpty()
         ? JsBuilder.chain(JsBuilder.callExpr(receiver))
         : JsBuilder.chain(JsBuilder.callExpr(receiver), calls);

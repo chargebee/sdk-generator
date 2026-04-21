@@ -1,4 +1,4 @@
-package com.chargebee.sdk.validator.emitter.joits;
+package com.chargebee.sdk.validator.emitter.zod;
 
 import com.chargebee.openapi.Action;
 import com.chargebee.openapi.HttpRequestType;
@@ -9,8 +9,6 @@ import com.chargebee.sdk.validator.ValidatorEmitter;
 import com.chargebee.sdk.validator.ast.js.JsBuilder;
 import com.chargebee.sdk.validator.ast.js.JsNode;
 import com.chargebee.sdk.validator.ast.js.TsPrinter;
-import com.chargebee.sdk.validator.emitter.joi.JoiNamingStrategy;
-import com.chargebee.sdk.validator.emitter.joi.JoiTypeMapper;
 import com.chargebee.sdk.validator.ir.PropertyEntry;
 import com.chargebee.sdk.validator.ir.SharedSchemaRegistry;
 import com.chargebee.sdk.validator.ir.ValidationIRBuilder;
@@ -20,22 +18,18 @@ import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * TypeScript variant of the Joi emitter.
+ * Emits Zod validation files (.validation.ts) for every POST action in the spec.
  *
- * <p>Generates {@code .validation.ts} files using ES {@code import}/{@code export} syntax.
- * Output layout matches the JS emitter but with {@code .ts} extensions.
- *
+ * <p>Output layout:
  * <pre>
  * {outputDir}/
- *   shared.validation.ts
+ *   shared.validation.ts        ← shared $ref schemas
  *   {resource}/
- *     {action}.validation.ts
- *   index.ts
+ *     {action}.validation.ts   ← per-action body schema
+ *   index.ts                   ← barrel re-export
  * </pre>
  */
-public class JoiTsEmitter implements ValidatorEmitter {
-
-  private static final String JOI_MODULE = "joi";
+public class ZodTsEmitter implements ValidatorEmitter {
 
   @Override
   public List<FileOp> emit(Spec spec, SharedSchemaRegistry registry, String outputDir) {
@@ -48,7 +42,7 @@ public class JoiTsEmitter implements ValidatorEmitter {
     List<String> indexExports = new ArrayList<>();
 
     for (Resource resource : spec.resources()) {
-      String resourceDir = JoiNamingStrategy.resourceDir(resource.name);
+      String resourceDir = ZodNamingStrategy.resourceDir(resource.name);
       ops.add(new FileOp.CreateDirectory(outputDir, resourceDir));
 
       List<Action> actions =
@@ -64,82 +58,74 @@ public class JoiTsEmitter implements ValidatorEmitter {
         if (bodySchema == null) continue;
 
         List<JsNode.VariableDeclaration> nestedDecls = new ArrayList<>();
-        JoiTypeMapper mapper = new JoiTypeMapper(action.name, resource.name, registry, nestedDecls);
+        ZodTypeMapper mapper = new ZodTypeMapper(action.name, resource.name, registry, nestedDecls);
 
         ValidationNode irNode = irBuilder.buildNode(bodySchema, new HashSet<>());
-
-        ValidationNode.ObjectNode rootObj = ensureObjectNode(irNode);
+        ValidationNode.ObjectNode rootObj = ensureObject(irNode);
         if (rootObj == null) continue;
 
-        // Force allowUnknown=true on top-level body schema
+        // Top-level body schema always allows unknown keys
         rootObj = new ValidationNode.ObjectNode(rootObj.properties(), true, rootObj.ref());
 
-        JsNode bodyExpr = mapper.buildJoiObjectExpr(rootObj, "");
-        String bodySchemaConstName = JoiNamingStrategy.bodySchemaName(action.name, resource.name);
+        JsNode bodyExpr = mapper.buildZodObjectExpr(rootObj, "");
+        String bodyConst = ZodNamingStrategy.bodySchemaName(action.name, resource.name);
 
         Set<String> usedRefs = collectRefs(irNode);
 
         List<JsNode> body = new ArrayList<>();
         body.add(headerComment(resource.name, action.name));
-        body.add(JsBuilder.require(JOI_MODULE));
+        body.add(new JsNode.RequireCall("zod", List.of("z"))); // import { z } from 'zod'
 
-        // Import shared schemas from shared.validation.ts
+        // Named imports from shared.validation.ts
         for (String refName : usedRefs) {
-          String constName = JoiNamingStrategy.sharedSchemaName(refName);
+          String constName = ZodNamingStrategy.sharedSchemaName(refName);
           body.add(new JsNode.RequireCall("../shared.validation.js", List.of(constName)));
         }
 
         body.addAll(nestedDecls);
-        body.add(JsBuilder.constDecl(bodySchemaConstName, bodyExpr));
-        body.add(JsBuilder.exportNamed(bodySchemaConstName, JsBuilder.id(bodySchemaConstName)));
+        body.add(JsBuilder.constDecl(bodyConst, bodyExpr));
+        body.add(JsBuilder.exportNamed(bodyConst, JsBuilder.id(bodyConst)));
 
-        String fileName = tsFileName(action.name);
-        String fileContent = printer.print(JsBuilder.program(body));
+        String fileName = ZodNamingStrategy.fileName(action.name);
         String filePath = Paths.get(resourceDir, fileName).toString();
-        ops.add(new FileOp.WriteString(outputDir, filePath, fileContent + "\n"));
+        ops.add(
+            new FileOp.WriteString(
+                outputDir, filePath, printer.print(JsBuilder.program(body)) + "\n"));
 
-        indexExports.add("./" + resourceDir + "/" + tsFileName(action.name).replace(".ts", ".js"));
+        indexExports.add("./" + resourceDir + "/" + fileName.replace(".ts", ".js"));
       }
     }
 
-    // shared.validation.ts
     if (!registry.all().isEmpty()) {
-      String sharedContent = buildSharedFile(registry, printer);
-      ops.add(new FileOp.WriteString(outputDir, "shared.validation.ts", sharedContent + "\n"));
+      ops.add(
+          new FileOp.WriteString(
+              outputDir, "shared.validation.ts", buildSharedFile(registry, printer) + "\n"));
     }
 
-    // index.ts
-    String indexContent = buildIndexFile(indexExports, registry.all().keySet(), printer);
-    ops.add(new FileOp.WriteString(outputDir, "index.ts", indexContent + "\n"));
+    ops.add(
+        new FileOp.WriteString(outputDir, "index.ts", buildIndex(indexExports, registry) + "\n"));
 
     return ops;
   }
 
   // ---- helpers ----
 
-  private static String tsFileName(String actionName) {
-    return JoiNamingStrategy.fileName(actionName).replace(".validation.js", ".validation.ts");
-  }
-
   private Schema<?> resolveBodySchema(Action action, Spec spec) {
     if (action.httpRequestType == HttpRequestType.GET) return null;
-    var bodyParams = action.requestBodyParameters();
-    if (bodyParams.isEmpty()) return null;
+    if (action.requestBodyParameters().isEmpty()) return null;
     if (spec.openAPI().getPaths() == null) return null;
     var pathItem = spec.openAPI().getPaths().get(action.getUrl());
-    if (pathItem == null) return null;
-    var op = pathItem.getPost();
-    if (op == null || op.getRequestBody() == null) return null;
-    var content = op.getRequestBody().getContent();
+    if (pathItem == null || pathItem.getPost() == null) return null;
+    var rb = pathItem.getPost().getRequestBody();
+    if (rb == null) return null;
+    var content = rb.getContent();
     if (content == null) return null;
     var mt = content.get("application/x-www-form-urlencoded");
-    if (mt == null) return null;
-    return mt.getSchema();
+    return mt == null ? null : mt.getSchema();
   }
 
-  private ValidationNode.ObjectNode ensureObjectNode(ValidationNode node) {
-    if (node instanceof ValidationNode.ObjectNode on) return on;
-    return null;
+  private ValidationNode.ObjectNode ensureObject(ValidationNode node) {
+    return node instanceof ValidationNode.ObjectNode on ? on : null;
   }
 
   private Set<String> collectRefs(ValidationNode node) {
@@ -152,9 +138,7 @@ public class JoiTsEmitter implements ValidatorEmitter {
     if (node instanceof ValidationNode.RefNode rn) {
       refs.add(rn.targetName());
     } else if (node instanceof ValidationNode.ObjectNode on) {
-      for (PropertyEntry pe : on.properties().values()) {
-        collectRefsInto(pe.node(), refs);
-      }
+      for (PropertyEntry pe : on.properties().values()) collectRefsInto(pe.node(), refs);
     } else if (node instanceof ValidationNode.ArrayNode an) {
       collectRefsInto(an.items(), refs);
     } else if (node instanceof ValidationNode.MapNode mn) {
@@ -162,36 +146,36 @@ public class JoiTsEmitter implements ValidatorEmitter {
     }
   }
 
-  private JsNode headerComment(String resourceName, String actionName) {
+  private JsNode headerComment(String resource, String action) {
     return new JsNode.Identifier(
-        "// Generated Joi validator: "
-            + resourceName
+        "// Generated Zod validator: "
+            + resource
             + "."
-            + actionName
-            + "\n// Do not edit manually – regenerate via sdk-generator\n");
+            + action
+            + "\n"
+            + "// Do not edit manually – regenerate via sdk-generator\n");
   }
 
   private String buildSharedFile(SharedSchemaRegistry registry, TsPrinter printer) {
     List<JsNode> body = new ArrayList<>();
     body.add(
         new JsNode.Identifier(
-            "// Shared Joi schemas\n// Do not edit manually – regenerate via sdk-generator\n"));
-    body.add(JsBuilder.require(JOI_MODULE));
+            "// Shared Zod schemas\n// Do not edit manually – regenerate via sdk-generator\n"));
+    body.add(new JsNode.RequireCall("zod", List.of("z")));
 
     for (Map.Entry<String, ValidationNode> entry : registry.all().entrySet()) {
       String refName = entry.getKey();
       ValidationNode refNode = entry.getValue();
-      String constName = JoiNamingStrategy.sharedSchemaName(refName);
+      String constName = ZodNamingStrategy.sharedSchemaName(refName);
 
       List<JsNode.VariableDeclaration> nestedDecls = new ArrayList<>();
-      JoiTypeMapper mapper = new JoiTypeMapper("shared", refName, registry, nestedDecls);
+      ZodTypeMapper mapper = new ZodTypeMapper("shared", refName, registry, nestedDecls);
 
-      JsNode expr;
-      if (refNode instanceof ValidationNode.ObjectNode on) {
-        expr = mapper.buildJoiObjectExpr(on, refName);
-      } else {
-        expr = mapper.toJoi(refNode, refName, false);
-      }
+      JsNode expr =
+          refNode instanceof ValidationNode.ObjectNode on
+              ? mapper.buildZodObjectExpr(on, refName)
+              : mapper.toZod(refNode, refName, false);
+
       body.addAll(nestedDecls);
       body.add(JsBuilder.constDecl(constName, expr));
       body.add(JsBuilder.exportNamed(constName, JsBuilder.id(constName)));
@@ -200,19 +184,14 @@ public class JoiTsEmitter implements ValidatorEmitter {
     return printer.print(JsBuilder.program(body));
   }
 
-  private String buildIndexFile(
-      List<String> actionFiles, Set<String> sharedRefs, TsPrinter printer) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("// Auto-generated barrel export for Joi validators\n");
-
-    if (!sharedRefs.isEmpty()) {
+  private String buildIndex(List<String> actionFiles, SharedSchemaRegistry registry) {
+    StringBuilder sb = new StringBuilder("// Auto-generated barrel export for Zod validators\n");
+    if (!registry.all().isEmpty()) {
       sb.append("export * from './shared.validation.js';\n");
     }
-
-    for (String filePath : actionFiles) {
-      sb.append("export * from '").append(filePath).append("';\n");
+    for (String f : actionFiles) {
+      sb.append("export * from '").append(f).append("';\n");
     }
-
     return sb.toString();
   }
 }

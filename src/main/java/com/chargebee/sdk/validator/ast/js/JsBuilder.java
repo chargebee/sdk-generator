@@ -30,7 +30,8 @@ public final class JsBuilder {
     return new JsNode.MethodChain(receiver, Arrays.asList(calls));
   }
 
-  public static JsNode.MethodChain chain(JsNode receiver, List<JsNode.MethodChain.MethodCall> calls) {
+  public static JsNode.MethodChain chain(
+      JsNode receiver, List<JsNode.MethodChain.MethodCall> calls) {
     return new JsNode.MethodChain(receiver, calls);
   }
 

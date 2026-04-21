@@ -32,9 +32,7 @@ public class JsPrinter {
   }
 
   private String printProgram(JsNode.Program p, int depth) {
-    return p.body().stream()
-        .map(n -> print(n, depth))
-        .collect(Collectors.joining("\n"));
+    return p.body().stream().map(n -> print(n, depth)).collect(Collectors.joining("\n"));
   }
 
   private String printVarDecl(JsNode.VariableDeclaration v, int depth) {
