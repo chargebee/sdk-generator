@@ -307,6 +307,22 @@ public class ReturnTypeBuilder {
     return null;
   }
 
+  private String filterString(Attribute attribute) {
+    if (attribute.isFilterAttribute()
+        && dataTypeMethod.apply(attribute.schema).equalsIgnoreCase("StringFilter")) {
+      return getClazName(action);
+    }
+    return null;
+  }
+
+  private String filterBoolean(Attribute attribute) {
+    if (attribute.isFilterAttribute()
+        && dataTypeMethod.apply(attribute.schema).equalsIgnoreCase("BooleanFilter")) {
+      return getClazName(action);
+    }
+    return null;
+  }
+
   private String resourceLevelMultiAttribute(Attribute attribute) {
     if (!attribute.attributes().isEmpty()) {
       Optional<Resource> resource =
@@ -393,6 +409,16 @@ public class ReturnTypeBuilder {
     String filterTimestamp = filterTimestamp(attribute);
     if (filterTimestamp != null) {
       return filterTimestamp;
+    }
+
+    String filterString = filterString(attribute);
+    if (filterString != null) {
+      return filterString;
+    }
+
+    String filterBoolean = filterBoolean(attribute);
+    if (filterBoolean != null) {
+      return filterBoolean;
     }
 
     String resourceLevelMultiAttribute = resourceLevelMultiAttribute(attribute);
