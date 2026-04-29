@@ -80,6 +80,30 @@ public class ReturnTypeBuilder {
         && attribute.attributes().get(0).schema.getFormat().equals("boolean");
   }
 
+  private String filterString() {
+    if (attribute.isFilterAttribute()
+        && dataTypeMethod.apply(attribute.schema).equalsIgnoreCase("StringFilter")) {
+      return getClazName(action);
+    }
+    return null;
+  }
+
+  private String filterBoolean() {
+    if (attribute.isFilterAttribute()
+        && dataTypeMethod.apply(attribute.schema).equalsIgnoreCase("BooleanFilter")) {
+      return getClazName(action);
+    }
+    return null;
+  }
+
+  private String filterTimestamp() {
+    if (attribute.isFilterAttribute()
+        && dataTypeMethod.apply(attribute.schema).equalsIgnoreCase("TimestampFilter")) {
+      return getClazName(action);
+    }
+    return null;
+  }
+
   public String returnTypeWithoutAttribute() {
     if (isBooleanAttribute()) {
       return getClazName(action);
@@ -124,6 +148,22 @@ public class ReturnTypeBuilder {
   }
 
   public String build() {
+    // Check for filter types first - they should only have the request class as generic parameter
+    String filterString = filterString();
+    if (filterString != null) {
+      return filterString;
+    }
+
+    String filterBoolean = filterBoolean();
+    if (filterBoolean != null) {
+      return filterBoolean;
+    }
+
+    String filterTimestamp = filterTimestamp();
+    if (filterTimestamp != null) {
+      return filterTimestamp;
+    }
+
     String returnTypeWithoutSubAttribute = returnTypeWithoutAttribute();
     if (returnTypeWithoutSubAttribute != null) {
       return returnTypeWithoutSubAttribute;
