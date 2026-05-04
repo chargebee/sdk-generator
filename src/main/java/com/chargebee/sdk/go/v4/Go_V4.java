@@ -46,6 +46,15 @@ public class Go_V4 extends Language {
       "Status", "GiftStatus" // Gift.status has enum api name "Status" but global is GiftStatus
   );
 
+  // Mapping for resource-scoped enum type names that need rewriting.
+  // Keys are the default full type name (e.g. "SubscriptionStatus"),
+  // values are the desired replacement name.
+  private static final Map<String, String> RESOURCE_ENUM_NAME_MAPPING = Map.of(
+    // We have two resources `Alert` and `AlertStatus` with a `status` field which
+    // leads to duplicate `AlertStatus` types. Rename the enum type to fix the conflict.
+    "AlertStatus", "AlertStatusType"
+  );
+
   /**
    * Get the correct global enum type name for an attribute.
    * Some global enums have x-cb-sdk-enum-api-name that doesn't match the actual
@@ -68,6 +77,16 @@ public class Go_V4 extends Language {
     }
     // Fallback to attribute name
     return toCamelCase(attr.name);
+  }
+
+  private String applyEnumNameRewrite(String fullEnumTypeName) {
+    return RESOURCE_ENUM_NAME_MAPPING.getOrDefault(fullEnumTypeName, fullEnumTypeName);
+  }
+
+  private String resolveResourceEnumTypeName(String resourceName, String attrName) {
+    String defaultName = resourceName
+        + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, attrName);
+    return applyEnumNameRewrite(defaultName);
   }
 
   /**
@@ -710,21 +729,13 @@ public class Go_V4 extends Language {
           // For global enums, use the global enum type name from the spec
           type = getGlobalEnumTypeName(attribute);
         } else if (attribute.isExternalEnum() || resourceHasEnum(subResName, attribute.name)) {
-          // For external enums (explicitly marked in spec) or when a matching resource
-          // has this enum defined, use the sub-resource name as the prefix.
-          // e.g., payment_reference_numbers.type -> PaymentReferenceNumberType
-          // e.g., contract_terms.action_at_term_end -> ContractTermActionAtTermEnd
-          // e.g., unbilled_charges.entity_type -> UnbilledChargeEntityType
-          type = subResName + toCamelCase(attribute.name);
+          type = applyEnumNameRewrite(subResName + toCamelCase(attribute.name));
         } else {
-          // For non-global enums in sub-resources, the enum type name follows the
-          // pattern:
-          // ResourceName + SubResourceName (singularized) + AttributeName
-          // But if SubResourceName singularizes to ResourceName, avoid duplication
           if (subResName.equals(activeResource.name)) {
-            type = activeResource.name + toCamelCase(attribute.name);
+            type = applyEnumNameRewrite(activeResource.name + toCamelCase(attribute.name));
           } else {
-            type = activeResource.name + subResName + toCamelCase(attribute.name);
+            type = applyEnumNameRewrite(
+                activeResource.name + subResName + toCamelCase(attribute.name));
           }
         }
         // addEnumImport(type);
@@ -841,10 +852,9 @@ public class Go_V4 extends Language {
           // For global enums, use the global type name from the spec
           type = getGlobalEnumTypeName(attribute);
         } else if (attribute.isGenSeparate()) {
-          type = activeResource.name + toClazName(attribute.name);
+          type = applyEnumNameRewrite(activeResource.name + toClazName(attribute.name));
         } else {
-          // Non-global resource-specific enums
-          type = activeResource.name + toClazName(attribute.name);
+          type = applyEnumNameRewrite(activeResource.name + toClazName(attribute.name));
         }
         buf.add(
             "\t"
@@ -900,12 +910,16 @@ public class Go_V4 extends Language {
       if (!enumMap.isEmpty()) {
         String enumName = (String) enumMap.get("name");
         String fullName = resourceName + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, enumName);
-        // Skip if this enum name collides with a global enum
         if (globalEnumNames.contains(fullName)) {
           continue;
         }
         if (!seenEnumNames.contains(fullName)) {
           seenEnumNames.add(fullName);
+          String rewritten = applyEnumNameRewrite(fullName);
+          if (!rewritten.equals(fullName)) {
+            enumMap = new HashMap<>(enumMap);
+            enumMap.put("overrideFullName", rewritten);
+          }
           allEnums.add(enumMap);
         }
       }
@@ -916,12 +930,16 @@ public class Go_V4 extends Language {
       if (!enumMap.isEmpty()) {
         String enumName = (String) enumMap.get("name");
         String fullName = resourceName + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, enumName);
-        // Skip if this enum name collides with a global enum
         if (globalEnumNames.contains(fullName)) {
           continue;
         }
         if (!seenEnumNames.contains(fullName)) {
           seenEnumNames.add(fullName);
+          String rewritten = applyEnumNameRewrite(fullName);
+          if (!rewritten.equals(fullName)) {
+            enumMap = new HashMap<>(enumMap);
+            enumMap.put("overrideFullName", rewritten);
+          }
           allEnums.add(enumMap);
         }
       }
@@ -949,12 +967,9 @@ public class Go_V4 extends Language {
           // For global enums, use the global type name from the spec
           type = getGlobalEnumTypeName(a);
         } else if (a.isGenSeparate()) {
-          type = activeResource.name
-              + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
+          type = resolveResourceEnumTypeName(activeResource.name, a.name);
         } else {
-          // Non-global resource-specific enums get the resource prefix
-          type = activeResource.name
-              + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
+          type = resolveResourceEnumTypeName(activeResource.name, a.name);
         }
         buf.add("\t" + String.join(delimiter, toCamelCase(a.name), type, getJsonVal(a, true)));
       } else {
@@ -1025,16 +1040,16 @@ public class Go_V4 extends Language {
           // For global enums, use the global type name from the spec
           type = getGlobalEnumTypeName(attribute);
         } else if (attribute.isGenSeparate()) {
-          type = activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name);
+          type = applyEnumNameRewrite(
+              activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name));
         } else if (attribute.isDependentAttribute()) {
           type = toCamelCase(attribute.name);
         } else if (attribute.isExternalEnum()) {
-          // For external enums, use standard naming: ResourceName + SubResourceName +
-          // AttributeName
-          type = activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name);
+          type = applyEnumNameRewrite(
+              activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name));
         } else {
-          // Non-global resource-specific sub-resource enums
-          type = activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name);
+          type = applyEnumNameRewrite(
+              activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name));
         }
         // Patch to match cb-app based enum naming
         // type =
