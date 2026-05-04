@@ -59,6 +59,11 @@ declare module 'chargebee' {
      * @httpClient optional http client implementation, default http client will be used if not provided
      */
     httpClient?: HttpClientInterface;
+
+    /**
+     * @enableValidation When true, the SDK validates POST action arguments against each endpoint's generated Zod schema before the HTTP request is sent (the same object is serialized as the JSON or form-encoded body). Violations throw `ChargebeeZodValidationError` with structured Zod issues. GET list and retrieve parameters are not run through Zod; required resource ids in the URL path are still checked separately.
+     */
+    enableValidation?: boolean;
   };
 
   export interface HttpClientInterface {
@@ -233,6 +238,17 @@ declare module 'chargebee' {
     constructor(message: string, rawBody?: string);
     name: string;
     readonly rawBody?: string;
+  }
+
+  /**
+   * Thrown when `enableValidation` is true and POST parameters fail the action's Zod schema.
+   * Carries `actionName` and the original `ZodError` (issues, `flatten()`, etc.) for programmatic handling.
+   */
+  export class ChargebeeZodValidationError extends Error {
+    constructor(actionName: string, zodError: import('zod').ZodError);
+    name: string;
+    readonly actionName: string;
+    readonly zodError: import('zod').ZodError;
   }
 
 }
