@@ -1,4 +1,4 @@
-package com.chargebee.sdk.go;
+package com.chargebee.sdk.go.v4;
 
 import java.util.ArrayList;
 import java.util.List;
