@@ -13,19 +13,22 @@ import com.chargebee.sdk.validator.ir.PropertyEntry;
 import com.chargebee.sdk.validator.ir.SharedSchemaRegistry;
 import com.chargebee.sdk.validator.ir.ValidationIRBuilder;
 import com.chargebee.sdk.validator.ir.ValidationNode;
+import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * Emits Zod validation files (.validation.ts) for every POST action in the spec.
+ * Emits Zod validation files (.validation.ts) for POST actions (body schema)
+ * and GET actions with query parameters (query params schema) in the spec.
  *
  * <p>Output layout:
  * <pre>
  * {outputDir}/
  *   shared.validation.ts        ← shared $ref schemas
  *   {resource}/
- *     {action}.validation.ts   ← per-action body schema
+ *     {action}.validation.ts   ← per-action body/query params schema
  *   index.ts                   ← barrel re-export
  * </pre>
  */
@@ -111,7 +114,10 @@ public class ZodTsEmitter implements ValidatorEmitter {
   // ---- helpers ----
 
   private Schema<?> resolveBodySchema(Action action, Spec spec) {
-    if (action.httpRequestType == HttpRequestType.GET) return null;
+    if (action.httpRequestType == HttpRequestType.GET) {
+      return resolveQueryParamsSchema(action, spec);
+    }
+
     if (action.requestBodyParameters().isEmpty()) return null;
     if (spec.openAPI().getPaths() == null) return null;
     var pathItem = spec.openAPI().getPaths().get(action.getUrl());
@@ -122,6 +128,41 @@ public class ZodTsEmitter implements ValidatorEmitter {
     if (content == null) return null;
     var mt = content.get("application/x-www-form-urlencoded");
     return mt == null ? null : mt.getSchema();
+  }
+
+  private Schema<?> resolveQueryParamsSchema(Action action, Spec spec) {
+    if (spec.openAPI().getPaths() == null) return null;
+    var pathItem = spec.openAPI().getPaths().get(action.getUrl());
+    if (pathItem == null || pathItem.getGet() == null) return null;
+    var operation = pathItem.getGet();
+    if (operation.getParameters() == null || operation.getParameters().isEmpty()) return null;
+
+    List<Parameter> queryParams =
+        operation.getParameters().stream()
+            .filter(p -> "query".equals(p.getIn()))
+            .filter(p -> p.getSchema() != null)
+            .toList();
+
+    if (queryParams.isEmpty()) return null;
+
+    // Construct an object schema from query parameters
+    ObjectSchema objectSchema = new ObjectSchema();
+    Map<String, Schema> properties = new LinkedHashMap<>();
+    List<String> requiredFields = new ArrayList<>();
+
+    for (Parameter param : queryParams) {
+      properties.put(param.getName(), param.getSchema());
+      if (param.getRequired() != null && param.getRequired()) {
+        requiredFields.add(param.getName());
+      }
+    }
+
+    objectSchema.setProperties(properties);
+    if (!requiredFields.isEmpty()) {
+      objectSchema.setRequired(requiredFields);
+    }
+
+    return objectSchema;
   }
 
   private ValidationNode.ObjectNode ensureObject(ValidationNode node) {
