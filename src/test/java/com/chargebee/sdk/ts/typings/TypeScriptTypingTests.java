@@ -782,7 +782,7 @@ public class TypeScriptTypingTests extends LanguageTests {
         fileOps.get(1),
         "/tmp/resources",
         "Subscription.d.ts",
-        "declare__module__'chargebee'__{__export__interface__Subscription__{__id:string;__/**__*__@deprecated__metadata__is__deprecated__please__use__meta_data__instead__*/__metadata?:object;__}__export__namespace__Subscription__{__export__class__SubscriptionResource__{__create_with_items(input:CreateWithItemsInputParam):ChargebeeRequest<CreateWithItemsResponse>;__}__export__interface__CreateWithItemsResponse__{__subscription:Subscription;__}__export__interface__CreateWithItemsInputParam__{__subscription_items:{item_price_id:string,unit_price?:number}[];__}__}__}");
+        "declare__module__'chargebee'__{__export__interface__Subscription__{__id:string;__/**__*__@deprecated__metadata__is__deprecated__please__use__meta_data__instead__*/__metadata?:object;__}__export__namespace__Subscription__{__export__class__SubscriptionResource__{__create_with_items(input:CreateWithItemsInputParam):ChargebeeRequest<CreateWithItemsResponse>;__}__export__interface__CreateWithItemsResponse__{__subscription:Subscription;__}__export__interface__CreateWithItemsInputParam__{__subscription_items?:{item_price_id:string,unit_price?:number}[];__}__}__}");
   }
 
   @Test
@@ -818,7 +818,7 @@ public class TypeScriptTypingTests extends LanguageTests {
         fileOps.get(1),
         "/tmp/resources",
         "Subscription.d.ts",
-        "declare__module__'chargebee'__{__export__interface__Subscription__{__id:string;__/**__*__@deprecated__metadata__is__deprecated__please__use__meta_data__instead__*/__metadata?:object;__}__export__namespace__Subscription__{__export__class__SubscriptionResource__{__/**__*__@description__Create__subscription__for__Items__*/__create_with_items(input:CreateWithItemsInputParam):ChargebeeRequest<CreateWithItemsResponse>;__}__export__interface__CreateWithItemsResponse__{__subscription:Subscription;__}__export__interface__CreateWithItemsInputParam__{__/**__*__@description__Subscription__input__body__*/__subscription_items:{item_price_id:string,unit_price?:number}[];__}__}__}");
+        "declare__module__'chargebee'__{__export__interface__Subscription__{__id:string;__/**__*__@deprecated__metadata__is__deprecated__please__use__meta_data__instead__*/__metadata?:object;__}__export__namespace__Subscription__{__export__class__SubscriptionResource__{__/**__*__@description__Create__subscription__for__Items__*/__create_with_items(input:CreateWithItemsInputParam):ChargebeeRequest<CreateWithItemsResponse>;__}__export__interface__CreateWithItemsResponse__{__subscription:Subscription;__}__export__interface__CreateWithItemsInputParam__{__/**__*__@description__Subscription__input__body__*/__subscription_items?:{item_price_id:string,unit_price?:number}[];__}__}__}");
   }
 
   @Test
