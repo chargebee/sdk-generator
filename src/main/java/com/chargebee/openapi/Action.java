@@ -146,6 +146,7 @@ public class Action {
     if (httpRequestType != HttpRequestType.POST || operation.getRequestBody() == null) {
       return List.of();
     }
+
     Schema<?> schema = getRequestBodySchema();
     if (schema == null
         || schema.getProperties() == null
@@ -159,10 +160,7 @@ public class Action {
         .map(
             entry ->
                 new com.chargebee.openapi.parameter.Parameter(
-                    entry.getKey(),
-                    entry.getValue(),
-                    requiredProperties.contains(entry.getKey())
-                        || entry.getValue().getRequired() != null))
+                    entry.getKey(), entry.getValue(), requiredProperties.contains(entry.getKey())))
         .sorted(Comparator.comparing(com.chargebee.openapi.parameter.Parameter::sortOrder))
         .toList();
   }
