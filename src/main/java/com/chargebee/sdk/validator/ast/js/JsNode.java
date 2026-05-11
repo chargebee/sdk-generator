@@ -10,6 +10,7 @@ public sealed interface JsNode
         JsNode.VariableDeclaration,
         JsNode.RequireCall,
         JsNode.ExportAssignment,
+        JsNode.TypeInferExport,
         JsNode.MethodChain,
         JsNode.ObjectExpression,
         JsNode.ArrayExpression,
@@ -29,6 +30,9 @@ public sealed interface JsNode
 
   /** module.exports.name = value; or module.exports = value; */
   record ExportAssignment(String name, JsNode value) implements JsNode {}
+
+  /** export type TypeName = z.infer&lt;typeof schemaConstName&gt;; */
+  record TypeInferExport(String typeName, String schemaConstName) implements JsNode {}
 
   /**
    * Fluent method chain: receiver.method1(args1).method2(args2)...

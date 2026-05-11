@@ -7,29 +7,38 @@ public class ZodNamingStrategy {
 
   private ZodNamingStrategy() {}
 
-  /** e.g. create → create.validation.ts */
-  public static String fileName(String actionName) {
-    return toSnake(actionName) + ".validation.ts";
+  /** e.g. Customer → customer.schema.ts */
+  public static String resourceSchemaFileName(String resourceName) {
+    return toSnake(resourceName) + ".schema.ts";
   }
 
-  /** e.g. resource=Customer, action=create → createCustomerBodySchema */
+  public static final String SHARED_SCHEMA_FILE = "shared.schema.ts";
+
+  /** e.g. resource=Customer, action=create → CreateCustomerBodySchema */
   public static String bodySchemaName(String actionName, String resourceName) {
-    return toCamel(actionName) + toPascal(resourceName) + "BodySchema";
+    return toPascal(actionName) + toPascal(resourceName) + "BodySchema";
   }
 
-  /** e.g. action=create, resource=Customer, subObject=card → createCustomerCardSchema */
+  /**
+   * TypeScript type for the request body / query schema: same name as the Zod const without the
+   * trailing {@code Schema} (e.g. CreateCustomerBodySchema → CreateCustomerBody).
+   */
+  public static String bodyInferredTypeName(String actionName, String resourceName) {
+    String schemaConst = bodySchemaName(actionName, resourceName);
+    if (schemaConst.endsWith("Schema")) {
+      return schemaConst.substring(0, schemaConst.length() - "Schema".length());
+    }
+    return schemaConst;
+  }
+
+  /** e.g. action=create, resource=Customer, subObject=card → CreateCustomerCardSchema */
   public static String nestedSchemaName(String actionName, String resourceName, String subObject) {
-    return toCamel(actionName) + toPascal(resourceName) + toPascal(subObject) + "Schema";
+    return toPascal(actionName) + toPascal(resourceName) + toPascal(subObject) + "Schema";
   }
 
   /** e.g. postalAddress → postalAddressBlockSchema */
   public static String sharedSchemaName(String refName) {
     return toCamel(refName) + "BlockSchema";
-  }
-
-  /** Resource subdirectory: Customer → customer */
-  public static String resourceDir(String resourceName) {
-    return toSnake(resourceName);
   }
 
   private static String toCamel(String name) {

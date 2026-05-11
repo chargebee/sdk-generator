@@ -16,19 +16,17 @@ import com.chargebee.sdk.validator.ir.ValidationNode;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
- * Emits Zod validation files (.validation.ts) for POST actions (body schema)
- * and GET actions with query parameters (query params schema) in the spec.
+ * Emits Zod schema files ({@code .schema.ts}) for POST bodies and GET query parameters.
  *
- * <p>Output layout:
+ * <p>Output layout (flat {@code src/schema} style):
+ *
  * <pre>
  * {outputDir}/
- *   shared.validation.ts        ← shared $ref schemas
- *   {resource}/
- *     {action}.validation.ts   ← per-action body/query params schema
+ *   shared.schema.ts           ← shared $ref schemas
+ *   {resource_snake}.schema.ts ← all actions for that resource + z.infer type exports
  *   index.ts                   ← barrel re-export
  * </pre>
  */
@@ -45,9 +43,6 @@ public class ZodTsEmitter implements ValidatorEmitter {
     List<String> indexExports = new ArrayList<>();
 
     for (Resource resource : spec.resources()) {
-      String resourceDir = ZodNamingStrategy.resourceDir(resource.name);
-      ops.add(new FileOp.CreateDirectory(outputDir, resourceDir));
-
       List<Action> actions =
           resource.actions.stream()
               .filter(Action::isNotHiddenFromSDK)
@@ -56,53 +51,75 @@ public class ZodTsEmitter implements ValidatorEmitter {
               .sorted(Comparator.comparing(Action::sortOrder))
               .toList();
 
+      List<ActionSchemaUnit> units = new ArrayList<>();
       for (Action action : actions) {
         Schema<?> bodySchema = resolveBodySchema(action, spec);
         if (bodySchema == null) continue;
-
-        List<JsNode.VariableDeclaration> nestedDecls = new ArrayList<>();
-        ZodTypeMapper mapper = new ZodTypeMapper(action.name, resource.name, registry, nestedDecls);
 
         ValidationNode irNode = irBuilder.buildNode(bodySchema, new HashSet<>());
         ValidationNode.ObjectNode rootObj = ensureObject(irNode);
         if (rootObj == null) continue;
 
-        // Top-level body schema always allows unknown keys
         rootObj = new ValidationNode.ObjectNode(rootObj.properties(), true, rootObj.ref());
+        units.add(new ActionSchemaUnit(action, irNode, rootObj));
+      }
 
-        JsNode bodyExpr = mapper.buildZodObjectExpr(rootObj, "");
-        String bodyConst = ZodNamingStrategy.bodySchemaName(action.name, resource.name);
+      if (units.isEmpty()) {
+        continue;
+      }
 
-        Set<String> usedRefs = collectRefs(irNode);
+      Set<String> usedRefs = new LinkedHashSet<>();
+      for (ActionSchemaUnit unit : units) {
+        collectRefsInto(unit.irNode, usedRefs);
+      }
 
-        List<JsNode> body = new ArrayList<>();
-        body.add(headerComment(resource.name, action.name));
-        body.add(new JsNode.RequireCall("zod", List.of("z"))); // import { z } from 'zod'
+      List<JsNode> body = new ArrayList<>();
+      body.add(resourceFileHeader(resource.name, units.stream().map(u -> u.action.name).toList()));
+      body.add(new JsNode.RequireCall("zod", List.of("z")));
 
-        // Named imports from shared.validation.ts
-        for (String refName : usedRefs) {
-          String constName = ZodNamingStrategy.sharedSchemaName(refName);
-          body.add(new JsNode.RequireCall("../shared.validation.js", List.of(constName)));
+      if (!usedRefs.isEmpty()) {
+        List<String> importNames =
+            usedRefs.stream().map(ZodNamingStrategy::sharedSchemaName).sorted().toList();
+        body.add(
+            new JsNode.RequireCall(
+                "./" + ZodNamingStrategy.SHARED_SCHEMA_FILE.replace(".ts", ".js"), importNames));
+      }
+
+      for (int i = 0; i < units.size(); i++) {
+        ActionSchemaUnit unit = units.get(i);
+        List<JsNode.VariableDeclaration> nestedDecls = new ArrayList<>();
+        ZodTypeMapper mapper =
+            new ZodTypeMapper(unit.action.name, resource.name, registry, nestedDecls);
+        JsNode bodyExpr = mapper.buildZodObjectExpr(unit.rootObj, "");
+        String bodyConst = ZodNamingStrategy.bodySchemaName(unit.action.name, resource.name);
+
+        if (i > 0) {
+          body.add(new JsNode.Identifier(""));
         }
-
+        body.add(new JsNode.Identifier("\n//" + resource.name + "." + unit.action.name + "\n"));
+        body.add(new JsNode.Identifier(""));
         body.addAll(nestedDecls);
         body.add(JsBuilder.constDecl(bodyConst, bodyExpr));
         body.add(JsBuilder.exportNamed(bodyConst, JsBuilder.id(bodyConst)));
-
-        String fileName = ZodNamingStrategy.fileName(action.name);
-        String filePath = Paths.get(resourceDir, fileName).toString();
-        ops.add(
-            new FileOp.WriteString(
-                outputDir, filePath, printer.print(JsBuilder.program(body)) + "\n"));
-
-        indexExports.add("./" + resourceDir + "/" + fileName.replace(".ts", ".js"));
+        body.add(
+            new JsNode.TypeInferExport(
+                ZodNamingStrategy.bodyInferredTypeName(unit.action.name, resource.name),
+                bodyConst));
       }
+
+      String fileName = ZodNamingStrategy.resourceSchemaFileName(resource.name);
+      ops.add(
+          new FileOp.WriteString(
+              outputDir, fileName, printer.print(JsBuilder.program(body)) + "\n"));
+      indexExports.add("./" + fileName.replace(".ts", ".js"));
     }
 
     if (!registry.all().isEmpty()) {
       ops.add(
           new FileOp.WriteString(
-              outputDir, "shared.validation.ts", buildSharedFile(registry, printer) + "\n"));
+              outputDir,
+              ZodNamingStrategy.SHARED_SCHEMA_FILE,
+              buildSharedFile(registry, printer) + "\n"));
     }
 
     ops.add(
@@ -110,6 +127,9 @@ public class ZodTsEmitter implements ValidatorEmitter {
 
     return ops;
   }
+
+  private record ActionSchemaUnit(
+      Action action, ValidationNode irNode, ValidationNode.ObjectNode rootObj) {}
 
   // ---- helpers ----
 
@@ -169,12 +189,6 @@ public class ZodTsEmitter implements ValidatorEmitter {
     return node instanceof ValidationNode.ObjectNode on ? on : null;
   }
 
-  private Set<String> collectRefs(ValidationNode node) {
-    Set<String> refs = new LinkedHashSet<>();
-    collectRefsInto(node, refs);
-    return refs;
-  }
-
   private void collectRefsInto(ValidationNode node, Set<String> refs) {
     if (node instanceof ValidationNode.RefNode rn) {
       refs.add(rn.targetName());
@@ -187,14 +201,14 @@ public class ZodTsEmitter implements ValidatorEmitter {
     }
   }
 
-  private JsNode headerComment(String resource, String action) {
+  private JsNode resourceFileHeader(String resource, List<String> actionNames) {
+    String actions = String.join(", ", actionNames);
     return new JsNode.Identifier(
-        "// Generated Zod validator: "
+        "// Generated Zod schemas: "
             + resource
-            + "."
-            + action
-            + "\n"
-            + "// Do not edit manually – regenerate via sdk-generator\n");
+            + "\n// Actions: "
+            + actions
+            + "\n// Do not edit manually – regenerate via sdk-generator\n");
   }
 
   private String buildSharedFile(SharedSchemaRegistry registry, TsPrinter printer) {
@@ -225,12 +239,14 @@ public class ZodTsEmitter implements ValidatorEmitter {
     return printer.print(JsBuilder.program(body));
   }
 
-  private String buildIndex(List<String> actionFiles, SharedSchemaRegistry registry) {
+  private String buildIndex(List<String> resourceSchemaFiles, SharedSchemaRegistry registry) {
     StringBuilder sb = new StringBuilder("// Auto-generated barrel export for Zod validators\n");
     if (!registry.all().isEmpty()) {
-      sb.append("export * from './shared.validation.js';\n");
+      sb.append("export * from './")
+          .append(ZodNamingStrategy.SHARED_SCHEMA_FILE.replace(".ts", ".js"))
+          .append("';\n");
     }
-    for (String f : actionFiles) {
+    for (String f : resourceSchemaFiles) {
       sb.append("export * from '").append(f).append("';\n");
     }
     return sb.toString();

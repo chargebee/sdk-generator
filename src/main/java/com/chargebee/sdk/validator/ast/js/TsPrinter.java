@@ -24,6 +24,7 @@ public class TsPrinter {
     if (node instanceof JsNode.VariableDeclaration v) return printVarDecl(v, depth);
     if (node instanceof JsNode.RequireCall r) return printImport(r);
     if (node instanceof JsNode.ExportAssignment e) return printExport(e, depth);
+    if (node instanceof JsNode.TypeInferExport t) return printTypeInferExport(t, depth);
     if (node instanceof JsNode.MethodChain m) return printMethodChain(m, depth);
     if (node instanceof JsNode.ObjectExpression o) return printObject(o, depth);
     if (node instanceof JsNode.ArrayExpression a) return printArray(a, depth);
@@ -65,6 +66,15 @@ public class TsPrinter {
    * to avoid the self-referential `export const x = x` pattern.
    * Otherwise emits `export const name = value;`.
    */
+  private String printTypeInferExport(JsNode.TypeInferExport t, int depth) {
+    return indent(depth)
+        + "export type "
+        + t.typeName()
+        + " = z.infer<typeof "
+        + t.schemaConstName()
+        + ">;";
+  }
+
   private String printExport(JsNode.ExportAssignment e, int depth) {
     if (e.name() == null || e.name().isBlank()) {
       return "export default " + print(e.value(), depth) + ";";

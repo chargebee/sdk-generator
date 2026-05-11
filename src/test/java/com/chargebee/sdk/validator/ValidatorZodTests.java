@@ -28,21 +28,18 @@ public class ValidatorZodTests extends LanguageTests {
 
   @SuppressWarnings("unchecked")
   private static final MapEntry<String, Schema<?>> CUSTOMER =
-      (MapEntry<String, Schema<?>>) (MapEntry<?, ?>) buildResource("customer")
-          .withAttribute("id", true)
-          .done();
+      (MapEntry<String, Schema<?>>)
+          (MapEntry<?, ?>) buildResource("customer").withAttribute("id", true).done();
 
   @SuppressWarnings("unchecked")
   private static final MapEntry<String, Schema<?>> SUBSCRIPTION =
-      (MapEntry<String, Schema<?>>) (MapEntry<?, ?>) buildResource("subscription")
-          .withAttribute("id", true)
-          .done();
+      (MapEntry<String, Schema<?>>)
+          (MapEntry<?, ?>) buildResource("subscription").withAttribute("id", true).done();
 
   @SuppressWarnings("unchecked")
   private static final MapEntry<String, Schema<?>> TOKEN =
-      (MapEntry<String, Schema<?>>) (MapEntry<?, ?>) buildResource("token")
-          .withAttribute("id", true)
-          .done();
+      (MapEntry<String, Schema<?>>)
+          (MapEntry<?, ?>) buildResource("token").withAttribute("id", true).done();
 
   // ---- subject under test --------------------------------------------------
 
@@ -91,28 +88,29 @@ public class ValidatorZodTests extends LanguageTests {
 
     List<FileOp> fileOps = validatorZod.generate("/validators", spec);
 
-    assertThat(fileOps).hasSize(4);
+    assertThat(fileOps).hasSize(3);
     assertCreateDirectoryFileOp(fileOps.get(0), "/validators", "");
-    assertCreateDirectoryFileOp(fileOps.get(1), "/validators", "customer");
-    assertWriteStringFileOp(fileOps.get(2), "/validators", "customer/create.validation.ts");
-    String src = ((FileOp.WriteString) fileOps.get(2)).fileContent;
+    assertWriteStringFileOp(fileOps.get(1), "/validators", "customer.schema.ts");
+    String src = ((FileOp.WriteString) fileOps.get(1)).fileContent;
     assertThat(src)
-        .contains("// Generated Zod validator: Customer.create")
+        .contains("// Generated Zod schemas: Customer")
+        .contains("// Actions: create")
         .contains("import { z } from 'zod';")
-        .contains("const createCustomerBodySchema = ")
-        .contains("export { createCustomerBodySchema };")
+        .contains("const CreateCustomerBodySchema = ")
+        .contains("export { CreateCustomerBodySchema };")
+        .contains("export type CreateCustomerBody = z.infer<typeof CreateCustomerBodySchema>;")
         .contains("z.looseObject({")
         .contains("first_name: z.string().optional()")
         .contains("email: z.string()")
         .doesNotContain("email: z.string().optional()");
 
     assertWriteStringFileOp(
-        fileOps.get(3),
+        fileOps.get(2),
         "/validators",
         "index.ts",
         """
         // Auto-generated barrel export for Zod validators
-        export * from './customer/create.validation.js';
+        export * from './customer.schema.js';
         """);
   }
 
@@ -132,11 +130,12 @@ public class ValidatorZodTests extends LanguageTests {
 
     List<FileOp> fileOps = validatorZod.generate("/validators", spec);
 
-    assertThat(fileOps).hasSize(4);
-    assertWriteStringFileOp(fileOps.get(2), "/validators", "subscription/list.validation.ts");
-    String src = ((FileOp.WriteString) fileOps.get(2)).fileContent;
+    assertThat(fileOps).hasSize(3);
+    assertWriteStringFileOp(fileOps.get(1), "/validators", "subscription.schema.ts");
+    String src = ((FileOp.WriteString) fileOps.get(1)).fileContent;
     assertThat(src)
-        .contains("// Generated Zod validator: Subscription.list")
+        .contains("// Generated Zod schemas: Subscription")
+        .contains("// Actions: list")
         .contains("limit: z.number().int().optional()")
         .contains("status: z.string()")
         .doesNotContain("status: z.string().optional()");
@@ -191,15 +190,15 @@ public class ValidatorZodTests extends LanguageTests {
 
     List<FileOp> fileOps = validatorZod.generate("/validators", spec);
 
-    assertThat(fileOps).hasSize(4);
-    assertWriteStringFileOp(fileOps.get(2), "/validators", "token/create.validation.ts");
+    assertThat(fileOps).hasSize(3);
+    assertWriteStringFileOp(fileOps.get(1), "/validators", "token.schema.ts");
     assertWriteStringFileOp(
-        fileOps.get(3),
+        fileOps.get(2),
         "/validators",
         "index.ts",
         """
         // Auto-generated barrel export for Zod validators
-        export * from './token/create.validation.js';
+        export * from './token.schema.js';
         """);
   }
 
@@ -216,12 +215,9 @@ public class ValidatorZodTests extends LanguageTests {
 
     var spec = buildSpec().withResource(CUSTOMER).withPostOperation("/customers", createOp).done();
 
-    String src =
-        findFileContent(validatorZod.generate("/validators", spec), "customer/create.validation.ts");
+    String src = findFileContent(validatorZod.generate("/validators", spec), "customer.schema.ts");
 
-    assertThat(src)
-        .contains("name: z.string().optional()")
-        .doesNotContain("internal_ref");
+    assertThat(src).contains("name: z.string().optional()").doesNotContain("internal_ref");
   }
 
   // =========================================================================
@@ -252,9 +248,9 @@ public class ValidatorZodTests extends LanguageTests {
 
     List<FileOp> fileOps = validatorZod.generate("/validators", spec);
 
-    assertThat(fileOps).hasSize(5);
-    String shared = findFileContent(fileOps, "shared.validation.ts");
-    String action = findFileContent(fileOps, "customer/create.validation.ts");
+    assertThat(fileOps).hasSize(4);
+    String shared = findFileContent(fileOps, "shared.schema.ts");
+    String action = findFileContent(fileOps, "customer.schema.ts");
 
     assertThat(shared)
         .contains("// Shared Zod schemas")
@@ -263,13 +259,13 @@ public class ValidatorZodTests extends LanguageTests {
         .contains("z.object({");
 
     assertThat(action)
-        .contains("import { addressBlockSchema } from '../shared.validation.js';")
+        .contains("import { addressBlockSchema } from './shared.schema.js';")
         .contains("shipping_address: addressBlockSchema.optional()");
 
     String index = ((FileOp.WriteString) fileOps.get(fileOps.size() - 1)).fileContent;
     assertThat(index)
-        .contains("export * from './shared.validation.js';")
-        .contains("export * from './customer/create.validation.js';");
+        .contains("export * from './shared.schema.js';")
+        .contains("export * from './customer.schema.js';");
   }
 
   // =========================================================================
@@ -290,8 +286,7 @@ public class ValidatorZodTests extends LanguageTests {
 
     var spec = buildSpec().withResource(CUSTOMER).withPostOperation("/customers", createOp).done();
 
-    String src =
-        findFileContent(validatorZod.generate("/validators", spec), "customer/create.validation.ts");
+    String src = findFileContent(validatorZod.generate("/validators", spec), "customer.schema.ts");
 
     assertThat(src)
         .contains("email: z.string().email().optional()")
@@ -312,8 +307,7 @@ public class ValidatorZodTests extends LanguageTests {
 
     var spec = buildSpec().withResource(CUSTOMER).withPostOperation("/customers", createOp).done();
 
-    String src =
-        findFileContent(validatorZod.generate("/validators", spec), "customer/create.validation.ts");
+    String src = findFileContent(validatorZod.generate("/validators", spec), "customer.schema.ts");
 
     assertThat(src)
         .contains("name: z.string().max(100).min(1).optional()")
@@ -327,21 +321,15 @@ public class ValidatorZodTests extends LanguageTests {
             .forResource("subscription")
             .withResponse(resourceResponseParam("subscription", SUBSCRIPTION))
             .withRequestBody(
-                "status",
-                new StringSchema()._enum(List.of("active", "cancelled", "paused")),
-                true)
+                "status", new StringSchema()._enum(List.of("active", "cancelled", "paused")), true)
             .withSortOrder(0)
             .done();
 
     var spec =
-        buildSpec()
-            .withResource(SUBSCRIPTION)
-            .withPostOperation("/subscriptions", createOp)
-            .done();
+        buildSpec().withResource(SUBSCRIPTION).withPostOperation("/subscriptions", createOp).done();
 
     String src =
-        findFileContent(
-            validatorZod.generate("/validators", spec), "subscription/create.validation.ts");
+        findFileContent(validatorZod.generate("/validators", spec), "subscription.schema.ts");
 
     assertThat(src)
         .contains("z.enum([")
@@ -365,17 +353,14 @@ public class ValidatorZodTests extends LanguageTests {
             .withRequestBody("auto_collection", new BooleanSchema())
             .withRequestBody(
                 "net_term_days",
-                new IntegerSchema()
-                    .minimum(BigDecimal.ZERO)
-                    .maximum(new BigDecimal(180)))
+                new IntegerSchema().minimum(BigDecimal.ZERO).maximum(new BigDecimal(180)))
             .withRequestBody("amount", new NumberSchema())
             .withSortOrder(0)
             .done();
 
     var spec = buildSpec().withResource(CUSTOMER).withPostOperation("/customers", createOp).done();
 
-    String src =
-        findFileContent(validatorZod.generate("/validators", spec), "customer/create.validation.ts");
+    String src = findFileContent(validatorZod.generate("/validators", spec), "customer.schema.ts");
 
     assertThat(src)
         .contains("auto_collection: z.boolean().optional()")
@@ -399,8 +384,7 @@ public class ValidatorZodTests extends LanguageTests {
 
     var spec = buildSpec().withResource(CUSTOMER).withPostOperation("/customers", createOp).done();
 
-    String src =
-        findFileContent(validatorZod.generate("/validators", spec), "customer/create.validation.ts");
+    String src = findFileContent(validatorZod.generate("/validators", spec), "customer.schema.ts");
 
     assertThat(src).contains("tags: z.array(z.string().optional()).optional()");
   }
@@ -421,18 +405,17 @@ public class ValidatorZodTests extends LanguageTests {
 
     var spec = buildSpec().withResource(CUSTOMER).withPostOperation("/customers", createOp).done();
 
-    String src =
-        findFileContent(validatorZod.generate("/validators", spec), "customer/create.validation.ts");
+    String src = findFileContent(validatorZod.generate("/validators", spec), "customer.schema.ts");
 
     // Nested objects are lifted into a named const that precedes the root schema
     assertThat(src)
-        .contains("const createCustomerCardSchema = z.object({")
-        .contains("card: createCustomerCardSchema.optional()")
+        .contains("const CreateCustomerCardSchema = z.object({")
+        .contains("card: CreateCustomerCardSchema.optional()")
         // The const must appear before it is referenced
         .satisfies(
             s ->
-                assertThat(s.indexOf("createCustomerCardSchema ="))
-                    .isLessThan(s.indexOf("card: createCustomerCardSchema")));
+                assertThat(s.indexOf("CreateCustomerCardSchema ="))
+                    .isLessThan(s.indexOf("card: CreateCustomerCardSchema")));
   }
 
   // =========================================================================
@@ -463,11 +446,14 @@ public class ValidatorZodTests extends LanguageTests {
             .withPostOperation("/customers/update", updateOp)
             .done();
 
-    String index = findFileContent(validatorZod.generate("/validators", spec), "index.ts");
+    String customerSchema =
+        findFileContent(validatorZod.generate("/validators", spec), "customer.schema.ts");
 
-    // create (sortOrder=0) must appear before update (sortOrder=1)
-    assertThat(index.indexOf("create.validation.js"))
-        .isLessThan(index.indexOf("update.validation.js"));
+    // create (sortOrder=0) must appear before update (sortOrder=1) in the resource module
+    assertThat(customerSchema.indexOf("CreateCustomerBodySchema"))
+        .isLessThan(customerSchema.indexOf("UpdateCustomerBodySchema"));
+    assertThat(customerSchema.indexOf("export type CreateCustomerBody"))
+        .isLessThan(customerSchema.indexOf("export type UpdateCustomerBody"));
   }
 
   // =========================================================================

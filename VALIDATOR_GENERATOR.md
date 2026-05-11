@@ -39,7 +39,7 @@ sdk-generator/
     └── emitter/zod/                   ← Zod-specific emitter
         ├── ZodNamingStrategy.java     ← naming conventions for files and schema consts
         ├── ZodTypeMapper.java         ← IR node → Zod AST expression
-        └── ZodTsEmitter.java          ← orchestrates emission, writes all .validation.ts files
+        └── ZodTsEmitter.java          ← orchestrates emission, writes per-resource `.schema.ts` files
 ```
 
 ---
@@ -50,7 +50,7 @@ sdk-generator/
 cd ~/work/sdk-generator/ && \
   ./gradlew run --args="-l VALIDATOR_ZOD \
     -i $HOME/work/cb-openapi-generator/swagger-ui/sdk/external/chargebee_sdk_spec.json \
-    -o ../chargebee-node/src/validation" && \
+    -o ../chargebee-node/src/schema" && \
   cd -
 ```
 
@@ -82,7 +82,7 @@ chargebee_sdk_spec.json
         │
         │  FileOp.WriteString.exec()
         ▼
-  .validation.ts file on disk
+  .schema.ts file on disk (one module per resource; see below)
 ```
 
 ---
@@ -194,7 +194,8 @@ TypeScript equivalent with 2-space indentation:
 | `JsNode` type                                         | TypeScript emitted                                          |
 |-------------------------------------------------------|-------------------------------------------------------------|
 | `RequireCall("zod", ["z"])`                           | `import { z } from 'zod';`                                  |
-| `RequireCall("../shared.validation.js", ["fooSchema"])` | `import { fooSchema } from '../shared.validation.js';`    |
+| `RequireCall("./shared.schema.js", ["fooSchema"])` | `import { fooSchema } from './shared.schema.js';`    |
+| `TypeInferExport("CreateFooBody", "CreateFooBodySchema")` | `export type CreateFooBody = z.infer<typeof CreateFooBodySchema>;` |
 | `VariableDeclaration("s", expr)`                      | `const s = expr;`                                           |
 | `ExportAssignment("s", id("s"))`                      | `export { s };`                                             |
 | `MethodChain(base, [call("max", [lit(50)])])`         | `base.max(50)`                                              |
@@ -214,11 +215,12 @@ All naming decisions are centralised here so the output is predictable and consi
 
 | Concept             | Formula                                      | Example                          |
 |---------------------|----------------------------------------------|----------------------------------|
-| File                | `{snake_action}.validation.ts`               | `create_for_items.validation.ts` |
-| Body schema const   | `{camelAction}{PascalResource}BodySchema`    | `createCustomerBodySchema`       |
-| Nested sub-schema   | `{camelAction}{PascalResource}{PascalProp}Schema` | `createCustomerCardSchema`  |
-| Shared schema       | `{camelRefName}BlockSchema`                  | `postalAddressBlockSchema`       |
-| Resource directory  | `{snake_resource}`                           | `customer/`, `payment_source/`   |
+| Resource module file | `{snake_resource}.schema.ts`               | `customer.schema.ts`, `virtual_bank_account.schema.ts` |
+| Shared $ref file     | `shared.schema.ts`                         | —                                                        |
+| Body schema const   | `{PascalAction}{PascalResource}BodySchema` | `CreateCustomerBodySchema`                               |
+| Inferred body type  | same as const with trailing `Schema` removed | `CreateCustomerBody` (= `z.infer<typeof CreateCustomerBodySchema>`) |
+| Nested sub-schema   | `{PascalAction}{PascalResource}{PascalProp}Schema` | `CreateCustomerCardSchema`                        |
+| Shared schema       | `{camelRefName}BlockSchema`                | `postalAddressBlockSchema`                              |
 
 ### `ZodTypeMapper` — IR → Zod expression
 
@@ -264,98 +266,87 @@ schemas that allow unknown keys (i.e. top-level body schemas and schemas marked 
 
 ### `ZodTsEmitter` — orchestration
 
-`ZodTsEmitter` iterates over every `Resource` in the spec, then every `Action` on that
-resource. For each POST action that has a request body:
+`ZodTsEmitter` iterates over every `Resource` in the spec. For each resource it collects
+every `Action` (in `sortOrder`) that has a validateable body or query schema. All such
+actions are emitted into a **single flat module** `{snake_resource}.schema.ts`.
+
+For each qualifying action:
 
 1. **Resolve the raw body schema** from the OpenAPI path item's `requestBody` content
-   (specifically the `application/x-www-form-urlencoded` media type).
+   (specifically the `application/x-www-form-urlencoded` media type), or build a synthetic
+   object schema from GET query parameters.
 2. **Build the IR** by calling `ValidationIRBuilder.buildNode()`. All `$ref` schemas
    encountered during this call are automatically registered in `SharedSchemaRegistry`.
 3. **Force `allowUnknown: true`** on the top-level body schema — API responses may add
    new fields at any time, and client-side validation should not reject valid future params.
 4. **Map IR → Zod AST** via `ZodTypeMapper`. Nested object schemas are extracted into named
    `const` declarations and collected in `nestedDecls`.
-5. **Collect shared ref names** used by this action so their imports can be emitted at the
-   top of the file.
-6. **Assemble the file body** as a list of `JsNode`s in this order:
-   - Header comment
-   - `import { z } from 'zod'`
-   - Named imports for any shared schemas used
+5. **Collect shared ref names** across all actions on that resource; emit one combined
+   `import { … } from './shared.schema.js'` at the top when needed.
+6. **Assemble each action block** as `JsNode`s in this order:
+   - Section comment `// Resource.action`
    - Nested `const` declarations (hoisted sub-schemas)
-   - Main body schema `const`
-   - `export { bodySchemaConst }`
-7. **Print to string** via `TsPrinter` and queue a `FileOp.WriteString`.
+   - Main body / query schema `const`
+   - `export { …BodySchema }`
+   - `export type …Body = z.infer<typeof …BodySchema>`
+7. **Print to string** via `TsPrinter` and queue one `FileOp.WriteString` per resource.
 
-After all actions are processed, two additional files are written:
+After all resources are processed, two additional files are written:
 
-- **`shared.validation.ts`** — contains all `$ref`-resolved schemas registered in
+- **`shared.schema.ts`** — contains all `$ref`-resolved schemas registered in
   `SharedSchemaRegistry`. Every `$ref` target becomes a shared schema regardless of how
   many actions reference it.
-- **`index.ts`** — a barrel file that re-exports every action schema and everything from
-  `shared.validation.ts`, so consumers can import any schema from a single entry point.
+- **`index.ts`** — a barrel file that re-exports every resource module and everything from
+  `shared.schema.ts`, so consumers can import any schema from a single entry point.
 
 ---
 
 ## Output file structure
 
 ```
-src/validation/
-├── shared.validation.ts              ← all $ref schemas (postal address, payment intent, etc.)
-├── index.ts                          ← export * from every file below
-├── customer/
-│   ├── create.validation.ts
-│   ├── update.validation.ts
-│   ├── list.validation.ts
-│   └── ...
-├── subscription/
-│   ├── create.validation.ts
-│   ├── create_for_items.validation.ts
-│   └── ...
-└── ... (one subdirectory per resource)
+src/schema/
+├── shared.schema.ts                  ← all $ref schemas (postal address, payment intent, etc.)
+├── index.ts                          ← export * from every module below
+├── customer.schema.ts                ← create, update, list, … for Customer
+├── addon.schema.ts
+├── subscription.schema.ts
+└── ... (one file per resource that has at least one validateable action)
 ```
 
-### Example generated file — `customer/create.validation.ts`
+### Example fragment — `customer.schema.ts`
+
+Each resource module lists every action’s body/query schema in SDK `sortOrder`, then exports
+matching `z.infer` types (e.g. `CreateCustomerBody`) for use at call sites.
 
 ```typescript
-// Generated Zod validator: Customer.create
+// Generated Zod schemas: Customer
+// Actions: create, update, list, ...
 // Do not edit manually – regenerate via sdk-generator
 
 import { z } from 'zod';
+import { addressBlockSchema } from './shared.schema.js';
 
-// Nested sub-schemas extracted as named consts for readability
-const createCustomerMetaDataSchema = z.looseObject({});
+// Customer.create
 
-const createCustomerCardSchema = z.object({
-  gateway: z.enum(['chargebee', 'stripe', 'adyen', ...]).optional(),
-  gateway_account_id: z.string().max(50).optional(),
-  number: z.string().max(1500).optional(),
-  expiry_month: z.number().int().min(1).max(12).optional(),
-  expiry_year: z.number().int().optional(),
-  cvv: z.string().max(520).optional(),
+const CreateCustomerCardSchema = z.object({ ... });
+const CreateCustomerBodySchema = z.looseObject({
+  card: CreateCustomerCardSchema.optional(),
+  ...
 });
+export { CreateCustomerBodySchema };
+export type CreateCustomerBody = z.infer<typeof CreateCustomerBodySchema>;
 
-const createCustomerBillingAddressSchema = z.object({
-  first_name: z.string().max(150).optional(),
-  email: z.string().email().max(70).optional(),
-  line1: z.string().max(150).optional(),
-  country: z.string().max(50).optional(),
-  validation_status: z.enum(['not_validated', 'valid', 'partially_valid', 'invalid']).optional(),
-});
+// Customer.update
 
-// Top-level body schema — uses z.looseObject so unknown future fields are accepted
-const createCustomerBodySchema = z.looseObject({
-  id: z.string().max(50).optional(),
-  first_name: z.string().max(150).optional(),
-  email: z.string().email().max(70).optional(),
-  auto_collection: z.enum(['on', 'off']).optional(),
-  net_term_days: z.number().int().optional(),
-  meta_data: createCustomerMetaDataSchema.optional(),
-  card: createCustomerCardSchema.optional(),
-  billing_address: createCustomerBillingAddressSchema.optional(),
-});
-
-export { createCustomerBodySchema };
+const UpdateCustomerBodySchema = z.looseObject({ ... });
+export { UpdateCustomerBodySchema };
+export type UpdateCustomerBody = z.infer<typeof UpdateCustomerBodySchema>;
 ```
+
+### Older layout (removed)
+
+Per-action files under `src/validation/{resource}/{action}.validation.ts` are **no longer**
+emitted; regenerate into `src/schema` and update imports accordingly.
 
 ---
 
