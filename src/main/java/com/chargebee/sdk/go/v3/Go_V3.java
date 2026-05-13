@@ -1,12 +1,12 @@
-package com.chargebee.sdk.go;
+package com.chargebee.sdk.go.v3;
 
 import static com.chargebee.GenUtil.*;
 import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.openapi.Resource.isListOfSubResourceSchema;
 import static com.chargebee.openapi.Resource.isSubResourceSchema;
 import static com.chargebee.sdk.common.Constant.*;
-import static com.chargebee.sdk.go.Formatter.delimiter;
-import static com.chargebee.sdk.go.Formatter.formatUsingDelimiter;
+import static com.chargebee.sdk.go.v3.Formatter.delimiter;
+import static com.chargebee.sdk.go.v3.Formatter.formatUsingDelimiter;
 
 import com.chargebee.GenUtil;
 import com.chargebee.handlebar.Inflector;
@@ -20,9 +20,9 @@ import com.chargebee.sdk.common.GlobalEnum;
 import com.chargebee.sdk.common.ResourceAssist;
 import com.chargebee.sdk.dotnet.models.OperationRequest;
 import com.chargebee.sdk.dotnet.models.OperationRequestParameter;
-import com.chargebee.sdk.go.model.InputSubResParam;
-import com.chargebee.sdk.go.model.SubResource;
-import com.chargebee.sdk.go.webhook.WebhookGenerator;
+import com.chargebee.sdk.go.v3.model.InputSubResParam;
+import com.chargebee.sdk.go.v3.model.SubResource;
+import com.chargebee.sdk.go.v3.webhook.WebhookGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Go extends Language {
+public class Go_V3 extends Language {
 
   Resource activeResource;
 
@@ -430,25 +430,25 @@ public class Go extends Language {
   protected Map<String, String> templatesDefinition() {
     return Map.of(
         "globalEnums",
-        "/templates/go/globalEnums.go.hbs",
+        "/templates/go/v3/globalEnums.go.hbs",
         "enums",
-        "/templates/go/enums.go.hbs",
+        "/templates/go/v3/enums.go.hbs",
         "actions",
-        "/templates/go/actions.go.hbs",
+        "/templates/go/v3/actions.go.hbs",
         "result",
-        "/templates/go/result.go.hbs",
+        "/templates/go/v3/result.go.hbs",
         "models",
-        "/templates/go/models.go.hbs",
+        "/templates/go/v3/models.go.hbs",
         "exceptions",
-        "/templates/go/api_error.go.hbs",
+        "/templates/go/v3/api_error.go.hbs",
         "webhook",
-        "/templates/go/webhook.go.hbs",
+        "/templates/go/v3/webhook.go.hbs",
         "webhookContent",
-        "/templates/go/webhookContent.go.hbs",
+        "/templates/go/v3/webhookContent.go.hbs",
         "webhookHandler",
-        "/templates/go/webhookHandler.go.hbs",
+        "/templates/go/v3/webhookHandler.go.hbs",
         "util",
-        "/templates/go/util.go.hbs");
+        "/templates/go/v3/util.go.hbs");
   }
 
   private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)
@@ -566,7 +566,7 @@ public class Go extends Language {
       }
       activeResource = res;
       enumImport.clear();
-      com.chargebee.sdk.go.model.Resource goRes = new com.chargebee.sdk.go.model.Resource();
+      com.chargebee.sdk.go.v3.model.Resource goRes = new com.chargebee.sdk.go.v3.model.Resource();
       goRes.setPkgName(
           CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name).replace("_", ""));
       goRes.setClazName(res.name);
@@ -585,10 +585,10 @@ public class Go extends Language {
       }
       goRes.setSubResources(subResourceList);
 
-      List<com.chargebee.sdk.go.model.OperationRequest> operationRequests = new ArrayList<>();
+      List<com.chargebee.sdk.go.v3.model.OperationRequest> operationRequests = new ArrayList<>();
       for (Action action : activeResource.getSortedAction()) {
-        com.chargebee.sdk.go.model.OperationRequest opRequest =
-            new com.chargebee.sdk.go.model.OperationRequest();
+        com.chargebee.sdk.go.v3.model.OperationRequest opRequest =
+            new com.chargebee.sdk.go.v3.model.OperationRequest();
         List<InputSubResParam> inputSubResParamList = new ArrayList<>();
         opRequest.setClazName(toClazName(action.name, "Request"));
         opRequest.setHasInputParams(hasInputParams(action));

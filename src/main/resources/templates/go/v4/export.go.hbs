@@ -1,0 +1,17 @@
+func (s *ExportService) WaitForExportCompletion(exp Export) (Export, error) {
+    count := 0
+    for exp.Status == ExportStatusInProcess {
+        if count > 30 {
+            return exp, errors.New("Export is taking too long")
+        }
+        count++
+        time.Sleep(ConfigExportWaitInSecs)
+        response, err := s.Retrieve(exp.Id)
+        if err != nil {
+            return exp, err
+        }
+        exp = *response.Export
+    }
+
+    return exp, nil
+}

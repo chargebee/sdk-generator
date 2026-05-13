@@ -17,10 +17,22 @@ function _gradlew() {
         ruby) args+=("-l RUBY -o $BASE_DIR/chargebee-ruby/lib/chargebee");;
         dotnet) args+=("-l DOTNET -o $BASE_DIR/chargebee-dotnet/ChargeBee");;
         go) args+=("-l GO -o $BASE_DIR/chargebee-go");;
+        go-v4) args+=("-l GO_V4 -o $BASE_DIR/chargebee-go");;
         *) echo "Unknown language"; exit 1;;
     esac
 
-    ./gradlew run --args="${args[*]}"
+    ./gradlew run --args="${args[*]}" ${DEBUG:+"--debug-jvm"}
+}
+
+function _format() {
+    local lang="$1"
+    local dir="$2"
+    case "$lang" in
+        go*) pushd "$dir"
+            make format
+            popd;;
+        *) echo "Formatter not available for $lang";;
+    esac
 }
 
 function setup() {
@@ -46,6 +58,10 @@ function generate() {
     local sdk_langs="${@:?"No language specified, pass a list of languages to generate the SDK"}"
     for lang in $sdk_langs; do
         _gradlew $lang
+    done
+
+    for lang in $sdk_langs; do
+        _format $lang "${BASE_DIR}/chargebee-${lang}"
     done
 }
 

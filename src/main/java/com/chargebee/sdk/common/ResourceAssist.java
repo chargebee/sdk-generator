@@ -88,4 +88,30 @@ public class ResourceAssist {
     }
     return enums;
   }
+
+  public List<Enum> goEnums() {
+    // Start with resource-level enums that are NOT global (to avoid duplicates with types.go)
+    List<Enum> enums = new java.util.ArrayList<>(
+        this.resource.attributes().stream()
+            .filter(Attribute::isNotHiddenAttribute)
+            .filter(attr -> attr.isEnumAttribute() && !attr.isGlobalEnumAttribute())
+            .map(attr -> new Enum(attr.name, attr.getSchema()))
+            .toList());
+
+    // Add sub-resource enums (not global)
+    // For Go, always use singularized attribute name to match struct naming
+    for (Attribute attribute : this.resource.attributes()) {
+      for (Attribute subAttribute :
+          attribute.attributes().stream()
+              .filter(Attribute::isNotHiddenAttribute)
+              .filter(attr -> attr.isEnumAttribute() && !attr.isGlobalEnumAttribute())
+              .toList()) {
+
+        // Always use singularized attribute.name to match Go struct naming pattern
+        String enumName = singularize(attribute.name) + "_" + subAttribute.name;
+        enums.add(new Enum(enumName, subAttribute.getSchema()));
+      }
+    }
+    return enums;
+  }
 }

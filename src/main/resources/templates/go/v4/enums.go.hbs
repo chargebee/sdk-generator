@@ -1,0 +1,7 @@
+type {{#if overrideFullName}}{{ overrideFullName }}{{else}}{{ camelCaseToPascalCase resourceName }}{{ snakeCaseToPascalCase name }}{{/if}} string
+
+const ({{#each possibleValues}}
+    {{#if @root.overrideFullName}}{{ @root.overrideFullName }}{{else}}{{ camelCaseToPascalCase resourceName }}{{ snakeCaseToPascalCase @root.name }}{{/if}}{{ snakeCaseToPascalCase name }} {{#if @root.overrideFullName}}{{ @root.overrideFullName }}{{else}}{{ camelCaseToPascalCase resourceName }}{{snakeCaseToPascalCase @root.name}}{{/if}} = "{{ name }}"{{/each}}
+{{~#if deprecatedEnums}}{{~#each deprecatedEnums}}
+    {{#if @root.overrideFullName}}{{ @root.overrideFullName }}{{else}}{{ camelCaseToPascalCase resourceName }}{{ snakeCaseToPascalCase @root.name }}{{/if}}{{ snakeCaseToPascalCase name }} {{#if @root.overrideFullName}}{{ @root.overrideFullName }}{{else}}{{ camelCaseToPascalCase resourceName }}{{snakeCaseToPascalCase @root.name}}{{/if}} = "{{ name }}"{{/each}}{{/if}}
+)
