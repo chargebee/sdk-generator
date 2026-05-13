@@ -140,16 +140,27 @@ public class Java extends Language {
     return fileOps;
   }
 
-  private void processEnumAttribute(Attribute attribute, List<Enum> globalEnums) {
-    if (attribute.isGlobalEnumAttribute()
-        && attribute.isGenSeparate()
-        && attribute.getEnum() != null) {
-      String attributeName = getPascalName(attribute.name);
-      if (globalEnums.stream().noneMatch(e -> e.name != null && e.name.equals(attributeName))) {
-        globalEnums.add(new Enum(attributeName, attribute.schema));
-      }
+    private void processEnumAttribute(Attribute attribute, List<Enum> globalEnums) {
+        if (attribute.isGlobalEnumAttribute()
+                && attribute.isGenSeparate()
+                && attribute.getEnum() != null) {
+            String attributeName;
+            if (attribute.isListOfEnum()
+                    && attribute.getSchema().getItems() != null
+                    && attribute.getSchema().getItems().getExtensions() != null
+                    && attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME) != null) {
+                // Mirror listEnumAttributeType so the emitted file matches the field reference.
+                String sdkEnumApiName =
+                        (String) attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
+                attributeName = singularize(sdkEnumApiName) + Constants.TYPE;
+            } else {
+                attributeName = getPascalName(attribute.name);
+            }
+            if (globalEnums.stream().noneMatch(e -> e.name != null && e.name.equals(attributeName))) {
+                globalEnums.add(new Enum(attributeName, attribute.schema));
+            }
+        }
     }
-  }
 
   private String qualifyEnumIfClashesWithResource(String enumApiName) {
     if (activeResource != null && activeResource.name.equals(enumApiName)) {
