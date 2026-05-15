@@ -2,6 +2,7 @@ package com.chargebee.sdk;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
@@ -42,6 +43,34 @@ public abstract class FileOp {
       Files.writeString(
           Paths.get(baseFilePath, fileName),
           fileContent,
+          StandardOpenOption.WRITE,
+          StandardOpenOption.TRUNCATE_EXISTING,
+          StandardOpenOption.CREATE);
+    }
+  }
+
+  public static final class PrependString extends FileOp {
+
+    public final String baseFilePath;
+    public final String fileName;
+    public final String contentToPrepend;
+
+    public PrependString(String baseFilePath, String fileName, String contentToPrepend) {
+      this.baseFilePath = baseFilePath;
+      this.fileName = fileName;
+      this.contentToPrepend = contentToPrepend;
+    }
+
+    @Override
+    public void exec() throws IOException {
+      Path filePath = Paths.get(baseFilePath, fileName);
+      String existingContent = "";
+      if (Files.exists(filePath)) {
+        existingContent = Files.readString(filePath);
+      }
+      Files.writeString(
+          filePath,
+          contentToPrepend + existingContent,
           StandardOpenOption.WRITE,
           StandardOpenOption.TRUNCATE_EXISTING,
           StandardOpenOption.CREATE);
