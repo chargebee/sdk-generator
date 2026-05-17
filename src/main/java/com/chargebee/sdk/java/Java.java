@@ -435,8 +435,7 @@ public class Java extends Language {
         this.generationMode == GenerationMode.INTERNAL ? ENUMS_EXPORT_INTERNAL : ENUMS_EXPORT;
     String type =
         singularize(
-                (String) attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME))
-            + TYPE;
+                (String) attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME));
     return importPiece + type;
   }
 
