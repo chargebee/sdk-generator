@@ -545,7 +545,6 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       List<Resource> oldResources, List<Resource> newResources, Spec oldSpec, Spec newSpec) {
     Set<String> lines = new LinkedHashSet<>();
 
-    lines.addAll(generateGlobalEnumLines(oldSpec.globalEnums(), newSpec.globalEnums(), true));
     lines.addAll(generateAttributeEnumLines(oldResources, newResources, true));
     lines.addAll(generateParameterEnumLines(oldResources, newResources, true));
 
@@ -558,36 +557,10 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       List<Resource> oldResources, List<Resource> newResources, Spec oldSpec, Spec newSpec) {
     Set<String> lines = new LinkedHashSet<>();
 
-    lines.addAll(generateGlobalEnumLines(oldSpec.globalEnums(), newSpec.globalEnums(), false));
     lines.addAll(generateAttributeEnumLines(oldResources, newResources, false));
     lines.addAll(generateParameterEnumLines(oldResources, newResources, false));
 
     return new ArrayList<>(lines);
-  }
-
-  private List<String> generateGlobalEnumLines(
-      List<Enum> oldEnums, List<Enum> newEnums, boolean isAdded) {
-    List<String> lines = new ArrayList<>();
-    Map<String, Set<String>> enumValuesMap =
-        oldEnums.stream().collect(Collectors.toMap(e -> e.name, e -> new HashSet<>(e.values())));
-
-    for (Enum currentEnum : newEnums) {
-      Set<String> comparisonValues =
-          enumValuesMap.getOrDefault(currentEnum.name, Collections.emptySet());
-      List<String> changedValues =
-          findChangedEnumValues(currentEnum.values(), comparisonValues, isAdded);
-
-      if (!changedValues.isEmpty()) {
-        String verb = isAdded ? "added" : "removed";
-        String preposition = isAdded ? "to" : "from";
-        lines.add(
-            String.format(
-                "[list]Enum value %s: %s %s the enum [code %s].[]",
-                verb, formatEnumCodeValues(changedValues), preposition, currentEnum.name));
-      }
-    }
-
-    return lines;
   }
 
   private List<String> generateAttributeEnumLines(
@@ -620,7 +593,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       String currentPath = buildAttributePath(path, attribute.name);
       String anchorId = buildAttributeAnchor(path, attribute.name);
 
-      if (attribute.isEnumAttribute() && !attribute.isGlobalEnumAttribute()) {
+      if (attribute.isEnumAttribute()) {
         Set<String> comparisonValues =
             comparisonEnums.getOrDefault(currentPath, Collections.emptySet());
         List<String> changedValues =
@@ -913,7 +886,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     for (Attribute attribute : attributes) {
       String currentPath = buildAttributePath(path, attribute.name);
 
-      if (attribute.isEnumAttribute() && !attribute.isGlobalEnumAttribute()) {
+      if (attribute.isEnumAttribute()) {
         enumMap.put(currentPath, new HashSet<>(attribute.getEnum().values()));
       }
 
@@ -1005,15 +978,9 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
   private List<String> findChangedEnumValues(
       List<String> currentValues, Set<String> comparisonValues, boolean isAdded) {
-    if (isAdded) {
-      return currentValues.stream()
-          .filter(value -> !comparisonValues.contains(value))
-          .collect(Collectors.toList());
-    } else {
-      return comparisonValues.stream()
-          .filter(value -> !currentValues.contains(value))
-          .collect(Collectors.toList());
-    }
+    return currentValues.stream()
+        .filter(value -> !comparisonValues.contains(value))
+        .collect(Collectors.toList());
   }
 
   private String formatEnumCodeValues(List<String> values) {
@@ -1042,14 +1009,12 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
   private boolean shouldProcessParameterEnum(Parameter parameter) {
     return parameter.isEnum()
-        && !parameter.isGlobalEnum()
         && !parameter.isExternalEnum()
         && !parameter.isGenSeperate();
   }
 
   private boolean shouldProcessSchemaEnum(Schema schema) {
     return isEnumSchema(schema)
-        && !isGlobalEnumSchema(schema)
         && !isExternalEnumSchema(schema)
         && !isGenSeparateSchema(schema);
   }
@@ -1059,11 +1024,6 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       return schema.getItems().getEnum() != null && !schema.getItems().getEnum().isEmpty();
     }
     return schema.getEnum() != null && !schema.getEnum().isEmpty();
-  }
-
-  private boolean isGlobalEnumSchema(Schema schema) {
-    Schema targetSchema = schema instanceof ArraySchema ? schema.getItems() : schema;
-    return hasExtension(targetSchema, IS_GLOBAL_ENUM);
   }
 
   private boolean isExternalEnumSchema(Schema schema) {
@@ -1083,10 +1043,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
   }
 
   private Set<String> getEnumValues(Schema schema) {
-    if (isGlobalEnumSchema(schema)
-        || isExternalEnumSchema(schema)
-        || !isEnumSchema(schema)
-        || isGenSeparateSchema(schema)) {
+    if (isExternalEnumSchema(schema) || !isEnumSchema(schema) || isGenSeparateSchema(schema)) {
       return Collections.emptySet();
     }
     return new HashSet<>(new Enum(schema).values());
