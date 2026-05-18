@@ -5,9 +5,25 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 
 public abstract class FileOp {
   private FileOp() {}
+
+  public static final class Composite extends FileOp {
+    public final List<FileOp> ops;
+
+    public Composite(List<FileOp> ops) {
+      this.ops = ops;
+    }
+
+    @Override
+    public void exec() throws IOException {
+      for (FileOp op : ops) {
+        op.exec();
+      }
+    }
+  }
 
   public abstract void exec() throws IOException;
 

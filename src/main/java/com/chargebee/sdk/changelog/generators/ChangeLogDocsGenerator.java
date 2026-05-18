@@ -49,12 +49,155 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
     ChangeLogSchema schema =
         buildChangeLogSchema(oldVersion, newerVersion, oldResources, newResources);
-    String content = renderTemplate(schema);
+
+    DocsAvailabilityChecker checker = new DocsAvailabilityChecker();
+    checker.warmUp(collectAllLines(schema));
+
+    ChangeLogSchema availableSchema = new ChangeLogSchema();
+    ChangeLogSchema missingSchema = new ChangeLogSchema();
+    partitionSchemaByDocsAvailability(schema, availableSchema, missingSchema, checker);
 
     String sectionDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
-    String sectionContent = "[section " + sectionDate + "]\n" + content + "\n\n";
+    List<FileOp> ops = new ArrayList<>();
 
-    return new FileOp.PrependString(output, "index.txt", sectionContent);
+    if (hasAnyEntries(availableSchema)) {
+      String availableContent = renderTemplate(availableSchema);
+      String sectionContent = "[section " + sectionDate + "]\n" + availableContent + "\n\n";
+      ops.add(new FileOp.PrependString(output, "index.txt", sectionContent));
+    }
+
+    if (hasAnyEntries(missingSchema)) {
+      String missingContent = renderMissingDocsReport(missingSchema, checker, sectionDate);
+      ops.add(new FileOp.PrependString(output, "MISSING_DOCS.txt", missingContent));
+    }
+
+    return new FileOp.Composite(ops);
+  }
+
+  private List<String> collectAllLines(ChangeLogSchema schema) {
+    List<String> all = new ArrayList<>();
+    addAllNullable(all, schema.getNewResource());
+    addAllNullable(all, schema.getNewActions());
+    addAllNullable(all, schema.getNewResourceAttribute());
+    addAllNullable(all, schema.getNewParams());
+    addAllNullable(all, schema.getNewEventType());
+    addAllNullable(all, schema.getDeletedResource());
+    addAllNullable(all, schema.getDeletedActions());
+    addAllNullable(all, schema.getDeletedResourceAttribute());
+    addAllNullable(all, schema.getDeletedParams());
+    addAllNullable(all, schema.getDeletedEventType());
+    addAllNullable(all, schema.getNewEnumValues());
+    addAllNullable(all, schema.getDeletedEnumValues());
+    addAllNullable(all, schema.getParameterRequirementChangesValues());
+    return all;
+  }
+
+  private void addAllNullable(List<String> target, List<String> source) {
+    if (source != null) {
+      target.addAll(source);
+    }
+  }
+
+  private void partitionSchemaByDocsAvailability(
+      ChangeLogSchema source,
+      ChangeLogSchema available,
+      ChangeLogSchema missing,
+      DocsAvailabilityChecker checker) {
+    available.setNewResource(partition(source.getNewResource(), checker, missing::setNewResource));
+    available.setNewActions(partition(source.getNewActions(), checker, missing::setNewActions));
+    available.setNewResourceAttribute(
+        partition(source.getNewResourceAttribute(), checker, missing::setNewResourceAttribute));
+    available.setNewParams(partition(source.getNewParams(), checker, missing::setNewParams));
+    available.setNewEventType(
+        partition(source.getNewEventType(), checker, missing::setNewEventType));
+    available.setDeletedResource(
+        partition(source.getDeletedResource(), checker, missing::setDeletedResource));
+    available.setDeletedActions(
+        partition(source.getDeletedActions(), checker, missing::setDeletedActions));
+    available.setDeletedResourceAttribute(
+        partition(
+            source.getDeletedResourceAttribute(), checker, missing::setDeletedResourceAttribute));
+    available.setDeletedParams(
+        partition(source.getDeletedParams(), checker, missing::setDeletedParams));
+    available.setDeletedEventType(
+        partition(source.getDeletedEventType(), checker, missing::setDeletedEventType));
+    available.setNewEnumValues(
+        partition(source.getNewEnumValues(), checker, missing::setNewEnumValues));
+    available.setDeletedEnumValues(
+        partition(source.getDeletedEnumValues(), checker, missing::setDeletedEnumValues));
+    available.setParameterRequirementChangesValues(
+        partition(
+            source.getParameterRequirementChangesValues(),
+            checker,
+            missing::setParameterRequirementChangesValues));
+  }
+
+  private List<String> partition(
+      List<String> source,
+      DocsAvailabilityChecker checker,
+      java.util.function.Consumer<List<String>> setMissing) {
+    if (source == null) {
+      setMissing.accept(new ArrayList<>());
+      return new ArrayList<>();
+    }
+    List<String> kept = new ArrayList<>();
+    List<String> missing = new ArrayList<>();
+    for (String line : source) {
+      if (checker.isLineDocsAvailable(line)) {
+        kept.add(line);
+      } else {
+        missing.add(line);
+      }
+    }
+    setMissing.accept(missing);
+    return kept;
+  }
+
+  private boolean hasAnyEntries(ChangeLogSchema schema) {
+    return isNotEmpty(schema.getNewResource())
+        || isNotEmpty(schema.getNewActions())
+        || isNotEmpty(schema.getNewResourceAttribute())
+        || isNotEmpty(schema.getNewParams())
+        || isNotEmpty(schema.getNewEventType())
+        || isNotEmpty(schema.getDeletedResource())
+        || isNotEmpty(schema.getDeletedActions())
+        || isNotEmpty(schema.getDeletedResourceAttribute())
+        || isNotEmpty(schema.getDeletedParams())
+        || isNotEmpty(schema.getDeletedEventType())
+        || isNotEmpty(schema.getNewEnumValues())
+        || isNotEmpty(schema.getDeletedEnumValues())
+        || isNotEmpty(schema.getParameterRequirementChangesValues());
+  }
+
+  private boolean isNotEmpty(List<String> list) {
+    return list != null && !list.isEmpty();
+  }
+
+  private String renderMissingDocsReport(
+      ChangeLogSchema missingSchema, DocsAvailabilityChecker checker, String sectionDate)
+      throws IOException {
+    Set<String> missingPaths = new LinkedHashSet<>();
+    for (String line : collectAllLines(missingSchema)) {
+      String path = DocsAvailabilityChecker.extractDocsPath(line);
+      if (path != null) {
+        missingPaths.add(path);
+      }
+    }
+
+    StringBuilder header = new StringBuilder();
+    header.append("[section ").append(sectionDate).append("]\n");
+    header.append(
+        "# The following changelog entries were skipped from index.txt because their docs\n");
+    header.append("# pages return a non-200 status. Add the missing docs and re-run.\n");
+    if (!missingPaths.isEmpty()) {
+      header.append("#\n# Missing docs pages:\n");
+      for (String path : missingPaths) {
+        header.append("#   - ").append(DocsAvailabilityChecker.BASE_URL).append(path).append("\n");
+      }
+    }
+    header.append("\n");
+
+    return header + renderTemplate(missingSchema) + "\n\n";
   }
 
   private ChangeLogSchema buildChangeLogSchema(
