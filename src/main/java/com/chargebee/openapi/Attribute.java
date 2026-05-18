@@ -315,6 +315,16 @@ public class Attribute {
         && ((boolean) schema.getExtensions().get(IS_API_COLUMN));
   }
 
+  public boolean isApi(Schema schema) {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_API_COLUMN) != null
+        && ((boolean) schema.getExtensions().get(IS_API_COLUMN));
+  }
+
+  public boolean itemsIsApi() {
+    return schema instanceof ArraySchema ? isApi(schema.getItems()) : false;
+  }
+
   public boolean isGenSeparate(Schema schema) {
     return schema.getExtensions() != null
         && schema.getExtensions().get(IS_GEN_SEPARATE) != null

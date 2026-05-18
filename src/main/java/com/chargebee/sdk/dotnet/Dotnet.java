@@ -1168,7 +1168,7 @@ public class Dotnet extends Language {
 
   public String getTypeForListOfEnumsAttribute(Attribute attribute) {
     return singularize((String) attribute.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME))
-        + "TypeEnum";
+        + "Enum";
   }
 
   private String getDotnetTypeForListOfEnums(Attribute attribute) {

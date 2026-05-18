@@ -496,12 +496,12 @@ public class Java extends Language {
   }
 
   public final String listEnumAttributeType(Attribute attribute) {
+    if (!attribute.isGenSeparate()) {
+      return toCamelCase(attribute.name);
+    }
     String importPiece =
         this.generationMode == GenerationMode.INTERNAL ? ENUMS_EXPORT_INTERNAL : ENUMS_EXPORT;
-    String type =
-        singularize(
-                (String) attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME))
-            + TYPE;
+    String type = (String) attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
     return importPiece + type;
   }
 
@@ -644,7 +644,8 @@ public class Java extends Language {
     List<EnumColumn> enumColumns = new ArrayList<>();
     for (Attribute attribute : res.attributes()) {
       if (!attribute.isNotHiddenAttribute()) continue;
-      if (attribute.isApi() && !attribute.isGenSeparate()) {
+      // attribute.itemsIsApi() in case of arrays of enums.
+      if ((attribute.isApi() || attribute.itemsIsApi()) && !attribute.isGenSeparate()) {
         EnumColumn enumColumn = new EnumColumn();
         enumColumn.setDeprecated(attribute.isDeprecated());
         enumColumn.setVisibleEntries(getEnumEntries(attribute));
