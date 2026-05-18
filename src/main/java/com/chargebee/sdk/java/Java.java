@@ -293,13 +293,7 @@ public class Java extends Language {
             attribute.schema instanceof ArraySchema
                 ? singularize(toClazName(attribute.name))
                 : attribute.subResourceName());
-        List<EnumColumn> subResourceEnums = new ArrayList<>(getSubResourceEnum(attribute));
-        // Only collect enums from composite array parameters for internal SDK generation
-        if (generationMode.equals(GenerationMode.INTERNAL)) {
-          subResourceEnums.addAll(
-              getCompositeArrayEnumsForSubResource(attribute.name, res, subResourceEnums));
-        }
-        subResource.setEnumCols(subResourceEnums);
+        subResource.setEnumCols(getSubResourceEnum(attribute));
         subResource.setSchemaLessEnum(
             SchemaLessEnumParser.getSchemaLessEnumForSubResource(
                 subResource.getClazName(), activeResource));
@@ -308,76 +302,6 @@ public class Java extends Language {
       }
     }
     return subResources;
-  }
-
-  private boolean shouldGenerateEnum(Attribute attribute) {
-    if (!attribute.isEnumAttribute()) return false;
-    if (attribute.isGenSeparate()) return false;
-    if (attribute.isGlobalEnumAttribute()) return false;
-    if (attribute.isExternalEnum()) return false;
-    String enumApiName = attribute.getEnumApiName();
-    if (enumApiName == null && attribute.schema instanceof ArraySchema) {
-      if (attribute.schema.getItems() != null
-          && attribute.schema.getItems().getExtensions() != null) {
-        enumApiName =
-            (String) attribute.schema.getItems().getExtensions().get(Extension.SDK_ENUM_API_NAME);
-      }
-    }
-    return enumApiName != null;
-  }
-
-  private List<EnumColumn> getCompositeArrayEnumsForSubResource(
-      String subResourceAttributeName, Resource res, List<EnumColumn> existingEnums) {
-    List<EnumColumn> enumColumns = new ArrayList<>();
-    for (Action action : res.actions) {
-      for (Parameter iparam : action.requestBodyParameters()) {
-        if (iparam.isCompositeArrayBody() && iparam.getName().equals(subResourceAttributeName)) {
-          Attribute multiAttribute =
-              new Attribute(iparam.getName(), iparam.schema, iparam.isRequired);
-          for (Attribute attribute : multiAttribute.attributes()) {
-            if (!attribute.isNotHiddenAttribute()) continue;
-            if (shouldGenerateEnum(attribute)) {
-              String apiClassName = toClazName(attribute.name);
-              boolean alreadyExists =
-                  existingEnums.stream().anyMatch(e -> e.getApiClassName().equals(apiClassName))
-                      || enumColumns.stream()
-                          .anyMatch(e -> e.getApiClassName().equals(apiClassName));
-              if (!alreadyExists) {
-                EnumColumn enumColumn = new EnumColumn();
-                enumColumn.setDeprecated(attribute.isDeprecated());
-                enumColumn.setVisibleEntries(getEnumEntries(attribute));
-                enumColumn.setApiClassName(apiClassName);
-                enumColumns.add(enumColumn);
-              }
-            }
-          }
-        }
-      }
-      for (Parameter iparam : action.queryParameters()) {
-        if (iparam.isCompositeArrayBody() && iparam.getName().equals(subResourceAttributeName)) {
-          Attribute multiAttribute =
-              new Attribute(iparam.getName(), iparam.schema, iparam.isRequired);
-          for (Attribute attribute : multiAttribute.attributes()) {
-            if (!attribute.isNotHiddenAttribute()) continue;
-            if (shouldGenerateEnum(attribute)) {
-              String apiClassName = toClazName(attribute.name);
-              boolean alreadyExists =
-                  existingEnums.stream().anyMatch(e -> e.getApiClassName().equals(apiClassName))
-                      || enumColumns.stream()
-                          .anyMatch(e -> e.getApiClassName().equals(apiClassName));
-              if (!alreadyExists) {
-                EnumColumn enumColumn = new EnumColumn();
-                enumColumn.setDeprecated(attribute.isDeprecated());
-                enumColumn.setVisibleEntries(getEnumEntries(attribute));
-                enumColumn.setApiClassName(apiClassName);
-                enumColumns.add(enumColumn);
-              }
-            }
-          }
-        }
-      }
-    }
-    return enumColumns;
   }
 
   private String updateForSubAttributes(String colsRetType) {
@@ -652,60 +576,6 @@ public class Java extends Language {
         enumColumn.setVisibleEntries(getEnumEntries(attribute));
         enumColumn.setApiClassName(toClazName(attribute.name));
         enumColumns.add(enumColumn);
-      }
-    }
-    // Only collect enums from composite array parameters for internal SDK generation
-    if (generationMode.equals(GenerationMode.INTERNAL)) {
-      List<String> subResourceAttributeNames =
-          res.getSortedResourceAttributes().stream()
-              .filter(Attribute::isSubResource)
-              .map(attr -> attr.name)
-              .toList();
-      for (Action action : res.actions) {
-        for (Parameter iparam : action.requestBodyParameters()) {
-          if (iparam.isCompositeArrayBody()
-              && !subResourceAttributeNames.contains(iparam.getName())) {
-            Attribute multiAttribute =
-                new Attribute(iparam.getName(), iparam.schema, iparam.isRequired);
-            for (Attribute attribute : multiAttribute.attributes()) {
-              if (!attribute.isNotHiddenAttribute()) continue;
-              if (shouldGenerateEnum(attribute)) {
-                String apiClassName = toClazName(attribute.name);
-                boolean alreadyExists =
-                    enumColumns.stream().anyMatch(e -> e.getApiClassName().equals(apiClassName));
-                if (!alreadyExists) {
-                  EnumColumn enumColumn = new EnumColumn();
-                  enumColumn.setDeprecated(attribute.isDeprecated());
-                  enumColumn.setVisibleEntries(getEnumEntries(attribute));
-                  enumColumn.setApiClassName(apiClassName);
-                  enumColumns.add(enumColumn);
-                }
-              }
-            }
-          }
-        }
-        for (Parameter iparam : action.queryParameters()) {
-          if (iparam.isCompositeArrayBody()
-              && !subResourceAttributeNames.contains(iparam.getName())) {
-            Attribute multiAttribute =
-                new Attribute(iparam.getName(), iparam.schema, iparam.isRequired);
-            for (Attribute attribute : multiAttribute.attributes()) {
-              if (!attribute.isNotHiddenAttribute()) continue;
-              if (shouldGenerateEnum(attribute)) {
-                String apiClassName = toClazName(attribute.name);
-                boolean alreadyExists =
-                    enumColumns.stream().anyMatch(e -> e.getApiClassName().equals(apiClassName));
-                if (!alreadyExists) {
-                  EnumColumn enumColumn = new EnumColumn();
-                  enumColumn.setDeprecated(attribute.isDeprecated());
-                  enumColumn.setVisibleEntries(getEnumEntries(attribute));
-                  enumColumn.setApiClassName(apiClassName);
-                  enumColumns.add(enumColumn);
-                }
-              }
-            }
-          }
-        }
       }
     }
     return enumColumns;
