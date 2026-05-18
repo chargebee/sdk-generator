@@ -498,8 +498,12 @@ public class Java extends Language {
   public final String listEnumAttributeType(Attribute attribute) {
     String importPiece =
         this.generationMode == GenerationMode.INTERNAL ? ENUMS_EXPORT_INTERNAL : ENUMS_EXPORT;
-    String type =
-        (String) attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
+      String type =
+              attribute.isGlobalEnumAttribute() && attribute.isGenSeparate()
+                      ? getPascalName(attribute.name)
+                      : singularize(
+                      (String)
+                              attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME));
     return importPiece + type;
   }
 
