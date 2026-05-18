@@ -422,9 +422,20 @@ public class Java extends Language {
   public final String listEnumAttributeType(Attribute attribute) {
     String importPiece =
         this.generationMode == GenerationMode.INTERNAL ? ENUMS_EXPORT_INTERNAL : ENUMS_EXPORT;
+    // For gen-separate global enums, `processEnumAttribute` emits the class file using the
+    // outer list attribute's name in Pascal case. The inner items' SDK_ENUM_API_NAME (e.g. the
+    // wrapped `EnumColumn`'s name) is often the singular form of that name and, after
+    // `singularize`, can collide with another, unrelated `enums.<Name>` class generated for a
+    // different attribute that happens to share the singular name. Mirror the file naming so
+    // the reference resolves to the class that was actually emitted.
+    // For shared / pre-declared global enums (not gen-separate), continue to resolve the type
+    // from the items' SDK_ENUM_API_NAME, which matches the pre-declared global enum's name.
     String type =
-        singularize(
-                (String) attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME));
+        attribute.isGlobalEnumAttribute() && attribute.isGenSeparate()
+            ? getPascalName(attribute.name)
+            : singularize(
+                (String)
+                    attribute.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME));
     return importPiece + type;
   }
 
