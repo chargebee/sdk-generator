@@ -257,9 +257,9 @@ public class ChangeLogDocsGenerator implements FileGenerator {
   }
 
   private String formatNewResourceLine(Resource resource) {
+    String resourcePath = getDocsLinkForResourceList(resource);
     return String.format(
-        "[list]New resource added: [link_api %s][code %s][].[]",
-        getDocsLinkForResourceList(resource), resource.name);
+        "[list]New resource added: [link_api %s][code %s][].[]", resourcePath, resourcePath);
   }
 
   // --- New Actions ---
@@ -327,7 +327,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
         attribute.name,
         getDocsLinkForResourceObject(resource),
         attribute.name,
-        resource.name);
+        getDocsLinkForResourceList(resource));
   }
 
   // --- New Parameters ---
@@ -422,15 +422,17 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
   private String formatNewParameterLine(Resource resource, Action action, Parameter parameter) {
     String paramAnchor = parameter.getName().replace(".", "_");
+    String resourcePath = getDocsLinkForResourceList(resource);
+    String actionPath = toHyphenCase(action.id);
     return String.format(
         "[list]New input parameter [code %s] added to the endpoint "
-            + "[link_api %s/%s#%s][code %s.%s][].[]",
+            + "[link_api %s/%s#%s][code %s/%s][].[]",
         toBracketNotation(parameter.getName()),
-        getDocsLinkForResourceList(resource),
-        toHyphenCase(action.id),
+        resourcePath,
+        actionPath,
         paramAnchor,
-        resource.name,
-        toHyphenCase(action.id));
+        resourcePath,
+        actionPath);
   }
 
   // --- New Events ---
@@ -452,7 +454,8 @@ public class ChangeLogDocsGenerator implements FileGenerator {
   private String formatNewEventLine(Map<String, String> event) {
     String eventType = event.get("type");
     return String.format(
-        "[list]New webhook added: [link_api events/webhook/%s][code %s][].[]",
+        "[list]Enum value added: [code %s] to the enum"
+            + " [link_api events/webhook/%s][code event_type][].[]",
         eventType, eventType);
   }
 
@@ -464,7 +467,11 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
     return oldResources.stream()
         .filter(resource -> !currentResourceIds.contains(resource.id))
-        .map(resource -> String.format("[list]Resource [code %s] has been removed.[]", resource.name))
+        .map(
+            resource ->
+                String.format(
+                    "[list]Resource [code %s] has been removed.[]",
+                    getDocsLinkForResourceList(resource)))
         .distinct()
         .collect(Collectors.toList());
   }
@@ -489,12 +496,11 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
         for (Action oldAction : oldResource.actions) {
           if (!currentActions.contains(oldAction.name)) {
+            String resourcePath = getDocsLinkForResourceList(correspondingNewResource);
             lines.add(
                 String.format(
                     "[list]Endpoint [code %s] removed from [link_api %s][code %s][].[]",
-                    oldAction.id,
-                    getDocsLinkForResourceList(correspondingNewResource),
-                    correspondingNewResource.name));
+                    oldAction.id, resourcePath, resourcePath));
           }
         }
       } else {
@@ -502,7 +508,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
           lines.add(
               String.format(
                   "[list]Endpoint [code %s] removed from [code %s].[]",
-                  action.id, oldResource.name));
+                  action.id, getDocsLinkForResourceList(oldResource)));
         }
       }
     }
@@ -538,7 +544,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
                     oldAttribute.name,
                     getDocsLinkForResourceList(correspondingNewResource),
                     anchor,
-                    correspondingNewResource.name));
+                    getDocsLinkForResourceList(correspondingNewResource)));
           }
         }
       } else {
@@ -546,7 +552,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
           lines.add(
               String.format(
                   "[list]Attribute [code %s] removed from the resource [code %s].[]",
-                  attribute.name, oldResource.name));
+                  attribute.name, getDocsLinkForResourceList(oldResource)));
         }
       }
     }
@@ -633,12 +639,13 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       Resource oldResource,
       Function<Action, List<Parameter>> parameterExtractor,
       Set<String> lines) {
+    String resourcePath = getDocsLinkForResourceList(oldResource);
     for (Action action : oldResource.actions) {
       for (Parameter parameter : parameterExtractor.apply(action)) {
         lines.add(
             String.format(
                 "[list]Input parameter [code %s] removed from the endpoint [code %s] in [code %s].[]",
-                toBracketNotation(parameter.getName()), action.id, oldResource.name));
+                toBracketNotation(parameter.getName()), toHyphenCase(action.id), resourcePath));
       }
     }
   }
@@ -646,20 +653,22 @@ public class ChangeLogDocsGenerator implements FileGenerator {
   private String formatDeletedParameterLine(
       Resource resource, Action action, Parameter parameter, boolean includeLink) {
     String paramAnchor = parameter.getName().replace(".", "_");
+    String resourcePath = getDocsLinkForResourceList(resource);
+    String actionPath = toHyphenCase(action.id);
     if (includeLink) {
       return String.format(
           "[list]Input parameter [code %s] removed from the endpoint "
-              + "[link_api %s/%s#%s][code %s.%s][].[]",
+              + "[link_api %s/%s#%s][code %s/%s][].[]",
           toBracketNotation(parameter.getName()),
-          getDocsLinkForResourceList(resource),
-          toHyphenCase(action.id),
+          resourcePath,
+          actionPath,
           paramAnchor,
-          resource.name,
-          toHyphenCase(action.id));
+          resourcePath,
+          actionPath);
     } else {
       return String.format(
           "[list]Input parameter [code %s] removed from the endpoint [code %s] in [code %s].[]",
-          toBracketNotation(parameter.getName()), action.id, resource.name);
+          toBracketNotation(parameter.getName()), actionPath, resourcePath);
     }
   }
 
@@ -677,7 +686,8 @@ public class ChangeLogDocsGenerator implements FileGenerator {
         .map(
             event ->
                 String.format(
-                    "[list]Webhook [code %s] has been removed.[]", event.get("type")))
+                    "[list]Enum value removed: [code %s] from the enum [code event_type].[]",
+                    event.get("type")))
         .distinct()
         .collect(Collectors.toList());
   }
@@ -869,18 +879,20 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     String verb = isAdded ? "added" : "removed";
     String preposition = isAdded ? "to" : "from";
     String paramAnchor = parameter.getName().replace(".", "_");
+    String resourcePath = getDocsLinkForResourceList(resource);
+    String actionPath = toHyphenCase(action.id);
     lines.add(
         String.format(
             "[list]Enum value %s: %s %s the enum "
-                + "[link_api %s/%s#%s][code %s.%s][].[]",
+                + "[link_api %s/%s#%s][code %s/%s][].[]",
             verb,
             formatEnumCodeValues(values),
             preposition,
-            getDocsLinkForResourceList(resource),
-            toHyphenCase(action.id),
+            resourcePath,
+            actionPath,
             paramAnchor,
-            resource.name,
-            toBracketNotation(parameter.getName())));
+            resourcePath,
+            actionPath));
   }
 
   // --- Parameter Requirement Changes ---
@@ -933,15 +945,18 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     String changeDescription =
         parameter.isRequired ? "`optional` to `required`" : "`required` to `optional`";
     String paramAnchor = parameter.getName().replace(".", "_");
+    String resourcePath = getDocsLinkForResourceList(resource);
+    String actionPath = toHyphenCase(action.id);
     return String.format(
         "[list]Input parameter [code %s] has been changed from %s in the endpoint "
-            + "[link_api %s/%s#%s][code %s][].[]",
+            + "[link_api %s/%s#%s][code %s/%s][].[]",
         toBracketNotation(parameter.getName()),
         changeDescription,
-        getDocsLinkForResourceList(resource),
-        toHyphenCase(action.id),
+        resourcePath,
+        actionPath,
         paramAnchor,
-        toHyphenCase(action.id));
+        resourcePath,
+        actionPath);
   }
 
   // --- Utility: Maps & Sets ---
