@@ -1008,7 +1008,7 @@ public class Go_V4 extends Language {
               + String.join(
                   delimiter,
                   "CustomFields",
-                  "*customFields",
+                  "*CustomFields",
                   "`json:\"-\"`"));
     if (activeResource.name.equals("Customer"))
       buf.add(
