@@ -12,7 +12,9 @@ import com.chargebee.openapi.Spec;
 import com.chargebee.openapi.parameter.Parameter;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.changelog.ChangeLogDocs;
-import com.chargebee.sdk.changelog.models.ChangeLogSchema;
+import com.chargebee.sdk.changelog.models.ChangeLogDocsSchema;
+import com.chargebee.sdk.changelog.models.ChangeLogEntry;
+import com.chargebee.sdk.changelog.models.ChangeLogEntry.EntryType;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.ArraySchema;
@@ -21,6 +23,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,10 +32,6 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
   private static final String QUERY_PREFIX = "query";
   private static final String BODY_PREFIX = "body";
-
-  private static final String ADDED_VALUE_SINGULAR = "added as a new value";
-  private static final String ADDED_VALUE_PLURAL = "added as new values";
-  private static final String REMOVED_VALUE = "removed";
 
   private final ChangeLogDocs changeLogDocs;
   private final Template changeLogDocsTemplate;
@@ -47,14 +46,13 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     List<Resource> oldResources = filterResources(oldVersion.resources());
     List<Resource> newResources = filterResources(newerVersion.resources());
 
-    ChangeLogSchema schema =
+    ChangeLogDocsSchema schema =
         buildChangeLogSchema(oldVersion, newerVersion, oldResources, newResources);
 
-    DocsAvailabilityChecker checker = new DocsAvailabilityChecker();
-    checker.warmUp(collectAllLines(schema));
+    LocalDocsAvailabilityChecker checker = new LocalDocsAvailabilityChecker();
 
-    ChangeLogSchema availableSchema = new ChangeLogSchema();
-    ChangeLogSchema missingSchema = new ChangeLogSchema();
+    ChangeLogDocsSchema availableSchema = new ChangeLogDocsSchema();
+    ChangeLogDocsSchema missingSchema = new ChangeLogDocsSchema();
     partitionSchemaByDocsAvailability(schema, availableSchema, missingSchema, checker);
 
     String sectionDate = LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE);
@@ -74,8 +72,8 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     return new FileOp.Composite(ops);
   }
 
-  private List<String> collectAllLines(ChangeLogSchema schema) {
-    List<String> all = new ArrayList<>();
+  private List<ChangeLogEntry> collectAllEntries(ChangeLogDocsSchema schema) {
+    List<ChangeLogEntry> all = new ArrayList<>();
     addAllNullable(all, schema.getNewResource());
     addAllNullable(all, schema.getNewActions());
     addAllNullable(all, schema.getNewResourceAttribute());
@@ -92,17 +90,17 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     return all;
   }
 
-  private void addAllNullable(List<String> target, List<String> source) {
+  private <T> void addAllNullable(List<T> target, List<T> source) {
     if (source != null) {
       target.addAll(source);
     }
   }
 
   private void partitionSchemaByDocsAvailability(
-      ChangeLogSchema source,
-      ChangeLogSchema available,
-      ChangeLogSchema missing,
-      DocsAvailabilityChecker checker) {
+      ChangeLogDocsSchema source,
+      ChangeLogDocsSchema available,
+      ChangeLogDocsSchema missing,
+      LocalDocsAvailabilityChecker checker) {
     available.setNewResource(partition(source.getNewResource(), checker, missing::setNewResource));
     available.setNewActions(partition(source.getNewActions(), checker, missing::setNewActions));
     available.setNewResourceAttribute(
@@ -132,28 +130,28 @@ public class ChangeLogDocsGenerator implements FileGenerator {
             missing::setParameterRequirementChangesValues));
   }
 
-  private List<String> partition(
-      List<String> source,
-      DocsAvailabilityChecker checker,
-      java.util.function.Consumer<List<String>> setMissing) {
+  private List<ChangeLogEntry> partition(
+      List<ChangeLogEntry> source,
+      LocalDocsAvailabilityChecker checker,
+      Consumer<List<ChangeLogEntry>> setMissing) {
     if (source == null) {
       setMissing.accept(new ArrayList<>());
       return new ArrayList<>();
     }
-    List<String> kept = new ArrayList<>();
-    List<String> missing = new ArrayList<>();
-    for (String line : source) {
-      if (checker.isLineDocsAvailable(line)) {
-        kept.add(line);
+    List<ChangeLogEntry> kept = new ArrayList<>();
+    List<ChangeLogEntry> missing = new ArrayList<>();
+    for (ChangeLogEntry entry : source) {
+      if (checker.isEntryAvailable(entry)) {
+        kept.add(entry);
       } else {
-        missing.add(line);
+        missing.add(entry);
       }
     }
     setMissing.accept(missing);
     return kept;
   }
 
-  private boolean hasAnyEntries(ChangeLogSchema schema) {
+  private boolean hasAnyEntries(ChangeLogDocsSchema schema) {
     return isNotEmpty(schema.getNewResource())
         || isNotEmpty(schema.getNewActions())
         || isNotEmpty(schema.getNewResourceAttribute())
@@ -169,30 +167,27 @@ public class ChangeLogDocsGenerator implements FileGenerator {
         || isNotEmpty(schema.getParameterRequirementChangesValues());
   }
 
-  private boolean isNotEmpty(List<String> list) {
+  private boolean isNotEmpty(List<?> list) {
     return list != null && !list.isEmpty();
   }
 
   private String renderMissingDocsReport(
-      ChangeLogSchema missingSchema, DocsAvailabilityChecker checker, String sectionDate)
+      ChangeLogDocsSchema missingSchema, LocalDocsAvailabilityChecker checker, String sectionDate)
       throws IOException {
-    Set<String> missingPaths = new LinkedHashSet<>();
-    for (String line : collectAllLines(missingSchema)) {
-      String path = DocsAvailabilityChecker.extractDocsPath(line);
-      if (path != null) {
-        missingPaths.add(path);
-      }
-    }
+    Set<String> missingDescriptions = checker.describeMissingDocs(collectAllEntries(missingSchema));
 
     StringBuilder header = new StringBuilder();
     header.append("[section ").append(sectionDate).append("]\n");
-    header.append(
-        "# The following changelog entries were skipped from index.txt because their docs\n");
-    header.append("# pages return a non-200 status. Add the missing docs and re-run.\n");
-    if (!missingPaths.isEmpty()) {
-      header.append("#\n# Missing docs pages:\n");
-      for (String path : missingPaths) {
-        header.append("#   - ").append(DocsAvailabilityChecker.BASE_URL).append(path).append("\n");
+    header
+        .append("# The following changelog entries were skipped from index.txt because their\n")
+        .append("# corresponding docs were not found in the local docs repo at:\n")
+        .append("#   ")
+        .append(checker.docsRoot())
+        .append("\n# Add the missing docs and re-run.\n");
+    if (!missingDescriptions.isEmpty()) {
+      header.append("#\n# Missing docs entities:\n");
+      for (String description : missingDescriptions) {
+        header.append("#   - ").append(description).append("\n");
       }
     }
     header.append("\n");
@@ -200,12 +195,12 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     return header + renderTemplate(missingSchema) + "\n\n";
   }
 
-  private ChangeLogSchema buildChangeLogSchema(
+  private ChangeLogDocsSchema buildChangeLogSchema(
       Spec oldVersion,
       Spec newerVersion,
       List<Resource> oldResources,
       List<Resource> newResources) {
-    ChangeLogSchema schema = new ChangeLogSchema();
+    ChangeLogDocsSchema schema = new ChangeLogDocsSchema();
 
     schema.setNewResource(generateNewResources(oldResources, newResources));
     schema.setNewActions(generateNewActions(oldResources, newResources));
@@ -229,7 +224,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     return schema;
   }
 
-  private String renderTemplate(ChangeLogSchema schema) throws IOException {
+  private String renderTemplate(ChangeLogDocsSchema schema) throws IOException {
     Map<String, Object> schemaMap =
         changeLogDocs.getObjectMapper().convertValue(schema, Map.class);
     String content = changeLogDocsTemplate.apply(schemaMap);
@@ -245,30 +240,36 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
   // --- New Resources ---
 
-  private List<String> generateNewResources(
+  private List<ChangeLogEntry> generateNewResources(
       List<Resource> oldResources, List<Resource> newResources) {
     Set<String> existingResourceIds = extractResourceIds(oldResources);
 
-    return newResources.stream()
-        .filter(resource -> !existingResourceIds.contains(resource.id))
-        .map(this::formatNewResourceLine)
-        .distinct()
-        .collect(Collectors.toList());
+    return distinctByLine(
+        newResources.stream()
+            .filter(resource -> !existingResourceIds.contains(resource.id))
+            .map(this::formatNewResourceEntry));
   }
 
-  private String formatNewResourceLine(Resource resource) {
+  private ChangeLogEntry formatNewResourceEntry(Resource resource) {
     String resourcePath = getDocsLinkForResourceList(resource);
-    return String.format(
-        "[list]New resource added: [link_api %s][code %s][].[]", resourcePath, resourcePath);
+    String line =
+        String.format(
+            "[list]New resource added: [link_api %s][code %s][].[]", resourcePath, resourcePath);
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.NEW_RESOURCE)
+        .resourceId(resource.id)
+        .docsResourcePath(resourcePath)
+        .build();
   }
 
   // --- New Actions ---
 
-  private List<String> generateNewActions(
+  private List<ChangeLogEntry> generateNewActions(
       List<Resource> oldResources, List<Resource> newResources) {
     Map<String, Set<String>> oldActionsByResource = buildActionMap(oldResources);
     Set<String> oldResourceIds = extractResourceIds(oldResources);
-    Set<String> lines = new LinkedHashSet<>();
+    Map<String, ChangeLogEntry> entries = new LinkedHashMap<>();
 
     for (Resource newResource : newResources) {
       if (!oldResourceIds.contains(newResource.id)) {
@@ -280,77 +281,95 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
       for (Action action : newResource.actions) {
         if (!existingActions.contains(action.name)) {
-          lines.add(formatNewActionLine(newResource, action));
+          ChangeLogEntry entry = formatNewActionEntry(newResource, action);
+          entries.putIfAbsent(entry.getLine(), entry);
         }
       }
     }
 
-    return new ArrayList<>(lines);
+    return new ArrayList<>(entries.values());
   }
 
-  private String formatNewActionLine(Resource resource, Action action) {
-    return String.format(
-        "[list]New endpoint added: [link_api %s#%s][code %s%s][].[]",
-        getDocsLinkForResourceList(resource),
-        action.id,
-        action.httpRequestType.name(),
-        action.getUrl());
+  private ChangeLogEntry formatNewActionEntry(Resource resource, Action action) {
+    String resourcePath = getDocsLinkForResourceList(resource);
+    String line =
+        String.format(
+            "[list]New endpoint added: [link_api %s#%s][code %s%s][].[]",
+            resourcePath,
+            action.id,
+            action.httpRequestType.name(),
+            action.getUrl());
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.NEW_ACTION)
+        .resourceId(resource.id)
+        .docsResourcePath(resourcePath)
+        .actionId(action.id)
+        .build();
   }
 
   // --- New Attributes ---
 
-  private List<String> generateNewAttributes(
+  private List<ChangeLogEntry> generateNewAttributes(
       List<Resource> oldResources, List<Resource> newResources) {
     Map<String, Set<String>> oldAttributesByResource = buildAttributeMap(oldResources);
     Set<String> oldResourceIds = extractResourceIds(oldResources);
 
-    return newResources.stream()
-        .filter(resource -> oldResourceIds.contains(resource.id))
-        .flatMap(resource -> findNewAttributes(resource, oldAttributesByResource))
-        .distinct()
-        .collect(Collectors.toList());
+    return distinctByLine(
+        newResources.stream()
+            .filter(resource -> oldResourceIds.contains(resource.id))
+            .flatMap(resource -> findNewAttributes(resource, oldAttributesByResource)));
   }
 
-  private Stream<String> findNewAttributes(
+  private Stream<ChangeLogEntry> findNewAttributes(
       Resource resource, Map<String, Set<String>> oldAttributesByResource) {
     Set<String> existingAttributes =
         oldAttributesByResource.getOrDefault(resource.id, Collections.emptySet());
 
     return resource.attributes().stream()
         .filter(attribute -> !existingAttributes.contains(attribute.name))
-        .map(attribute -> formatNewAttributeLine(resource, attribute));
+        .map(attribute -> formatNewAttributeEntry(resource, attribute));
   }
 
-  private String formatNewAttributeLine(Resource resource, Attribute attribute) {
-    return String.format(
-        "[list]New attribute [code %s] added to the resource [link_api %s#%s][code %s][].[]",
-        attribute.name,
-        getDocsLinkForResourceObject(resource),
-        attribute.name,
-        getDocsLinkForResourceList(resource));
+  private ChangeLogEntry formatNewAttributeEntry(Resource resource, Attribute attribute) {
+    String resourcePath = getDocsLinkForResourceList(resource);
+    String line =
+        String.format(
+            "[list]New attribute [code %s] added to the resource [link_api %s#%s][code %s][].[]",
+            attribute.name,
+            getDocsLinkForResourceObject(resource),
+            attribute.name,
+            resourcePath);
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.NEW_ATTRIBUTE)
+        .resourceId(resource.id)
+        .docsResourcePath(resourcePath)
+        .slugPath(attribute.name)
+        .build();
   }
 
   // --- New Parameters ---
 
-  private List<String> generateNewParameters(
+  private List<ChangeLogEntry> generateNewParameters(
       List<Resource> oldResources, List<Resource> newResources) {
-    List<String> queryParameterLines =
-        generateParameterLines(oldResources, newResources, Action::queryParameters);
-    List<String> bodyParameterLines =
-        generateParameterLines(oldResources, newResources, Action::requestBodyParameters);
+    List<ChangeLogEntry> queryParameterEntries =
+        generateParameterEntries(oldResources, newResources, Action::queryParameters);
+    List<ChangeLogEntry> bodyParameterEntries =
+        generateParameterEntries(oldResources, newResources, Action::requestBodyParameters);
 
-    return Stream.concat(queryParameterLines.stream(), bodyParameterLines.stream())
+    return Stream.concat(queryParameterEntries.stream(), bodyParameterEntries.stream())
         .collect(Collectors.toList());
   }
 
-  private List<String> generateParameterLines(
+  private List<ChangeLogEntry> generateParameterEntries(
       List<Resource> oldResources,
       List<Resource> newResources,
       Function<Action, List<Parameter>> parameterExtractor) {
     Map<String, Map<String, Set<String>>> oldParametersByResource =
         buildParameterMap(oldResources, parameterExtractor);
     Set<String> oldResourceIds = extractResourceIds(oldResources);
-    Set<String> lines = new LinkedHashSet<>();
+    Map<String, ChangeLogEntry> entries = new LinkedHashMap<>();
 
     for (Resource newResource : newResources) {
       if (!oldResourceIds.contains(newResource.id)) {
@@ -364,11 +383,11 @@ public class ChangeLogDocsGenerator implements FileGenerator {
         Set<String> existingParameters =
             oldActionParameters.getOrDefault(action.id, Collections.emptySet());
         findAndAddNewParameters(
-            newResource, action, parameterExtractor.apply(action), existingParameters, lines);
+            newResource, action, parameterExtractor.apply(action), existingParameters, entries);
       }
     }
 
-    return new ArrayList<>(lines);
+    return new ArrayList<>(entries.values());
   }
 
   private void findAndAddNewParameters(
@@ -376,13 +395,14 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       Action action,
       List<Parameter> parameters,
       Set<String> existingParameters,
-      Set<String> lines) {
+      Map<String, ChangeLogEntry> entries) {
     for (Parameter parameter : parameters) {
       if (!existingParameters.contains(parameter.getName())) {
-        lines.add(formatNewParameterLine(resource, action, parameter));
+        ChangeLogEntry entry = formatNewParameterEntry(resource, action, parameter);
+        entries.putIfAbsent(entry.getLine(), entry);
       } else if (parameter.schema.getProperties() != null) {
         processNestedParameters(
-            parameter.schema, parameter.getName(), existingParameters, resource, action, lines,
+            parameter.schema, parameter.getName(), existingParameters, resource, action, entries,
             true);
       }
     }
@@ -394,7 +414,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       Set<String> existingParameters,
       Resource resource,
       Action action,
-      Set<String> lines,
+      Map<String, ChangeLogEntry> entries,
       boolean isNew) {
     if (schema.getProperties() == null) {
       return;
@@ -408,82 +428,104 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
               if (!existingParameters.contains(nestedPath)) {
                 Parameter nestedParameter = new Parameter(nestedPath, (Schema) value);
-                if (isNew) {
-                  lines.add(formatNewParameterLine(resource, action, nestedParameter));
-                } else {
-                  lines.add(formatDeletedParameterLine(resource, action, nestedParameter, true));
-                }
+                ChangeLogEntry entry =
+                    isNew
+                        ? formatNewParameterEntry(resource, action, nestedParameter)
+                        : formatDeletedParameterEntry(resource, action, nestedParameter, true);
+                entries.putIfAbsent(entry.getLine(), entry);
               } else {
                 processNestedParameters(
-                    (Schema) value, nestedPath, existingParameters, resource, action, lines, isNew);
+                    (Schema) value, nestedPath, existingParameters, resource, action, entries,
+                    isNew);
               }
             });
   }
 
-  private String formatNewParameterLine(Resource resource, Action action, Parameter parameter) {
+  private ChangeLogEntry formatNewParameterEntry(
+      Resource resource, Action action, Parameter parameter) {
     String paramAnchor = parameter.getName().replace(".", "_");
     String resourcePath = getDocsLinkForResourceList(resource);
     String actionPath = toHyphenCase(action.id);
-    return String.format(
-        "[list]New input parameter [code %s] added to the endpoint "
-            + "[link_api %s/%s#%s][code %s/%s][].[]",
-        toBracketNotation(parameter.getName()),
-        resourcePath,
-        actionPath,
-        paramAnchor,
-        resourcePath,
-        actionPath);
+    String line =
+        String.format(
+            "[list]New input parameter [code %s] added to the endpoint "
+                + "[link_api %s/%s#%s][code %s/%s][].[]",
+            toBracketNotation(parameter.getName()),
+            resourcePath,
+            actionPath,
+            paramAnchor,
+            resourcePath,
+            actionPath);
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.NEW_PARAMETER)
+        .resourceId(resource.id)
+        .docsResourcePath(resourcePath)
+        .actionId(action.id)
+        .slugPath(parameter.getName())
+        .build();
   }
 
   // --- New Events ---
 
-  private List<String> generateNewEvents(Spec oldVersion, Spec newerVersion) {
+  private List<ChangeLogEntry> generateNewEvents(Spec oldVersion, Spec newerVersion) {
     List<Map<String, String>> oldEvents = oldVersion.extractWebhookInfo(false);
     List<Map<String, String>> newEvents = newerVersion.extractWebhookInfo(false);
 
     Set<String> existingEventTypes =
         oldEvents.stream().map(event -> event.get("type")).collect(Collectors.toSet());
 
-    return newEvents.stream()
-        .filter(event -> !existingEventTypes.contains(event.get("type")))
-        .map(this::formatNewEventLine)
-        .distinct()
-        .collect(Collectors.toList());
+    return distinctByLine(
+        newEvents.stream()
+            .filter(event -> !existingEventTypes.contains(event.get("type")))
+            .map(this::formatNewEventEntry));
   }
 
-  private String formatNewEventLine(Map<String, String> event) {
+  private ChangeLogEntry formatNewEventEntry(Map<String, String> event) {
     String eventType = event.get("type");
-    return String.format(
-        "[list]Enum value added: [code %s] to the enum"
-            + " [link_api events/webhook/%s][code event_type][].[]",
-        eventType, eventType);
+    String line =
+        String.format(
+            "[list]Enum value added: [code %s] to the enum"
+                + " [link_api events/webhook/%s][code event_type][].[]",
+            eventType, eventType);
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.NEW_EVENT_TYPE)
+        .eventType(eventType)
+        .build();
   }
 
   // --- Deleted Resources ---
 
-  private List<String> generateDeletedResources(
+  private List<ChangeLogEntry> generateDeletedResources(
       List<Resource> oldResources, List<Resource> newResources) {
     Set<String> currentResourceIds = extractResourceIds(newResources);
 
-    return oldResources.stream()
-        .filter(resource -> !currentResourceIds.contains(resource.id))
-        .map(
-            resource ->
-                String.format(
-                    "[list]Resource [code %s] has been removed.[]",
-                    getDocsLinkForResourceList(resource)))
-        .distinct()
-        .collect(Collectors.toList());
+    return distinctByLine(
+        oldResources.stream()
+            .filter(resource -> !currentResourceIds.contains(resource.id))
+            .map(
+                resource -> {
+                  String resourcePath = getDocsLinkForResourceList(resource);
+                  return ChangeLogEntry.builder()
+                      .line(
+                          String.format(
+                              "[list]Resource [code %s] has been removed.[]", resourcePath))
+                      .type(EntryType.DELETED_RESOURCE)
+                      .resourceId(resource.id)
+                      .docsResourcePath(resourcePath)
+                      .build();
+                }));
   }
 
   // --- Deleted Actions ---
 
-  private List<String> generateDeletedActions(
+  private List<ChangeLogEntry> generateDeletedActions(
       List<Resource> oldResources, List<Resource> newResources) {
     Map<String, Resource> newResourceMap =
         newResources.stream()
             .collect(Collectors.toMap(resource -> resource.id, resource -> resource));
-    Set<String> lines = new LinkedHashSet<>();
+    Map<String, ChangeLogEntry> entries = new LinkedHashMap<>();
 
     for (Resource oldResource : oldResources) {
       Resource correspondingNewResource = newResourceMap.get(oldResource.id);
@@ -497,33 +539,49 @@ public class ChangeLogDocsGenerator implements FileGenerator {
         for (Action oldAction : oldResource.actions) {
           if (!currentActions.contains(oldAction.name)) {
             String resourcePath = getDocsLinkForResourceList(correspondingNewResource);
-            lines.add(
+            String line =
                 String.format(
                     "[list]Endpoint [code %s] removed from [link_api %s][code %s][].[]",
-                    oldAction.id, resourcePath, resourcePath));
+                    oldAction.id, resourcePath, resourcePath);
+            entries.putIfAbsent(
+                line,
+                ChangeLogEntry.builder()
+                    .line(line)
+                    .type(EntryType.DELETED_ACTION)
+                    .resourceId(correspondingNewResource.id)
+                    .docsResourcePath(resourcePath)
+                    .actionId(oldAction.id)
+                    .build());
           }
         }
       } else {
         for (Action action : oldResource.actions) {
-          lines.add(
+          String line =
               String.format(
                   "[list]Endpoint [code %s] removed from [code %s].[]",
-                  action.id, getDocsLinkForResourceList(oldResource)));
+                  action.id, getDocsLinkForResourceList(oldResource));
+          entries.putIfAbsent(
+              line,
+              ChangeLogEntry.builder()
+                  .line(line)
+                  .type(EntryType.DELETED_ACTION)
+                  // Resource is gone; nothing to verify against.
+                  .build());
         }
       }
     }
 
-    return new ArrayList<>(lines);
+    return new ArrayList<>(entries.values());
   }
 
   // --- Deleted Attributes ---
 
-  private List<String> generateDeletedAttributes(
+  private List<ChangeLogEntry> generateDeletedAttributes(
       List<Resource> oldResources, List<Resource> newResources) {
     Map<String, Resource> newResourceMap =
         newResources.stream()
             .collect(Collectors.toMap(resource -> resource.id, resource -> resource));
-    Set<String> lines = new LinkedHashSet<>();
+    Map<String, ChangeLogEntry> entries = new LinkedHashMap<>();
 
     for (Resource oldResource : oldResources) {
       Resource correspondingNewResource = newResourceMap.get(oldResource.id);
@@ -534,73 +592,90 @@ public class ChangeLogDocsGenerator implements FileGenerator {
                 .map(attribute -> attribute.name)
                 .collect(Collectors.toSet());
 
+        String resourcePath = getDocsLinkForResourceList(correspondingNewResource);
         for (Attribute oldAttribute : oldResource.attributes()) {
           if (!currentAttributes.contains(oldAttribute.name)) {
             String anchor = oldResource.id + "_" + oldAttribute.name;
-            lines.add(
+            String line =
                 String.format(
                     "[list]Attribute [code %s] removed from the resource "
                         + "[link_api %s#%s][code %s][].[]",
                     oldAttribute.name,
-                    getDocsLinkForResourceList(correspondingNewResource),
+                    resourcePath,
                     anchor,
-                    getDocsLinkForResourceList(correspondingNewResource)));
+                    resourcePath);
+            entries.putIfAbsent(
+                line,
+                ChangeLogEntry.builder()
+                    .line(line)
+                    .type(EntryType.DELETED_ATTRIBUTE)
+                    .resourceId(correspondingNewResource.id)
+                    .docsResourcePath(resourcePath)
+                    .slugPath(oldAttribute.name)
+                    .build());
           }
         }
       } else {
         for (Attribute attribute : oldResource.attributes()) {
-          lines.add(
+          String line =
               String.format(
                   "[list]Attribute [code %s] removed from the resource [code %s].[]",
-                  attribute.name, getDocsLinkForResourceList(oldResource)));
+                  attribute.name, getDocsLinkForResourceList(oldResource));
+          entries.putIfAbsent(
+              line,
+              ChangeLogEntry.builder()
+                  .line(line)
+                  .type(EntryType.DELETED_ATTRIBUTE)
+                  .slugPath(attribute.name)
+                  .build());
         }
       }
     }
 
-    return new ArrayList<>(lines);
+    return new ArrayList<>(entries.values());
   }
 
   // --- Deleted Parameters ---
 
-  private List<String> generateDeletedParameters(
+  private List<ChangeLogEntry> generateDeletedParameters(
       List<Resource> oldResources, List<Resource> newResources) {
-    List<String> deletedQueryParameters =
-        generateDeletedParameterLines(oldResources, newResources, Action::queryParameters);
-    List<String> deletedBodyParameters =
-        generateDeletedParameterLines(oldResources, newResources, Action::requestBodyParameters);
+    List<ChangeLogEntry> deletedQueryParameters =
+        generateDeletedParameterEntries(oldResources, newResources, Action::queryParameters);
+    List<ChangeLogEntry> deletedBodyParameters =
+        generateDeletedParameterEntries(oldResources, newResources, Action::requestBodyParameters);
 
     return Stream.concat(deletedQueryParameters.stream(), deletedBodyParameters.stream())
         .collect(Collectors.toList());
   }
 
-  private List<String> generateDeletedParameterLines(
+  private List<ChangeLogEntry> generateDeletedParameterEntries(
       List<Resource> oldResources,
       List<Resource> newResources,
       Function<Action, List<Parameter>> parameterExtractor) {
     Map<String, Resource> newResourceMap =
         newResources.stream()
             .collect(Collectors.toMap(resource -> resource.id, resource -> resource));
-    Set<String> lines = new LinkedHashSet<>();
+    Map<String, ChangeLogEntry> entries = new LinkedHashMap<>();
 
     for (Resource oldResource : oldResources) {
       Resource correspondingNewResource = newResourceMap.get(oldResource.id);
 
       if (correspondingNewResource != null) {
         processDeletedParametersForExistingResource(
-            oldResource, correspondingNewResource, parameterExtractor, lines);
+            oldResource, correspondingNewResource, parameterExtractor, entries);
       } else {
-        processDeletedParametersForRemovedResource(oldResource, parameterExtractor, lines);
+        processDeletedParametersForRemovedResource(oldResource, parameterExtractor, entries);
       }
     }
 
-    return new ArrayList<>(lines);
+    return new ArrayList<>(entries.values());
   }
 
   private void processDeletedParametersForExistingResource(
       Resource oldResource,
       Resource newResource,
       Function<Action, List<Parameter>> parameterExtractor,
-      Set<String> lines) {
+      Map<String, ChangeLogEntry> entries) {
     Map<String, Action> newActionMap =
         newResource.actions.stream()
             .collect(Collectors.toMap(action -> action.id, action -> action));
@@ -614,8 +689,10 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
         for (Parameter oldParameter : parameterExtractor.apply(oldAction)) {
           if (!currentParameters.contains(oldParameter.getName())) {
-            lines.add(
-                formatDeletedParameterLine(newResource, correspondingNewAction, oldParameter, true));
+            ChangeLogEntry entry =
+                formatDeletedParameterEntry(newResource, correspondingNewAction, oldParameter,
+                    true);
+            entries.putIfAbsent(entry.getLine(), entry);
           } else if (oldParameter.schema.getProperties() != null) {
             processNestedParameters(
                 oldParameter.schema,
@@ -623,13 +700,15 @@ public class ChangeLogDocsGenerator implements FileGenerator {
                 currentParameters,
                 newResource,
                 correspondingNewAction,
-                lines,
+                entries,
                 false);
           }
         }
       } else {
         for (Parameter parameter : parameterExtractor.apply(oldAction)) {
-          lines.add(formatDeletedParameterLine(newResource, oldAction, parameter, false));
+          ChangeLogEntry entry =
+              formatDeletedParameterEntry(newResource, oldAction, parameter, false);
+          entries.putIfAbsent(entry.getLine(), entry);
         }
       }
     }
@@ -638,90 +717,123 @@ public class ChangeLogDocsGenerator implements FileGenerator {
   private void processDeletedParametersForRemovedResource(
       Resource oldResource,
       Function<Action, List<Parameter>> parameterExtractor,
-      Set<String> lines) {
+      Map<String, ChangeLogEntry> entries) {
     String resourcePath = getDocsLinkForResourceList(oldResource);
     for (Action action : oldResource.actions) {
       for (Parameter parameter : parameterExtractor.apply(action)) {
-        lines.add(
+        String line =
             String.format(
                 "[list]Input parameter [code %s] removed from the endpoint [code %s] in [code %s].[]",
-                toBracketNotation(parameter.getName()), toHyphenCase(action.id), resourcePath));
+                toBracketNotation(parameter.getName()), toHyphenCase(action.id), resourcePath);
+        entries.putIfAbsent(
+            line,
+            ChangeLogEntry.builder()
+                .line(line)
+                .type(EntryType.DELETED_PARAMETER)
+                .slugPath(parameter.getName())
+                .build());
       }
     }
   }
 
-  private String formatDeletedParameterLine(
+  private ChangeLogEntry formatDeletedParameterEntry(
       Resource resource, Action action, Parameter parameter, boolean includeLink) {
     String paramAnchor = parameter.getName().replace(".", "_");
     String resourcePath = getDocsLinkForResourceList(resource);
     String actionPath = toHyphenCase(action.id);
+    String line;
     if (includeLink) {
-      return String.format(
-          "[list]Input parameter [code %s] removed from the endpoint "
-              + "[link_api %s/%s#%s][code %s/%s][].[]",
-          toBracketNotation(parameter.getName()),
-          resourcePath,
-          actionPath,
-          paramAnchor,
-          resourcePath,
-          actionPath);
+      line =
+          String.format(
+              "[list]Input parameter [code %s] removed from the endpoint "
+                  + "[link_api %s/%s#%s][code %s/%s][].[]",
+              toBracketNotation(parameter.getName()),
+              resourcePath,
+              actionPath,
+              paramAnchor,
+              resourcePath,
+              actionPath);
     } else {
-      return String.format(
-          "[list]Input parameter [code %s] removed from the endpoint [code %s] in [code %s].[]",
-          toBracketNotation(parameter.getName()), actionPath, resourcePath);
+      line =
+          String.format(
+              "[list]Input parameter [code %s] removed from the endpoint [code %s] in [code %s].[]",
+              toBracketNotation(parameter.getName()), actionPath, resourcePath);
     }
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.DELETED_PARAMETER)
+        .resourceId(resource.id)
+        .docsResourcePath(resourcePath)
+        .actionId(action.id)
+        .slugPath(parameter.getName())
+        .build();
   }
 
   // --- Deleted Events ---
 
-  private List<String> generateDeletedEvents(Spec oldVersion, Spec newerVersion) {
+  private List<ChangeLogEntry> generateDeletedEvents(Spec oldVersion, Spec newerVersion) {
     List<Map<String, String>> oldEvents = oldVersion.extractWebhookInfo(false);
     List<Map<String, String>> newEvents = newerVersion.extractWebhookInfo(false);
 
     Set<String> currentEventTypes =
         newEvents.stream().map(event -> event.get("type")).collect(Collectors.toSet());
 
-    return oldEvents.stream()
-        .filter(event -> !currentEventTypes.contains(event.get("type")))
-        .map(
-            event ->
-                String.format(
-                    "[list]Enum value removed: [code %s] from the enum [code event_type].[]",
-                    event.get("type")))
-        .distinct()
-        .collect(Collectors.toList());
+    return distinctByLine(
+        oldEvents.stream()
+            .filter(event -> !currentEventTypes.contains(event.get("type")))
+            .map(
+                event -> {
+                  String eventType = event.get("type");
+                  String line =
+                      String.format(
+                          "[list]Enum value removed: [code %s] from the enum [code event_type].[]",
+                          eventType);
+                  return ChangeLogEntry.builder()
+                      .line(line)
+                      .type(EntryType.DELETED_EVENT_TYPE)
+                      .eventType(eventType)
+                      .build();
+                }));
   }
 
   // --- New Enum Values ---
 
-  private List<String> generateNewEnumValues(
+  private List<ChangeLogEntry> generateNewEnumValues(
       List<Resource> oldResources, List<Resource> newResources, Spec oldSpec, Spec newSpec) {
-    Set<String> lines = new LinkedHashSet<>();
+    Map<String, ChangeLogEntry> entries = new LinkedHashMap<>();
 
-    lines.addAll(generateAttributeEnumLines(oldResources, newResources, true));
-    lines.addAll(generateParameterEnumLines(oldResources, newResources, true));
+    for (ChangeLogEntry entry : generateAttributeEnumEntries(oldResources, newResources, true)) {
+      entries.putIfAbsent(entry.getLine(), entry);
+    }
+    for (ChangeLogEntry entry : generateParameterEnumEntries(oldResources, newResources, true)) {
+      entries.putIfAbsent(entry.getLine(), entry);
+    }
 
-    return new ArrayList<>(lines);
+    return new ArrayList<>(entries.values());
   }
 
   // --- Deleted Enum Values ---
 
-  private List<String> generateDeletedEnumValues(
+  private List<ChangeLogEntry> generateDeletedEnumValues(
       List<Resource> oldResources, List<Resource> newResources, Spec oldSpec, Spec newSpec) {
-    Set<String> lines = new LinkedHashSet<>();
+    Map<String, ChangeLogEntry> entries = new LinkedHashMap<>();
 
-    lines.addAll(generateAttributeEnumLines(oldResources, newResources, false));
-    lines.addAll(generateParameterEnumLines(oldResources, newResources, false));
+    for (ChangeLogEntry entry : generateAttributeEnumEntries(oldResources, newResources, false)) {
+      entries.putIfAbsent(entry.getLine(), entry);
+    }
+    for (ChangeLogEntry entry : generateParameterEnumEntries(oldResources, newResources, false)) {
+      entries.putIfAbsent(entry.getLine(), entry);
+    }
 
-    return new ArrayList<>(lines);
+    return new ArrayList<>(entries.values());
   }
 
-  private List<String> generateAttributeEnumLines(
+  private List<ChangeLogEntry> generateAttributeEnumEntries(
       List<Resource> oldResources, List<Resource> newResources, boolean isAdded) {
     Map<String, Map<String, Set<String>>> oldEnumMap = buildAttributeEnumMap(oldResources);
     Map<String, Map<String, Set<String>>> newEnumMap = buildAttributeEnumMap(newResources);
 
-    List<String> lines = new ArrayList<>();
+    List<ChangeLogEntry> entries = new ArrayList<>();
     List<Resource> sourceResources = isAdded ? newResources : oldResources;
     Map<String, Map<String, Set<String>>> comparisonMap = isAdded ? oldEnumMap : newEnumMap;
 
@@ -729,10 +841,10 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       Map<String, Set<String>> comparisonEnums =
           comparisonMap.getOrDefault(resource.id, Collections.emptyMap());
       processAttributeEnumChanges(
-          resource, resource.attributes(), "", comparisonEnums, lines, isAdded);
+          resource, resource.attributes(), "", comparisonEnums, entries, isAdded);
     }
 
-    return lines;
+    return entries;
   }
 
   private void processAttributeEnumChanges(
@@ -740,7 +852,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       List<Attribute> attributes,
       String path,
       Map<String, Set<String>> comparisonEnums,
-      List<String> lines,
+      List<ChangeLogEntry> entries,
       boolean isAdded) {
     for (Attribute attribute : attributes) {
       String currentPath = buildAttributePath(path, attribute.name);
@@ -755,7 +867,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
         if (!changedValues.isEmpty()) {
           String verb = isAdded ? "added" : "removed";
           String preposition = isAdded ? "to" : "from";
-          lines.add(
+          String line =
               String.format(
                   "[list]Enum value %s: %s %s the enum "
                       + "[link_api %s#%s][code %s.%s][].[]",
@@ -765,20 +877,32 @@ public class ChangeLogDocsGenerator implements FileGenerator {
                   getDocsLinkForResourceObject(resource),
                   anchorId,
                   resource.id,
-                  currentPath));
+                  currentPath);
+          entries.add(
+              ChangeLogEntry.builder()
+                  .line(line)
+                  .type(
+                      isAdded
+                          ? EntryType.NEW_ATTRIBUTE_ENUM_VALUE
+                          : EntryType.DELETED_ATTRIBUTE_ENUM_VALUE)
+                  .resourceId(resource.id)
+                  .docsResourcePath(getDocsLinkForResourceList(resource))
+                  .slugPath(currentPath)
+                  .enumValues(new ArrayList<>(changedValues))
+                  .build());
         }
       }
 
       if (attribute.getSubAttributes() != null) {
         processAttributeEnumChanges(
-            resource, attribute.getSubAttributes(), currentPath, comparisonEnums, lines, isAdded);
+            resource, attribute.getSubAttributes(), currentPath, comparisonEnums, entries, isAdded);
       }
     }
   }
 
-  private List<String> generateParameterEnumLines(
+  private List<ChangeLogEntry> generateParameterEnumEntries(
       List<Resource> oldResources, List<Resource> newResources, boolean isAdded) {
-    List<String> lines = new ArrayList<>();
+    List<ChangeLogEntry> entries = new ArrayList<>();
     Map<String, Map<String, Map<String, Set<String>>>> oldEnumMap =
         collectParameterEnums(oldResources);
     Map<String, Map<String, Map<String, Set<String>>>> newEnumMap =
@@ -797,15 +921,15 @@ public class ChangeLogDocsGenerator implements FileGenerator {
             comparisonActions.getOrDefault(action.id, Collections.emptyMap());
 
         processParameterEnumChanges(
-            resource, action, action.queryParameters(), QUERY_PREFIX, comparisonParameters, lines,
+            resource, action, action.queryParameters(), QUERY_PREFIX, comparisonParameters, entries,
             isAdded);
         processParameterEnumChanges(
             resource, action, action.requestBodyParameters(), BODY_PREFIX, comparisonParameters,
-            lines, isAdded);
+            entries, isAdded);
       }
     }
 
-    return lines;
+    return entries;
   }
 
   private void processParameterEnumChanges(
@@ -814,7 +938,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       List<Parameter> parameters,
       String prefix,
       Map<String, Set<String>> comparisonParameters,
-      List<String> lines,
+      List<ChangeLogEntry> entries,
       boolean isAdded) {
     for (Parameter parameter : parameters) {
       if (shouldProcessParameterEnum(parameter)) {
@@ -825,13 +949,13 @@ public class ChangeLogDocsGenerator implements FileGenerator {
             findChangedEnumValues(parameter.getEnumValues(), comparisonValues, isAdded);
 
         if (!changedValues.isEmpty()) {
-          addParameterEnumLine(lines, changedValues, resource, action, parameter, isAdded);
+          addParameterEnumEntry(entries, changedValues, resource, action, parameter, isAdded);
         }
       }
 
       if (parameter.schema.getProperties() != null) {
         processNestedParameterEnums(
-            resource, action, parameter, prefix, comparisonParameters, lines, isAdded);
+            resource, action, parameter, prefix, comparisonParameters, entries, isAdded);
       }
     }
   }
@@ -842,7 +966,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       Parameter parameter,
       String prefix,
       Map<String, Set<String>> comparisonParameters,
-      List<String> lines,
+      List<ChangeLogEntry> entries,
       boolean isAdded) {
     parameter
         .schema
@@ -862,15 +986,15 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
                 if (!changedValues.isEmpty()) {
                   Parameter nestedParameter = new Parameter(nestedParameterName, propertySchema);
-                  addParameterEnumLine(
-                      lines, changedValues, resource, action, nestedParameter, isAdded);
+                  addParameterEnumEntry(
+                      entries, changedValues, resource, action, nestedParameter, isAdded);
                 }
               }
             });
   }
 
-  private void addParameterEnumLine(
-      List<String> lines,
+  private void addParameterEnumEntry(
+      List<ChangeLogEntry> entries,
       List<String> values,
       Resource resource,
       Action action,
@@ -881,7 +1005,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     String paramAnchor = parameter.getName().replace(".", "_");
     String resourcePath = getDocsLinkForResourceList(resource);
     String actionPath = toHyphenCase(action.id);
-    lines.add(
+    String line =
         String.format(
             "[list]Enum value %s: %s %s the enum "
                 + "[link_api %s/%s#%s][code %s/%s][].[]",
@@ -892,14 +1016,27 @@ public class ChangeLogDocsGenerator implements FileGenerator {
             actionPath,
             paramAnchor,
             resourcePath,
-            actionPath));
+            actionPath);
+    entries.add(
+        ChangeLogEntry.builder()
+            .line(line)
+            .type(
+                isAdded
+                    ? EntryType.NEW_PARAMETER_ENUM_VALUE
+                    : EntryType.DELETED_PARAMETER_ENUM_VALUE)
+            .resourceId(resource.id)
+            .docsResourcePath(resourcePath)
+            .actionId(action.id)
+            .slugPath(parameter.getName())
+            .enumValues(new ArrayList<>(values))
+            .build());
   }
 
   // --- Parameter Requirement Changes ---
 
-  private List<String> generateParameterRequirementChanges(
+  private List<ChangeLogEntry> generateParameterRequirementChanges(
       List<Resource> oldResources, List<Resource> newResources) {
-    List<String> lines = new ArrayList<>();
+    List<ChangeLogEntry> entries = new ArrayList<>();
     Map<String, Map<String, Map<String, Boolean>>> oldRequirementMap =
         buildParameterRequirementMap(oldResources);
 
@@ -913,14 +1050,14 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
         checkRequirementChanges(
             newResource, newAction, newAction.queryParameters(), QUERY_PREFIX,
-            oldParameterRequirements, lines);
+            oldParameterRequirements, entries);
         checkRequirementChanges(
             newResource, newAction, newAction.requestBodyParameters(), BODY_PREFIX,
-            oldParameterRequirements, lines);
+            oldParameterRequirements, entries);
       }
     }
 
-    return lines;
+    return entries;
   }
 
   private void checkRequirementChanges(
@@ -929,37 +1066,52 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       List<Parameter> parameters,
       String prefix,
       Map<String, Boolean> oldRequirements,
-      List<String> lines) {
+      List<ChangeLogEntry> entries) {
     for (Parameter parameter : parameters) {
       String parameterKey = prefix + ":" + parameter.getName();
 
       if (oldRequirements.containsKey(parameterKey)
           && oldRequirements.get(parameterKey) != parameter.isRequired) {
-        lines.add(formatRequirementChangeLine(resource, action, parameter));
+        entries.add(formatRequirementChangeEntry(resource, action, parameter));
       }
     }
   }
 
-  private String formatRequirementChangeLine(
+  private ChangeLogEntry formatRequirementChangeEntry(
       Resource resource, Action action, Parameter parameter) {
     String changeDescription =
         parameter.isRequired ? "`optional` to `required`" : "`required` to `optional`";
     String paramAnchor = parameter.getName().replace(".", "_");
     String resourcePath = getDocsLinkForResourceList(resource);
     String actionPath = toHyphenCase(action.id);
-    return String.format(
-        "[list]Input parameter [code %s] has been changed from %s in the endpoint "
-            + "[link_api %s/%s#%s][code %s/%s][].[]",
-        toBracketNotation(parameter.getName()),
-        changeDescription,
-        resourcePath,
-        actionPath,
-        paramAnchor,
-        resourcePath,
-        actionPath);
+    String line =
+        String.format(
+            "[list]Input parameter [code %s] has been changed from %s in the endpoint "
+                + "[link_api %s/%s#%s][code %s/%s][].[]",
+            toBracketNotation(parameter.getName()),
+            changeDescription,
+            resourcePath,
+            actionPath,
+            paramAnchor,
+            resourcePath,
+            actionPath);
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.PARAMETER_REQUIREMENT_CHANGE)
+        .resourceId(resource.id)
+        .docsResourcePath(resourcePath)
+        .actionId(action.id)
+        .slugPath(parameter.getName())
+        .build();
   }
 
   // --- Utility: Maps & Sets ---
+
+  private List<ChangeLogEntry> distinctByLine(Stream<ChangeLogEntry> stream) {
+    Map<String, ChangeLogEntry> seen = new LinkedHashMap<>();
+    stream.forEach(entry -> seen.putIfAbsent(entry.getLine(), entry));
+    return new ArrayList<>(seen.values());
+  }
 
   private Map<String, Set<String>> buildActionMap(List<Resource> resources) {
     return resources.stream()
