@@ -5,6 +5,7 @@ import com.chargebee.openapi.Spec;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.Language;
 import com.chargebee.sdk.changelog.ChangeLog;
+import com.chargebee.sdk.changelog.ChangeLogDocs;
 import com.chargebee.sdk.dotnet.Dotnet;
 import com.chargebee.sdk.go.v3.Go_V3;
 import com.chargebee.sdk.go.v4.Go_V4;
@@ -55,7 +56,7 @@ class Generate implements Callable<Integer> {
   public Integer call() throws Exception {
     Language language = Lang.sdkLanguage(lang);
 
-    if (lang == Lang.CHANGELOG) {
+    if (lang == Lang.CHANGELOG || lang == Lang.CHANGELOG_DOCS) {
       String latestSpecUrl = System.getenv("CHANGELOG_SPEC_LATEST_URL");
       String lastReleasedSpecUrl = System.getenv("CHANGELOG_SPEC_LAST_RELEASED_URL");
 
@@ -136,6 +137,7 @@ class Generate implements Callable<Integer> {
 
 enum Lang {
   CHANGELOG,
+  CHANGELOG_DOCS,
   TYPESCRIPT_TYPINGS,
   TYPESCRIPT_TYPINGS_V3,
   PYTHON,
@@ -224,6 +226,9 @@ enum Lang {
     }
     if (lang == Lang.VALIDATOR_ZOD) {
       return new ValidatorZod();
+    }
+    if (lang == Lang.CHANGELOG_DOCS) {
+      return new ChangeLogDocs();
     }
     throw new IllegalArgumentException("Lang " + lang + " not supported");
   }

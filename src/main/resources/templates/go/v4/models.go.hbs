@@ -6,7 +6,7 @@ type {{clazName}} struct {
 {{/if}}
 }
 {{#if hasCustomFields}}
-func (r *{{clazName}}) setCustomFields(cf *customFields) { r.CustomFields = cf }
+func (r *{{clazName}}) setCustomFields(cf *CustomFields) { r.CustomFields = cf }
 
 func (r *{{clazName}}) UnmarshalJSON(data []byte) error {
     type Alias {{clazName}}
