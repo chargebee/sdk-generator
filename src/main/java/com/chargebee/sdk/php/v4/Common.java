@@ -156,7 +156,7 @@ public class Common {
   public static Column listOfEnumParser(Attribute attribute) {
     String type = (String) attribute.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME);
     return createEnumColumn(
-        attribute, CHARGEBEE_ENUMS_BASE_PATH, String.format("%sType", singularize(type)));
+        attribute, CHARGEBEE_ENUMS_BASE_PATH, String.format("%s", type));
   }
 
   public static Column localEnumParser(Attribute attribute, Resource res) {

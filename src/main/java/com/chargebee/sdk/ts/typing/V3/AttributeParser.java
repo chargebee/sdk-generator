@@ -86,6 +86,6 @@ public class AttributeParser {
 
   static String listOfEnumType(Attribute attribute) {
     return singularize((String) attribute.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME))
-        + "TypeEnum";
+        + "Enum";
   }
 }

@@ -467,8 +467,7 @@ public class PythonV3 extends Language {
   }
 
   private String getTypeForListOfAttribute(Attribute attribute) {
-    return singularize((String) attribute.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME))
-        + "Type";
+    return (String) attribute.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME);
   }
 
   public String getResponseCols() {
