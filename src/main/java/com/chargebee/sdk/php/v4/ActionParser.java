@@ -63,7 +63,7 @@ public class ActionParser {
         .setPhpDocField(PHPDocSerializer.serializeActionParameter(action))
         .setActionDocLink(
             API_DOCS_URL
-                + pluralize(res.id)
+                + res.pathName()
                 + '/'
                 + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, action.id)
                 + API_DOCS_QUERY)
