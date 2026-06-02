@@ -352,6 +352,27 @@ class PostResponseBuilderTest {
     }
 
     @Test
+    @DisplayName("Should parse map fields using JsonUtil.parseJsonObjectToMap")
+    void shouldParseMapFieldsUsingJsonUtil() throws IOException {
+      ObjectSchema mapSchema = new ObjectSchema();
+      mapSchema.setAdditionalProperties(true);
+
+      ObjectSchema responseSchema = new ObjectSchema();
+      responseSchema.addProperty("error", mapSchema);
+
+      Operation postOp =
+          createPostOperationWithResponse("entitlementOverride", "validate", responseSchema);
+      addPathWithPostOperation("/entitlement_overrides/validate", postOp);
+      responseBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = responseBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "EntitlementOverrideValidateResponse.java");
+      assertThat(writeOp.fileContent).contains("JsonUtil.parseJsonObjectToMap(__errorObj)");
+      assertThat(writeOp.fileContent).doesNotContain("java.util.Map<String, Object>.fromJson");
+    }
+
+    @Test
     @DisplayName("Should generate empty response for schema without properties")
     void shouldGenerateEmptyResponseForSchemaWithoutProperties() throws IOException {
       ObjectSchema responseSchema = new ObjectSchema();

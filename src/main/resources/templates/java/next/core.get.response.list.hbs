@@ -58,7 +58,10 @@ public final class {{name}}Response {
         try {
             JsonObject jsonObj = JsonUtil.parse(json);
             {{#each fields}}
-            {{#if isComplexObjectType}}
+            {{#if isMapType}}
+            JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
+            {{{type}}} {{name}} = __{{name}}Obj != null ? JsonUtil.parseJsonObjectToMap(__{{name}}Obj) : null;
+            {{else if isComplexObjectType}}
             JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
             {{{type}}} {{name}} = __{{name}}Obj != null ? {{{type}}}.fromJson(__{{name}}Obj) : null;
             {{else if isEnumType}}
@@ -90,12 +93,12 @@ public final class {{name}}Response {
             {{{type}}} {{name}} = __{{name}}Arr != null ? JsonUtil.parseArrayOfString(__{{name}}Arr) : null;
             {{/if}}
             {{else if isObjectType}}
-            {{#unless (eq type "Object")}}
+            {{#if isPlainObjectType}}
+            {{{type}}} {{name}} = JsonUtil.getObject(jsonObj, "{{curlName}}");
+            {{else}}
             JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
             {{{type}}} {{name}} = __{{name}}Obj != null ? {{{type}}}.fromJson(__{{name}}Obj) : null;
-            {{else}}
-            {{{type}}} {{name}} = JsonUtil.getObject(jsonObj, "{{curlName}}");
-            {{/unless}}
+            {{/if}}
             {{else}}
             {{{type}}} {{name}} = JsonUtil.get{{{type}}}(jsonObj, "{{curlName}}");
             {{/if}}
@@ -115,7 +118,10 @@ public final class {{name}}Response {
         try {
             JsonObject jsonObj = JsonUtil.parse(json);
             {{#each fields}}
-            {{#if isComplexObjectType}}
+            {{#if isMapType}}
+            JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
+            {{{type}}} {{name}} = __{{name}}Obj != null ? JsonUtil.parseJsonObjectToMap(__{{name}}Obj) : null;
+            {{else if isComplexObjectType}}
             JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
             {{{type}}} {{name}} = __{{name}}Obj != null ? {{{type}}}.fromJson(__{{name}}Obj) : null;
             {{else if isEnumType}}
@@ -147,12 +153,12 @@ public final class {{name}}Response {
             {{{type}}} {{name}} = __{{name}}Arr != null ? JsonUtil.parseArrayOfString(__{{name}}Arr) : null;
             {{/if}}
             {{else if isObjectType}}
-            {{#unless (eq type "Object")}}
+            {{#if isPlainObjectType}}
+            {{{type}}} {{name}} = JsonUtil.getObject(jsonObj, "{{curlName}}");
+            {{else}}
             JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
             {{{type}}} {{name}} = __{{name}}Obj != null ? {{{type}}}.fromJson(__{{name}}Obj) : null;
-            {{else}}
-            {{{type}}} {{name}} = JsonUtil.getObject(jsonObj, "{{curlName}}");
-            {{/unless}}
+            {{/if}}
             {{else}}
             {{{type}}} {{name}} = JsonUtil.get{{{type}}}(jsonObj, "{{curlName}}");
             {{/if}}
@@ -287,14 +293,14 @@ public final class {{name}}Response {
         item.{{name}} = {{{type}}}.fromJson(__{{name}}Obj);
         }
         {{else if isObjectType}}
-        {{#unless (eq type "Object")}}
+        {{#if isPlainObjectType}}
+        item.{{name}} = JsonUtil.getObject(jsonObj, "{{curlName}}");
+        {{else}}
         JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
         if (__{{name}}Obj != null) {
         item.{{name}} = {{{type}}}.fromJson(__{{name}}Obj);
         }
-        {{else}}
-        item.{{name}} = JsonUtil.getObject(jsonObj, "{{curlName}}");
-        {{/unless}}
+        {{/if}}
         {{else if isEnumType}}
         item.{{name}} = {{{type}}}.fromString(JsonUtil.getString(jsonObj, "{{curlName}}"));
         {{else if isListOfObjects}}

@@ -44,7 +44,12 @@ public final class {{name}}Response extends BaseResponse {
             JsonObject jsonObj = JsonUtil.parse(json);
             Builder builder = builder();
             {{#each fields}}
-            {{#if isComplexObjectType}}
+            {{#if isMapType}}
+            JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
+            if (__{{name}}Obj != null) {
+            builder.{{name}}(JsonUtil.parseJsonObjectToMap(__{{name}}Obj));
+            }
+            {{else if isComplexObjectType}}
             JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");
             if (__{{name}}Obj != null) {
             builder.{{name}}({{{type}}}.fromJson(__{{name}}Obj));
@@ -79,7 +84,7 @@ public final class {{name}}Response extends BaseResponse {
             }
             {{/if}}
             {{else if isObjectType}}
-            {{#if (eq type "Object")}}
+            {{#if isPlainObjectType}}
             builder.{{name}}(JsonUtil.getObject(jsonObj, "{{curlName}}"));
             {{else}}
             JsonObject __{{name}}Obj = JsonUtil.getJsonObject(jsonObj, "{{curlName}}");

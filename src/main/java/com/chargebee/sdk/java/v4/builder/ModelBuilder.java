@@ -108,14 +108,16 @@ public class ModelBuilder {
 
   /**
    * Checks if a model name represents a webhook event.
-   * Webhook events end with "Event" but excludes non-webhook classes like "Event", "UsageEvent", "OfferEvent".
+   * Webhook events end with "Event" but excludes API resource models such as "Event", "UsageEvent",
+   * "OfferEvent", and "FailedUsageEvent".
    */
   private static boolean isWebhookEvent(String modelName) {
     if (modelName == null || !modelName.endsWith("Event")) {
       return false;
     }
-    // Exclude non-webhook event models
-    Set<String> excludedModels = Set.of("Event", "UsageEvent", "OfferEvent");
+    // Exclude API resource models that end with "Event" but are not webhook payloads
+    Set<String> excludedModels =
+        Set.of("Event", "UsageEvent", "OfferEvent", "FailedUsageEvent");
     return !excludedModels.contains(modelName);
   }
 
