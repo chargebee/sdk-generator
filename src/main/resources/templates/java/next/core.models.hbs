@@ -126,6 +126,10 @@ private java.util.Map<String, Object> consentFields = new java.util.HashMap<>();
   return fromJson(JsonUtil.parse(json));
  }
 
+ public static {{name}} fromJson(java.util.Map<String, Object> map) {
+  return fromJson(JsonUtil.toJson(map));
+ }
+
  public static {{name}} fromJson(JsonObject jsonObj) {
   {{name}} obj = new {{name}}();
   {{#if customFieldsSupported}}
