@@ -110,6 +110,23 @@ class ModelBuilderTest {
     }
 
     @Test
+    void shouldGenerateFromJsonOverloads() throws IOException {
+      openAPI
+          .getComponents()
+          .addSchemas("Customer", new ObjectSchema().addProperty("name", new StringSchema()));
+      modelBuilder.withOutputDirectoryPath(outputPath).withTemplate(mockTemplate);
+
+      List<FileOp> fileOps = modelBuilder.build(openAPI);
+
+      FileOp.WriteString writeOp = findWriteOp(fileOps, "Customer.java");
+      assertThat(writeOp.fileContent).contains("public static Customer fromJson(String json)");
+      assertThat(writeOp.fileContent)
+          .contains("public static Customer fromJson(java.util.Map<String, Object> map)");
+      assertThat(writeOp.fileContent).contains("public static Customer fromJson(JsonObject jsonObj)");
+      assertThat(writeOp.fileContent).contains("return fromJson(JsonUtil.toJson(map));");
+    }
+
+    @Test
     void shouldGenerateMultipleModels() throws IOException {
       openAPI
           .getComponents()
