@@ -1,0 +1,199 @@
+# Chargebee SDK — OTel Request Telemetry Schema
+#
+# Single source of truth for request telemetry across all Chargebee server-side
+# SDKs (Node, Java, PHP, Python, Ruby, .NET, Go, Laravel Cashier).
+#
+# Every SDK MUST emit the same span name, attribute keys, and error mapping so a
+# trace looks identical regardless of which SDK produced it. Attribute keys
+# follow stable OpenTelemetry semantic conventions where one exists, and the
+# `chargebee.*` namespace for Chargebee-specific data.
+#
+# Refs:
+#   - Attribute naming: https://opentelemetry.io/docs/specs/semconv/general/naming/
+#   - HTTP spans:       https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+
+schema_version: 1
+
+span:
+  # chargebee.{resource}.{operation}  e.g. chargebee.subscription.create
+  name_pattern: "chargebee.{resource}.{operation}"
+  # Low cardinality: never put IDs, query params, or customer data in the name.
+  name_constraints:
+    - no_identifiers
+    - no_query_parameters
+    - no_customer_data
+  kind: CLIENT
+  # One span per SDK call, covering the full lifecycle (call start -> response).
+  # Retries reuse the SAME span; they MUST NOT create a new root trace.
+  one_span_per_call: true
+  reuse_span_across_retries: true
+  # Timestamps measure the SDK-level call, not the underlying HTTP layer.
+  timing: sdk_level
+
+propagation:
+  # Read active trace context from the host app and forward it to Chargebee.
+  inject_w3c_trace_context: true
+  headers: [traceparent, tracestate]
+  # Use the propagator registered in the active OTel context. Do not hardcode.
+  use_registered_propagator: true
+  # Child of the caller's active span when present, otherwise a new root span.
+  parent_from_active_context: true
+  new_root_when_no_context: true
+
+status:
+  # 4xx / 5xx -> span status ERROR with a descriptive message. Else OK/unset.
+  error_on_http_status: ["4xx", "5xx"]
+  record_exception: true
+  # Stack traces are off by default (opt-in only).
+  record_stack_trace_by_default: false
+
+# Recorded once, at span start (request phase).
+start_attributes:
+  - key: url.full
+    type: string
+    required: true
+    source: request
+    stability: stable        # OTel HTTP semconv (replaces legacy http.url)
+    pii_safe: true            # query strings with sensitive params stripped
+    description: Full request URL without sensitive query params.
+    example: https://acme-test.chargebee.com/api/v2/subscriptions
+
+  - key: http.request.method
+    type: string
+    required: true
+    source: request
+    stability: stable        # OTel HTTP semconv (replaces legacy http.method)
+    description: HTTP request method.
+    example: POST
+
+  - key: server.address
+    type: string
+    required: true
+    source: request
+    stability: stable
+    description: Chargebee API hostname.
+    example: acme-test.chargebee.com
+
+  - key: chargebee.site
+    type: string
+    required: true
+    source: sdk_config
+    stability: chargebee
+    description: Chargebee site identifier.
+    example: acme-test
+
+  - key: chargebee.api_version
+    type: string
+    required: true
+    source: sdk_config
+    stability: chargebee
+    enum: [v1, v2]
+    description: Chargebee API version in use.
+    example: v2
+
+  - key: chargebee.resource
+    type: string
+    required: true
+    source: sdk_call
+    stability: chargebee
+    description: Resource name.
+    example: subscription
+
+  - key: chargebee.operation
+    type: string
+    required: true
+    source: sdk_call
+    stability: chargebee
+    description: Operation name.
+    example: create
+
+  - key: chargebee.sdk.name
+    type: string
+    required: true
+    source: sdk_metadata
+    stability: chargebee
+    description: SDK identifier.
+    example: chargebee-node
+
+  - key: chargebee.sdk.version
+    type: string
+    required: true
+    source: sdk_metadata
+    stability: chargebee
+    description: Installed SDK version.
+    example: 3.0.0
+
+# Recorded at span end (response phase).
+end_attributes:
+  - key: http.response.status_code
+    type: int
+    required: true
+    source: response
+    stability: stable        # OTel HTTP semconv (replaces legacy http.status_code)
+    description: HTTP response status code.
+    example: 200
+
+  # The following are recorded only on an errored request (4xx / 5xx).
+  - key: error.type
+    type: string
+    required: false
+    condition: on_error
+    source: response
+    stability: stable
+    description: OTel error classification; the HTTP status code as a string.
+    example: "404"
+
+  - key: chargebee.error.code
+    type: string
+    required: false
+    condition: on_error
+    source: response
+    stability: chargebee
+    description: Chargebee error code string.
+    example: resource_not_found
+
+  - key: chargebee.error.type
+    type: string
+    required: false
+    condition: on_error
+    source: response
+    stability: chargebee
+    description: Chargebee error type classification.
+    example: invalid_request
+
+  - key: chargebee.error.param
+    type: string
+    required: false
+    condition: on_error
+    source: response
+    stability: chargebee
+    description: API parameter associated with the error, when present.
+    example: customer_id
+
+# Hard rules every SDK MUST follow.
+constraints:
+  opt_in: true                    # No tracing unless an adapter/tracer is configured.
+  no_forced_otel_dependency: true # OTel is a peer dep brought by the merchant, never bundled.
+  default_no_op: true             # Zero overhead when telemetry is not configured.
+  fail_safe: true                 # Telemetry errors MUST NOT break the API call.
+  adapter_wiring:
+    # User-provided adapter (often a class instance). SDKs MUST keep it by reference.
+    preserve_by_reference: true
+    never_deep_clone: true
+    never_deep_merge: true
+    # Deep copy/merge only captures own enumerable properties. Class-based adapters
+    # (e.g. OpenTelemetry) define onRequestStart/onRequestEnd on the prototype —
+    # those methods are lost if the adapter is cloned.
+    apply_at:
+      - client_initialization   # e.g. createChargebee / client config merge
+      - per_request_env_copy    # e.g. RequestWrapper.request() env copy
+    same_rule_for:
+      - httpClient              # custom HTTP clients have the same cloning issue
+  pii_safety:
+    # These MUST NEVER appear in any span attribute.
+    forbidden:
+      - api_key
+      - authorization_header
+      - customer_pii        # names, emails, billing addresses
+      - payment_data        # card numbers, tokens
+      - sensitive_query_params

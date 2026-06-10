@@ -10,6 +10,7 @@ export default Chargebee;
 export { WebhookEventType, WebhookContentType } from './resources/webhook/handler.js';
 export { basicAuthValidator } from './resources/webhook/auth.js';
 export { WebhookError, WebhookAuthenticationError, WebhookPayloadValidationError, WebhookPayloadParseError } from './resources/webhook/handler.js';
+export { TelemetryAttributeKeys } from './telemetry/index.js';
 
 // Export validation error class
 export { ChargebeeZodValidationError } from './chargebeeZodValidationError.js';
@@ -17,3 +18,6 @@ export { ChargebeeZodValidationError } from './chargebeeZodValidationError.js';
 // Export webhook types
 export type { WebhookEvent, WebhookContext, WebhookHandlerOptions, HandleOptions, RequestValidator } from './resources/webhook/handler.js';
 export type { CredentialValidator } from './resources/webhook/auth.js';
+
+// Export telemetry types
+export type { TelemetryAdapter, RequestTelemetryContext, RequestTelemetryResult, RequestTelemetryError, RequestTelemetryHandle } from './telemetry/index.js';

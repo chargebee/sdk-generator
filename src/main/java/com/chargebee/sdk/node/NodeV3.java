@@ -50,6 +50,7 @@ public class NodeV3 extends Language {
           new FileOp.WriteString(parentDirectoryPath, "chargebee.esm.ts", esmTemplate.apply("")));
       fileOps.add(
           new FileOp.WriteString(parentDirectoryPath, "chargebee.cjs.ts", cjsTemplate.apply("")));
+      fileOps.addAll(generateTelemetryFiles(parentDirectoryPath));
     }
 
     return fileOps;
@@ -66,7 +67,30 @@ public class NodeV3 extends Language {
     templates.put("webhookErrors", "/templates/node/webhook_errors.ts.hbs");
     templates.put("chargebeeEsm", "/templates/node/chargebee_esm.ts.hbs");
     templates.put("chargebeeCjs", "/templates/node/chargebee_cjs.ts.hbs");
+    templates.put("telemetryTypes", "/templates/node/telemetry/types.ts.hbs");
+    templates.put(
+        "telemetryAdapter", "/templates/node/telemetry/TelemetryAdapter.ts.hbs");
+    templates.put("telemetryIndex", "/templates/node/telemetry/index.ts.hbs");
     return templates;
+  }
+
+  private List<FileOp> generateTelemetryFiles(String parentDirectoryPath) throws IOException {
+    final String telemetryDirectoryPath = "/telemetry";
+    List<FileOp> fileOps = new ArrayList<>();
+    fileOps.add(new FileOp.CreateDirectory(parentDirectoryPath, telemetryDirectoryPath));
+
+    Template typesTemplate = getTemplateContent("telemetryTypes");
+    Template adapterTemplate = getTemplateContent("telemetryAdapter");
+    Template indexTemplate = getTemplateContent("telemetryIndex");
+
+    String telemetryPath = parentDirectoryPath + telemetryDirectoryPath;
+    fileOps.add(new FileOp.WriteString(telemetryPath, "types.ts", typesTemplate.apply("")));
+    fileOps.add(
+        new FileOp.WriteString(
+            telemetryPath, "TelemetryAdapter.ts", adapterTemplate.apply("")));
+    fileOps.add(new FileOp.WriteString(telemetryPath, "index.ts", indexTemplate.apply("")));
+
+    return fileOps;
   }
 
   private FileOp generateApiEndpointsFile(String resourcesDirectoryPath, List<Resource> resources)
