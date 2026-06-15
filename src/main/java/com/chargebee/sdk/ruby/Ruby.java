@@ -1,5 +1,9 @@
 package com.chargebee.sdk.ruby;
 
+import static com.chargebee.GenUtil.firstCharLower;
+import static com.chargebee.GenUtil.normalizeToLowerCamelCase;
+import static com.chargebee.GenUtil.toCamelCase;
+
 import com.chargebee.openapi.Attribute;
 import com.chargebee.openapi.Resource;
 import com.chargebee.openapi.Spec;
@@ -29,7 +33,38 @@ public class Ruby extends Language {
     fileOps.add(createModelsDirectory);
     fileOps.addAll(generateResourceFiles(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
+    fileOps.addAll(generateTelemetryFiles(outputDirectoryPath));
     //    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
+
+    return fileOps;
+  }
+
+  private List<FileOp> generateTelemetryFiles(String outputDirectoryPath) throws IOException {
+    final String telemetryDir = outputDirectoryPath + "/telemetry";
+    final String[] telemetryFiles = {
+      "telemetry_attribute_keys.rb",
+      "request_telemetry_context.rb",
+      "request_telemetry_error.rb",
+      "request_telemetry_result.rb",
+      "telemetry_adapter.rb",
+      "telemetry_support.rb"
+    };
+    final String[] templateKeys = {
+      "telemetryAttributeKeys",
+      "telemetryRequestContext",
+      "telemetryRequestError",
+      "telemetryRequestResult",
+      "telemetryAdapter",
+      "telemetrySupport"
+    };
+
+    List<FileOp> fileOps = new ArrayList<>();
+    fileOps.add(new FileOp.CreateDirectory(telemetryDir, ""));
+
+    for (int i = 0; i < telemetryFiles.length; i++) {
+      Template template = getTemplateContent(templateKeys[i]);
+      fileOps.add(new FileOp.WriteString(telemetryDir, telemetryFiles[i], template.apply("")));
+    }
 
     return fileOps;
   }
@@ -45,13 +80,16 @@ public class Ruby extends Language {
 
   @Override
   protected Map<String, String> templatesDefinition() {
-    return Map.of(
-        "models.resource",
-        "/templates/ruby/models.resource.rb.hbs",
-        "result",
-        "/templates/ruby/result.rb.hbs",
-        "errors",
-        "/templates/ruby/errors.rb.hbs");
+    return Map.ofEntries(
+        Map.entry("models.resource", "/templates/ruby/models.resource.rb.hbs"),
+        Map.entry("result", "/templates/ruby/result.rb.hbs"),
+        Map.entry("errors", "/templates/ruby/errors.rb.hbs"),
+        Map.entry("telemetryAttributeKeys", "/templates/ruby/telemetry/telemetry_attribute_keys.rb.hbs"),
+        Map.entry("telemetryRequestContext", "/templates/ruby/telemetry/request_telemetry_context.rb.hbs"),
+        Map.entry("telemetryRequestError", "/templates/ruby/telemetry/request_telemetry_error.rb.hbs"),
+        Map.entry("telemetryRequestResult", "/templates/ruby/telemetry/request_telemetry_result.rb.hbs"),
+        Map.entry("telemetryAdapter", "/templates/ruby/telemetry/telemetry_adapter.rb.hbs"),
+        Map.entry("telemetrySupport", "/templates/ruby/telemetry/telemetry_support.rb.hbs"));
   }
 
   private List<FileOp> generateResourceFiles(String outDirectoryPath, List<Resource> resources)
@@ -60,11 +98,31 @@ public class Ruby extends Language {
 
     Template resourceTemplate = getTemplateContent("models.resource");
     for (var resource : resources) {
-      var content = resourceTemplate.apply(resource.templateParams(this));
+      var content = resourceTemplate.apply(enrichResourceParams(resource));
       String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name);
       fileOps.add(new FileOp.WriteString(outDirectoryPath, fileName + ".rb", content));
     }
     return fileOps;
+  }
+
+  private Map<String, Object> enrichResourceParams(Resource resource) {
+    Map<String, Object> params = new HashMap<>(resource.templateParams(this));
+    params.put("telemetryResource", normalizeToLowerCamelCase(resource.id));
+
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> actions = (List<Map<String, Object>>) params.get("actions");
+    if (actions != null) {
+      List<Map<String, Object>> enrichedActions = new ArrayList<>();
+      for (Map<String, Object> action : actions) {
+        Map<String, Object> enrichedAction = new HashMap<>(action);
+        enrichedAction.put(
+            "telemetryOperation", firstCharLower(toCamelCase((String) action.get("name"))));
+        enrichedActions.add(enrichedAction);
+      }
+      params.put("actions", enrichedActions);
+    }
+
+    return params;
   }
 
   private FileOp generateResultFile(String outputDirectory, List<Resource> resources)
