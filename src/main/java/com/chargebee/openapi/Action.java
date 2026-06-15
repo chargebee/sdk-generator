@@ -308,6 +308,12 @@ public class Action {
   }
 
   public boolean isOperationNeedsJsonInput() {
+    if (httpRequestType == HttpRequestType.GET) {
+      return false;
+    }
+    if (operation.getExtensions() == null) {
+      return false;
+    }
     Object isOperationNeedsJsonInput = operation.getExtensions().get(IS_OPERATION_NEEDS_JSON_INPUT);
     if (isOperationNeedsJsonInput == null) {
       return false;
@@ -454,9 +460,7 @@ public class Action {
   }
 
   public boolean isContentTypeJsonAction() {
-    return operation.getExtensions() != null
-        && operation.getExtensions().get(Extension.IS_OPERATION_NEEDS_JSON_INPUT) != null
-        && ((boolean) operation.getExtensions().get(Extension.IS_OPERATION_NEEDS_JSON_INPUT));
+    return isOperationNeedsJsonInput();
   }
 
   public boolean isIdempotent() {
