@@ -4,6 +4,7 @@ import com.chargebee.openapi.Spec;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.Language;
 import com.chargebee.sdk.java.v4.builder.*;
+import com.github.jknack.handlebars.Template;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -90,8 +91,40 @@ public class JavaV4 extends Language {
     allFileOps.add(serviceRegistryFiles);
     allFileOps.add(errorEnumFiles);
     allFileOps.add(exceptionFiles);
+    allFileOps.add(generateTelemetryFiles(outputDirectoryPath));
 
     return allFileOps.stream().flatMap(List::stream).collect(Collectors.toList());
+  }
+
+  private List<FileOp> generateTelemetryFiles(String outputDirectoryPath) throws IOException {
+    final String telemetryDir = outputDirectoryPath + "/com/chargebee/v4/telemetry";
+    final String[] telemetryFiles = {
+      "TelemetryAttributeKeys.java",
+      "RequestTelemetryContext.java",
+      "RequestTelemetryError.java",
+      "RequestTelemetryResult.java",
+      "TelemetryAdapter.java",
+      "TelemetrySupport.java"
+    };
+    final String[] templateKeys = {
+      "telemetryAttributeKeys",
+      "telemetryRequestContext",
+      "telemetryRequestError",
+      "telemetryRequestResult",
+      "telemetryAdapter",
+      "telemetrySupport"
+    };
+
+    List<FileOp> fileOps = new ArrayList<>();
+    fileOps.add(new FileOp.CreateDirectory(telemetryDir, ""));
+
+    for (int i = 0; i < telemetryFiles.length; i++) {
+      Template template = getTemplateContent(templateKeys[i]);
+      String content = JavaFormatter.formatSafely(template.apply(""));
+      fileOps.add(new FileOp.WriteString(telemetryDir, telemetryFiles[i], content));
+    }
+
+    return fileOps;
   }
 
   @Override
@@ -115,7 +148,17 @@ public class JavaV4 extends Language {
         Map.entry("exception", "/templates/java/next/exception.hbs"),
         Map.entry("api.exception", "/templates/java/next/api.exception.hbs"),
         Map.entry("http.status.handler", "/templates/java/next/http.status.handler.hbs"),
-        Map.entry("subdomain.enum", "/templates/java/next/subdomain.enum.hbs"));
+        Map.entry("subdomain.enum", "/templates/java/next/subdomain.enum.hbs"),
+        Map.entry(
+            "telemetryAttributeKeys", "/templates/java/telemetry/TelemetryAttributeKeys.java.hbs"),
+        Map.entry(
+            "telemetryRequestContext", "/templates/java/telemetry/RequestTelemetryContext.java.hbs"),
+        Map.entry(
+            "telemetryRequestError", "/templates/java/telemetry/RequestTelemetryError.java.hbs"),
+        Map.entry(
+            "telemetryRequestResult", "/templates/java/telemetry/RequestTelemetryResult.java.hbs"),
+        Map.entry("telemetryAdapter", "/templates/java/telemetry/TelemetryAdapter.java.hbs"),
+        Map.entry("telemetrySupport", "/templates/java/telemetry/TelemetrySupport.java.hbs"));
   }
 
   @Override
