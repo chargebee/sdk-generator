@@ -53,6 +53,8 @@ final class {{resourceName}} implements {{resourceName}}Interface
         ->withParams($params){{/or}}
         {{#eq httpMethodName "POST"}}->withIdempotent({{idempotent}})
         {{/eq~}}
+        ->withTelemetryResource("{{telemetryResource}}")
+        ->withTelemetryOperation("{{telemetryOperation}}")
         ->build();
         $apiRequester = new APIRequester($this->httpClientFactory, $this->env);
         $respObject = $apiRequester->makeRequest($payload);

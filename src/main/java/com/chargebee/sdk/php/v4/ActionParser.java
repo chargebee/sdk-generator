@@ -68,7 +68,9 @@ public class ActionParser {
                 + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, action.id)
                 + API_DOCS_QUERY)
         .setDeprecated(action.isOperationDeprecated())
-        .setIdempotent(action.isIdempotent());
+        .setIdempotent(action.isIdempotent())
+        .setTelemetryResource(GenUtil.normalizeToLowerCamelCase(res.id))
+        .setTelemetryOperation(GenUtil.firstCharLower(toCamelCase(action.name)));
   }
 
   private static String getMethodName(Action action) {

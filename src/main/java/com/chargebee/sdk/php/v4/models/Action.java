@@ -28,4 +28,6 @@ public @Data class Action {
   List<Map<String, Integer>> jsonKeys;
   private boolean isIdempotent;
   private boolean isDeprecated;
+  private String telemetryResource;
+  private String telemetryOperation;
 }
