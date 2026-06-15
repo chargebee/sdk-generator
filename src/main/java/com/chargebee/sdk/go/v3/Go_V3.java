@@ -95,6 +95,7 @@ public class Go_V3 extends Language {
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
     fileOps.add(generateUtilFile(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
+    fileOps.addAll(generateTelemetryFiles(outputDirectoryPath));
 
     // Generate webhook files (parser, content, handler)
     {
@@ -107,6 +108,36 @@ public class Go_V3 extends Language {
     }
 
     //    fileOps.add(generateErrorExceptions(outputDirectoryPath + "/", exceptionsResources));
+    return fileOps;
+  }
+
+  private List<FileOp> generateTelemetryFiles(String outputDirectoryPath) throws IOException {
+    final String telemetryDir = outputDirectoryPath + "/telemetry";
+    final String[] telemetryFiles = {
+      "attribute_keys.go",
+      "request_telemetry_context.go",
+      "request_telemetry_error.go",
+      "request_telemetry_result.go",
+      "telemetry_adapter.go",
+      "telemetry_support.go"
+    };
+    final String[] templateKeys = {
+      "telemetryAttributeKeys",
+      "telemetryRequestContext",
+      "telemetryRequestError",
+      "telemetryRequestResult",
+      "telemetryAdapter",
+      "telemetrySupport"
+    };
+
+    List<FileOp> fileOps = new ArrayList<>();
+    fileOps.add(new FileOp.CreateDirectory(telemetryDir, ""));
+
+    for (int i = 0; i < telemetryFiles.length; i++) {
+      Template template = getTemplateContent(templateKeys[i]);
+      fileOps.add(new FileOp.WriteString(telemetryDir, telemetryFiles[i], template.apply("")));
+    }
+
     return fileOps;
   }
 
@@ -428,27 +459,29 @@ public class Go_V3 extends Language {
 
   @Override
   protected Map<String, String> templatesDefinition() {
-    return Map.of(
-        "globalEnums",
-        "/templates/go/v3/globalEnums.go.hbs",
-        "enums",
-        "/templates/go/v3/enums.go.hbs",
-        "actions",
-        "/templates/go/v3/actions.go.hbs",
-        "result",
-        "/templates/go/v3/result.go.hbs",
-        "models",
-        "/templates/go/v3/models.go.hbs",
-        "exceptions",
-        "/templates/go/v3/api_error.go.hbs",
-        "webhook",
-        "/templates/go/v3/webhook.go.hbs",
-        "webhookContent",
-        "/templates/go/v3/webhookContent.go.hbs",
-        "webhookHandler",
-        "/templates/go/v3/webhookHandler.go.hbs",
-        "util",
-        "/templates/go/v3/util.go.hbs");
+    return Map.ofEntries(
+        Map.entry("globalEnums", "/templates/go/v3/globalEnums.go.hbs"),
+        Map.entry("enums", "/templates/go/v3/enums.go.hbs"),
+        Map.entry("actions", "/templates/go/v3/actions.go.hbs"),
+        Map.entry("result", "/templates/go/v3/result.go.hbs"),
+        Map.entry("models", "/templates/go/v3/models.go.hbs"),
+        Map.entry("exceptions", "/templates/go/v3/api_error.go.hbs"),
+        Map.entry("webhook", "/templates/go/v3/webhook.go.hbs"),
+        Map.entry("webhookContent", "/templates/go/v3/webhookContent.go.hbs"),
+        Map.entry("webhookHandler", "/templates/go/v3/webhookHandler.go.hbs"),
+        Map.entry("util", "/templates/go/v3/util.go.hbs"),
+        Map.entry(
+            "telemetryAttributeKeys", "/templates/go/telemetry/attribute_keys.go.hbs"),
+        Map.entry(
+            "telemetryRequestContext",
+            "/templates/go/telemetry/request_telemetry_context.go.hbs"),
+        Map.entry(
+            "telemetryRequestError", "/templates/go/telemetry/request_telemetry_error.go.hbs"),
+        Map.entry(
+            "telemetryRequestResult",
+            "/templates/go/telemetry/request_telemetry_result.go.hbs"),
+        Map.entry("telemetryAdapter", "/templates/go/telemetry/telemetry_adapter.go.hbs"),
+        Map.entry("telemetrySupport", "/templates/go/telemetry/telemetry_support.go.hbs"));
   }
 
   private List<FileOp> generateGlobalEnumFiles(String outDirectoryPath, List<Enum> globalEnums)
@@ -529,9 +562,12 @@ public class Go_V3 extends Language {
           Map<String, Object> mutableAction = new HashMap<>(action);
           mutableAction.put("goParamName", toCamelCase((String) action.get("name")));
           mutableAction.put("goActionName", toCamelCase((String) action.get("name")));
+          mutableAction.put(
+              "telemetryOperation", firstCharLower(toCamelCase((String) action.get("name"))));
           mutableActions.add(mutableAction);
         }
 
+        actionPayload.put("telemetryResource", normalizeToLowerCamelCase(resource.id));
         actionPayload.put("actions", mutableActions);
         if (mutableActions.isEmpty()) continue;
         var content = actionTemplates.apply(actionPayload);
