@@ -394,6 +394,10 @@ public class Resource {
         || !((boolean) schema.getExtensions().get(Extension.IS_DEPENDENT_RESOURCE));
   }
 
+  public boolean isDeprecated() {
+    return schema.getDeprecated() != null && schema.getDeprecated();
+  }
+
   public int sortOrder() {
     return schema.getExtensions().get(SORT_ORDER) != null
         ? (int) schema.getExtensions().get(SORT_ORDER)

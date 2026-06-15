@@ -80,6 +80,11 @@ public class ChangeLogGenerator implements FileGenerator {
     schema.setParameterRequirementChangesValues(
         generateParameterRequirementChanges(oldResources, newResources));
 
+    schema.setDeprecatedResource(generateDeprecatedResources(oldResources, newResources));
+    schema.setDeprecatedActions(generateDeprecatedActions(oldResources, newResources));
+    schema.setDeprecatedResourceAttribute(generateDeprecatedAttributes(oldResources, newResources));
+    schema.setDeprecatedParams(generateDeprecatedParameters(oldResources, newResources));
+
     return schema;
   }
 
@@ -904,6 +909,283 @@ public class ChangeLogGenerator implements FileGenerator {
             getDocsUrlForActions(resource, action),
             resource.name,
             getDocsUrlForResourceList(resource)));
+  }
+
+  // --- Deprecated Resources ---
+
+  private List<String> generateDeprecatedResources(
+      List<Resource> oldResources, List<Resource> newResources) {
+    Map<String, Resource> oldResourceMap =
+        oldResources.stream()
+            .collect(Collectors.toMap(resource -> resource.id, resource -> resource));
+
+    return newResources.stream()
+        .filter(Resource::isDeprecated)
+        .filter(
+            resource -> {
+              Resource oldResource = oldResourceMap.get(resource.id);
+              return oldResource == null || !oldResource.isDeprecated();
+            })
+        .map(this::formatDeprecatedResourceLine)
+        .distinct()
+        .collect(Collectors.toList());
+  }
+
+  private String formatDeprecatedResourceLine(Resource resource) {
+    return String.format(
+        "- [`%s`](%s) has been deprecated.", resource.name, getDocsUrlForResourceList(resource));
+  }
+
+  // --- Deprecated Actions ---
+
+  private List<String> generateDeprecatedActions(
+      List<Resource> oldResources, List<Resource> newResources) {
+    Map<String, Map<String, Boolean>> oldActionDeprecation =
+        buildActionDeprecationMap(oldResources);
+    Set<String> lines = new LinkedHashSet<>();
+
+    for (Resource newResource : newResources) {
+      Map<String, Boolean> oldActions =
+          oldActionDeprecation.getOrDefault(newResource.id, Collections.emptyMap());
+
+      for (Action action : newResource.actions) {
+        if (!action.isOperationDeprecated()) {
+          continue;
+        }
+        Boolean wasDeprecated = oldActions.get(action.id);
+        if (wasDeprecated != null && !wasDeprecated) {
+          lines.add(formatDeprecatedActionLine(newResource, action));
+        }
+      }
+    }
+
+    return new ArrayList<>(lines);
+  }
+
+  private String formatDeprecatedActionLine(Resource resource, Action action) {
+    return String.format(
+        "- [`%s`](%s) has been deprecated in [`%s`](%s).",
+        action.id,
+        getDocsUrlForActions(resource, action),
+        resource.name,
+        getDocsUrlForResourceList(resource));
+  }
+
+  // --- Deprecated Attributes ---
+
+  private List<String> generateDeprecatedAttributes(
+      List<Resource> oldResources, List<Resource> newResources) {
+    Map<String, Map<String, Boolean>> oldAttributeDeprecation =
+        buildAttributeDeprecationMap(oldResources);
+    Set<String> lines = new LinkedHashSet<>();
+
+    for (Resource newResource : newResources) {
+      Map<String, Boolean> oldAttributes =
+          oldAttributeDeprecation.getOrDefault(newResource.id, Collections.emptyMap());
+
+      for (Attribute attribute : newResource.attributes()) {
+        if (!attribute.isDeprecated()) {
+          continue;
+        }
+        Boolean wasDeprecated = oldAttributes.get(attribute.name);
+        if (wasDeprecated != null && !wasDeprecated) {
+          lines.add(formatDeprecatedAttributeLine(newResource, attribute));
+        }
+      }
+    }
+
+    return new ArrayList<>(lines);
+  }
+
+  private String formatDeprecatedAttributeLine(Resource resource, Attribute attribute) {
+    return String.format(
+        "- [`%s`](%s) has been deprecated in [`%s`](%s).",
+        attribute.name,
+        getDocsUrlForAttribute(resource, attribute),
+        resource.name,
+        getDocsUrlForResourceList(resource));
+  }
+
+  // --- Deprecated Parameters ---
+
+  private List<String> generateDeprecatedParameters(
+      List<Resource> oldResources, List<Resource> newResources) {
+    List<String> queryParameterLines =
+        generateDeprecatedParameterLines(
+            oldResources, newResources, Action::queryParameters, QUERY_PARAMETER_TYPE);
+    List<String> bodyParameterLines =
+        generateDeprecatedParameterLines(
+            oldResources, newResources, Action::requestBodyParameters, REQUEST_BODY_PARAMETER_TYPE);
+
+    return Stream.concat(queryParameterLines.stream(), bodyParameterLines.stream())
+        .collect(Collectors.toList());
+  }
+
+  private List<String> generateDeprecatedParameterLines(
+      List<Resource> oldResources,
+      List<Resource> newResources,
+      Function<Action, List<Parameter>> parameterExtractor,
+      String parameterType) {
+    Map<String, Map<String, Map<String, Boolean>>> oldParameterDeprecation =
+        buildParameterDeprecationMap(oldResources, parameterExtractor);
+    Set<String> lines = new LinkedHashSet<>();
+
+    for (Resource newResource : newResources) {
+      Map<String, Map<String, Boolean>> oldActionParameters =
+          oldParameterDeprecation.getOrDefault(newResource.id, Collections.emptyMap());
+
+      for (Action action : newResource.actions) {
+        Map<String, Boolean> oldParameters =
+            oldActionParameters.getOrDefault(action.id, Collections.emptyMap());
+        collectDeprecatedParameterLines(
+            newResource,
+            action,
+            parameterExtractor.apply(action),
+            "",
+            oldParameters,
+            parameterType,
+            lines);
+      }
+    }
+
+    return new ArrayList<>(lines);
+  }
+
+  private void collectDeprecatedParameterLines(
+      Resource resource,
+      Action action,
+      List<Parameter> parameters,
+      String pathPrefix,
+      Map<String, Boolean> oldDeprecation,
+      String parameterType,
+      Set<String> lines) {
+    for (Parameter parameter : parameters) {
+      String path = pathPrefix.isEmpty() ? parameter.getName() : pathPrefix;
+      if (parameter.isDeprecated()) {
+        Boolean wasDeprecated = oldDeprecation.get(path);
+        if (wasDeprecated != null && !wasDeprecated) {
+          Parameter pathParameter = new Parameter(path, parameter.schema);
+          lines.add(formatDeprecatedParameterLine(resource, action, pathParameter, parameterType));
+        }
+      }
+      if (parameter.schema.getProperties() != null) {
+        collectDeprecatedNestedParameterLines(
+            parameter.schema, path, resource, action, oldDeprecation, parameterType, lines);
+      }
+    }
+  }
+
+  private void collectDeprecatedNestedParameterLines(
+      Schema schema,
+      String path,
+      Resource resource,
+      Action action,
+      Map<String, Boolean> oldDeprecation,
+      String parameterType,
+      Set<String> lines) {
+    if (schema.getProperties() == null) {
+      return;
+    }
+    schema
+        .getProperties()
+        .forEach(
+            (key, value) -> {
+              Schema<?> childSchema = (Schema<?>) value;
+              String nestedPath = path + "." + key;
+              boolean isDeprecated =
+                  childSchema.getDeprecated() != null && childSchema.getDeprecated();
+              if (isDeprecated) {
+                Boolean wasDeprecated = oldDeprecation.get(nestedPath);
+                if (wasDeprecated != null && !wasDeprecated) {
+                  Parameter nestedParameter = new Parameter(nestedPath, childSchema);
+                  lines.add(
+                      formatDeprecatedParameterLine(
+                          resource, action, nestedParameter, parameterType));
+                }
+              }
+              collectDeprecatedNestedParameterLines(
+                  childSchema, nestedPath, resource, action, oldDeprecation, parameterType, lines);
+            });
+  }
+
+  private String formatDeprecatedParameterLine(
+      Resource resource, Action action, Parameter parameter, String parameterType) {
+    return String.format(
+        "- [`%s`](%s) has been deprecated as %s in [`%s`](%s) of [`%s`](%s).",
+        parameter.getName(),
+        getDocsUrlForParameter(resource, action, parameter),
+        parameterType,
+        action.id,
+        getDocsUrlForActions(resource, action),
+        resource.name,
+        getDocsUrlForResourceList(resource));
+  }
+
+  private Map<String, Map<String, Boolean>> buildActionDeprecationMap(List<Resource> resources) {
+    Map<String, Map<String, Boolean>> resourceMap = new HashMap<>();
+    for (Resource resource : resources) {
+      Map<String, Boolean> actionMap = new HashMap<>();
+      for (Action action : resource.actions) {
+        actionMap.put(action.id, action.isOperationDeprecated());
+      }
+      resourceMap.put(resource.id, actionMap);
+    }
+    return resourceMap;
+  }
+
+  private Map<String, Map<String, Boolean>> buildAttributeDeprecationMap(
+      List<Resource> resources) {
+    Map<String, Map<String, Boolean>> resourceMap = new HashMap<>();
+    for (Resource resource : resources) {
+      Map<String, Boolean> attributeMap = new HashMap<>();
+      for (Attribute attribute : resource.attributes()) {
+        attributeMap.put(attribute.name, attribute.isDeprecated());
+      }
+      resourceMap.put(resource.id, attributeMap);
+    }
+    return resourceMap;
+  }
+
+  private Map<String, Map<String, Map<String, Boolean>>> buildParameterDeprecationMap(
+      List<Resource> resources, Function<Action, List<Parameter>> parameterExtractor) {
+    Map<String, Map<String, Map<String, Boolean>>> resourceMap = new HashMap<>();
+    for (Resource resource : resources) {
+      Map<String, Map<String, Boolean>> actionMap = new HashMap<>();
+      for (Action action : resource.actions) {
+        Map<String, Boolean> deprecationMap = new HashMap<>();
+        collectParameterDeprecation(parameterExtractor.apply(action), "", deprecationMap);
+        actionMap.put(action.id, deprecationMap);
+      }
+      resourceMap.put(resource.id, actionMap);
+    }
+    return resourceMap;
+  }
+
+  private void collectParameterDeprecation(
+      List<Parameter> parameters, String pathPrefix, Map<String, Boolean> deprecationMap) {
+    for (Parameter parameter : parameters) {
+      String path = pathPrefix.isEmpty() ? parameter.getName() : pathPrefix;
+      deprecationMap.put(path, parameter.isDeprecated());
+      collectSchemaDeprecation(parameter.schema, path, deprecationMap);
+    }
+  }
+
+  private void collectSchemaDeprecation(
+      Schema schema, String path, Map<String, Boolean> deprecationMap) {
+    if (schema.getProperties() == null) {
+      return;
+    }
+    schema
+        .getProperties()
+        .forEach(
+            (key, value) -> {
+              Schema<?> childSchema = (Schema<?>) value;
+              String nestedPath = path + "." + key;
+              boolean isDeprecated =
+                  childSchema.getDeprecated() != null && childSchema.getDeprecated();
+              deprecationMap.put(nestedPath, isDeprecated);
+              collectSchemaDeprecation(childSchema, nestedPath, deprecationMap);
+            });
   }
 
   private List<String> generateParameterRequirementChanges(

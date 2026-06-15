@@ -126,6 +126,19 @@ public class LocalDocsAvailabilityChecker {
         }
         return isResourcePublished(entry.getDocsResourcePath())
             && actionFileExists(entry.getResourceId(), entry.getActionId());
+      case DEPRECATED_RESOURCE:
+        return isResourcePublished(entry.getDocsResourcePath())
+            && resourceDirExists(entry.getResourceId());
+      case DEPRECATED_ACTION:
+        return isResourcePublished(entry.getDocsResourcePath())
+            && actionFileExists(entry.getResourceId(), entry.getActionId());
+      case DEPRECATED_ATTRIBUTE:
+        return isResourcePublished(entry.getDocsResourcePath())
+            && slugExistsInResource(entry.getResourceId(), entry.getSlugPath());
+      case DEPRECATED_PARAMETER:
+        return isResourcePublished(entry.getDocsResourcePath())
+            && slugExistsInAction(
+                entry.getResourceId(), entry.getActionId(), entry.getSlugPath());
       default:
         return true;
     }
@@ -152,21 +165,25 @@ public class LocalDocsAvailabilityChecker {
     Path relative;
     switch (entry.getType()) {
       case NEW_RESOURCE:
+      case DEPRECATED_RESOURCE:
       case DELETED_ACTION:
       case DELETED_ATTRIBUTE:
       case DELETED_ATTRIBUTE_ENUM_VALUE:
         relative = Paths.get(nullToEmpty(entry.getResourceId()));
         return "resource dir '" + relative + "'";
       case NEW_ACTION:
+      case DEPRECATED_ACTION:
       case DELETED_PARAMETER:
       case DELETED_PARAMETER_ENUM_VALUE:
         relative =
             Paths.get(nullToEmpty(entry.getResourceId()), nullToEmpty(entry.getActionId()) + ".yaml");
         return "action file '" + relative + "'";
       case NEW_ATTRIBUTE:
+      case DEPRECATED_ATTRIBUTE:
         relative = Paths.get(nullToEmpty(entry.getResourceId()), RESOURCE_YAML);
         return "attribute slug '" + entry.getSlugPath() + "' in '" + relative + "'";
       case NEW_PARAMETER:
+      case DEPRECATED_PARAMETER:
       case PARAMETER_REQUIREMENT_CHANGE:
         relative =
             Paths.get(nullToEmpty(entry.getResourceId()), nullToEmpty(entry.getActionId()) + ".yaml");
@@ -211,6 +228,10 @@ public class LocalDocsAvailabilityChecker {
       case DELETED_ATTRIBUTE_ENUM_VALUE:
       case DELETED_PARAMETER:
       case DELETED_PARAMETER_ENUM_VALUE:
+      case DEPRECATED_RESOURCE:
+      case DEPRECATED_ACTION:
+      case DEPRECATED_ATTRIBUTE:
+      case DEPRECATED_PARAMETER:
         return true;
       default:
         return false;
