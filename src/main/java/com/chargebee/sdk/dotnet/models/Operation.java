@@ -12,4 +12,6 @@ public class Operation {
   private boolean isDeprecated;
   private String subDomain;
   private boolean isIdempotent;
+  private String telemetryResource;
+  private String telemetryOperation;
 }
