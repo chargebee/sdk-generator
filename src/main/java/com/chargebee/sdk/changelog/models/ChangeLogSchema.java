@@ -19,4 +19,8 @@ public @Data class ChangeLogSchema {
   List<String> newEnumValues;
   List<String> deletedEnumValues;
   List<String> parameterRequirementChangesValues;
+  List<String> deprecatedResource;
+  List<String> deprecatedActions;
+  List<String> deprecatedResourceAttribute;
+  List<String> deprecatedParams;
 }
