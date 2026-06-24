@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -309,6 +310,74 @@ public class LocalDocsAvailabilityChecker {
       return true;
     }
     return loadSlugs(docsRoot.resolve(EVENT_TYPES_RELATIVE_PATH)).contains(eventType);
+  }
+
+  /** Documented vs. undocumented partition of an enum entry's values. */
+  public static final class EnumSplit {
+    public final List<String> present;
+    public final List<String> missing;
+
+    EnumSplit(List<String> present, List<String> missing) {
+      this.present = present;
+      this.missing = missing;
+    }
+  }
+
+  /**
+   * Splits an enum entry's values into those documented in the local docs repo and those that are
+   * missing. If the owning slug is absent or the resource is unpublished, every value is treated as
+   * missing. This lets the generator emit the documented subset instead of dropping the whole group
+   * because one value lacks docs.
+   */
+  public EnumSplit splitEnumValues(ChangeLogEntry entry) {
+    List<String> values =
+        entry == null || entry.getEnumValues() == null
+            ? new ArrayList<>()
+            : new ArrayList<>(entry.getEnumValues());
+    if (skipVerification) {
+      return new EnumSplit(values, new ArrayList<>());
+    }
+    if (values.isEmpty() || entry.getType() == null) {
+      return new EnumSplit(values, new ArrayList<>());
+    }
+    if (!isResourcePublished(entry.getDocsResourcePath())) {
+      return new EnumSplit(new ArrayList<>(), values);
+    }
+
+    Set<String> slugs;
+    switch (entry.getType()) {
+      case NEW_ATTRIBUTE_ENUM_VALUE:
+      case DELETED_ATTRIBUTE_ENUM_VALUE:
+        slugs =
+            loadSlugs(docsRoot.resolve(nullToEmpty(entry.getResourceId())).resolve(RESOURCE_YAML));
+        break;
+      case NEW_PARAMETER_ENUM_VALUE:
+      case DELETED_PARAMETER_ENUM_VALUE:
+        slugs =
+            loadSlugs(
+                docsRoot
+                    .resolve(nullToEmpty(entry.getResourceId()))
+                    .resolve(nullToEmpty(entry.getActionId()) + ".yaml"));
+        break;
+      default:
+        return new EnumSplit(values, new ArrayList<>());
+    }
+
+    String slug = entry.getSlugPath();
+    if (slug == null || !slugs.contains(slug)) {
+      return new EnumSplit(new ArrayList<>(), values);
+    }
+
+    List<String> present = new ArrayList<>();
+    List<String> missing = new ArrayList<>();
+    for (String value : values) {
+      if (slugs.contains(slug + ".enum." + value)) {
+        present.add(value);
+      } else {
+        missing.add(value);
+      }
+    }
+    return new EnumSplit(present, missing);
   }
 
   private boolean allEnumSlugsInResource(String resourceId, String slug, List<String> values) {
