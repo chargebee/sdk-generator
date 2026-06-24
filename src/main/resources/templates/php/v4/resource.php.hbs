@@ -33,7 +33,7 @@ class {{clazName}} {{#if customFieldSupported}} extends SupportsCustomFields {{/
     /**
     * @var array<string> $knownFields
     */
-    protected static array $knownFields = [{{#each cols}} "{{apiName}}" {{#unless @last}},{{/unless}}{{/each}} ];
+    protected static array $knownFields = [{{#each knownFields}} "{{{.}}}" {{#unless @last}},{{/unless}}{{/each}} ];
 
     /**
     * dynamic properties for resources
