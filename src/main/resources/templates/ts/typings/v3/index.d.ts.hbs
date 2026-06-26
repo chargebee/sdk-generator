@@ -106,7 +106,7 @@ declare module 'chargebee' {
     sdkName: string;
     sdkVersion: string;
     /** Prebuilt span attributes — pass these to your tracer. */
-    startAttributes: Record<string, string>;
+    startAttributes: Record<string, string | string[]>;
   };
 
   export type RequestTelemetryError = {

@@ -719,20 +719,40 @@ public class NodeV3Tests extends LanguageTests {
 
     assertThat(fileOps).hasSize(8);
     assertCreateDirectoryFileOp(fileOps.get(4), "/node/lib", "/telemetry");
-    assertWriteStringFileOp(
-        fileOps.get(5),
-        "/node/lib/telemetry",
-        "types.ts",
-        """
-        /** SDK identifier recorded on telemetry spans. */
-        export const CHARGEBEE_SDK_NAME = 'chargebee-node';""");
-    assertWriteStringFileOp(
-        fileOps.get(7),
-        "/node/lib/telemetry",
-        "index.ts",
-        """
-        export {
-          CHARGEBEE_SDK_NAME,""");
+
+    var typesFile = assertTelemetryWriteFileOp(fileOps.get(5), "/node/lib/telemetry", "types.ts");
+    assertThat(typesFile).contains("export const CHARGEBEE_SDK_NAME = 'chargebee-node';");
+    // Chargebee custom request headers are captured as OTel span attributes by prefix, so
+    // new chargebee-* headers are picked up without an SDK upgrade, while the PII-bearing
+    // chargebee-request-origin-* family stays excluded.
+    assertThat(typesFile)
+        .contains("HTTP_REQUEST_HEADER_ATTRIBUTE_PREFIX = 'http.request.header.';")
+        .contains("CHARGEBEE_TELEMETRY_HEADER_PREFIX = 'chargebee-';")
+        .contains("CHARGEBEE_TELEMETRY_HEADER_EXCLUDE_PREFIX =")
+        .contains("'chargebee-request-origin-';")
+        .contains("startAttributes: Record<string, string | string[]>;")
+        .contains("requestHeaders?: Record<string, string | number>;");
+
+    var adapterFile =
+        assertTelemetryWriteFileOp(fileOps.get(6), "/node/lib/telemetry", "TelemetryAdapter.ts");
+    assertThat(adapterFile)
+        .contains("export function buildRequestHeaderSpanAttributes(")
+        .contains("...buildRequestHeaderSpanAttributes(input.requestHeaders),");
+
+    var indexFile = assertTelemetryWriteFileOp(fileOps.get(7), "/node/lib/telemetry", "index.ts");
+    assertThat(indexFile)
+        .contains("CHARGEBEE_SDK_NAME,")
+        .contains("HTTP_REQUEST_HEADER_ATTRIBUTE_PREFIX,")
+        .contains("buildRequestHeaderSpanAttributes,");
+  }
+
+  private String assertTelemetryWriteFileOp(
+      FileOp fileOp, String expectedBaseFilePath, String expectedFileName) {
+    assertThat(fileOp).isInstanceOf(FileOp.WriteString.class);
+    var writeStringFileOp = (FileOp.WriteString) fileOp;
+    assertThat(writeStringFileOp.baseFilePath).isEqualTo(expectedBaseFilePath);
+    assertThat(writeStringFileOp.fileName).isEqualTo(expectedFileName);
+    return writeStringFileOp.fileContent;
   }
 
   @Test
