@@ -15,6 +15,7 @@ import com.chargebee.v4.filters.EnumFilter;
 import com.chargebee.v4.filters.BooleanFilter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -166,10 +167,59 @@ public final class {{name}}Params {
 
     {{#if operationNeedsJsonInput}}
     /**
+     * Get the nested JSON body representation for this request.
+     *
+     * <p>Unlike {@link #toFormData()}, which flattens nested objects/arrays into bracketed
+     * {@code qs}-style keys for {@code application/x-www-form-urlencoded} requests, this method
+     * preserves the real object/array hierarchy so the payload can be serialized as a JSON string.
+     * Leaf values (e.g. {@code Timestamp}) are converted to their API representation by
+     * {@link JsonUtil} during serialization.
+     */
+    public Map<String, Object> toJsonMap() {
+        Map<String, Object> jsonData = new LinkedHashMap<>();
+
+        {{#each fields}}
+        {{#unless isFilter}}
+        if (this.{{name}} != null) {
+            {{#if subModelField}}
+                {{#if compositeArrayField}}
+                // List of objects -> JSON array of nested objects
+                List<Object> {{name}}Json = new ArrayList<>();
+                for ({{subModelParamsType}} item : this.{{name}}) {
+                    if (item != null) {
+                        {{name}}Json.add(item.toJsonMap());
+                    }
+                }
+                jsonData.put("{{curlName}}", {{name}}Json);
+                {{else}}
+                // Single object -> nested JSON object
+                jsonData.put("{{curlName}}", this.{{name}}.toJsonMap());
+                {{/if}}
+            {{else}}
+                jsonData.put("{{curlName}}", this.{{name}});
+            {{/if}}
+        }
+        {{/unless}}
+        {{/each}}
+
+        {{#if hasFilterFields}}
+        jsonData.putAll(filterParams);
+        {{/if}}
+        {{#if customFieldsSupported}}
+        jsonData.putAll(customFields);
+        {{/if}}
+        {{#if consentFieldsSupported}}
+        jsonData.putAll(consentFields);
+        {{/if}}
+
+        return jsonData;
+    }
+
+    /**
      * Get the JSON string representation for this request.
      */
     public String toJsonString() {
-        return JsonUtil.toJson(toFormData());
+        return JsonUtil.toJson(toJsonMap());
     }
     {{/if}}
 
