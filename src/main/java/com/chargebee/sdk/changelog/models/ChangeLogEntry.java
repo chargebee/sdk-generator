@@ -48,6 +48,19 @@ public class ChangeLogEntry {
   /** Webhook event type, used by event-type entries. */
   private String eventType;
 
+  /**
+   * For enum entries only: the {@code link_api} target before the {@code #} (e.g.
+   * {@code omnichannel_subscriptions/list-omnichannel-subscriptions}). Stored so the line can be
+   * re-rendered for a subset of {@link #enumValues} when only some values are documented.
+   */
+  private String linkPath;
+
+  /** For enum entries only: the anchor used after {@code #} in the {@code link_api} target. */
+  private String linkAnchor;
+
+  /** For enum entries only: the second {@code [code ...]} label (the path to the enum's owner). */
+  private String codeLabel;
+
   public enum EntryType {
     NEW_RESOURCE,
     NEW_ACTION,
