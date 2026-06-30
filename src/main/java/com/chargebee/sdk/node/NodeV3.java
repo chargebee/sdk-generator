@@ -71,6 +71,7 @@ public class NodeV3 extends Language {
     templates.put(
         "telemetryAdapter", "/templates/node/telemetry/TelemetryAdapter.ts.hbs");
     templates.put("telemetryIndex", "/templates/node/telemetry/index.ts.hbs");
+    templates.put("telemetryOtel", "/templates/node/telemetry/otel.ts.hbs");
     return templates;
   }
 
@@ -82,6 +83,7 @@ public class NodeV3 extends Language {
     Template typesTemplate = getTemplateContent("telemetryTypes");
     Template adapterTemplate = getTemplateContent("telemetryAdapter");
     Template indexTemplate = getTemplateContent("telemetryIndex");
+    Template otelTemplate = getTemplateContent("telemetryOtel");
 
     String telemetryPath = parentDirectoryPath + telemetryDirectoryPath;
     fileOps.add(new FileOp.WriteString(telemetryPath, "types.ts", typesTemplate.apply("")));
@@ -89,6 +91,7 @@ public class NodeV3 extends Language {
         new FileOp.WriteString(
             telemetryPath, "TelemetryAdapter.ts", adapterTemplate.apply("")));
     fileOps.add(new FileOp.WriteString(telemetryPath, "index.ts", indexTemplate.apply("")));
+    fileOps.add(new FileOp.WriteString(telemetryPath, "otel.ts", otelTemplate.apply("")));
 
     return fileOps;
   }

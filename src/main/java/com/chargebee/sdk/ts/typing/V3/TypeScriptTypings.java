@@ -67,6 +67,10 @@ public class TypeScriptTypings extends Language {
     fileOps.add(generateIndexFile(outputDirectoryPath, resources));
     fileOps.add(generateFilterFile(outputDirectoryPath + resourcesDirectoryPath));
 
+    String telemetryDirectoryPath = "/telemetry";
+    fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, telemetryDirectoryPath));
+    fileOps.add(generateTelemetryOtelFile(outputDirectoryPath + telemetryDirectoryPath));
+
     boolean hasContentFilter = resourceNamesList.stream().anyMatch(contentFilterResource::contains);
     if (hasContentFilter) {
       fileOps.add(generateContentFile(outputDirectoryPath + resourcesDirectoryPath, resources));
@@ -185,7 +189,9 @@ public class TypeScriptTypings extends Language {
         "content",
         "/templates/ts/typings/v3/content.d.ts.hbs",
         "webhookContent",
-        "/templates/ts/typings/v3/webhookContent.d.ts.hbs");
+        "/templates/ts/typings/v3/webhookContent.d.ts.hbs",
+        "telemetryOtel",
+        "/templates/ts/typings/v3/telemetryOtel.d.ts.hbs");
   }
 
   private FileOp generateIndexFile(String outputDirectoryPath, List<Resource> resources)
@@ -201,6 +207,12 @@ public class TypeScriptTypings extends Language {
   private FileOp generateFilterFile(String resourcesDirectoryPath) throws IOException {
     Template indexTemplate = getTemplateContent("filter");
     return new FileOp.WriteString(resourcesDirectoryPath, "filter.d.ts", indexTemplate.apply(""));
+  }
+
+  private FileOp generateTelemetryOtelFile(String telemetryDirectoryPath) throws IOException {
+    Template telemetryOtelTemplate = getTemplateContent("telemetryOtel");
+    return new FileOp.WriteString(
+        telemetryDirectoryPath, "otel.d.ts", telemetryOtelTemplate.apply(""));
   }
 
   private void addGlobalEnumIfMissing(Attribute attribute, List<Enum> globalEnums) {
