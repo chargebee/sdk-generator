@@ -122,7 +122,13 @@ public class TsPrinter {
 
   private String printLiteral(JsNode.Literal l) {
     if (l.value() == null) return "null";
-    if (l.value() instanceof String s) return "'" + s.replace("'", "\\'") + "'";
+    if (l.value() instanceof String s) {
+      // Escape backslashes first, then single quotes. Without escaping backslashes a regex
+      // pattern such as ^\d{10}$ would be emitted as RegExp('^\d{10}$'); in a JS string literal
+      // `\d` collapses to `d`, silently corrupting the pattern (e.g. \[ -> [, \d -> d).
+      String escaped = s.replace("\\", "\\\\").replace("'", "\\'");
+      return "'" + escaped + "'";
+    }
     if (l.value() instanceof Boolean b) return b.toString();
     return l.value().toString();
   }
