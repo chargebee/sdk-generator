@@ -41,6 +41,11 @@ public class ValidatorZodTests extends LanguageTests {
       (MapEntry<String, Schema<?>>)
           (MapEntry<?, ?>) buildResource("token").withAttribute("id", true).done();
 
+  @SuppressWarnings("unchecked")
+  private static final MapEntry<String, Schema<?>> COUPON_CODE =
+      (MapEntry<String, Schema<?>>)
+          (MapEntry<?, ?>) buildResource("coupon_code").withAttribute("code", true).done();
+
   // ---- subject under test --------------------------------------------------
 
   private static ValidatorZod validatorZod;
@@ -139,6 +144,50 @@ public class ValidatorZodTests extends LanguageTests {
         .contains("limit: z.number().int().optional()")
         .contains("status: z.string()")
         .doesNotContain("status: z.string().optional()");
+  }
+
+  @Test
+  void shouldEmitListValidatorWhenFilterParamIsMultiValueAttribute() throws IOException {
+    // Regression: Chargebee list filter params (e.g. CouponCode.list `code`, `coupon_id`) are
+    // type=object operator schemas flagged with x-cb-is-multi-value-attribute. That flag previously
+    // caused the IR builder to flatten the whole synthetic query-params container into an
+    // ArrayNode, which the emitter then discarded (ensureObject == null) — dropping the entire
+    // `list` action. The root container must stay an object; each filter must become a nested
+    // operator object.
+    var codeFilter =
+        new ObjectSchema()
+            .addProperty("is", new StringSchema().minLength(1))
+            .addProperty("in", new StringSchema().pattern("^\\[(.*)(,.*)*\\]$"));
+    codeFilter.addExtension(Extension.IS_MULTI_ATTRIBUTE, true);
+
+    var listOp =
+        buildListOperation("list")
+            .forResource("coupon_code")
+            .withResponse(resourceResponseParam("coupon_code", COUPON_CODE))
+            .withQueryParam("limit", new IntegerSchema(), false)
+            .withQueryParam("code", codeFilter, false)
+            .withSortOrder(1)
+            .done();
+
+    var spec =
+        buildSpec().withResource(COUPON_CODE).withOperation("/coupon_codes", listOp).done();
+
+    List<FileOp> fileOps = validatorZod.generate("/validators", spec);
+
+    // The action must no longer be silently dropped: the resource schema file is emitted.
+    assertThat(fileOps).hasSize(3);
+    String src = findFileContent(fileOps, "coupon_code.schema.ts");
+    assertThat(src)
+        .contains("// Generated Zod schemas: CouponCode")
+        .contains("// Actions: list")
+        // root stays an object container, not an array
+        .contains("const ListCouponCodeBodySchema = z.looseObject({")
+        // the multi-value filter param becomes a nested operator object
+        .contains("const ListCouponCodeCodeSchema = z.object({")
+        .contains("is: z.string().min(1).optional()")
+        .contains("in: z.string().regex(")
+        .contains("code: ListCouponCodeCodeSchema.optional()")
+        .contains("limit: z.number().int().optional()");
   }
 
   // =========================================================================
@@ -302,6 +351,8 @@ public class ValidatorZodTests extends LanguageTests {
             .withResponse(resourceResponseParam("customer", CUSTOMER))
             .withRequestBody("name", new StringSchema().maxLength(100).minLength(1))
             .withRequestBody("code", new StringSchema().pattern("^[A-Z]+$"))
+            // backslash-containing pattern must keep its backslashes in the emitted string literal
+            .withRequestBody("ts", new StringSchema().pattern("^\\d{10}$"))
             .withSortOrder(0)
             .done();
 
@@ -311,7 +362,10 @@ public class ValidatorZodTests extends LanguageTests {
 
     assertThat(src)
         .contains("name: z.string().max(100).min(1).optional()")
-        .contains("code: z.string().regex(RegExp('^[A-Z]+$')).optional()");
+        .contains("code: z.string().regex(RegExp('^[A-Z]+$')).optional()")
+        // Regression: the backslash must be doubled in the emitted JS string literal so that
+        // RegExp(...) parses to /^\d{10}$/ at runtime rather than the corrupted /^d{10}$/.
+        .contains("ts: z.string().regex(RegExp('^\\\\d{10}$')).optional()");
   }
 
   @Test
