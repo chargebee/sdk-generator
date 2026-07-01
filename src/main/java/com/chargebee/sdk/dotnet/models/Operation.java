@@ -9,6 +9,7 @@ public class Operation {
   private String handleArg;
   private String urlArgs;
   private String reqCreationCode;
+  private String reqCreationExpr;
   private boolean isDeprecated;
   private String subDomain;
   private boolean isIdempotent;

@@ -15,6 +15,10 @@ const (
 	// TelemetrySpanNamePrefix is the standard span name prefix: chargebee.{resource}.{operation}
 	TelemetrySpanNamePrefix = "chargebee"
 
+	HTTPRequestHeaderAttributePrefix      = "http.request.header."
+	ChargebeeTelemetryHeaderPrefix        = "chargebee-"
+	ChargebeeTelemetryHeaderExcludePrefix = "chargebee-request-origin-"
+
 	URLFull                = "url.full"
 	HTTPRequestMethod      = "http.request.method"
 	HTTPResponseStatusCode = "http.response.status_code"

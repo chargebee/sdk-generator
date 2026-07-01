@@ -100,6 +100,9 @@ class RubyTelemetryTest {
     assertThat(support.fileContent).contains("extract_request_telemetry_error");
     assertThat(support.fileContent).contains("extract_http_status_code");
     assertThat(support.fileContent).contains("ChargeBee::APIError");
+    assertThat(support.fileContent).doesNotContain("ERROR_TYPE] = http_status_code.to_s");
+    assertThat(support.fileContent)
+        .contains("ERROR_TYPE] = error.chargebee_api_error_type");
   }
 
   @Test

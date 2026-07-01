@@ -100,6 +100,9 @@ class Go_V3TelemetryTest {
     FileOp.WriteString support = findWriteOp(fileOps, "/telemetry/telemetry_support.go");
     assertThat(support.fileContent).contains("BuildRequestTelemetryContext");
     assertThat(support.fileContent).contains("BuildRequestTelemetryResult");
+    assertThat(support.fileContent).doesNotContain("attributes[ErrorType] = httpStatusCode");
+    assertThat(support.fileContent)
+        .contains("attributes[ErrorType] = err.ChargebeeAPIErrorType");
   }
 
   @Test

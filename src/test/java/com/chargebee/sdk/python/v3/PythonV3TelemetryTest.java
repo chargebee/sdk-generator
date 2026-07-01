@@ -90,6 +90,10 @@ class PythonV3TelemetryTest {
     assertThat(support.fileContent).contains("extract_request_telemetry_error");
     assertThat(support.fileContent).contains("extract_http_status_code");
     assertThat(support.fileContent).contains("isinstance(err, APIError)");
+    assertThat(support.fileContent)
+        .doesNotContain("ERROR_TYPE] = str(http_status_code)");
+    assertThat(support.fileContent)
+        .contains("ERROR_TYPE] = error.chargebee_api_error_type");
   }
 
   @Test

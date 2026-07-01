@@ -30,7 +30,7 @@ module ChargeBee
         :{{@key}} => {{this}}{{#unless @last}},{{/unless}}
       {{/each~}}
     }
-    Request.{{#neq name "list"}}send{{else}}send_list_request{{/neq}}('{{{lower httpRequestType}}}', uri_path("{{urlPrefix}}"{{#if hasPathParameters}},id.to_s{{/if}}{{#neq urlSuffix ""}},"{{urlSuffix}}"{{/neq}}), {{#or hasRequestBodyParameters hasQueryParameters}}params{{else}}{}{{/or}}, env, headers{{#if subDomain}}, "{{subDomain}}"{{else}},nil{{/if}}{{#if isOperationNeedsJsonInput}}, true{{else}}, false{{/if}}, jsonKeys, options, telemetry_resource: "{{telemetryResource}}", telemetry_operation: "{{telemetryOperation}}")
+    Request.{{#neq name "list"}}send{{else}}send_list_request{{/neq}}('{{{lower httpRequestType}}}', uri_path("{{urlPrefix}}"{{#if hasPathParameters}},id.to_s{{/if}}{{#neq urlSuffix ""}},"{{urlSuffix}}"{{/neq}}), {{#or hasRequestBodyParameters hasQueryParameters}}params{{else}}{}{{/or}}, env, headers{{#if subDomain}}, "{{subDomain}}"{{else}},nil{{/if}}{{#if isOperationNeedsJsonInput}}, true{{else}}, false{{/if}}, jsonKeys, options, "{{telemetryResource}}", "{{telemetryOperation}}")
   end
 {{/each}}
   end # ~{{ name }}

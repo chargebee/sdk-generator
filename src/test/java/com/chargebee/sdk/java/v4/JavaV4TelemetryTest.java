@@ -87,6 +87,12 @@ class JavaV4TelemetryTest {
     assertThat(attributeKeys.fileContent).contains("SDK_NAME = \"chargebee-java\"");
     assertThat(attributeKeys.fileContent).contains("URL_FULL = \"url.full\"");
     assertThat(attributeKeys.fileContent).contains("CHARGEBEE_RESOURCE = \"chargebee.resource\"");
+    assertThat(attributeKeys.fileContent)
+        .contains("HTTP_REQUEST_HEADER_ATTRIBUTE_PREFIX = \"http.request.header.\"");
+    assertThat(attributeKeys.fileContent)
+        .contains("CHARGEBEE_TELEMETRY_HEADER_PREFIX = \"chargebee-\"");
+    assertThat(attributeKeys.fileContent)
+        .contains("CHARGEBEE_TELEMETRY_HEADER_EXCLUDE_PREFIX = \"chargebee-request-origin-\"");
 
     FileOp.WriteString adapter = findWriteOp(fileOps, "TelemetryAdapter.java");
     assertThat(adapter.fileContent).contains("interface TelemetryAdapter");
@@ -99,6 +105,24 @@ class JavaV4TelemetryTest {
     assertThat(support.fileContent).contains("extractRequestTelemetryError");
     assertThat(support.fileContent).contains("extractHttpStatusCode");
     assertThat(support.fileContent).contains("instanceof APIException");
+  }
+
+  @Test
+  @DisplayName("Should capture chargebee-* request headers and exclude the PII origin family")
+  void shouldCaptureChargebeeRequestHeaders() throws IOException {
+    List<FileOp> fileOps = generate();
+
+    FileOp.WriteString support = findWriteOp(fileOps, "TelemetrySupport.java");
+    assertThat(support.fileContent).contains("buildRequestHeaderSpanAttributes");
+    assertThat(support.fileContent)
+        .contains("attributes.putAll(buildRequestHeaderSpanAttributes(input.getRequestHeaders()))");
+    assertThat(support.fileContent)
+        .contains("TelemetryAttributeKeys.CHARGEBEE_TELEMETRY_HEADER_PREFIX");
+    assertThat(support.fileContent)
+        .contains("TelemetryAttributeKeys.CHARGEBEE_TELEMETRY_HEADER_EXCLUDE_PREFIX");
+    assertThat(support.fileContent)
+        .contains("TelemetryAttributeKeys.HTTP_REQUEST_HEADER_ATTRIBUTE_PREFIX");
+    assertThat(support.fileContent).contains("getRequestHeaders()");
   }
 
   @Test

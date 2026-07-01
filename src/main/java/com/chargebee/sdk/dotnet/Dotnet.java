@@ -797,12 +797,21 @@ public class Dotnet extends Language {
       operation.setIdempotent(action.isIdempotent());
       operation.setRetType(getRetType(action));
       operation.setMethName(Inflector.capitalize(action.name));
-      operation.setReqCreationCode(requestCreationCodeWithSubDomainAndContentTypeJson(action));
+      String requestCode = requestCreationCodeWithSubDomainAndContentTypeJson(action);
+      operation.setReqCreationCode(requestCode);
+      operation.setReqCreationExpr(stripReturnPrefix(requestCode));
       operation.setTelemetryResource(normalizeToLowerCamelCase(res.id));
       operation.setTelemetryOperation(firstCharLower(toCamelCase(action.name)));
       operations.add(operation);
     }
     return operations;
+  }
+
+  private String stripReturnPrefix(String requestCode) {
+    if (requestCode != null && requestCode.startsWith("return ")) {
+      return requestCode.substring("return ".length());
+    }
+    return requestCode;
   }
 
   public String requestCreationCodeWithSubDomainAndContentTypeJson(Action action) {

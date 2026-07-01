@@ -28,6 +28,7 @@ final class TelemetrySupport
     }
 
     /**
+     * @param array<string, string> $requestHeaders
      * @return array<string, string>
      */
     public static function buildRequestStartSpanAttributes(
@@ -39,8 +40,9 @@ final class TelemetrySupport
         string $chargebeeSite,
         string $chargebeeApiVersion,
         string $sdkVersion,
+        array $requestHeaders = [],
     ): array {
-        return [
+        return array_merge([
             TelemetryAttributeKeys::URL_FULL => $httpUrl,
             TelemetryAttributeKeys::HTTP_REQUEST_METHOD => $httpMethod,
             TelemetryAttributeKeys::SERVER_ADDRESS => $serverAddress,
@@ -50,7 +52,33 @@ final class TelemetrySupport
             TelemetryAttributeKeys::CHARGEBEE_OPERATION => $operation,
             TelemetryAttributeKeys::CHARGEBEE_SDK_NAME => TelemetryAttributeKeys::SDK_NAME,
             TelemetryAttributeKeys::CHARGEBEE_SDK_VERSION => $sdkVersion,
-        ];
+        ], self::buildRequestHeaderSpanAttributes($requestHeaders));
+    }
+
+    /**
+     * Promotes chargebee-* request headers to http.request.header.* attributes; excludes the chargebee-request-origin-* PII family.
+     *
+     * @param array<string, string> $requestHeaders
+     * @return array<string, string>
+     */
+    public static function buildRequestHeaderSpanAttributes(array $requestHeaders): array
+    {
+        $attributes = [];
+        foreach ($requestHeaders as $name => $value) {
+            if ($value === null) {
+                continue;
+            }
+            $lowerName = strtolower((string) $name);
+            if (
+                !str_starts_with($lowerName, TelemetryAttributeKeys::CHARGEBEE_TELEMETRY_HEADER_PREFIX)
+                || str_starts_with($lowerName, TelemetryAttributeKeys::CHARGEBEE_TELEMETRY_HEADER_EXCLUDE_PREFIX)
+            ) {
+                continue;
+            }
+            $attributes[TelemetryAttributeKeys::HTTP_REQUEST_HEADER_ATTRIBUTE_PREFIX . $lowerName] = (string) $value;
+        }
+
+        return $attributes;
     }
 
     /**
@@ -65,13 +93,13 @@ final class TelemetrySupport
         ];
 
         if ($error !== null) {
-            $attributes[TelemetryAttributeKeys::ERROR_TYPE] = (string) $httpStatusCode;
+            if ($error->chargebeeApiErrorType !== null) {
+                $attributes[TelemetryAttributeKeys::ERROR_TYPE] = $error->chargebeeApiErrorType;
+                $attributes[TelemetryAttributeKeys::CHARGEBEE_ERROR_TYPE] = $error->chargebeeApiErrorType;
+            }
 
             if ($error->chargebeeErrorCode !== null) {
                 $attributes[TelemetryAttributeKeys::CHARGEBEE_ERROR_CODE] = $error->chargebeeErrorCode;
-            }
-            if ($error->chargebeeApiErrorType !== null) {
-                $attributes[TelemetryAttributeKeys::CHARGEBEE_ERROR_TYPE] = $error->chargebeeApiErrorType;
             }
             if ($error->chargebeeErrorParam !== null) {
                 $attributes[TelemetryAttributeKeys::CHARGEBEE_ERROR_PARAM] = $error->chargebeeErrorParam;
@@ -81,6 +109,9 @@ final class TelemetrySupport
         return $attributes;
     }
 
+    /**
+     * @param array<string, string> $requestHeaders
+     */
     public static function buildRequestTelemetryContext(
         string $resource,
         string $operation,
@@ -90,6 +121,7 @@ final class TelemetrySupport
         string $chargebeeSite,
         string $chargebeeApiVersion,
         string $sdkVersion,
+        array $requestHeaders = [],
     ): RequestTelemetryContext {
         return new RequestTelemetryContext(
             self::buildSpanName($resource, $operation),
@@ -111,6 +143,7 @@ final class TelemetrySupport
                 $chargebeeSite,
                 $chargebeeApiVersion,
                 $sdkVersion,
+                $requestHeaders,
             ),
         );
     }

@@ -79,6 +79,21 @@ class DotnetTelemetryTest {
   }
 
   @Test
+  @DisplayName("Should emit block-form telemetry wiring that compiles for EntityRequest<Type>")
+  void shouldEmitBlockFormTelemetryWiring() throws IOException {
+    List<FileOp> fileOps = generate();
+
+    FileOp.WriteString customer = findWriteOp(fileOps, "/Models/Customer.cs");
+    assertThat(customer.fileContent)
+        .contains("var request = new EntityRequest<Type>(url, HttpMethod.GET);")
+        .contains("request.SetTelemetryResource(\"customer\");")
+        .contains("request.SetTelemetryOperation(\"retrieve\");")
+        .contains("return request;")
+        .doesNotContain(
+            "new EntityRequest<Type>(url, HttpMethod.GET).SetTelemetryResource(\"customer\")");
+  }
+
+  @Test
   @DisplayName("Should emit chargebee-dotnet SDK identifier and adapter hooks")
   void shouldEmitSdkIdentifierAndAdapterHooks() throws IOException {
     List<FileOp> fileOps = generate();
@@ -101,5 +116,8 @@ class DotnetTelemetryTest {
     assertThat(support.fileContent).contains("ExtractRequestTelemetryError");
     assertThat(support.fileContent).contains("ExtractHttpStatusCode");
     assertThat(support.fileContent).contains("ApiException");
+    assertThat(support.fileContent).doesNotContain("ERROR_TYPE] = httpStatusCode.ToString()");
+    assertThat(support.fileContent)
+        .contains("ERROR_TYPE] = error.ChargebeeApiErrorType");
   }
 }

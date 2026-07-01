@@ -118,16 +118,16 @@ export function buildRequestEndSpanAttributes(
   };
 
   if (result.error) {
-    // error.type is the status code on failed requests
-    attributes[TelemetryAttributeKeys.ERROR_TYPE] = String(result.httpStatusCode);
+    if (result.error.chargebeeApiErrorType) {
+      attributes[TelemetryAttributeKeys.ERROR_TYPE] =
+        result.error.chargebeeApiErrorType;
+      attributes[TelemetryAttributeKeys.CHARGEBEE_ERROR_TYPE] =
+        result.error.chargebeeApiErrorType;
+    }
 
     if (result.error.chargebeeErrorCode) {
       attributes[TelemetryAttributeKeys.CHARGEBEE_ERROR_CODE] =
         result.error.chargebeeErrorCode;
-    }
-    if (result.error.chargebeeApiErrorType) {
-      attributes[TelemetryAttributeKeys.CHARGEBEE_ERROR_TYPE] =
-        result.error.chargebeeApiErrorType;
     }
     if (result.error.chargebeeErrorParam) {
       attributes[TelemetryAttributeKeys.CHARGEBEE_ERROR_PARAM] =

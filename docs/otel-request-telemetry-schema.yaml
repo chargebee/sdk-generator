@@ -12,7 +12,7 @@
 #   - Attribute naming: https://opentelemetry.io/docs/specs/semconv/general/naming/
 #   - HTTP spans:       https://opentelemetry.io/docs/specs/semconv/http/http-spans/
 
-schema_version: 1
+schema_version: 2
 
 span:
   # chargebee.{resource}.{operation}  e.g. chargebee.subscription.create
@@ -123,6 +123,30 @@ start_attributes:
     description: Installed SDK version.
     example: 3.0.0
 
+# Dynamic, per-request header attributes recorded at span start.
+#
+# Every outgoing request header whose (lowercased) name starts with `chargebee-`
+# is promoted to a span attribute, EXCEPT the `chargebee-request-origin-*` family,
+# which carries end-user PII (origin IP, email, device) and is always excluded.
+# Matching by prefix means new `chargebee-*` headers are captured automatically
+# with no SDK upgrade. This is opt-in: only emitted when an adapter is configured.
+start_header_attributes:
+  key_pattern: "http.request.header.{lowercased-header-name}"
+  # OTel HTTP semconv models header attributes as string arrays. SDKs whose
+  # attribute map cannot hold arrays (e.g. a String-typed map) MAY emit a single
+  # string value instead; the key and capture/exclusion rules stay identical.
+  type: string[]
+  required: false
+  source: request
+  stability: stable          # OTel HTTP semconv
+  include_prefix: "chargebee-"
+  exclude_prefix: "chargebee-request-origin-"
+  case_insensitive_match: true
+  lowercase_attribute_name: true
+  example:
+    http.request.header.chargebee-business-entity-id: ["be_123"]
+    http.request.header.chargebee-idempotency-key: ["idem-key-1"]
+
 # Recorded at span end (response phase).
 end_attributes:
   - key: http.response.status_code
@@ -140,8 +164,8 @@ end_attributes:
     condition: on_error
     source: response
     stability: stable
-    description: OTel error classification; the HTTP status code as a string.
-    example: "404"
+    description: OTel error classification; Chargebee error type when available.
+    example: invalid_request
 
   - key: chargebee.error.code
     type: string
@@ -197,3 +221,4 @@ constraints:
       - customer_pii        # names, emails, billing addresses
       - payment_data        # card numbers, tokens
       - sensitive_query_params
+      - chargebee_request_origin_headers  # chargebee-request-origin-* (origin IP, email, device)

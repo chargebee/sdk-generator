@@ -22,6 +22,26 @@ public final class TelemetryAttributeKeys {
   /** Standard span name prefix: chargebee.{resource}.{operation} */
   public static final String TELEMETRY_SPAN_NAME_PREFIX = "chargebee";
 
+  /**
+   * OTel HTTP semantic-convention prefix for request-header attributes:
+   * {@code http.request.header.<lowercased-name>}.
+   */
+  public static final String HTTP_REQUEST_HEADER_ATTRIBUTE_PREFIX = "http.request.header.";
+
+  /**
+   * Request headers whose (lowercased) name starts with this prefix are captured as span
+   * attributes. Using a prefix instead of a fixed list means any future {@code chargebee-*} header
+   * is picked up automatically, with no SDK upgrade required.
+   */
+  public static final String CHARGEBEE_TELEMETRY_HEADER_PREFIX = "chargebee-";
+
+  /**
+   * Headers under this sub-prefix carry end-user PII (origin IP, email, device) and are excluded
+   * from spans by default. Chargebee namespaces such headers under
+   * {@code chargebee-request-origin-*}, so future PII headers stay excluded automatically.
+   */
+  public static final String CHARGEBEE_TELEMETRY_HEADER_EXCLUDE_PREFIX = "chargebee-request-origin-";
+
   public static final String URL_FULL = "url.full";
   public static final String HTTP_REQUEST_METHOD = "http.request.method";
   public static final String HTTP_RESPONSE_STATUS_CODE = "http.response.status_code";
