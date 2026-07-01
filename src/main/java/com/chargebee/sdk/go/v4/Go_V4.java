@@ -1,5 +1,7 @@
 package com.chargebee.sdk.go.v4;
 
+import static com.chargebee.GenUtil.firstCharLower;
+import static com.chargebee.GenUtil.normalizeToLowerCamelCase;
 import static com.chargebee.GenUtil.*;
 import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.openapi.Resource.isListOfSubResourceSchema;
@@ -121,6 +123,7 @@ public class Go_V4 extends Language {
 
     fileOps.add(new FileOp.CreateDirectory(outputDirectoryPath, ""));
     fileOps.add(generateGlobalEnumFiles(outputDirectoryPath, spec));
+    fileOps.addAll(generateTelemetryFiles(outputDirectoryPath));
     fileOps.addAll(generateServices(outputDirectoryPath, resources));
     fileOps.addAll(genModels(outputDirectoryPath, resources, spec));
     fileOps.add(generateClientFile(outputDirectoryPath));
@@ -132,6 +135,36 @@ public class Go_V4 extends Language {
       fileOps.addAll(
           WebhookGenerator.generate(
               outputDirectoryPath, spec, parserTemplate, contentTemplate, handlerTemplate));
+    }
+
+    return fileOps;
+  }
+
+  private List<FileOp> generateTelemetryFiles(String outputDirectoryPath) throws IOException {
+    final String telemetryDir = outputDirectoryPath + "/telemetry";
+    final String[] telemetryFiles = {
+      "attribute_keys.go",
+      "request_telemetry_context.go",
+      "request_telemetry_error.go",
+      "request_telemetry_result.go",
+      "telemetry_adapter.go",
+      "telemetry_support.go"
+    };
+    final String[] templateKeys = {
+      "telemetryAttributeKeys",
+      "telemetryRequestContext",
+      "telemetryRequestError",
+      "telemetryRequestResult",
+      "telemetryAdapter",
+      "telemetrySupport"
+    };
+
+    List<FileOp> fileOps = new ArrayList<>();
+    fileOps.add(new FileOp.CreateDirectory(telemetryDir, ""));
+
+    for (int i = 0; i < telemetryFiles.length; i++) {
+      Template template = getTemplateContent(templateKeys[i]);
+      fileOps.add(new FileOp.WriteString(telemetryDir, telemetryFiles[i], template.apply("")));
     }
 
     return fileOps;
@@ -457,27 +490,28 @@ public class Go_V4 extends Language {
 
   @Override
   protected Map<String, String> templatesDefinition() {
-    return Map.of(
-        "globalEnums",
-        "/templates/go/v4/globalEnums.go.hbs",
-        "enums",
-        "/templates/go/v4/enums.go.hbs",
-        "services",
-        "/templates/go/v4/services.go.hbs",
-        "models",
-        "/templates/go/v4/models.go.hbs",
-        "responses",
-        "/templates/go/v4/responses.go.hbs",
-        "client",
-        "/templates/go/v4/client.go.hbs",
-        "exceptions",
-        "/templates/go/v4/api_error.go.hbs",
-        "webhook",
-        "/templates/go/v4/webhook.go.hbs",
-        "webhookContent",
-        "/templates/go/v4/webhookContent.go.hbs",
-        "webhookHandler",
-        "/templates/go/v4/webhookHandler.go.hbs");
+    return Map.ofEntries(
+        Map.entry("globalEnums", "/templates/go/v4/globalEnums.go.hbs"),
+        Map.entry("enums", "/templates/go/v4/enums.go.hbs"),
+        Map.entry("services", "/templates/go/v4/services.go.hbs"),
+        Map.entry("models", "/templates/go/v4/models.go.hbs"),
+        Map.entry("responses", "/templates/go/v4/responses.go.hbs"),
+        Map.entry("client", "/templates/go/v4/client.go.hbs"),
+        Map.entry("exceptions", "/templates/go/v4/api_error.go.hbs"),
+        Map.entry("webhook", "/templates/go/v4/webhook.go.hbs"),
+        Map.entry("webhookContent", "/templates/go/v4/webhookContent.go.hbs"),
+        Map.entry("webhookHandler", "/templates/go/v4/webhookHandler.go.hbs"),
+        Map.entry("telemetryAttributeKeys", "/templates/go/telemetry/attribute_keys.go.hbs"),
+        Map.entry(
+            "telemetryRequestContext",
+            "/templates/go/telemetry/request_telemetry_context.go.hbs"),
+        Map.entry(
+            "telemetryRequestError", "/templates/go/telemetry/request_telemetry_error.go.hbs"),
+        Map.entry(
+            "telemetryRequestResult",
+            "/templates/go/telemetry/request_telemetry_result.go.hbs"),
+        Map.entry("telemetryAdapter", "/templates/go/telemetry/telemetry_adapter.go.hbs"),
+        Map.entry("telemetrySupport", "/templates/go/telemetry/telemetry_support.go.hbs"));
   }
 
   private FileOp generateClientFile(String outputDirectoryPath) throws IOException {
@@ -549,9 +583,12 @@ public class Go_V4 extends Language {
           Map<String, Object> mutableAction = new HashMap<>(action);
           mutableAction.put("goParamName", toCamelCase((String) action.get("name")));
           mutableAction.put("goActionName", toCamelCase((String) action.get("name")));
+          mutableAction.put(
+              "telemetryOperation", firstCharLower(toCamelCase((String) action.get("name"))));
           mutableActions.add(mutableAction);
         }
 
+        actionPayload.put("telemetryResource", normalizeToLowerCamelCase(resource.id));
         actionPayload.put("actions", mutableActions);
         if (mutableActions.isEmpty())
           continue;
