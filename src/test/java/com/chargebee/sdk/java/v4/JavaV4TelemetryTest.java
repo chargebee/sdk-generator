@@ -105,6 +105,10 @@ class JavaV4TelemetryTest {
     assertThat(support.fileContent).contains("extractRequestTelemetryError");
     assertThat(support.fileContent).contains("extractHttpStatusCode");
     assertThat(support.fileContent).contains("instanceof APIException");
+    assertThat(support.fileContent)
+        .doesNotContain("ERROR_TYPE, String.valueOf(result.getHttpStatusCode())");
+    assertThat(support.fileContent)
+        .contains("ERROR_TYPE, error.getChargebeeApiErrorType()");
   }
 
   @Test

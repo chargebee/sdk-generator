@@ -106,7 +106,6 @@ public final class TelemetrySupport {
       return sdkVersion;
     }
 
-    /** Outgoing request headers; matching {@code chargebee-*} headers are captured as attributes. */
     public Map<String, String> getRequestHeaders() {
       return requestHeaders;
     }
@@ -162,15 +161,6 @@ public final class TelemetrySupport {
     return attributes;
   }
 
-  /**
-   * Captures Chargebee custom request headers as span attributes.
-   *
-   * <p>Headers whose (lowercased) name starts with {@code chargebee-} are recorded as {@code
-   * http.request.header.<name>}, per the OpenTelemetry HTTP semantic conventions. The {@code
-   * chargebee-request-origin-*} family (origin IP, email, device) is skipped because it carries
-   * end-user PII. Matching by prefix means new {@code chargebee-*} headers are captured
-   * automatically without an SDK upgrade.
-   */
   public static Map<String, String> buildRequestHeaderSpanAttributes(
       Map<String, String> requestHeaders) {
     Map<String, String> attributes = new HashMap<>();
