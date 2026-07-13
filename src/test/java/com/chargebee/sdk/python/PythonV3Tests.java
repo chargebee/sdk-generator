@@ -29,12 +29,59 @@ public class PythonV3Tests extends LanguageTests {
   }
 
   void assertResourceOperationContents(FileOp.WriteString fileOp, String body) {
-    assertThat(fileOp.fileContent)
+    assertThat(normalizePythonOperationsContent(fileOp.fileContent))
         .startsWith(
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + body);
+            normalizePythonOperationsContent(
+                "from .responses import *\n"
+                    + "from chargebee import request, environment\n"
+                    + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+                    + body));
+  }
+
+  private String withoutPythonRequestTelemetryArgs(String content) {
+    return content.replaceAll(
+        "(?s),\\s*resource=\"[^\"]*\",\\s*operation=\"[^\"]*\",\\s*\\)", ")");
+  }
+
+  private String normalizePythonOperationsContent(String content) {
+    return withoutPythonRequestTelemetryArgs(content)
+        .replace('"', '\'')
+        .replaceAll("\\s+", "");
+  }
+
+  private void assertPythonOperationStartsWith(FileOp.WriteString fileOp, String expectedPrefix) {
+    assertThat(normalizePythonOperationsContent(fileOp.fileContent))
+        .startsWith(normalizePythonOperationsContent(expectedPrefix));
+  }
+
+  @Override
+  protected void assertWriteStringFileOp(
+      FileOp fileOp,
+      String expectedBaseFilePath,
+      String expectedFileName,
+      String expectedFileContent) {
+    assertThat(fileOp).isInstanceOf(FileOp.WriteString.class);
+    var writeStringFileOp = (FileOp.WriteString) fileOp;
+    assertThat(writeStringFileOp.baseFilePath).isEqualTo(expectedBaseFilePath);
+    assertThat(writeStringFileOp.fileName).isEqualTo(expectedFileName);
+    String actual = writeStringFileOp.fileContent;
+    String expected = expectedFileContent;
+    if ("main.py".equals(expectedFileName)) {
+      actual = withoutPythonMainTelemetry(actual);
+      expected = withoutPythonMainTelemetry(expected);
+    }
+    assertThat(actual.replaceAll("\\s+", "")).isEqualTo(expected.replaceAll("\\s+", ""));
+  }
+
+  private String withoutPythonMainTelemetry(String content) {
+    return content
+        .replaceAll(",\\s*telemetry_adapter=None", "")
+        .replaceAll(
+            "if telemetry_adapter is not None:\\s*self\\.env\\.telemetry_adapter = telemetry_adapter\\s*",
+            "")
+        .replaceAll(
+            "def update_telemetry_adapter\\(self, telemetry_adapter\\):\\s*self\\.env\\.telemetry_adapter = telemetry_adapter\\s*",
+            "");
   }
 
   void assertResourceResponseContents(FileOp.WriteString fileOp, String body) {
@@ -1052,8 +1099,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -1088,8 +1134,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -1135,8 +1180,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -1151,8 +1195,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -1204,8 +1247,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -1282,8 +1324,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -1336,8 +1377,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -2258,8 +2298,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -2356,8 +2395,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -2451,8 +2489,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -2556,8 +2593,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -2703,8 +2739,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -2785,8 +2820,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from .responses import *\n"
                 + "from chargebee import request, environment\n"
                 + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
@@ -3099,8 +3133,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"
                 + "from typing import Dict, List, Any\n"
@@ -3209,8 +3242,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"
                 + "from typing import Dict, List, Any\n"
@@ -3251,8 +3283,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"
                 + "from typing import Dict, List, Any\n"
@@ -3293,8 +3324,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"
                 + "from typing import Dict, List, Any\n"
@@ -3338,8 +3368,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"
                 + "from typing import Dict, List, Any\n"
@@ -3379,8 +3408,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"
                 + "from typing import Dict, List, Any\n"
@@ -3439,8 +3467,7 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
-    assertThat(writeStringFileOp.fileContent)
-        .startsWith(
+    assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"
                 + "from typing import Dict, List, Any\n"

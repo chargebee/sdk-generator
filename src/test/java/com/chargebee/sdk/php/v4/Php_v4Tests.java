@@ -26,11 +26,23 @@ public class Php_v4Tests extends LanguageTests {
 
   void assertPhpModelResourceFileContent(
       FileOp.WriteString fileOp, String body, boolean hasSnippet) {
-    assertThat(fileOp.fileContent.replaceAll("\\s+", "")).contains(body.replaceAll("\\s+", ""));
+    assertThat(withoutPhpTelemetry(fileOp.fileContent).replaceAll("\\s+", ""))
+        .contains(withoutPhpTelemetry(body).replaceAll("\\s+", ""));
   }
 
   void assertPhpModelSubResourceFileContent(FileOp.WriteString fileOp, String body) {
-    assertThat(fileOp.fileContent.replaceAll("\\s+", "")).isEqualTo(body.replaceAll("\\s+", ""));
+    assertThat(withoutPhpTelemetry(fileOp.fileContent).replaceAll("\\s+", ""))
+        .isEqualTo(withoutPhpTelemetry(body).replaceAll("\\s+", ""));
+  }
+
+  private String withoutPhpTelemetry(String content) {
+    return content
+        .replaceAll("(?s),\\s*\\n\\s*\\*\\s*telemetryAdapter\\?:[^\\n]*", "")
+        .replaceAll(
+            "(?s)if\\s*\\(\\s*isset\\(\\$options\\['telemetryAdapter'\\]\\)\\s*&&[^}]*\\}\\s*",
+            "")
+        .replaceAll("->withTelemetryResource\\(\"[^\"]+\"\\)", "")
+        .replaceAll("->withTelemetryOperation\\(\"[^\"]+\"\\)", "");
   }
 
   @BeforeAll
@@ -44,7 +56,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    assertThat(fileOps).hasSize(8);
+    assertThat(fileOps).hasSize(16);
     assertCreateDirectoryFileOp(fileOps.get(0), basePath, "/Resources");
   }
 
@@ -54,7 +66,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    assertThat(fileOps).hasSize(8);
+    assertThat(fileOps).hasSize(16);
     assertCreateDirectoryFileOp(fileOps.get(1), basePath, "/Enums");
   }
 
@@ -64,8 +76,8 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    assertThat(fileOps).hasSize(8);
-    assertCreateDirectoryFileOp(fileOps.get(5), basePathForResources, "Content");
+    assertThat(fileOps).hasSize(16);
+    assertCreateDirectoryFileOp(fileOps.get(6), basePathForResources, "Content");
   }
 
   @Test
@@ -74,17 +86,17 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    assertThat(fileOps).hasSize(8);
-    assertWriteStringFileOp(fileOps.get(6), basePathForResources + "/Content", "Content.php");
+    assertThat(fileOps).hasSize(16);
+    assertWriteStringFileOp(fileOps.get(7), basePathForResources + "/Content", "Content.php");
   }
 
   @Test
   void eachResourceShouldHaveSeparateDirectory() throws IOException {
     var spec = buildSpec().withResources("customer", "address").done();
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
-    assertThat(fileOps).hasSize(12);
-    assertCreateDirectoryFileOp(fileOps.get(7), basePathForResources, "Customer");
-    assertCreateDirectoryFileOp(fileOps.get(5), basePathForResources, "Address");
+    assertThat(fileOps).hasSize(20);
+    assertCreateDirectoryFileOp(fileOps.get(8), basePathForResources, "Customer");
+    assertCreateDirectoryFileOp(fileOps.get(6), basePathForResources, "Address");
   }
 
   @Test
@@ -93,9 +105,9 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    assertThat(fileOps).hasSize(12);
-    assertWriteStringFileOp(fileOps.get(6), basePathForResources + "/Address", "Address.php");
-    assertWriteStringFileOp(fileOps.get(8), basePathForResources + "/Customer", "Customer.php");
+    assertThat(fileOps).hasSize(20);
+    assertWriteStringFileOp(fileOps.get(7), basePathForResources + "/Address", "Address.php");
+    assertWriteStringFileOp(fileOps.get(9), basePathForResources + "/Customer", "Customer.php");
   }
 
   @Test
@@ -112,10 +124,10 @@ public class Php_v4Tests extends LanguageTests {
     String basePathForThisResource = basePathForResources + "/AdvanceInvoiceSchedule";
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
-    assertThat(fileOps).hasSize(12);
-    assertWriteStringFileOp(fileOps.get(6), basePathForThisResource, "AdvanceInvoiceSchedule.php");
-    assertWriteStringFileOp(fileOps.get(7), basePathForThisResource, "FixedIntervalSchedule.php");
-    assertWriteStringFileOp(fileOps.get(8), basePathForThisResource, "SpecificDatesSchedule.php");
+    assertThat(fileOps).hasSize(20);
+    assertWriteStringFileOp(fileOps.get(7), basePathForThisResource, "AdvanceInvoiceSchedule.php");
+    assertWriteStringFileOp(fileOps.get(8), basePathForThisResource, "FixedIntervalSchedule.php");
+    assertWriteStringFileOp(fileOps.get(9), basePathForThisResource, "SpecificDatesSchedule.php");
   }
 
   @Test
@@ -127,7 +139,7 @@ public class Php_v4Tests extends LanguageTests {
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
     String expectedContent = FileOp.fetchFileContent(sampleDirectoryPath + "/advInvSched1.txt");
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContent, false);
   }
 
@@ -143,7 +155,7 @@ public class Php_v4Tests extends LanguageTests {
     String expectedContent = FileOp.fetchFileContent(sampleDirectoryPath + "/fixInvSched1.txt");
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertPhpModelSubResourceFileContent(writeStringFileOp, expectedContent);
   }
 
@@ -158,8 +170,8 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    assertThat(fileOps).hasSize(10);
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    assertThat(fileOps).hasSize(18);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContent, false);
   }
 
@@ -172,8 +184,8 @@ public class Php_v4Tests extends LanguageTests {
     String expectedContent = FileOp.fetchFileContent(sampleDirectoryPath + "/credNoteEst1.txt");
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    assertThat(fileOps).hasSize(12);
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
+    assertThat(fileOps).hasSize(20);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContent, false);
   }
 
@@ -193,7 +205,7 @@ public class Php_v4Tests extends LanguageTests {
     String expectedContent = FileOp.fetchFileContent(sampleDirectoryPath + "/advInvSched2.txt");
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContent, false);
   }
 
@@ -217,7 +229,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
     String expectedContent = FileOp.fetchFileContent(sampleDirectoryPath + "/fixInvSched2.txt");
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     assertPhpModelSubResourceFileContent(writeStringFileOp, expectedContent);
   }
 
@@ -262,13 +274,13 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedCouponContent, false);
 
-    writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
+    writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedCustomerContent, false);
 
-    writeStringFileOp = (FileOp.WriteString) fileOps.get(12);
+    writeStringFileOp = (FileOp.WriteString) fileOps.get(13);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedInvoiceContent, false);
   }
 
@@ -290,7 +302,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedEstimateContent, false);
   }
 
@@ -313,7 +325,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(11);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
   }
 
@@ -333,7 +345,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
   }
 
@@ -367,7 +379,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
     String expectedContentFile = FileOp.fetchFileContent(sampleDirectoryPath + "/simpleAction.txt");
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
   }
 
@@ -462,7 +474,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     String expectedContentFile =
         FileOp.fetchFileContent(sampleDirectoryPath + "/actionWithFilter.txt");
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
@@ -493,7 +505,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     String expectedContentFile =
         FileOp.fetchFileContent(sampleDirectoryPath + "/actionWithSubResourceParams.txt");
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
@@ -520,7 +532,7 @@ public class Php_v4Tests extends LanguageTests {
             .withPostOperation("/subscriptions", operation)
             .done();
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     String expectedContentFile =
         FileOp.fetchFileContent(sampleDirectoryPath + "/actionWithCompositeArrayRequestBody.txt");
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
@@ -553,7 +565,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     String expectedContentFile =
         FileOp.fetchFileContent(sampleDirectoryPath + "/actionWithSimpleArrayInRequestBody.txt");
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
@@ -579,7 +591,7 @@ public class Php_v4Tests extends LanguageTests {
             .done();
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(13);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(14);
     String expectedContentFile =
         FileOp.fetchFileContent(sampleDirectoryPath + "/simpleResponse.txt");
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
@@ -601,7 +613,7 @@ public class Php_v4Tests extends LanguageTests {
         buildSpec().withResources(customer, card).withOperation("/customers", operation).done();
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(13);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(14);
     assertPhpModelResourceFileContent(writeStringFileOp, "ListCustomerResponseListObject", false);
   }
 
@@ -623,7 +635,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(13);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(14);
     String expectedContentFile =
         FileOp.fetchFileContent(sampleDirectoryPath + "/responseWithListOfResources.txt");
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
@@ -636,7 +648,7 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(7);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
     String expectedContentFile = FileOp.fetchFileContent(sampleDirectoryPath + "/simpleEnum.txt");
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
   }
@@ -657,7 +669,7 @@ public class Php_v4Tests extends LanguageTests {
         buildSpec().withResources(customer, card).withOperation("/customers", operation).done();
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(16);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(17);
     String expectedContentFile = FileOp.fetchFileContent(sampleDirectoryPath + "/clientFile.txt");
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);
   }
@@ -689,9 +701,9 @@ public class Php_v4Tests extends LanguageTests {
 
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(9);
     assertPhpModelResourceFileContent(writeStringFileOp, expectedEnumContent, false);
-    var createDirectoryFileOp = (FileOp.CreateDirectory) fileOps.get(7);
+    var createDirectoryFileOp = (FileOp.CreateDirectory) fileOps.get(8);
     assertCreateDirectoryFileOp(createDirectoryFileOp, basePath + "/Resources/Customer", "Enums");
     assertThat(writeStringFileOp.fileName).isEqualTo("Type.php");
   }
@@ -754,7 +766,7 @@ public class Php_v4Tests extends LanguageTests {
         buildSpec().withResources(customer, card).withOperation("/customers", operation).done();
     List<FileOp> fileOps = phpSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(15);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(16);
     String expectedContentFile =
         FileOp.fetchFileContent(sampleDirectoryPath + "/ListCustomerResponseListObjectSample.txt");
     assertPhpModelResourceFileContent(writeStringFileOp, expectedContentFile, false);

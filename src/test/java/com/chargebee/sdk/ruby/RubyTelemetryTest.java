@@ -111,7 +111,6 @@ class RubyTelemetryTest {
     List<FileOp> fileOps = generate();
 
     FileOp.WriteString customer = findWriteOp(fileOps, "/models/customer.rb");
-    assertThat(customer.fileContent).contains("telemetry_resource: \"customer\"");
-    assertThat(customer.fileContent).contains("telemetry_operation: \"retrieve\"");
+    assertThat(customer.fileContent).contains("\"customer\", \"retrieve\"");
   }
 }
