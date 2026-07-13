@@ -53,7 +53,7 @@ using System.Net;"""
         FileOp.fetchFileContent(
                 "src/test/java/com/chargebee/sdk/dotnet/samples/customerConstructors.txt")
             .replace("__delimiter__", "");
-    assertThat(fileOp.fileContent)
+    assertThat(withoutDotnetTelemetrySetup(fileOp.fileContent))
         .startsWith(
             FileOp.fetchFileContent("src/test/java/com/chargebee/sdk/dotnet/samples/imports.txt")
                 + imports
@@ -74,7 +74,7 @@ using System.Net;"""
 using System.Threading.Tasks;
 using System.Net;"""
             : "";
-    assertThat(fileOp.fileContent)
+    assertThat(withoutDotnetTelemetrySetup(fileOp.fileContent))
         .startsWith(
             FileOp.fetchFileContent("src/test/java/com/chargebee/sdk/dotnet/samples/imports.txt")
                 + imports
@@ -84,6 +84,12 @@ using System.Net;"""
                 + "\n"
                 + "\n"
                 + body);
+  }
+
+  private String withoutDotnetTelemetrySetup(String content) {
+    return content.replaceAll(
+        "(?s)var request = ([^;]+);\\s*request\\.SetTelemetryResource\\([^)]+\\);\\s*request\\.SetTelemetryOperation\\([^)]+\\);\\s*return request;",
+        "return $1;");
   }
 
   void assertDotnetResultFileContents(FileOp.WriteString fileOp, String body) throws IOException {
@@ -2364,7 +2370,7 @@ using System.Net;"""
             .done();
     List<FileOp> fileOps = dotnetSdkGen.generate(basePath, spec);
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(2);
-    assertThat(writeStringFileOp.fileContent)
+    assertThat(withoutDotnetTelemetrySetup(writeStringFileOp.fileContent))
         .contains(
             "return new CreateRequest(url,"
                 + " HttpMethod.POST).SetSubDomain(\"test-domain\").IsJsonRequest(true).SetIdempotent(false);");

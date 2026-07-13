@@ -70,6 +70,7 @@ public class Dotnet extends Language {
     fileOps.addAll(
         generateResourceFiles(outputDirectoryPath + "/" + MODELS_DIRECTORY_PATH, resources));
     fileOps.add(generateResultFile(outputDirectoryPath + "/" + INTERNAL_DIRECTORY_PATH, resources));
+    fileOps.addAll(generateTelemetryFiles(outputDirectoryPath));
     //    fileOps.addAll(
     //        generateErrorExceptions(
     //            outputDirectoryPath + "/" + com.chargebee.sdk.java.Constants.EXCEPTIONS,
@@ -88,7 +89,47 @@ public class Dotnet extends Language {
         "resultBase",
         "/templates/dotnet/resultBase.cs.hbs",
         "exceptions",
-        "/templates/dotnet/exception.cs.hbs");
+        "/templates/dotnet/exception.cs.hbs",
+        "telemetryAttributeKeys",
+        "/templates/dotnet/telemetry/TelemetryAttributeKeys.cs.hbs",
+        "telemetryRequestContext",
+        "/templates/dotnet/telemetry/RequestTelemetryContext.cs.hbs",
+        "telemetryRequestError",
+        "/templates/dotnet/telemetry/RequestTelemetryError.cs.hbs",
+        "telemetryRequestResult",
+        "/templates/dotnet/telemetry/RequestTelemetryResult.cs.hbs",
+        "telemetryAdapter",
+        "/templates/dotnet/telemetry/ITelemetryAdapter.cs.hbs",
+        "telemetrySupport",
+        "/templates/dotnet/telemetry/TelemetrySupport.cs.hbs");
+  }
+
+  private List<FileOp> generateTelemetryFiles(String outputDirectoryPath) throws IOException {
+    final String telemetryDir = outputDirectoryPath + "/Telemetry";
+    final String[] telemetryFiles = {
+      "TelemetryAttributeKeys.cs",
+      "RequestTelemetryContext.cs",
+      "RequestTelemetryError.cs",
+      "RequestTelemetryResult.cs",
+      "ITelemetryAdapter.cs",
+      "TelemetrySupport.cs"
+    };
+    final String[] templateKeys = {
+      "telemetryAttributeKeys",
+      "telemetryRequestContext",
+      "telemetryRequestError",
+      "telemetryRequestResult",
+      "telemetryAdapter",
+      "telemetrySupport"
+    };
+
+    List<FileOp> fileOps = new ArrayList<>();
+    fileOps.add(new FileOp.CreateDirectory(telemetryDir, ""));
+    for (int i = 0; i < telemetryFiles.length; i++) {
+      Template template = getTemplateContent(templateKeys[i]);
+      fileOps.add(new FileOp.WriteString(telemetryDir, telemetryFiles[i], template.apply("")));
+    }
+    return fileOps;
   }
 
   private void addGlobalEnumIfMissing(Attribute attribute, List<Enum> globalEnums) {
@@ -756,10 +797,21 @@ public class Dotnet extends Language {
       operation.setIdempotent(action.isIdempotent());
       operation.setRetType(getRetType(action));
       operation.setMethName(Inflector.capitalize(action.name));
-      operation.setReqCreationCode(requestCreationCodeWithSubDomainAndContentTypeJson(action));
+      String requestCode = requestCreationCodeWithSubDomainAndContentTypeJson(action);
+      operation.setReqCreationCode(requestCode);
+      operation.setReqCreationExpr(stripReturnPrefix(requestCode));
+      operation.setTelemetryResource(normalizeToLowerCamelCase(res.id));
+      operation.setTelemetryOperation(firstCharLower(toCamelCase(action.name)));
       operations.add(operation);
     }
     return operations;
+  }
+
+  private String stripReturnPrefix(String requestCode) {
+    if (requestCode != null && requestCode.startsWith("return ")) {
+      return requestCode.substring("return ".length());
+    }
+    return requestCode;
   }
 
   public String requestCreationCodeWithSubDomainAndContentTypeJson(Action action) {

@@ -47,7 +47,10 @@ namespace ChargeBee.Models
         public static {{{retType}}} {{{camelCase methName}}}({{handleArg}})
         {
             string url = ApiUtil.BuildUrl({{{urlArgs}}});
-            {{{reqCreationCode}}};
+            var request = {{{reqCreationExpr}}};
+            request.SetTelemetryResource("{{telemetryResource}}");
+            request.SetTelemetryOperation("{{telemetryOperation}}");
+            return request;
         }{{/each}}{{#if (eq clazName "PaymentVoucher")}}
         [Obsolete("Use PaymentVouchersForInvoice")]
         public static PaymentVoucherPaymentVouchersForInvoiceRequest Payment_vouchersForInvoice(string id)

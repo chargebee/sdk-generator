@@ -22,4 +22,5 @@ public @Data class Resource {
   private List<Operation> operations;
   private List<Map<String, Object>> enums;
   private List<Map<String, Object>> actions;
+  private String telemetryResource;
 }

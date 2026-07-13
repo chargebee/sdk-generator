@@ -69,7 +69,26 @@ public class PythonV3 extends Language {
     fileOps.add(generateGlobalEnums(outputDirectoryPath + modelsDirectoryPath, globalEnums));
     fileOps.addAll(genModels(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.add(genMain(outputDirectoryPath, resources));
+    fileOps.addAll(generateTelemetryFiles(outputDirectoryPath));
     //    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
+
+    return fileOps;
+  }
+
+  private List<FileOp> generateTelemetryFiles(String outputDirectoryPath) throws IOException {
+    final String telemetryPath = outputDirectoryPath + "/telemetry";
+    List<FileOp> fileOps = new ArrayList<>();
+    fileOps.add(new FileOp.CreateDirectory(telemetryPath, ""));
+
+    Template typesTemplate = getTemplateContent("telemetryTypes");
+    Template supportTemplate = getTemplateContent("telemetrySupport");
+    Template indexTemplate = getTemplateContent("telemetryIndex");
+
+    fileOps.add(new FileOp.WriteString(telemetryPath, "types.py", typesTemplate.apply("")));
+    fileOps.add(
+        new FileOp.WriteString(
+            telemetryPath, "telemetry_support.py", supportTemplate.apply("")));
+    fileOps.add(new FileOp.WriteString(telemetryPath, "__init__.py", indexTemplate.apply("")));
 
     return fileOps;
   }
@@ -148,7 +167,13 @@ public class PythonV3 extends Language {
         "chargebee.main",
         "/templates/python/v3/main.py.hbs",
         "api_errors",
-        "/templates/python/v3/api_errors.py.hbs");
+        "/templates/python/v3/api_errors.py.hbs",
+        "telemetryTypes",
+        "/templates/python/telemetry/types.py.hbs",
+        "telemetrySupport",
+        "/templates/python/telemetry/telemetry_support.py.hbs",
+        "telemetryIndex",
+        "/templates/python/telemetry/__init__.py.hbs");
   }
 
   private List<FileOp> genModels(String outputDirectoryPath, List<Resource> resources)
@@ -170,6 +195,7 @@ public class PythonV3 extends Language {
       com.chargebee.sdk.python.v3.model.Resource pyRes =
           new com.chargebee.sdk.python.v3.model.Resource();
       pyRes.setClazName(res.name);
+      pyRes.setTelemetryResource(GenUtil.normalizeToLowerCamelCase(res.id));
       pyRes.setResponseCols(getResponseCols());
       pyRes.setEnums(genModelEnums(res, resourceList));
 

@@ -24,25 +24,29 @@ public class PHP_V4 extends Language {
 
   @Override
   protected Map<String, String> templatesDefinition() {
-    return Map.of(
-        RESOURCES,
-        "/templates/php/v4/resource.php.hbs",
-        ENUMS,
-        "/templates/php/v4/enums.php.hbs",
-        ACTION,
-        "/templates/php/v4/action.php.hbs",
-        RESPONSE,
-        "/templates/php/v4/response.php.hbs",
-        LIST_RESPONSE,
-        "/templates/php/v4/listResponse.php.hbs",
-        CHARGEBEE_CLIENT,
-        "/templates/php/v4/chargebeeClient.php.hbs",
-        LIST_RESPONSE_OBJECT,
-        "/templates/php/v4/listResponseObject.php.hbs",
-        ACTION_CONTRACT,
-        "/templates/php/v4/actionContract.php.hbs",
-        EXCEPTION,
-        "/templates/php/v4/exception.php.hbs");
+    return Map.ofEntries(
+        Map.entry(RESOURCES, "/templates/php/v4/resource.php.hbs"),
+        Map.entry(ENUMS, "/templates/php/v4/enums.php.hbs"),
+        Map.entry(ACTION, "/templates/php/v4/action.php.hbs"),
+        Map.entry(RESPONSE, "/templates/php/v4/response.php.hbs"),
+        Map.entry(LIST_RESPONSE, "/templates/php/v4/listResponse.php.hbs"),
+        Map.entry(CHARGEBEE_CLIENT, "/templates/php/v4/chargebeeClient.php.hbs"),
+        Map.entry(LIST_RESPONSE_OBJECT, "/templates/php/v4/listResponseObject.php.hbs"),
+        Map.entry(ACTION_CONTRACT, "/templates/php/v4/actionContract.php.hbs"),
+        Map.entry(EXCEPTION, "/templates/php/v4/exception.php.hbs"),
+        Map.entry(
+            "telemetryAttributeKeys",
+            "/templates/php/telemetry/TelemetryAttributeKeys.php.hbs"),
+        Map.entry(
+            "telemetryRequestContext",
+            "/templates/php/telemetry/RequestTelemetryContext.php.hbs"),
+        Map.entry(
+            "telemetryRequestError", "/templates/php/telemetry/RequestTelemetryError.php.hbs"),
+        Map.entry(
+            "telemetryRequestResult",
+            "/templates/php/telemetry/RequestTelemetryResult.php.hbs"),
+        Map.entry("telemetryAdapter", "/templates/php/telemetry/TelemetryAdapter.php.hbs"),
+        Map.entry("telemetrySupport", "/templates/php/telemetry/TelemetrySupport.php.hbs"));
   }
 
   private Map<String, FileGenerator> initializeGenerators() {
@@ -91,6 +95,37 @@ public class PHP_V4 extends Language {
             .get("actionContract")
             .generate(outputPath + "/Actions/Contracts", filteredResources));
     fileOps.addAll(generateExceptionFiles(outputPath + "/Exceptions", errors));
+    fileOps.addAll(generateTelemetryFiles(outputPath));
+    return fileOps;
+  }
+
+  private List<FileOp> generateTelemetryFiles(String outputPath) throws IOException {
+    final String telemetryDir = outputPath + "/Telemetry";
+    final String[] telemetryFiles = {
+      "TelemetryAttributeKeys.php",
+      "RequestTelemetryContext.php",
+      "RequestTelemetryError.php",
+      "RequestTelemetryResult.php",
+      "TelemetryAdapter.php",
+      "TelemetrySupport.php"
+    };
+    final String[] templateKeys = {
+      "telemetryAttributeKeys",
+      "telemetryRequestContext",
+      "telemetryRequestError",
+      "telemetryRequestResult",
+      "telemetryAdapter",
+      "telemetrySupport"
+    };
+
+    List<FileOp> fileOps = new ArrayList<>();
+    fileOps.add(new FileOp.CreateDirectory(telemetryDir, ""));
+
+    for (int i = 0; i < telemetryFiles.length; i++) {
+      Template template = getTemplateContent(templateKeys[i]);
+      fileOps.add(new FileOp.WriteString(telemetryDir, telemetryFiles[i], template.apply("")));
+    }
+
     return fileOps;
   }
 
@@ -115,7 +150,8 @@ public class PHP_V4 extends Language {
         new FileOp.CreateDirectory(basePath, "/Enums"),
         new FileOp.CreateDirectory(basePath, "/Actions"),
         new FileOp.CreateDirectory(basePath, "/Responses"),
-        new FileOp.CreateDirectory(basePath, "/Actions/Contracts"));
+        new FileOp.CreateDirectory(basePath, "/Actions/Contracts"),
+        new FileOp.CreateDirectory(basePath, "/Telemetry"));
   }
 
   private List<com.chargebee.openapi.Resource> filterResources(

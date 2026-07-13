@@ -40,6 +40,8 @@ func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if has
     {{#if options.isIdempotent~}}
     req.isIdempotent = true
     {{/if~}}
+    req.telemetryResource = "{{../telemetryResource}}"
+    req.telemetryOperation = "{{telemetryOperation}}"
 
     return send[*{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Response](req, s.config)
 }

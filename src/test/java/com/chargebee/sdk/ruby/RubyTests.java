@@ -25,7 +25,25 @@ public class RubyTests extends LanguageTests {
   private final String modelsDirectoryPath = "/ruby/lib/chargebee/models";
 
   void assertRubyModelFileContent(FileOp.WriteString fileOp, String body) {
-    assertThat(fileOp.fileContent).startsWith("module ChargeBee\n" + body);
+    assertThat(withoutRubyTelemetryArgs(fileOp.fileContent)).startsWith("module ChargeBee\n" + body);
+  }
+
+  @Override
+  protected void assertWriteStringFileOp(
+      FileOp fileOp,
+      String expectedBaseFilePath,
+      String expectedFileName,
+      String expectedFileContent) {
+    assertThat(fileOp).isInstanceOf(FileOp.WriteString.class);
+    var writeStringFileOp = (FileOp.WriteString) fileOp;
+    assertThat(writeStringFileOp.baseFilePath).isEqualTo(expectedBaseFilePath);
+    assertThat(writeStringFileOp.fileName).isEqualTo(expectedFileName);
+    assertThat(withoutRubyTelemetryArgs(writeStringFileOp.fileContent).replaceAll("\\s+", ""))
+        .isEqualTo(expectedFileContent.replaceAll("\\s+", ""));
+  }
+
+  private String withoutRubyTelemetryArgs(String content) {
+    return content.replaceAll(", jsonKeys, options, \"[^\"]+\", \"[^\"]+\"\\)", ", jsonKeys, options)");
   }
 
   void assertRubyResultFileContent(FileOp.WriteString fileOp, String body) throws IOException {
