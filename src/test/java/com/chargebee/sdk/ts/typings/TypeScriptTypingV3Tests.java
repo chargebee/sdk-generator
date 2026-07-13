@@ -34,6 +34,12 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
         + "__}";
   }
 
+  private String withIndexTelemetryTypes(String indexContent) {
+    return indexContent.replace(
+        "enableValidation?:__boolean;__};__export__interface__HttpClientInterface__{__makeApiRequest:__(request:__Request,__timeout:__number)__=>__Promise<Response>;__}__export__type__RetryConfig",
+        "enableValidation?:__boolean;__/**__*__@telemetryAdapter__optional__telemetry__adapter__for__observability__(e.g.__OpenTelemetry)__*/__telemetryAdapter?:__TelemetryAdapter;__};__export__interface__HttpClientInterface__{__makeApiRequest:__(request:__Request,__timeout:__number)__=>__Promise<Response>;__}__export__type__RequestTelemetryHandle__=__unknown;__export__const__TelemetryAttributeKeys:__{__readonly__URL_FULL:__'url.full';__readonly__HTTP_REQUEST_METHOD:__'http.request.method';__readonly__HTTP_RESPONSE_STATUS_CODE:__'http.response.status_code';__readonly__SERVER_ADDRESS:__'server.address';__readonly__ERROR_TYPE:__'error.type';__readonly__CHARGEBEE_SITE:__'chargebee.site';__readonly__CHARGEBEE_API_VERSION:__'chargebee.api_version';__readonly__CHARGEBEE_RESOURCE:__'chargebee.resource';__readonly__CHARGEBEE_OPERATION:__'chargebee.operation';__readonly__CHARGEBEE_SDK_NAME:__'chargebee.sdk.name';__readonly__CHARGEBEE_SDK_VERSION:__'chargebee.sdk.version';__readonly__CHARGEBEE_ERROR_CODE:__'chargebee.error.code';__readonly__CHARGEBEE_ERROR_TYPE:__'chargebee.error.type';__readonly__CHARGEBEE_ERROR_PARAM:__'chargebee.error.param';__};__export__type__RequestTelemetryContext__=__{__spanName:__string;__resource:__string;__operation:__string;__httpMethod:__string;__httpUrl:__string;__serverAddress:__string;__chargebeeSite:__string;__chargebeeApiVersion:__'v1'__|__'v2';__sdkName:__string;__sdkVersion:__string;__/**__Prebuilt__span__attributes__—__pass__these__to__your__tracer.__*/__startAttributes:__Record<string,__string__|__string[]>;__};__export__type__RequestTelemetryError__=__{__message:__string;__chargebeeErrorCode?:__string;__chargebeeApiErrorType?:__string;__chargebeeErrorParam?:__string;__};__export__type__RequestTelemetryResult__=__{__httpStatusCode:__number;__durationMs:__number;__error?:__RequestTelemetryError;__/**__Prebuilt__span__attributes__—__pass__these__to__your__tracer.__*/__endAttributes:__Record<string,__string__|__number>;__};__/**__*__Optional__telemetry__adapter.__Implement__as__a__class__or__plain__object__—__the__SDK__*__keeps__it__by__reference__(never__deep-cloned).__Wire__OpenTelemetry__or__other__tools__here.__*/__export__interface__TelemetryAdapter<THandle__=__RequestTelemetryHandle>__{__onRequestStart(__context:__RequestTelemetryContext,__requestHeaders:__Record<string,__string__|__number>,__):__THandle__|__void;__onRequestEnd(__handle:__THandle__|__void,__result:__RequestTelemetryResult,__):__void;__}__export__type__RetryConfig");
+  }
+
   protected void assertWriteStringFileOp(
       FileOp fileOp,
       String expectedBaseFilePath,
@@ -66,7 +72,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(4);
+    assertThat(fileOps).hasSize(6);
     assertCreateDirectoryFileOp(fileOps.get(0), "/tmp", "/resources");
   }
 
@@ -75,7 +81,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
     var spec = buildSpec().done();
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(4);
+    assertThat(fileOps).hasSize(6);
     assertWriteStringFileOp(fileOps.get(1), "/tmp", "core.d.ts", coreFileContent(""));
   }
 
@@ -85,12 +91,13 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(4);
+    assertThat(fileOps).hasSize(6);
     assertWriteStringFileOp(
         fileOps.get(2),
         "/tmp",
         "index.d.ts",
-        "declare__module__'chargebee'__{__export__type__Config__=__{__/**__*__@apiKey__api__key__for__the__site.__*/__apiKey:__string;__/**__*__@site__api__site__name.__*/__site:__string;__/**__*__@apiPath__this__value__indicates__the__api__version,__default__value__is__/api/v2.__*/__apiPath?:__'/api/v2'__|__'/api/v1';__/**__*__@timeout__client__side__request__timeout__in__milliseconds,__default__value__is__80000ms.__*/__timeout?:__number;__/**__*__@port__url__port__*/__port?:__number;__/**__*__@timemachineWaitInMillis__time__interval__at__which__two__subsequent__retrieve__timemachine__call__in__milliseconds,__default__value__is__3000ms.__*/__timemachineWaitInMillis?:__number;__/**__*__@exportWaitInMillis__time__interval__at__which__two__subsequent__retrieve__export__call__in__milliseconds,__default__value__is__3000ms.__*/__exportWaitInMillis?:__number;__/**__*__@protocol__http__protocol,__default__value__is__https__*/__protocol?:__'https'__|__'http';__/**__*__@hostSuffix__url__host__suffix,__default__value__is__.chargebee.com__*/__hostSuffix?:__string;__/**__*__@retryConfig__retry__configuration__for__the__client,__default__value__is__{__enabled:__false,__maxRetries:__3,__delayMs:__1000,__retryOn:__[500,__502,__503,__504]}__*/__retryConfig?:__RetryConfig;__/**__*__@enableDebugLogs__whether__to__enable__debug__logs,__default__value__is__false__*/__enableDebugLogs?:__boolean;__/**__*__@userAgentSuffix__optional__string__appended__to__the__User-Agent__header__for__additional__logging__*/__userAgentSuffix?:__string;__/**__*__@httpClient__optional__http__client__implementation,__default__http__client__will__be__used__if__not__provided__*/__httpClient?:__HttpClientInterface;__/**__*__@enableValidation__When__true,__every__request's__parameters__are__validated__against__each__endpoint's__generated__Zod__schema__before__the__HTTP__request__is__sent.__Violations__throw__`ChargebeeZodValidationError`__with__structured__Zod__issues.__Calls__with__no__params__argument__are__validated__as__`{}`.__Required__resource__ids__in__the__URL__path__are__still__checked__separately.__*/__enableValidation?:__boolean;__};__export__interface__HttpClientInterface__{__makeApiRequest:__(request:__Request,__timeout:__number)__=>__Promise<Response>;__}__export__type__RetryConfig__=__{__/**__*__@enabled__whether__to__enable__retry__logic,__default__value__is__false__*__@maxRetries__maximum__number__of__retries,__default__value__is__3__*__@delayMs__delay__in__milliseconds__between__retries,__default__value__is__1000ms__*__@retryOn__array__of__HTTP__status__codes__to__retry__on,__default__value__is__[500,__502,__503,__504]__*/__enabled?:__boolean;__maxRetries?:__number;__delayMs?:__number;__retryOn?:__Array<number>;__};__export__default__class__Chargebee__{__constructor(config:__Config);__/**__Webhook__handler__instance__with__auto-configured__Basic__Auth__(if__env__vars__are__set)__*/__webhooks:__WebhookHandler__&__{__/**__Create__a__new__typed__webhook__handler__instance__*/__createHandler<ReqT__=__unknown,__ResT__=__unknown>(options?:__WebhookHandlerOptions):__WebhookHandler<ReqT,__ResT>;__};__}__//__Webhook__Handler__Types__export__type__WebhookEventName__=__EventTypeEnum__|__'unhandled_event';__export__type__WebhookEventTypeValue__=__`${WebhookEventType}`;__/**__*__@deprecated__Renamed__to__`WebhookEventTypeValue`__for__clarity.__Use__`WebhookEventTypeValue`__instead.__*__This__alias__will__be__removed__in__the__next__major__version.__*/__export__type__WebhookContentTypeValue__=__WebhookEventTypeValue;__/**__*__Context__object__passed__to__webhook__event__listeners.__*__Wraps__the__event__data__with__optional__framework-specific__request/response__objects.__*/__export__interface__WebhookContext<ReqT__=__unknown,__ResT__=__unknown>__{__/**__The__parsed__webhook__event__from__Chargebee__*/__event:__WebhookEvent;__/**__Framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__/**__*__Context__object__passed__to__webhook__error__listeners.__*__Contains__the__request/response__objects__so__errors__can__be__handled__appropriately.__*/__export__interface__WebhookErrorContext<ReqT__=__unknown,__ResT__=__unknown>__{__/**__Framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__/**__*__Validator__function__type__for__authenticating__webhook__requests.__*__Can__be__synchronous__or__asynchronous.__*/__export__type__RequestValidator__=__(__headers:__Record<string,__string__|__string[]__|__undefined>,__)__=>__void__|__Promise<void>;__/**__*__Configuration__options__for__WebhookHandler.__*/__export__interface__WebhookHandlerOptions__{__/**__*__Optional__validator__function__to__authenticate__incoming__webhook__requests.__*__Typically__used__for__Basic__Auth__validation.__*__Can__be__sync__or__async__-__throw__an__error__to__reject__the__request.__*/__requestValidator?:__RequestValidator;__}__/**__*__Options__for__the__handle()__method.__*/__export__interface__HandleOptions<ReqT__=__unknown,__ResT__=__unknown>__{__/**__The__raw__request__body__(string)__or__pre-parsed__object__*/__body:__string__|__object;__/**__Optional__HTTP__headers__for__validation__*/__headers?:__Record<string,__string__|__string[]__|__undefined>;__/**__Optional__framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Optional__framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__export__type__WebhookEventListener<ReqT__=__unknown,__ResT__=__unknown,__T__extends__WebhookEventType__=__WebhookEventType>__=__(context:__WebhookContext<ReqT,__ResT>__&__{__event:__WebhookEvent<T>__})__=>__Promise<void>__|__void;__export__type__WebhookErrorListener<ReqT__=__unknown,__ResT__=__unknown>__=__(error:__Error,__context:__WebhookErrorContext<ReqT,__ResT>)__=>__Promise<void>__|__void;__//__Helper__type__to__map__string__literal__to__enum__member__type__StringToWebhookEventType<S__extends__WebhookEventTypeValue>__=__{__[K__in__WebhookEventType]:__`${K}`__extends__S__?__K__:__never__}[WebhookEventType];__export__interface__WebhookHandler<ReqT__=__unknown,__ResT__=__unknown>__{__on<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__on<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__on(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__on(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__once<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__once<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__once(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__once(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__off<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__off<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__off(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__off(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__handle(options:__HandleOptions<ReqT,__ResT>):__Promise<void>;__requestValidator:__RequestValidator__|__undefined;__}__//__Webhook__Auth__/**__*__Credential__validator__function__type.__*__Can__be__synchronous__or__asynchronous__(e.g.,__for__database__lookups).__*/__export__type__CredentialValidator__=__(__username:__string,__password:__string,__)__=>__boolean__|__Promise<boolean>;__/**__*__Creates__a__Basic__Auth__validator__for__webhook__requests.__*/__export__function__basicAuthValidator(__validateCredentials:__CredentialValidator,__):__(headers:__Record<string,__string__|__string[]__|__undefined>)__=>__Promise<void>;__//__Webhook__Error__Classes__/**__*__Base__class__for__all__webhook-related__errors.__*/__export__class__WebhookError__extends__Error__{__constructor(message:__string);__name:__string;__}__/**__*__Authentication__error__thrown__when__webhook__request__authentication__fails.__*__Typically__maps__to__HTTP__401__Unauthorized.__*/__export__class__WebhookAuthenticationError__extends__WebhookError__{__constructor(message:__string);__name:__string;__}__/**__*__Payload__validation__error__thrown__when__the__webhook__payload__structure__is__invalid.__*__Typically__maps__to__HTTP__400__Bad__Request.__*/__export__class__WebhookPayloadValidationError__extends__WebhookError__{__constructor(message:__string);__name:__string;__}__/**__*__JSON__parsing__error__thrown__when__the__webhook__body__cannot__be__parsed__as__JSON.__*__Typically__maps__to__HTTP__400__Bad__Request.__*/__export__class__WebhookPayloadParseError__extends__WebhookError__{__constructor(message:__string,__rawBody?:__string);__name:__string;__readonly__rawBody?:__string;__}__/**__*__Thrown__when__`enableValidation`__is__on__and__request__parameters__fail__the__action's__Zod__schema.__*__Carries__`actionName`__and__the__original__`ZodError`__(issues,__`flatten()`,__etc.)__for__programmatic__handling.__*/__export__class__ChargebeeZodValidationError__extends__Error__{__constructor(actionName:__string,__zodError:__import('zod').ZodError);__name:__string;__readonly__actionName:__string;__readonly__zodError:__import('zod').ZodError;__}__}");
+        withIndexTelemetryTypes(
+            "declare__module__'chargebee'__{__export__type__Config__=__{__/**__*__@apiKey__api__key__for__the__site.__*/__apiKey:__string;__/**__*__@site__api__site__name.__*/__site:__string;__/**__*__@apiPath__this__value__indicates__the__api__version,__default__value__is__/api/v2.__*/__apiPath?:__'/api/v2'__|__'/api/v1';__/**__*__@timeout__client__side__request__timeout__in__milliseconds,__default__value__is__80000ms.__*/__timeout?:__number;__/**__*__@port__url__port__*/__port?:__number;__/**__*__@timemachineWaitInMillis__time__interval__at__which__two__subsequent__retrieve__timemachine__call__in__milliseconds,__default__value__is__3000ms.__*/__timemachineWaitInMillis?:__number;__/**__*__@exportWaitInMillis__time__interval__at__which__two__subsequent__retrieve__export__call__in__milliseconds,__default__value__is__3000ms.__*/__exportWaitInMillis?:__number;__/**__*__@protocol__http__protocol,__default__value__is__https__*/__protocol?:__'https'__|__'http';__/**__*__@hostSuffix__url__host__suffix,__default__value__is__.chargebee.com__*/__hostSuffix?:__string;__/**__*__@retryConfig__retry__configuration__for__the__client,__default__value__is__{__enabled:__false,__maxRetries:__3,__delayMs:__1000,__retryOn:__[500,__502,__503,__504]}__*/__retryConfig?:__RetryConfig;__/**__*__@enableDebugLogs__whether__to__enable__debug__logs,__default__value__is__false__*/__enableDebugLogs?:__boolean;__/**__*__@userAgentSuffix__optional__string__appended__to__the__User-Agent__header__for__additional__logging__*/__userAgentSuffix?:__string;__/**__*__@httpClient__optional__http__client__implementation,__default__http__client__will__be__used__if__not__provided__*/__httpClient?:__HttpClientInterface;__/**__*__@enableValidation__When__true,__every__request's__parameters__are__validated__against__each__endpoint's__generated__Zod__schema__before__the__HTTP__request__is__sent.__Violations__throw__`ChargebeeZodValidationError`__with__structured__Zod__issues.__Calls__with__no__params__argument__are__validated__as__`{}`.__Required__resource__ids__in__the__URL__path__are__still__checked__separately.__*/__enableValidation?:__boolean;__};__export__interface__HttpClientInterface__{__makeApiRequest:__(request:__Request,__timeout:__number)__=>__Promise<Response>;__}__export__type__RetryConfig__=__{__/**__*__@enabled__whether__to__enable__retry__logic,__default__value__is__false__*__@maxRetries__maximum__number__of__retries,__default__value__is__3__*__@delayMs__delay__in__milliseconds__between__retries,__default__value__is__1000ms__*__@retryOn__array__of__HTTP__status__codes__to__retry__on,__default__value__is__[500,__502,__503,__504]__*/__enabled?:__boolean;__maxRetries?:__number;__delayMs?:__number;__retryOn?:__Array<number>;__};__export__default__class__Chargebee__{__constructor(config:__Config);__/**__Webhook__handler__instance__with__auto-configured__Basic__Auth__(if__env__vars__are__set)__*/__webhooks:__WebhookHandler__&__{__/**__Create__a__new__typed__webhook__handler__instance__*/__createHandler<ReqT__=__unknown,__ResT__=__unknown>(options?:__WebhookHandlerOptions):__WebhookHandler<ReqT,__ResT>;__};__}__//__Webhook__Handler__Types__export__type__WebhookEventName__=__EventTypeEnum__|__'unhandled_event';__export__type__WebhookEventTypeValue__=__`${WebhookEventType}`;__/**__*__@deprecated__Renamed__to__`WebhookEventTypeValue`__for__clarity.__Use__`WebhookEventTypeValue`__instead.__*__This__alias__will__be__removed__in__the__next__major__version.__*/__export__type__WebhookContentTypeValue__=__WebhookEventTypeValue;__/**__*__Context__object__passed__to__webhook__event__listeners.__*__Wraps__the__event__data__with__optional__framework-specific__request/response__objects.__*/__export__interface__WebhookContext<ReqT__=__unknown,__ResT__=__unknown>__{__/**__The__parsed__webhook__event__from__Chargebee__*/__event:__WebhookEvent;__/**__Framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__/**__*__Context__object__passed__to__webhook__error__listeners.__*__Contains__the__request/response__objects__so__errors__can__be__handled__appropriately.__*/__export__interface__WebhookErrorContext<ReqT__=__unknown,__ResT__=__unknown>__{__/**__Framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__/**__*__Validator__function__type__for__authenticating__webhook__requests.__*__Can__be__synchronous__or__asynchronous.__*/__export__type__RequestValidator__=__(__headers:__Record<string,__string__|__string[]__|__undefined>,__)__=>__void__|__Promise<void>;__/**__*__Configuration__options__for__WebhookHandler.__*/__export__interface__WebhookHandlerOptions__{__/**__*__Optional__validator__function__to__authenticate__incoming__webhook__requests.__*__Typically__used__for__Basic__Auth__validation.__*__Can__be__sync__or__async__-__throw__an__error__to__reject__the__request.__*/__requestValidator?:__RequestValidator;__}__/**__*__Options__for__the__handle()__method.__*/__export__interface__HandleOptions<ReqT__=__unknown,__ResT__=__unknown>__{__/**__The__raw__request__body__(string)__or__pre-parsed__object__*/__body:__string__|__object;__/**__Optional__HTTP__headers__for__validation__*/__headers?:__Record<string,__string__|__string[]__|__undefined>;__/**__Optional__framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Optional__framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__export__type__WebhookEventListener<ReqT__=__unknown,__ResT__=__unknown,__T__extends__WebhookEventType__=__WebhookEventType>__=__(context:__WebhookContext<ReqT,__ResT>__&__{__event:__WebhookEvent<T>__})__=>__Promise<void>__|__void;__export__type__WebhookErrorListener<ReqT__=__unknown,__ResT__=__unknown>__=__(error:__Error,__context:__WebhookErrorContext<ReqT,__ResT>)__=>__Promise<void>__|__void;__//__Helper__type__to__map__string__literal__to__enum__member__type__StringToWebhookEventType<S__extends__WebhookEventTypeValue>__=__{__[K__in__WebhookEventType]:__`${K}`__extends__S__?__K__:__never__}[WebhookEventType];__export__interface__WebhookHandler<ReqT__=__unknown,__ResT__=__unknown>__{__on<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__on<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__on(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__on(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__once<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__once<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__once(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__once(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__off<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__off<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__off(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__off(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__handle(options:__HandleOptions<ReqT,__ResT>):__Promise<void>;__requestValidator:__RequestValidator__|__undefined;__}__//__Webhook__Auth__/**__*__Credential__validator__function__type.__*__Can__be__synchronous__or__asynchronous__(e.g.,__for__database__lookups).__*/__export__type__CredentialValidator__=__(__username:__string,__password:__string,__)__=>__boolean__|__Promise<boolean>;__/**__*__Creates__a__Basic__Auth__validator__for__webhook__requests.__*/__export__function__basicAuthValidator(__validateCredentials:__CredentialValidator,__):__(headers:__Record<string,__string__|__string[]__|__undefined>)__=>__Promise<void>;__//__Webhook__Error__Classes__/**__*__Base__class__for__all__webhook-related__errors.__*/__export__class__WebhookError__extends__Error__{__constructor(message:__string);__name:__string;__}__/**__*__Authentication__error__thrown__when__webhook__request__authentication__fails.__*__Typically__maps__to__HTTP__401__Unauthorized.__*/__export__class__WebhookAuthenticationError__extends__WebhookError__{__constructor(message:__string);__name:__string;__}__/**__*__Payload__validation__error__thrown__when__the__webhook__payload__structure__is__invalid.__*__Typically__maps__to__HTTP__400__Bad__Request.__*/__export__class__WebhookPayloadValidationError__extends__WebhookError__{__constructor(message:__string);__name:__string;__}__/**__*__JSON__parsing__error__thrown__when__the__webhook__body__cannot__be__parsed__as__JSON.__*__Typically__maps__to__HTTP__400__Bad__Request.__*/__export__class__WebhookPayloadParseError__extends__WebhookError__{__constructor(message:__string,__rawBody?:__string);__name:__string;__readonly__rawBody?:__string;__}__/**__*__Thrown__when__`enableValidation`__is__on__and__request__parameters__fail__the__action's__Zod__schema.__*__Carries__`actionName`__and__the__original__`ZodError`__(issues,__`flatten()`,__etc.)__for__programmatic__handling.__*/__export__class__ChargebeeZodValidationError__extends__Error__{__constructor(actionName:__string,__zodError:__import('zod').ZodError);__name:__string;__readonly__actionName:__string;__readonly__zodError:__import('zod').ZodError;__}__}"));
   }
 
   @Test
@@ -99,7 +106,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(6);
+    assertThat(fileOps).hasSize(8);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -127,7 +134,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(4);
+    assertThat(fileOps).hasSize(6);
   }
 
   @Test
@@ -142,7 +149,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
             .done();
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -162,7 +169,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
             .done();
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertThat(fileOps.get(0)).isInstanceOf(FileOp.CreateDirectory.class);
     assertThat(fileOps.get(1)).isInstanceOf(FileOp.WriteString.class);
     assertThat(((FileOp.WriteString) fileOps.get(2)).fileName).isEqualTo("core.d.ts");
@@ -183,7 +190,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -208,7 +215,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -229,7 +236,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -251,7 +258,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -271,7 +278,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -290,7 +297,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -310,7 +317,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -330,7 +337,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -359,7 +366,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(6);
+    assertThat(fileOps).hasSize(8);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -374,7 +381,8 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
         fileOps.get(4),
         "/tmp",
         "index.d.ts",
-        "///<reference__path='./resources/Card.d.ts'__/>__///<reference__path='./resources/Customer.d.ts'__/>__declare__module__'chargebee'__{__export__type__Config__=__{__/**__*__@apiKey__api__key__for__the__site.__*/__apiKey:__string;__/**__*__@site__api__site__name.__*/__site:__string;__/**__*__@apiPath__this__value__indicates__the__api__version,__default__value__is__/api/v2.__*/__apiPath?:__'/api/v2'__|__'/api/v1';__/**__*__@timeout__client__side__request__timeout__in__milliseconds,__default__value__is__80000ms.__*/__timeout?:__number;__/**__*__@port__url__port__*/__port?:__number;__/**__*__@timemachineWaitInMillis__time__interval__at__which__two__subsequent__retrieve__timemachine__call__in__milliseconds,__default__value__is__3000ms.__*/__timemachineWaitInMillis?:__number;__/**__*__@exportWaitInMillis__time__interval__at__which__two__subsequent__retrieve__export__call__in__milliseconds,__default__value__is__3000ms.__*/__exportWaitInMillis?:__number;__/**__*__@protocol__http__protocol,__default__value__is__https__*/__protocol?:__'https'__|__'http';__/**__*__@hostSuffix__url__host__suffix,__default__value__is__.chargebee.com__*/__hostSuffix?:__string;__/**__*__@retryConfig__retry__configuration__for__the__client,__default__value__is__{__enabled:__false,__maxRetries:__3,__delayMs:__1000,__retryOn:__[500,__502,__503,__504]}__*/__retryConfig?:__RetryConfig;__/**__*__@enableDebugLogs__whether__to__enable__debug__logs,__default__value__is__false__*/__enableDebugLogs?:__boolean;__/**__*__@userAgentSuffix__optional__string__appended__to__the__User-Agent__header__for__additional__logging__*/__userAgentSuffix?:__string;__/**__*__@httpClient__optional__http__client__implementation,__default__http__client__will__be__used__if__not__provided__*/__httpClient?:__HttpClientInterface;__/**__*__@enableValidation__When__true,__every__request's__parameters__are__validated__against__each__endpoint's__generated__Zod__schema__before__the__HTTP__request__is__sent.__Violations__throw__`ChargebeeZodValidationError`__with__structured__Zod__issues.__Calls__with__no__params__argument__are__validated__as__`{}`.__Required__resource__ids__in__the__URL__path__are__still__checked__separately.__*/__enableValidation?:__boolean;__};__export__interface__HttpClientInterface__{__makeApiRequest:__(request:__Request,__timeout:__number)__=>__Promise<Response>;__}__export__type__RetryConfig__=__{__/**__*__@enabled__whether__to__enable__retry__logic,__default__value__is__false__*__@maxRetries__maximum__number__of__retries,__default__value__is__3__*__@delayMs__delay__in__milliseconds__between__retries,__default__value__is__1000ms__*__@retryOn__array__of__HTTP__status__codes__to__retry__on,__default__value__is__[500,__502,__503,__504]__*/__enabled?:__boolean;__maxRetries?:__number;__delayMs?:__number;__retryOn?:__Array<number>;__};__export__default__class__Chargebee__{__constructor(config:__Config);__customer:__Customer.CustomerResource;__/**__Webhook__handler__instance__with__auto-configured__Basic__Auth__(if__env__vars__are__set)__*/__webhooks:__WebhookHandler__&__{__/**__Create__a__new__typed__webhook__handler__instance__*/__createHandler<ReqT__=__unknown,__ResT__=__unknown>(options?:__WebhookHandlerOptions):__WebhookHandler<ReqT,__ResT>;__};__}__//__Webhook__Handler__Types__export__type__WebhookEventName__=__EventTypeEnum__|__'unhandled_event';__export__type__WebhookEventTypeValue__=__`${WebhookEventType}`;__/**__*__@deprecated__Renamed__to__`WebhookEventTypeValue`__for__clarity.__Use__`WebhookEventTypeValue`__instead.__*__This__alias__will__be__removed__in__the__next__major__version.__*/__export__type__WebhookContentTypeValue__=__WebhookEventTypeValue;__/**__*__Context__object__passed__to__webhook__event__listeners.__*__Wraps__the__event__data__with__optional__framework-specific__request/response__objects.__*/__export__interface__WebhookContext<ReqT__=__unknown,__ResT__=__unknown>__{__/**__The__parsed__webhook__event__from__Chargebee__*/__event:__WebhookEvent;__/**__Framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__/**__*__Context__object__passed__to__webhook__error__listeners.__*__Contains__the__request/response__objects__so__errors__can__be__handled__appropriately.__*/__export__interface__WebhookErrorContext<ReqT__=__unknown,__ResT__=__unknown>__{__/**__Framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__/**__*__Validator__function__type__for__authenticating__webhook__requests.__*__Can__be__synchronous__or__asynchronous.__*/__export__type__RequestValidator__=__(__headers:__Record<string,__string__|__string[]__|__undefined>,__)__=>__void__|__Promise<void>;__/**__*__Configuration__options__for__WebhookHandler.__*/__export__interface__WebhookHandlerOptions__{__/**__*__Optional__validator__function__to__authenticate__incoming__webhook__requests.__*__Typically__used__for__Basic__Auth__validation.__*__Can__be__sync__or__async__-__throw__an__error__to__reject__the__request.__*/__requestValidator?:__RequestValidator;__}__/**__*__Options__for__the__handle()__method.__*/__export__interface__HandleOptions<ReqT__=__unknown,__ResT__=__unknown>__{__/**__The__raw__request__body__(string)__or__pre-parsed__object__*/__body:__string__|__object;__/**__Optional__HTTP__headers__for__validation__*/__headers?:__Record<string,__string__|__string[]__|__undefined>;__/**__Optional__framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Optional__framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__export__type__WebhookEventListener<ReqT__=__unknown,__ResT__=__unknown,__T__extends__WebhookEventType__=__WebhookEventType>__=__(context:__WebhookContext<ReqT,__ResT>__&__{__event:__WebhookEvent<T>__})__=>__Promise<void>__|__void;__export__type__WebhookErrorListener<ReqT__=__unknown,__ResT__=__unknown>__=__(error:__Error,__context:__WebhookErrorContext<ReqT,__ResT>)__=>__Promise<void>__|__void;__//__Helper__type__to__map__string__literal__to__enum__member__type__StringToWebhookEventType<S__extends__WebhookEventTypeValue>__=__{__[K__in__WebhookEventType]:__`${K}`__extends__S__?__K__:__never__}[WebhookEventType];__export__interface__WebhookHandler<ReqT__=__unknown,__ResT__=__unknown>__{__on<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__on<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__on(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__on(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__once<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__once<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__once(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__once(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__off<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__off<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__off(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__off(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__handle(options:__HandleOptions<ReqT,__ResT>):__Promise<void>;__requestValidator:__RequestValidator__|__undefined;__}__//__Webhook__Auth__/**__*__Credential__validator__function__type.__*__Can__be__synchronous__or__asynchronous__(e.g.,__for__database__lookups).__*/__export__type__CredentialValidator__=__(__username:__string,__password:__string,__)__=>__boolean__|__Promise<boolean>;__/**__*__Creates__a__Basic__Auth__validator__for__webhook__requests.__*/__export__function__basicAuthValidator(__validateCredentials:__CredentialValidator,__):__(headers:__Record<string,__string__|__string[]__|__undefined>)__=>__Promise<void>;__//__Webhook__Error__Classes__/**__*__Base__class__for__all__webhook-related__errors.__*/__export__class__WebhookError__extends__Error__{__constructor(message:__string);__name:__string;__}__/**__*__Authentication__error__thrown__when__webhook__request__authentication__fails.__*__Typically__maps__to__HTTP__401__Unauthorized.__*/__export__class__WebhookAuthenticationError__extends__WebhookError__{__constructor(message:__string);__name:__string;__}__/**__*__Payload__validation__error__thrown__when__the__webhook__payload__structure__is__invalid.__*__Typically__maps__to__HTTP__400__Bad__Request.__*/__export__class__WebhookPayloadValidationError__extends__WebhookError__{__constructor(message:__string);__name:__string;__}__/**__*__JSON__parsing__error__thrown__when__the__webhook__body__cannot__be__parsed__as__JSON.__*__Typically__maps__to__HTTP__400__Bad__Request.__*/__export__class__WebhookPayloadParseError__extends__WebhookError__{__constructor(message:__string,__rawBody?:__string);__name:__string;__readonly__rawBody?:__string;__}__/**__*__Thrown__when__`enableValidation`__is__on__and__request__parameters__fail__the__action's__Zod__schema.__*__Carries__`actionName`__and__the__original__`ZodError`__(issues,__`flatten()`,__etc.)__for__programmatic__handling.__*/__export__class__ChargebeeZodValidationError__extends__Error__{__constructor(actionName:__string,__zodError:__import('zod').ZodError);__name:__string;__readonly__actionName:__string;__readonly__zodError:__import('zod').ZodError;__}__}");
+        withIndexTelemetryTypes(
+            "///<reference__path='./resources/Card.d.ts'__/>__///<reference__path='./resources/Customer.d.ts'__/>__declare__module__'chargebee'__{__export__type__Config__=__{__/**__*__@apiKey__api__key__for__the__site.__*/__apiKey:__string;__/**__*__@site__api__site__name.__*/__site:__string;__/**__*__@apiPath__this__value__indicates__the__api__version,__default__value__is__/api/v2.__*/__apiPath?:__'/api/v2'__|__'/api/v1';__/**__*__@timeout__client__side__request__timeout__in__milliseconds,__default__value__is__80000ms.__*/__timeout?:__number;__/**__*__@port__url__port__*/__port?:__number;__/**__*__@timemachineWaitInMillis__time__interval__at__which__two__subsequent__retrieve__timemachine__call__in__milliseconds,__default__value__is__3000ms.__*/__timemachineWaitInMillis?:__number;__/**__*__@exportWaitInMillis__time__interval__at__which__two__subsequent__retrieve__export__call__in__milliseconds,__default__value__is__3000ms.__*/__exportWaitInMillis?:__number;__/**__*__@protocol__http__protocol,__default__value__is__https__*/__protocol?:__'https'__|__'http';__/**__*__@hostSuffix__url__host__suffix,__default__value__is__.chargebee.com__*/__hostSuffix?:__string;__/**__*__@retryConfig__retry__configuration__for__the__client,__default__value__is__{__enabled:__false,__maxRetries:__3,__delayMs:__1000,__retryOn:__[500,__502,__503,__504]}__*/__retryConfig?:__RetryConfig;__/**__*__@enableDebugLogs__whether__to__enable__debug__logs,__default__value__is__false__*/__enableDebugLogs?:__boolean;__/**__*__@userAgentSuffix__optional__string__appended__to__the__User-Agent__header__for__additional__logging__*/__userAgentSuffix?:__string;__/**__*__@httpClient__optional__http__client__implementation,__default__http__client__will__be__used__if__not__provided__*/__httpClient?:__HttpClientInterface;__/**__*__@enableValidation__When__true,__every__request's__parameters__are__validated__against__each__endpoint's__generated__Zod__schema__before__the__HTTP__request__is__sent.__Violations__throw__`ChargebeeZodValidationError`__with__structured__Zod__issues.__Calls__with__no__params__argument__are__validated__as__`{}`.__Required__resource__ids__in__the__URL__path__are__still__checked__separately.__*/__enableValidation?:__boolean;__};__export__interface__HttpClientInterface__{__makeApiRequest:__(request:__Request,__timeout:__number)__=>__Promise<Response>;__}__export__type__RetryConfig__=__{__/**__*__@enabled__whether__to__enable__retry__logic,__default__value__is__false__*__@maxRetries__maximum__number__of__retries,__default__value__is__3__*__@delayMs__delay__in__milliseconds__between__retries,__default__value__is__1000ms__*__@retryOn__array__of__HTTP__status__codes__to__retry__on,__default__value__is__[500,__502,__503,__504]__*/__enabled?:__boolean;__maxRetries?:__number;__delayMs?:__number;__retryOn?:__Array<number>;__};__export__default__class__Chargebee__{__constructor(config:__Config);__customer:__Customer.CustomerResource;__/**__Webhook__handler__instance__with__auto-configured__Basic__Auth__(if__env__vars__are__set)__*/__webhooks:__WebhookHandler__&__{__/**__Create__a__new__typed__webhook__handler__instance__*/__createHandler<ReqT__=__unknown,__ResT__=__unknown>(options?:__WebhookHandlerOptions):__WebhookHandler<ReqT,__ResT>;__};__}__//__Webhook__Handler__Types__export__type__WebhookEventName__=__EventTypeEnum__|__'unhandled_event';__export__type__WebhookEventTypeValue__=__`${WebhookEventType}`;__/**__*__@deprecated__Renamed__to__`WebhookEventTypeValue`__for__clarity.__Use__`WebhookEventTypeValue`__instead.__*__This__alias__will__be__removed__in__the__next__major__version.__*/__export__type__WebhookContentTypeValue__=__WebhookEventTypeValue;__/**__*__Context__object__passed__to__webhook__event__listeners.__*__Wraps__the__event__data__with__optional__framework-specific__request/response__objects.__*/__export__interface__WebhookContext<ReqT__=__unknown,__ResT__=__unknown>__{__/**__The__parsed__webhook__event__from__Chargebee__*/__event:__WebhookEvent;__/**__Framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__/**__*__Context__object__passed__to__webhook__error__listeners.__*__Contains__the__request/response__objects__so__errors__can__be__handled__appropriately.__*/__export__interface__WebhookErrorContext<ReqT__=__unknown,__ResT__=__unknown>__{__/**__Framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__/**__*__Validator__function__type__for__authenticating__webhook__requests.__*__Can__be__synchronous__or__asynchronous.__*/__export__type__RequestValidator__=__(__headers:__Record<string,__string__|__string[]__|__undefined>,__)__=>__void__|__Promise<void>;__/**__*__Configuration__options__for__WebhookHandler.__*/__export__interface__WebhookHandlerOptions__{__/**__*__Optional__validator__function__to__authenticate__incoming__webhook__requests.__*__Typically__used__for__Basic__Auth__validation.__*__Can__be__sync__or__async__-__throw__an__error__to__reject__the__request.__*/__requestValidator?:__RequestValidator;__}__/**__*__Options__for__the__handle()__method.__*/__export__interface__HandleOptions<ReqT__=__unknown,__ResT__=__unknown>__{__/**__The__raw__request__body__(string)__or__pre-parsed__object__*/__body:__string__|__object;__/**__Optional__HTTP__headers__for__validation__*/__headers?:__Record<string,__string__|__string[]__|__undefined>;__/**__Optional__framework-specific__request__object__(Express,__Fastify,__etc.)__*/__request?:__ReqT;__/**__Optional__framework-specific__response__object__(Express,__Fastify,__etc.)__*/__response?:__ResT;__}__export__type__WebhookEventListener<ReqT__=__unknown,__ResT__=__unknown,__T__extends__WebhookEventType__=__WebhookEventType>__=__(context:__WebhookContext<ReqT,__ResT>__&__{__event:__WebhookEvent<T>__})__=>__Promise<void>__|__void;__export__type__WebhookErrorListener<ReqT__=__unknown,__ResT__=__unknown>__=__(error:__Error,__context:__WebhookErrorContext<ReqT,__ResT>)__=>__Promise<void>__|__void;__//__Helper__type__to__map__string__literal__to__enum__member__type__StringToWebhookEventType<S__extends__WebhookEventTypeValue>__=__{__[K__in__WebhookEventType]:__`${K}`__extends__S__?__K__:__never__}[WebhookEventType];__export__interface__WebhookHandler<ReqT__=__unknown,__ResT__=__unknown>__{__on<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__on<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__on(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__on(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__once<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__once<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__once(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__once(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__off<T__extends__WebhookEventType>(eventName:__T,__listener:__WebhookEventListener<ReqT,__ResT,__T>):__this;__off<S__extends__WebhookEventTypeValue>(eventName:__S,__listener:__WebhookEventListener<ReqT,__ResT,__StringToWebhookEventType<S>>):__this;__off(eventName:__'unhandled_event',__listener:__WebhookEventListener<ReqT,__ResT>):__this;__off(eventName:__'error',__listener:__WebhookErrorListener<ReqT,__ResT>):__this;__handle(options:__HandleOptions<ReqT,__ResT>):__Promise<void>;__requestValidator:__RequestValidator__|__undefined;__}__//__Webhook__Auth__/**__*__Credential__validator__function__type.__*__Can__be__synchronous__or__asynchronous__(e.g.,__for__database__lookups).__*/__export__type__CredentialValidator__=__(__username:__string,__password:__string,__)__=>__boolean__|__Promise<boolean>;__/**__*__Creates__a__Basic__Auth__validator__for__webhook__requests.__*/__export__function__basicAuthValidator(__validateCredentials:__CredentialValidator,__):__(headers:__Record<string,__string__|__string[]__|__undefined>)__=>__Promise<void>;__//__Webhook__Error__Classes__/**__*__Base__class__for__all__webhook-related__errors.__*/__export__class__WebhookError__extends__Error__{__constructor(message:__string);__name:__string;__}__/**__*__Authentication__error__thrown__when__webhook__request__authentication__fails.__*__Typically__maps__to__HTTP__401__Unauthorized.__*/__export__class__WebhookAuthenticationError__extends__WebhookError__{__constructor(message:__string);__name:__string;__}__/**__*__Payload__validation__error__thrown__when__the__webhook__payload__structure__is__invalid.__*__Typically__maps__to__HTTP__400__Bad__Request.__*/__export__class__WebhookPayloadValidationError__extends__WebhookError__{__constructor(message:__string);__name:__string;__}__/**__*__JSON__parsing__error__thrown__when__the__webhook__body__cannot__be__parsed__as__JSON.__*__Typically__maps__to__HTTP__400__Bad__Request.__*/__export__class__WebhookPayloadParseError__extends__WebhookError__{__constructor(message:__string,__rawBody?:__string);__name:__string;__readonly__rawBody?:__string;__}__/**__*__Thrown__when__`enableValidation`__is__on__and__request__parameters__fail__the__action's__Zod__schema.__*__Carries__`actionName`__and__the__original__`ZodError`__(issues,__`flatten()`,__etc.)__for__programmatic__handling.__*/__export__class__ChargebeeZodValidationError__extends__Error__{__constructor(actionName:__string,__zodError:__import('zod').ZodError);__name:__string;__readonly__actionName:__string;__readonly__zodError:__import('zod').ZodError;__}__}"));
   }
 
   @Test
@@ -390,7 +398,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
     var spec = buildSpec().withResource(address).withOperation("/addresses", operation).done();
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -411,7 +419,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
     var spec = buildSpec().withResource(usage).withOperation("/usages", operation).done();
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -432,7 +440,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
     var spec = buildSpec().withResource(address).withOperation("/addresses", operation).done();
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -458,7 +466,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(6);
+    assertThat(fileOps).hasSize(8);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -479,7 +487,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(4);
+    assertThat(fileOps).hasSize(6);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp",
@@ -498,7 +506,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(4);
+    assertThat(fileOps).hasSize(6);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp",
@@ -517,7 +525,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -538,7 +546,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -561,7 +569,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -580,7 +588,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -604,7 +612,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(6);
+    assertThat(fileOps).hasSize(8);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -637,7 +645,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(6);
+    assertThat(fileOps).hasSize(8);
     assertWriteStringFileOp(
         fileOps.get(2),
         "/tmp/resources",
@@ -671,7 +679,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -696,7 +704,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -718,7 +726,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -748,7 +756,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -771,7 +779,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -803,7 +811,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -902,7 +910,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -934,7 +942,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -968,7 +976,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -1002,7 +1010,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -1024,7 +1032,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -1046,7 +1054,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
@@ -1068,7 +1076,7 @@ public class TypeScriptTypingV3Tests extends LanguageTests {
 
     List<FileOp> fileOps = typeScriptTyping.generate("/tmp", spec);
 
-    assertThat(fileOps).hasSize(5);
+    assertThat(fileOps).hasSize(7);
     assertWriteStringFileOp(
         fileOps.get(1),
         "/tmp/resources",
