@@ -24,4 +24,8 @@ public @Data class ChangeLogDocsSchema {
   List<ChangeLogEntry> newEnumValues;
   List<ChangeLogEntry> deletedEnumValues;
   List<ChangeLogEntry> parameterRequirementChangesValues;
+  List<ChangeLogEntry> deprecatedResource;
+  List<ChangeLogEntry> deprecatedActions;
+  List<ChangeLogEntry> deprecatedResourceAttribute;
+  List<ChangeLogEntry> deprecatedParams;
 }

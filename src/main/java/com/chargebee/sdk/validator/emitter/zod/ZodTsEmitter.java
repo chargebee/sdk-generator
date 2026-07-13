@@ -56,7 +56,7 @@ public class ZodTsEmitter implements ValidatorEmitter {
         Schema<?> bodySchema = resolveBodySchema(action, spec);
         if (bodySchema == null) continue;
 
-        ValidationNode irNode = irBuilder.buildNode(bodySchema, new HashSet<>());
+        ValidationNode irNode = irBuilder.buildRootNode(bodySchema, new HashSet<>());
         ValidationNode.ObjectNode rootObj = ensureObject(irNode);
         if (rootObj == null) continue;
 

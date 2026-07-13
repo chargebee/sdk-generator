@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -126,6 +127,19 @@ public class LocalDocsAvailabilityChecker {
         }
         return isResourcePublished(entry.getDocsResourcePath())
             && actionFileExists(entry.getResourceId(), entry.getActionId());
+      case DEPRECATED_RESOURCE:
+        return isResourcePublished(entry.getDocsResourcePath())
+            && resourceDirExists(entry.getResourceId());
+      case DEPRECATED_ACTION:
+        return isResourcePublished(entry.getDocsResourcePath())
+            && actionFileExists(entry.getResourceId(), entry.getActionId());
+      case DEPRECATED_ATTRIBUTE:
+        return isResourcePublished(entry.getDocsResourcePath())
+            && slugExistsInResource(entry.getResourceId(), entry.getSlugPath());
+      case DEPRECATED_PARAMETER:
+        return isResourcePublished(entry.getDocsResourcePath())
+            && slugExistsInAction(
+                entry.getResourceId(), entry.getActionId(), entry.getSlugPath());
       default:
         return true;
     }
@@ -152,21 +166,25 @@ public class LocalDocsAvailabilityChecker {
     Path relative;
     switch (entry.getType()) {
       case NEW_RESOURCE:
+      case DEPRECATED_RESOURCE:
       case DELETED_ACTION:
       case DELETED_ATTRIBUTE:
       case DELETED_ATTRIBUTE_ENUM_VALUE:
         relative = Paths.get(nullToEmpty(entry.getResourceId()));
         return "resource dir '" + relative + "'";
       case NEW_ACTION:
+      case DEPRECATED_ACTION:
       case DELETED_PARAMETER:
       case DELETED_PARAMETER_ENUM_VALUE:
         relative =
             Paths.get(nullToEmpty(entry.getResourceId()), nullToEmpty(entry.getActionId()) + ".yaml");
         return "action file '" + relative + "'";
       case NEW_ATTRIBUTE:
+      case DEPRECATED_ATTRIBUTE:
         relative = Paths.get(nullToEmpty(entry.getResourceId()), RESOURCE_YAML);
         return "attribute slug '" + entry.getSlugPath() + "' in '" + relative + "'";
       case NEW_PARAMETER:
+      case DEPRECATED_PARAMETER:
       case PARAMETER_REQUIREMENT_CHANGE:
         relative =
             Paths.get(nullToEmpty(entry.getResourceId()), nullToEmpty(entry.getActionId()) + ".yaml");
@@ -211,6 +229,10 @@ public class LocalDocsAvailabilityChecker {
       case DELETED_ATTRIBUTE_ENUM_VALUE:
       case DELETED_PARAMETER:
       case DELETED_PARAMETER_ENUM_VALUE:
+      case DEPRECATED_RESOURCE:
+      case DEPRECATED_ACTION:
+      case DEPRECATED_ATTRIBUTE:
+      case DEPRECATED_PARAMETER:
         return true;
       default:
         return false;
@@ -288,6 +310,74 @@ public class LocalDocsAvailabilityChecker {
       return true;
     }
     return loadSlugs(docsRoot.resolve(EVENT_TYPES_RELATIVE_PATH)).contains(eventType);
+  }
+
+  /** Documented vs. undocumented partition of an enum entry's values. */
+  public static final class EnumSplit {
+    public final List<String> present;
+    public final List<String> missing;
+
+    EnumSplit(List<String> present, List<String> missing) {
+      this.present = present;
+      this.missing = missing;
+    }
+  }
+
+  /**
+   * Splits an enum entry's values into those documented in the local docs repo and those that are
+   * missing. If the owning slug is absent or the resource is unpublished, every value is treated as
+   * missing. This lets the generator emit the documented subset instead of dropping the whole group
+   * because one value lacks docs.
+   */
+  public EnumSplit splitEnumValues(ChangeLogEntry entry) {
+    List<String> values =
+        entry == null || entry.getEnumValues() == null
+            ? new ArrayList<>()
+            : new ArrayList<>(entry.getEnumValues());
+    if (skipVerification) {
+      return new EnumSplit(values, new ArrayList<>());
+    }
+    if (values.isEmpty() || entry.getType() == null) {
+      return new EnumSplit(values, new ArrayList<>());
+    }
+    if (!isResourcePublished(entry.getDocsResourcePath())) {
+      return new EnumSplit(new ArrayList<>(), values);
+    }
+
+    Set<String> slugs;
+    switch (entry.getType()) {
+      case NEW_ATTRIBUTE_ENUM_VALUE:
+      case DELETED_ATTRIBUTE_ENUM_VALUE:
+        slugs =
+            loadSlugs(docsRoot.resolve(nullToEmpty(entry.getResourceId())).resolve(RESOURCE_YAML));
+        break;
+      case NEW_PARAMETER_ENUM_VALUE:
+      case DELETED_PARAMETER_ENUM_VALUE:
+        slugs =
+            loadSlugs(
+                docsRoot
+                    .resolve(nullToEmpty(entry.getResourceId()))
+                    .resolve(nullToEmpty(entry.getActionId()) + ".yaml"));
+        break;
+      default:
+        return new EnumSplit(values, new ArrayList<>());
+    }
+
+    String slug = entry.getSlugPath();
+    if (slug == null || !slugs.contains(slug)) {
+      return new EnumSplit(new ArrayList<>(), values);
+    }
+
+    List<String> present = new ArrayList<>();
+    List<String> missing = new ArrayList<>();
+    for (String value : values) {
+      if (slugs.contains(slug + ".enum." + value)) {
+        present.add(value);
+      } else {
+        missing.add(value);
+      }
+    }
+    return new EnumSplit(present, missing);
   }
 
   private boolean allEnumSlugsInResource(String resourceId, String slug, List<String> values) {

@@ -135,7 +135,8 @@ public class ResourceFileGenerator implements FileGenerator {
       String outputPath, String resourceName, List<com.chargebee.openapi.Enum> enums)
       throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
-    String enumDirPath = outputPath + FORWARD_SLASH + resourceName + FORWARD_SLASH + ENUMS;
+    String enumDirPath =
+        outputPath + FORWARD_SLASH + resourceName + FORWARD_SLASH + PASCAL_CASE_ENUMS;
     fileOps.add(
         new FileOp.CreateDirectory(outputPath + FORWARD_SLASH + resourceName, PASCAL_CASE_ENUMS));
     String namespace =

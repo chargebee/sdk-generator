@@ -12,7 +12,12 @@ import com.chargebee.sdk.Language;
 import com.github.jknack.handlebars.Template;
 import com.google.common.base.CaseFormat;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Ruby extends Language {
@@ -34,6 +39,7 @@ public class Ruby extends Language {
     fileOps.addAll(generateResourceFiles(outputDirectoryPath + modelsDirectoryPath, resources));
     fileOps.add(generateResultFile(outputDirectoryPath, resources));
     fileOps.addAll(generateTelemetryFiles(outputDirectoryPath));
+    fileOps.add(generateChargebeeFile(outputDirectoryPath, resources));
     //    fileOps.add(generateExeptionFile(outputDirectoryPath, exceptionsResources));
 
     return fileOps;
@@ -84,6 +90,7 @@ public class Ruby extends Language {
         Map.entry("models.resource", "/templates/ruby/models.resource.rb.hbs"),
         Map.entry("result", "/templates/ruby/result.rb.hbs"),
         Map.entry("errors", "/templates/ruby/errors.rb.hbs"),
+        Map.entry("chargebee", "/templates/ruby/chargebee.rb.hbs"),
         Map.entry("telemetryAttributeKeys", "/templates/ruby/telemetry/telemetry_attribute_keys.rb.hbs"),
         Map.entry("telemetryRequestContext", "/templates/ruby/telemetry/request_telemetry_context.rb.hbs"),
         Map.entry("telemetryRequestError", "/templates/ruby/telemetry/request_telemetry_error.rb.hbs"),
@@ -131,6 +138,40 @@ public class Ruby extends Language {
     Template resultTemplate = getTemplateContent("result");
     return new FileOp.WriteString(
         outputDirectory, "result.rb", resultTemplate.apply(templateParams));
+  }
+
+  private FileOp generateChargebeeFile(String outputDirectoryPath, List<Resource> resources)
+      throws IOException {
+    String parentDirectoryPath = Paths.get(outputDirectoryPath).getParent().toString();
+    String chargebeeRbPath = Paths.get(parentDirectoryPath, "chargebee.rb").toString();
+
+    String version = "0.0.0";
+    Path existingFile = Paths.get(chargebeeRbPath);
+    if (Files.exists(existingFile)) {
+      String existingContent = Files.readString(existingFile);
+      Matcher matcher = Pattern.compile("VERSION\\s*=\\s*'([^']+)'").matcher(existingContent);
+      if (matcher.find()) {
+        version = matcher.group(1);
+      }
+    }
+
+    String requireLines =
+        resources.stream()
+            .map(
+                r -> {
+                  String snakeCase =
+                      CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, r.name);
+                  return "require File.dirname(__FILE__) + '/chargebee/models/" + snakeCase + "'";
+                })
+            .collect(Collectors.joining("\n"));
+
+    Map<String, Object> templateParams = new HashMap<>();
+    templateParams.put("requireLines", requireLines);
+    templateParams.put("version", version);
+
+    Template chargebeeTemplate = getTemplateContent("chargebee");
+    return new FileOp.WriteString(
+        parentDirectoryPath, "chargebee.rb", chargebeeTemplate.apply(templateParams));
   }
 
   @Override

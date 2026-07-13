@@ -87,6 +87,10 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     addAllNullable(all, schema.getNewEnumValues());
     addAllNullable(all, schema.getDeletedEnumValues());
     addAllNullable(all, schema.getParameterRequirementChangesValues());
+    addAllNullable(all, schema.getDeprecatedResource());
+    addAllNullable(all, schema.getDeprecatedActions());
+    addAllNullable(all, schema.getDeprecatedResourceAttribute());
+    addAllNullable(all, schema.getDeprecatedParams());
     return all;
   }
 
@@ -128,6 +132,17 @@ public class ChangeLogDocsGenerator implements FileGenerator {
             source.getParameterRequirementChangesValues(),
             checker,
             missing::setParameterRequirementChangesValues));
+    available.setDeprecatedResource(
+        partition(source.getDeprecatedResource(), checker, missing::setDeprecatedResource));
+    available.setDeprecatedActions(
+        partition(source.getDeprecatedActions(), checker, missing::setDeprecatedActions));
+    available.setDeprecatedResourceAttribute(
+        partition(
+            source.getDeprecatedResourceAttribute(),
+            checker,
+            missing::setDeprecatedResourceAttribute));
+    available.setDeprecatedParams(
+        partition(source.getDeprecatedParams(), checker, missing::setDeprecatedParams));
   }
 
   private List<ChangeLogEntry> partition(
@@ -141,7 +156,17 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     List<ChangeLogEntry> kept = new ArrayList<>();
     List<ChangeLogEntry> missing = new ArrayList<>();
     for (ChangeLogEntry entry : source) {
-      if (checker.isEntryAvailable(entry)) {
+      if (entry != null && isEnumEntryType(entry.getType())) {
+        // Enum entries are split per-value: documented values are emitted to index.txt while the
+        // undocumented ones are reported separately, instead of dropping the whole group.
+        LocalDocsAvailabilityChecker.EnumSplit split = checker.splitEnumValues(entry);
+        if (!split.present.isEmpty()) {
+          kept.add(rebuildEnumEntry(entry, split.present));
+        }
+        if (!split.missing.isEmpty()) {
+          missing.add(rebuildEnumEntry(entry, split.missing));
+        }
+      } else if (checker.isEntryAvailable(entry)) {
         kept.add(entry);
       } else {
         missing.add(entry);
@@ -149,6 +174,29 @@ public class ChangeLogDocsGenerator implements FileGenerator {
     }
     setMissing.accept(missing);
     return kept;
+  }
+
+  private ChangeLogEntry rebuildEnumEntry(ChangeLogEntry entry, List<String> values) {
+    String line =
+        renderEnumLine(
+            isAddedEnumType(entry.getType()),
+            values,
+            entry.getLinkPath(),
+            entry.getLinkAnchor(),
+            entry.getCodeLabel());
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(entry.getType())
+        .resourceId(entry.getResourceId())
+        .docsResourcePath(entry.getDocsResourcePath())
+        .actionId(entry.getActionId())
+        .slugPath(entry.getSlugPath())
+        .enumValues(new ArrayList<>(values))
+        .linkPath(entry.getLinkPath())
+        .linkAnchor(entry.getLinkAnchor())
+        .codeLabel(entry.getCodeLabel())
+        .eventType(entry.getEventType())
+        .build();
   }
 
   private boolean hasAnyEntries(ChangeLogDocsSchema schema) {
@@ -164,7 +212,11 @@ public class ChangeLogDocsGenerator implements FileGenerator {
         || isNotEmpty(schema.getDeletedEventType())
         || isNotEmpty(schema.getNewEnumValues())
         || isNotEmpty(schema.getDeletedEnumValues())
-        || isNotEmpty(schema.getParameterRequirementChangesValues());
+        || isNotEmpty(schema.getParameterRequirementChangesValues())
+        || isNotEmpty(schema.getDeprecatedResource())
+        || isNotEmpty(schema.getDeprecatedActions())
+        || isNotEmpty(schema.getDeprecatedResourceAttribute())
+        || isNotEmpty(schema.getDeprecatedParams());
   }
 
   private boolean isNotEmpty(List<?> list) {
@@ -220,6 +272,11 @@ public class ChangeLogDocsGenerator implements FileGenerator {
         generateDeletedEnumValues(oldResources, newResources, oldVersion, newerVersion));
     schema.setParameterRequirementChangesValues(
         generateParameterRequirementChanges(oldResources, newResources));
+
+    schema.setDeprecatedResource(generateDeprecatedResources(oldResources, newResources));
+    schema.setDeprecatedActions(generateDeprecatedActions(oldResources, newResources));
+    schema.setDeprecatedResourceAttribute(generateDeprecatedAttributes(oldResources, newResources));
+    schema.setDeprecatedParams(generateDeprecatedParameters(oldResources, newResources));
 
     return schema;
   }
@@ -443,19 +500,18 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
   private ChangeLogEntry formatNewParameterEntry(
       Resource resource, Action action, Parameter parameter) {
-    String paramAnchor = parameter.getName().replace(".", "_");
+    String paramAnchor = parameterAnchor(action, parameter);
     String resourcePath = getDocsLinkForResourceList(resource);
     String actionPath = toHyphenCase(action.id);
     String line =
         String.format(
             "[list]New input parameter [code %s] added to the endpoint "
-                + "[link_api %s/%s#%s][code %s/%s][].[]",
+                + "[link_api %s/%s#%s][code %s][].[]",
             toBracketNotation(parameter.getName()),
             resourcePath,
             actionPath,
             paramAnchor,
-            resourcePath,
-            actionPath);
+            endpointParamLabel(action, parameter));
     return ChangeLogEntry.builder()
         .line(line)
         .type(EntryType.NEW_PARAMETER)
@@ -738,7 +794,7 @@ public class ChangeLogDocsGenerator implements FileGenerator {
 
   private ChangeLogEntry formatDeletedParameterEntry(
       Resource resource, Action action, Parameter parameter, boolean includeLink) {
-    String paramAnchor = parameter.getName().replace(".", "_");
+    String paramAnchor = parameterAnchor(action, parameter);
     String resourcePath = getDocsLinkForResourceList(resource);
     String actionPath = toHyphenCase(action.id);
     String line;
@@ -746,13 +802,12 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       line =
           String.format(
               "[list]Input parameter [code %s] removed from the endpoint "
-                  + "[link_api %s/%s#%s][code %s/%s][].[]",
+                  + "[link_api %s/%s#%s][code %s][].[]",
               toBracketNotation(parameter.getName()),
               resourcePath,
               actionPath,
               paramAnchor,
-              resourcePath,
-              actionPath);
+              endpointParamLabel(action, parameter));
     } else {
       line =
           String.format(
@@ -865,19 +920,9 @@ public class ChangeLogDocsGenerator implements FileGenerator {
             findChangedEnumValues(attribute.getEnum().values(), comparisonValues, isAdded);
 
         if (!changedValues.isEmpty()) {
-          String verb = isAdded ? "added" : "removed";
-          String preposition = isAdded ? "to" : "from";
-          String line =
-              String.format(
-                  "[list]Enum value %s: %s %s the enum "
-                      + "[link_api %s#%s][code %s.%s][].[]",
-                  verb,
-                  formatEnumCodeValues(changedValues),
-                  preposition,
-                  getDocsLinkForResourceObject(resource),
-                  anchorId,
-                  resource.id,
-                  currentPath);
+          String linkPath = getDocsLinkForResourceObject(resource);
+          String codeLabel = resource.id + "." + currentPath;
+          String line = renderEnumLine(isAdded, changedValues, linkPath, anchorId, codeLabel);
           entries.add(
               ChangeLogEntry.builder()
                   .line(line)
@@ -889,6 +934,9 @@ public class ChangeLogDocsGenerator implements FileGenerator {
                   .docsResourcePath(getDocsLinkForResourceList(resource))
                   .slugPath(currentPath)
                   .enumValues(new ArrayList<>(changedValues))
+                  .linkPath(linkPath)
+                  .linkAnchor(anchorId)
+                  .codeLabel(codeLabel)
                   .build());
         }
       }
@@ -1000,23 +1048,12 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       Action action,
       Parameter parameter,
       boolean isAdded) {
-    String verb = isAdded ? "added" : "removed";
-    String preposition = isAdded ? "to" : "from";
-    String paramAnchor = parameter.getName().replace(".", "_");
+    String paramAnchor = parameterAnchor(action, parameter);
     String resourcePath = getDocsLinkForResourceList(resource);
     String actionPath = toHyphenCase(action.id);
-    String line =
-        String.format(
-            "[list]Enum value %s: %s %s the enum "
-                + "[link_api %s/%s#%s][code %s/%s][].[]",
-            verb,
-            formatEnumCodeValues(values),
-            preposition,
-            resourcePath,
-            actionPath,
-            paramAnchor,
-            resourcePath,
-            actionPath);
+    String linkPath = resourcePath + "/" + actionPath;
+    String codeLabel = endpointEnumLabel(action, parameter.getName());
+    String line = renderEnumLine(isAdded, values, linkPath, paramAnchor, codeLabel);
     entries.add(
         ChangeLogEntry.builder()
             .line(line)
@@ -1029,7 +1066,316 @@ public class ChangeLogDocsGenerator implements FileGenerator {
             .actionId(action.id)
             .slugPath(parameter.getName())
             .enumValues(new ArrayList<>(values))
+            .linkPath(linkPath)
+            .linkAnchor(paramAnchor)
+            .codeLabel(codeLabel)
             .build());
+  }
+
+  // --- Deprecated Resources ---
+
+  private List<ChangeLogEntry> generateDeprecatedResources(
+      List<Resource> oldResources, List<Resource> newResources) {
+    Map<String, Resource> oldResourceMap =
+        oldResources.stream()
+            .collect(Collectors.toMap(resource -> resource.id, resource -> resource));
+
+    return distinctByLine(
+        newResources.stream()
+            .filter(Resource::isDeprecated)
+            .filter(
+                resource -> {
+                  Resource oldResource = oldResourceMap.get(resource.id);
+                  return oldResource == null || !oldResource.isDeprecated();
+                })
+            .map(this::formatDeprecatedResourceEntry));
+  }
+
+  private ChangeLogEntry formatDeprecatedResourceEntry(Resource resource) {
+    String resourcePath = getDocsLinkForResourceList(resource);
+    String line =
+        String.format(
+            "[list]Resource [link_api %s][code %s][] has been deprecated.[]",
+            resourcePath, resourcePath);
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.DEPRECATED_RESOURCE)
+        .resourceId(resource.id)
+        .docsResourcePath(resourcePath)
+        .build();
+  }
+
+  // --- Deprecated Actions ---
+
+  private List<ChangeLogEntry> generateDeprecatedActions(
+      List<Resource> oldResources, List<Resource> newResources) {
+    Map<String, Map<String, Boolean>> oldActionDeprecation =
+        buildActionDeprecationMap(oldResources);
+    Map<String, ChangeLogEntry> entries = new LinkedHashMap<>();
+
+    for (Resource newResource : newResources) {
+      Map<String, Boolean> oldActions =
+          oldActionDeprecation.getOrDefault(newResource.id, Collections.emptyMap());
+
+      for (Action action : newResource.actions) {
+        if (!action.isOperationDeprecated()) {
+          continue;
+        }
+        Boolean wasDeprecated = oldActions.get(action.id);
+        if (wasDeprecated != null && !wasDeprecated) {
+          ChangeLogEntry entry = formatDeprecatedActionEntry(newResource, action);
+          entries.putIfAbsent(entry.getLine(), entry);
+        }
+      }
+    }
+
+    return new ArrayList<>(entries.values());
+  }
+
+  private ChangeLogEntry formatDeprecatedActionEntry(Resource resource, Action action) {
+    String resourcePath = getDocsLinkForResourceList(resource);
+    String actionPath = toHyphenCase(action.id);
+    String line =
+        String.format(
+            "[list]Endpoint [link_api %s/%s][code %s/%s][] has been deprecated.[]",
+            resourcePath, actionPath, resourcePath, actionPath);
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.DEPRECATED_ACTION)
+        .resourceId(resource.id)
+        .docsResourcePath(resourcePath)
+        .actionId(action.id)
+        .build();
+  }
+
+  // --- Deprecated Attributes ---
+
+  private List<ChangeLogEntry> generateDeprecatedAttributes(
+      List<Resource> oldResources, List<Resource> newResources) {
+    Map<String, Map<String, Boolean>> oldAttributeDeprecation =
+        buildAttributeDeprecationMap(oldResources);
+    Map<String, ChangeLogEntry> entries = new LinkedHashMap<>();
+
+    for (Resource newResource : newResources) {
+      Map<String, Boolean> oldAttributes =
+          oldAttributeDeprecation.getOrDefault(newResource.id, Collections.emptyMap());
+
+      for (Attribute attribute : newResource.attributes()) {
+        if (!attribute.isDeprecated()) {
+          continue;
+        }
+        Boolean wasDeprecated = oldAttributes.get(attribute.name);
+        if (wasDeprecated != null && !wasDeprecated) {
+          ChangeLogEntry entry = formatDeprecatedAttributeEntry(newResource, attribute);
+          entries.putIfAbsent(entry.getLine(), entry);
+        }
+      }
+    }
+
+    return new ArrayList<>(entries.values());
+  }
+
+  private ChangeLogEntry formatDeprecatedAttributeEntry(Resource resource, Attribute attribute) {
+    String resourcePath = getDocsLinkForResourceList(resource);
+    String line =
+        String.format(
+            "[list]Attribute [code %s] of the resource [link_api %s#%s][code %s][] has been deprecated.[]",
+            attribute.name,
+            getDocsLinkForResourceObject(resource),
+            attribute.name,
+            resourcePath);
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.DEPRECATED_ATTRIBUTE)
+        .resourceId(resource.id)
+        .docsResourcePath(resourcePath)
+        .slugPath(attribute.name)
+        .build();
+  }
+
+  // --- Deprecated Parameters ---
+
+  private List<ChangeLogEntry> generateDeprecatedParameters(
+      List<Resource> oldResources, List<Resource> newResources) {
+    List<ChangeLogEntry> queryEntries =
+        generateDeprecatedParameterEntries(oldResources, newResources, Action::queryParameters);
+    List<ChangeLogEntry> bodyEntries =
+        generateDeprecatedParameterEntries(
+            oldResources, newResources, Action::requestBodyParameters);
+
+    return Stream.concat(queryEntries.stream(), bodyEntries.stream())
+        .collect(Collectors.toList());
+  }
+
+  private List<ChangeLogEntry> generateDeprecatedParameterEntries(
+      List<Resource> oldResources,
+      List<Resource> newResources,
+      Function<Action, List<Parameter>> parameterExtractor) {
+    Map<String, Map<String, Map<String, Boolean>>> oldParameterDeprecation =
+        buildParameterDeprecationMap(oldResources, parameterExtractor);
+    Map<String, ChangeLogEntry> entries = new LinkedHashMap<>();
+
+    for (Resource newResource : newResources) {
+      Map<String, Map<String, Boolean>> oldActionParameters =
+          oldParameterDeprecation.getOrDefault(newResource.id, Collections.emptyMap());
+
+      for (Action action : newResource.actions) {
+        Map<String, Boolean> oldParameters =
+            oldActionParameters.getOrDefault(action.id, Collections.emptyMap());
+        collectDeprecatedParameterEntries(
+            newResource, action, parameterExtractor.apply(action), "", oldParameters, entries);
+      }
+    }
+
+    return new ArrayList<>(entries.values());
+  }
+
+  private void collectDeprecatedParameterEntries(
+      Resource resource,
+      Action action,
+      List<Parameter> parameters,
+      String pathPrefix,
+      Map<String, Boolean> oldDeprecation,
+      Map<String, ChangeLogEntry> entries) {
+    for (Parameter parameter : parameters) {
+      String path = pathPrefix.isEmpty() ? parameter.getName() : pathPrefix;
+      if (parameter.isDeprecated()) {
+        Boolean wasDeprecated = oldDeprecation.get(path);
+        if (wasDeprecated != null && !wasDeprecated) {
+          Parameter pathParameter = new Parameter(path, parameter.schema);
+          ChangeLogEntry entry =
+              formatDeprecatedParameterEntry(resource, action, pathParameter);
+          entries.putIfAbsent(entry.getLine(), entry);
+        }
+      }
+      if (parameter.schema.getProperties() != null) {
+        collectDeprecatedNestedParameterEntries(
+            parameter.schema, path, resource, action, oldDeprecation, entries);
+      }
+    }
+  }
+
+  private void collectDeprecatedNestedParameterEntries(
+      Schema schema,
+      String path,
+      Resource resource,
+      Action action,
+      Map<String, Boolean> oldDeprecation,
+      Map<String, ChangeLogEntry> entries) {
+    if (schema.getProperties() == null) {
+      return;
+    }
+    schema
+        .getProperties()
+        .forEach(
+            (key, value) -> {
+              Schema<?> childSchema = (Schema<?>) value;
+              String nestedPath = path + "." + key;
+              boolean isDeprecated =
+                  childSchema.getDeprecated() != null && childSchema.getDeprecated();
+              if (isDeprecated) {
+                Boolean wasDeprecated = oldDeprecation.get(nestedPath);
+                if (wasDeprecated != null && !wasDeprecated) {
+                  Parameter nestedParameter = new Parameter(nestedPath, childSchema);
+                  ChangeLogEntry entry =
+                      formatDeprecatedParameterEntry(resource, action, nestedParameter);
+                  entries.putIfAbsent(entry.getLine(), entry);
+                }
+              }
+              collectDeprecatedNestedParameterEntries(
+                  childSchema, nestedPath, resource, action, oldDeprecation, entries);
+            });
+  }
+
+  private ChangeLogEntry formatDeprecatedParameterEntry(
+      Resource resource, Action action, Parameter parameter) {
+    String paramAnchor = parameterAnchor(action, parameter);
+    String resourcePath = getDocsLinkForResourceList(resource);
+    String actionPath = toHyphenCase(action.id);
+    String line =
+        String.format(
+            "[list]Input parameter [code %s] of the endpoint "
+                + "[link_api %s/%s#%s][code %s][] has been deprecated.[]",
+            toBracketNotation(parameter.getName()),
+            resourcePath,
+            actionPath,
+            paramAnchor,
+            endpointParamLabel(action, parameter));
+    return ChangeLogEntry.builder()
+        .line(line)
+        .type(EntryType.DEPRECATED_PARAMETER)
+        .resourceId(resource.id)
+        .docsResourcePath(resourcePath)
+        .actionId(action.id)
+        .slugPath(parameter.getName())
+        .build();
+  }
+
+  private Map<String, Map<String, Boolean>> buildActionDeprecationMap(List<Resource> resources) {
+    Map<String, Map<String, Boolean>> resourceMap = new HashMap<>();
+    for (Resource resource : resources) {
+      Map<String, Boolean> actionMap = new HashMap<>();
+      for (Action action : resource.actions) {
+        actionMap.put(action.id, action.isOperationDeprecated());
+      }
+      resourceMap.put(resource.id, actionMap);
+    }
+    return resourceMap;
+  }
+
+  private Map<String, Map<String, Boolean>> buildAttributeDeprecationMap(
+      List<Resource> resources) {
+    Map<String, Map<String, Boolean>> resourceMap = new HashMap<>();
+    for (Resource resource : resources) {
+      Map<String, Boolean> attributeMap = new HashMap<>();
+      for (Attribute attribute : resource.attributes()) {
+        attributeMap.put(attribute.name, attribute.isDeprecated());
+      }
+      resourceMap.put(resource.id, attributeMap);
+    }
+    return resourceMap;
+  }
+
+  private Map<String, Map<String, Map<String, Boolean>>> buildParameterDeprecationMap(
+      List<Resource> resources, Function<Action, List<Parameter>> parameterExtractor) {
+    Map<String, Map<String, Map<String, Boolean>>> resourceMap = new HashMap<>();
+    for (Resource resource : resources) {
+      Map<String, Map<String, Boolean>> actionMap = new HashMap<>();
+      for (Action action : resource.actions) {
+        Map<String, Boolean> deprecationMap = new HashMap<>();
+        collectParameterDeprecation(parameterExtractor.apply(action), "", deprecationMap);
+        actionMap.put(action.id, deprecationMap);
+      }
+      resourceMap.put(resource.id, actionMap);
+    }
+    return resourceMap;
+  }
+
+  private void collectParameterDeprecation(
+      List<Parameter> parameters, String pathPrefix, Map<String, Boolean> deprecationMap) {
+    for (Parameter parameter : parameters) {
+      String path = pathPrefix.isEmpty() ? parameter.getName() : pathPrefix;
+      deprecationMap.put(path, parameter.isDeprecated());
+      collectSchemaDeprecation(parameter.schema, path, deprecationMap);
+    }
+  }
+
+  private void collectSchemaDeprecation(
+      Schema schema, String path, Map<String, Boolean> deprecationMap) {
+    if (schema.getProperties() == null) {
+      return;
+    }
+    schema
+        .getProperties()
+        .forEach(
+            (key, value) -> {
+              Schema<?> childSchema = (Schema<?>) value;
+              String nestedPath = path + "." + key;
+              boolean isDeprecated =
+                  childSchema.getDeprecated() != null && childSchema.getDeprecated();
+              deprecationMap.put(nestedPath, isDeprecated);
+              collectSchemaDeprecation(childSchema, nestedPath, deprecationMap);
+            });
   }
 
   // --- Parameter Requirement Changes ---
@@ -1081,20 +1427,19 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       Resource resource, Action action, Parameter parameter) {
     String changeDescription =
         parameter.isRequired ? "`optional` to `required`" : "`required` to `optional`";
-    String paramAnchor = parameter.getName().replace(".", "_");
+    String paramAnchor = parameterAnchor(action, parameter);
     String resourcePath = getDocsLinkForResourceList(resource);
     String actionPath = toHyphenCase(action.id);
     String line =
         String.format(
             "[list]Input parameter [code %s] has been changed from %s in the endpoint "
-                + "[link_api %s/%s#%s][code %s/%s][].[]",
+                + "[link_api %s/%s#%s][code %s][].[]",
             toBracketNotation(parameter.getName()),
             changeDescription,
             resourcePath,
             actionPath,
             paramAnchor,
-            resourcePath,
-            actionPath);
+            endpointParamLabel(action, parameter));
     return ChangeLogEntry.builder()
         .line(line)
         .type(EntryType.PARAMETER_REQUIREMENT_CHANGE)
@@ -1387,6 +1732,71 @@ public class ChangeLogDocsGenerator implements FileGenerator {
       sb.append("[").append(parts[i]).append("]");
     }
     return sb.toString();
+  }
+
+  /**
+   * Builds the {@code #anchor} for a parameter link. Docs anchor <em>filter</em> params on list
+   * endpoints as {@code <actionId>_<param>}; all other (input/body) params anchor as the bare param
+   * name (dots flattened to underscores).
+   */
+  String parameterAnchor(Action action, Parameter parameter) {
+    String base = parameter.getName().replace(".", "_");
+    return parameter.isFilterParameters() ? action.id + "_" + base : base;
+  }
+
+  /**
+   * Builds the second {@code [code ...]} label for a parameter entry: the endpoint name, plus the
+   * immediate parent param for nested params (e.g. {@code create-a-quote....subscription} for
+   * {@code subscription[free_period]}). No resource prefix.
+   */
+  String endpointParamLabel(Action action, Parameter parameter) {
+    String label = toHyphenCase(action.id);
+    String parent = immediateParent(parameter.getName());
+    return parent == null ? label : label + "." + parent;
+  }
+
+  /**
+   * Builds the second {@code [code ...]} label for a parameter <em>enum</em> entry: the endpoint
+   * name plus the enum's owning param (e.g. {@code list-grant-blocks.sort_by}). No resource prefix.
+   */
+  String endpointEnumLabel(Action action, String slugPath) {
+    return toHyphenCase(action.id) + "." + lastSegment(slugPath);
+  }
+
+  private String lastSegment(String dottedPath) {
+    int idx = dottedPath.lastIndexOf('.');
+    return idx < 0 ? dottedPath : dottedPath.substring(idx + 1);
+  }
+
+  /** Returns the segment just before the leaf in a dotted path, or {@code null} if it is flat. */
+  private String immediateParent(String dottedPath) {
+    String[] parts = dottedPath.split("\\.");
+    return parts.length < 2 ? null : parts[parts.length - 2];
+  }
+
+  /**
+   * Renders an enum-change line for the given value subset. Shared by the build-time emitters and
+   * the docs-availability split so the partial (documented-only) line matches the original exactly.
+   */
+  private String renderEnumLine(
+      boolean isAdded, List<String> values, String linkPath, String linkAnchor, String codeLabel) {
+    String verb = isAdded ? "added" : "removed";
+    String preposition = isAdded ? "to" : "from";
+    return String.format(
+        "[list]Enum value %s: %s %s the enum [link_api %s#%s][code %s][].[]",
+        verb, formatEnumCodeValues(values), preposition, linkPath, linkAnchor, codeLabel);
+  }
+
+  private boolean isEnumEntryType(ChangeLogEntry.EntryType type) {
+    return type == EntryType.NEW_ATTRIBUTE_ENUM_VALUE
+        || type == EntryType.DELETED_ATTRIBUTE_ENUM_VALUE
+        || type == EntryType.NEW_PARAMETER_ENUM_VALUE
+        || type == EntryType.DELETED_PARAMETER_ENUM_VALUE;
+  }
+
+  private boolean isAddedEnumType(ChangeLogEntry.EntryType type) {
+    return type == EntryType.NEW_ATTRIBUTE_ENUM_VALUE
+        || type == EntryType.NEW_PARAMETER_ENUM_VALUE;
   }
 
   // --- Utility: Docs link builders ---

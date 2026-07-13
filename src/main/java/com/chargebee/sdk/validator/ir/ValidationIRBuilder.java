@@ -32,6 +32,29 @@ public class ValidationIRBuilder {
   }
 
   /**
+   * Build the IR node for the <em>top-level</em> schema of an action's request body or GET query
+   * parameters.
+   *
+   * <p>The root schema is always a parameter container and must be emitted as an object. The
+   * {@code x-cb-is-multi-value-attribute} heuristic (see {@link #buildMultiValueObjectNode}) is
+   * meant for <em>nested</em> flat-array params such as {@code subscription_items[item_price_id][0]},
+   * where a named child property logically represents an array of objects. It must never be applied
+   * to the root container itself: list filter params ({@code id}, {@code name}, {@code status}, …)
+   * and several {@code /exports/*} body params carry that flag, and flattening the whole container
+   * into an {@code ArrayNode} causes the emitter to discard the action entirely. Recursion into
+   * child properties still applies the heuristic normally, so legitimate nested multi-value params
+   * are unaffected.
+   */
+  public ValidationNode buildRootNode(Schema<?> schema, Set<String> visiting) {
+    if (schema != null
+        && schema.get$ref() == null
+        && ("object".equals(schema.getType()) || schema instanceof ObjectSchema)) {
+      return buildObjectNode(schema, visiting, true);
+    }
+    return buildNode(schema, visiting);
+  }
+
+  /**
    * Build an IR node from an OpenAPI schema. Resolves $refs, handles objects, arrays, and
    * primitives. Uses {@code visiting} to break circular references.
    */
@@ -93,10 +116,16 @@ public class ValidationIRBuilder {
   }
 
   private ValidationNode buildObjectNode(Schema<?> schema, Set<String> visiting) {
+    return buildObjectNode(schema, visiting, false);
+  }
+
+  private ValidationNode buildObjectNode(
+      Schema<?> schema, Set<String> visiting, boolean skipMultiValueFlatten) {
     Map<String, Schema> properties = schema.getProperties();
 
-    // Check for multi-value attributes – flatten into ArrayNode<ObjectNode>
-    if (hasMultiValueAttributes(properties)) {
+    // Check for multi-value attributes – flatten into ArrayNode<ObjectNode>.
+    // Skipped at the root container level (see buildRootNode).
+    if (!skipMultiValueFlatten && hasMultiValueAttributes(properties)) {
       return buildMultiValueObjectNode(schema, visiting);
     }
 
