@@ -212,7 +212,7 @@ public class Go_V3 extends Language {
       for (Attribute dr : getDependentResource(activeResource)) {
         var refModelName = singularize(dr.name.replace("_", ""));
         if (dr.isDependentAttribute()
-            && resourceList.stream().noneMatch(r -> r.id.contains(singularize(dr.name)))) {
+            && resourceList.stream().noneMatch(r -> r.id.equals(singularize(dr.name)))) {
           if (dr.subResourceName() != null) {
             refModelName = dr.subResourceName().toLowerCase();
           } else {
