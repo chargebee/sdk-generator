@@ -2,7 +2,6 @@ package com.chargebee.sdk.java.v4.datatype;
 
 import static com.chargebee.openapi.Extension.IS_MONEY_COLUMN;
 
-import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +43,7 @@ public record ListType(String fieldName, Schema schema) implements FieldType {
       if (items.getProperties() != null && !items.getProperties().isEmpty()) {
         String className =
             fieldName != null
-                ? CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, fieldName)
+                ? com.chargebee.sdk.java.v4.util.SchemaUtil.inlineItemClassName(fieldName, items)
                 : "Object";
         return "List<" + className + ">";
       }
