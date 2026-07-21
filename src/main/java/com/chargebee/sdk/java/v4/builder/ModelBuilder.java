@@ -149,7 +149,13 @@ public class ModelBuilder {
             || ((Schema) listSchema).getProperties().isEmpty()) {
           continue;
         }
-        subModels.add(createSubModel(fieldName.toString(), listSchema));
+        var subModel = createSubModel(fieldName.toString(), listSchema);
+        // Rename the inline class when the field-derived name collides with a Java built-in
+        // type (e.g. "list" -> "List"); use x-cb-sub-resource-name instead so it does not
+        // shadow the built-in type. Keeps the element type consistent with ListType/Field.
+        subModel.setName(
+            SchemaUtil.inlineItemClassName(fieldName.toString(), (Schema<?>) listSchema));
+        subModels.add(subModel);
       }
     }
     return subModels;

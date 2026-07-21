@@ -147,14 +147,16 @@ public class Field {
         return items.get$ref().substring(items.get$ref().lastIndexOf("/") + 1);
       }
       if (items != null && items.getProperties() != null && !items.getProperties().isEmpty()) {
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, listType.fieldName());
+        return com.chargebee.sdk.java.v4.util.SchemaUtil.inlineItemClassName(
+            listType.fieldName(), items);
       }
       if (items != null && "object".equals(items.getType())) {
         // If it's a free-form object (no properties), treat as Map
         if (items.getProperties() == null || items.getProperties().isEmpty()) {
           return "java.util.Map<String, Object>";
         }
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, listType.fieldName());
+        return com.chargebee.sdk.java.v4.util.SchemaUtil.inlineItemClassName(
+            listType.fieldName(), items);
       }
 
       // Items with no type specified → generic array, matching List<Object> from display()
