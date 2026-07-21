@@ -49,6 +49,7 @@ public class Imports {
     if (!resource.enums().isEmpty()
         || !SchemaLessEnumParser.getSchemalessEnum(resource, resourceList).isEmpty()
         || resource.subResources().stream().anyMatch(subResource -> !subResource.enums().isEmpty())
+        || !genModelEnums(resource, resourceList).isEmpty()
         || resource.name.equalsIgnoreCase("Estimate")) {
       imports += "\nfrom enum import Enum";
     }
@@ -90,7 +91,7 @@ public class Imports {
       for (Attribute dr : getDependentResource(resource)) {
         var refModelName = singularize(dr.name);
         if (dr.isDependentAttribute()
-            && resourceList.stream().noneMatch(r -> r.id.contains(singularize(dr.name)))) {
+            && resourceList.stream().noneMatch(r -> r.id.equals(singularize(dr.name)))) {
           if (dr.subResourceName() != null) {
             refModelName = dr.subResourceName();
             refModelName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, refModelName);
@@ -144,7 +145,7 @@ public class Imports {
       for (Attribute dr : getDependentResource(resource)) {
         var refModelName = singularize(dr.name);
         if (dr.isDependentAttribute()
-            && resourceList.stream().noneMatch(r -> r.id.contains(singularize(dr.name)))) {
+            && resourceList.stream().noneMatch(r -> r.id.equals(singularize(dr.name)))) {
           if (dr.subResourceName() != null) {
             refModelName = dr.subResourceName();
             refModelName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, refModelName);
