@@ -151,8 +151,31 @@ public class Java extends Language {
     }
   }
 
+  private static final Set<String> JAVA_UTIL_TYPE_NAMES =
+      Set.of(
+          "Locale",
+          "Currency",
+          "Date",
+          "Calendar",
+          "TimeZone",
+          "Random",
+          "Timer",
+          "Formatter",
+          "Optional",
+          "Scanner",
+          "UUID",
+          "List",
+          "Map",
+          "Set",
+          "Queue",
+          "Stack",
+          "Vector",
+          "Comparator",
+          "Observable");
+
   private String qualifyEnumIfClashesWithResource(String enumApiName) {
-    if (activeResource != null && activeResource.name.equals(enumApiName)) {
+    if ((activeResource != null && activeResource.name.equals(enumApiName))
+        || (enumApiName != null && JAVA_UTIL_TYPE_NAMES.contains(enumApiName))) {
       return getEnumsPkg() + "." + enumApiName;
     }
     return enumApiName;
