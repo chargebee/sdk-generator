@@ -1,8 +1,7 @@
 <?php
 
 {{#if namespace}}namespace {{namespace}};{{/if}}
-{{#each imports}}{{.}};
-{{/each}}
+{{#each imports}}{{.}};{{/each}}
 use Chargebee\ValueObjects\ResponseBase;
 
 class {{clazName}} extends ResponseBase {{curly "open"}} {{#each cols}}
