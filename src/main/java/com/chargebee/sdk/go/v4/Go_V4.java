@@ -1058,7 +1058,10 @@ public class Go_V4 extends Language {
   }
 
   private String getListOfEnumTypeForAttribute(Attribute a) {
-    return (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
+    if (a.isExternalEnum() || a.isGenSeparate()){
+      return (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
+    }
+    return activeResource.name + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
   }
 
   public String getSubResourceCols(Resource subResource) {
