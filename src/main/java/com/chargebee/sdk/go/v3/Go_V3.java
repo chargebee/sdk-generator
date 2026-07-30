@@ -787,7 +787,7 @@ public class Go_V3 extends Language {
                       getJsonVal(attribute, req)));
       } else if (attribute.isEnumAttribute() && !attribute.isFilterAttribute()) {
         if (attribute.isListOfEnum()) {
-          type = "[]enum." + getListOfEnumTypeForAttribute(attribute);
+          type = getListOfEnumTypeForAttribute(attribute);
         } else if (attribute.isGenSeparate()) {
           type = Constants.ENUM_WITH_DELIMITER + toClazName(attribute.name);
         } else {
@@ -872,7 +872,7 @@ public class Go_V3 extends Language {
       }
       if (a.isEnumAttribute()) {
         if (a.isListOfEnum()) {
-          type = "[]" + Constants.ENUM_WITH_DELIMITER + getListOfEnumTypeForAttribute(a);
+          type = getListOfEnumTypeForAttribute(a);
         } else if (a.isGenSeparate() || a.isGlobalEnumAttribute()) {
           type =
               Constants.ENUM_WITH_DELIMITER
@@ -934,7 +934,12 @@ public class Go_V3 extends Language {
   }
 
   private String getListOfEnumTypeForAttribute(Attribute a) {
-    return (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
+    if(a.isExternalEnum() || a.isGenSeparate()) {
+      return "[]" + Constants.ENUM_WITH_DELIMITER + (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
+    }
+    return getCamelClazName(activeResource.name)
+            + Constants.ENUM_DOT
+            + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
   }
 
   public String getSubResourceCols(Resource subResource) {

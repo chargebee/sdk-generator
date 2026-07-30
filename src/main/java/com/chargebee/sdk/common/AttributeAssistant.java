@@ -49,7 +49,7 @@ public class AttributeAssistant {
   public List<Attribute> resourceEnum() {
     return resource.attributes().stream()
         .filter(Attribute::isNotHiddenAttribute)
-        .filter(att -> att.isApi() && !att.isGenSeparate())
+        .filter(att -> (att.isApi() || att.itemsIsApi()) && !att.isGenSeparate())
         .toList();
   }
 
