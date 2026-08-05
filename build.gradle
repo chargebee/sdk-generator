@@ -9,6 +9,13 @@ apply plugin : "java"
 group 'com.chargebee'
 version '1.0-SNAPSHOT'
 
+// Force UTF-8 for compilation so sources with non-ASCII characters (arrows,
+// em dashes, emoji in CLI messages/JavaDoc) build on runners whose default
+// platform encoding is US-ASCII (otherwise: "unmappable character" errors).
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
 repositories {
     mavenCentral()
     maven {
@@ -35,6 +42,10 @@ dependencies {
 application {
     mainClass = "com.chargebee.Main"
     applicationDefaultJvmArgs = [
+        // Ensure the generator reads/writes files as UTF-8 regardless of the
+        // runner's platform encoding.
+        '-Dfile.encoding=UTF-8',
+        '-Dsun.jnu.encoding=UTF-8',
         '--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED',
         '--add-exports=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED',
         '--add-exports=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED',
@@ -50,6 +61,7 @@ application {
 
 test {
     useJUnitPlatform()
+    systemProperty 'file.encoding', 'UTF-8'
     testLogging {
         events "passed", "skipped", "failed"
     }
