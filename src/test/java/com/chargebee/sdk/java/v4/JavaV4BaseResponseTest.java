@@ -42,8 +42,8 @@ class JavaV4BaseResponseTest {
   }
 
   @Test
-  @DisplayName("Should null-safe header lookup in BaseResponse and list responses")
-  void shouldNullSafeHeaderLookup() throws IOException {
+  @DisplayName("Should case-insensitive header lookup in BaseResponse and list responses")
+  void shouldCaseInsensitiveHeaderLookup() throws IOException {
     List<FileOp> fileOps = generate();
 
     FileOp.WriteString baseResponse =
@@ -55,9 +55,9 @@ class JavaV4BaseResponseTest {
             .orElseThrow(() -> new AssertionError("BaseResponse.java not generated"));
 
     assertThat(baseResponse.fileContent)
-        .contains(".filter(e -> e.getKey() != null && e.getKey().equalsIgnoreCase(name))");
+        .contains(".filter(e -> e.getKey().equalsIgnoreCase(name))");
 
-    boolean listResponseHasNullSafeFilter =
+    boolean listResponseHasCaseInsensitiveFilter =
         fileOps.stream()
             .filter(op -> op instanceof FileOp.WriteString)
             .map(op -> (FileOp.WriteString) op)
@@ -66,8 +66,8 @@ class JavaV4BaseResponseTest {
                 op ->
                     op.fileContent.contains("header(String name)")
                         && op.fileContent.contains(
-                            ".filter(e -> e.getKey() != null && e.getKey().equalsIgnoreCase(name))"));
+                            ".filter(e -> e.getKey().equalsIgnoreCase(name))"));
 
-    assertThat(listResponseHasNullSafeFilter).isTrue();
+    assertThat(listResponseHasCaseInsensitiveFilter).isTrue();
   }
 }

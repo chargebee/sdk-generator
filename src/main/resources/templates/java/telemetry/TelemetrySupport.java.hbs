@@ -323,8 +323,7 @@ public final class TelemetrySupport {
       return;
     }
     for (String name : requestHeaders.keySet()) {
-      if (name != null
-          && name.equalsIgnoreCase(TelemetryAttributeKeys.CHARGEBEE_TELEMETRY_PREFER_HEADER)) {
+      if (name.equalsIgnoreCase(TelemetryAttributeKeys.CHARGEBEE_TELEMETRY_PREFER_HEADER)) {
         return;
       }
     }
@@ -353,7 +352,7 @@ public final class TelemetrySupport {
       return false;
     }
     for (String name : headers.keySet()) {
-      if (name != null && name.equalsIgnoreCase(headerName)) {
+      if (name.equalsIgnoreCase(headerName)) {
         return true;
       }
     }
@@ -363,8 +362,7 @@ public final class TelemetrySupport {
   private static String getHeaderValueIgnoreCase(
       Map<String, List<String>> headers, String headerName) {
     for (Map.Entry<String, List<String>> entry : headers.entrySet()) {
-      if (entry.getKey() != null
-          && entry.getKey().equalsIgnoreCase(headerName)
+      if (entry.getKey().equalsIgnoreCase(headerName)
           && entry.getValue() != null
           && !entry.getValue().isEmpty()) {
         return String.join(", ", entry.getValue());
