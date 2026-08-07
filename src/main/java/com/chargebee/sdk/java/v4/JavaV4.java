@@ -104,7 +104,8 @@ public class JavaV4 extends Language {
       "RequestTelemetryError.java",
       "RequestTelemetryResult.java",
       "TelemetryAdapter.java",
-      "TelemetrySupport.java"
+      "TelemetrySupport.java",
+      "ChargebeeTelemetryHeaderParser.java"
     };
     final String[] templateKeys = {
       "telemetryAttributeKeys",
@@ -112,7 +113,8 @@ public class JavaV4 extends Language {
       "telemetryRequestError",
       "telemetryRequestResult",
       "telemetryAdapter",
-      "telemetrySupport"
+      "telemetrySupport",
+      "chargebeeTelemetryHeaderParser"
     };
 
     List<FileOp> fileOps = new ArrayList<>();
@@ -158,7 +160,10 @@ public class JavaV4 extends Language {
         Map.entry(
             "telemetryRequestResult", "/templates/java/telemetry/RequestTelemetryResult.java.hbs"),
         Map.entry("telemetryAdapter", "/templates/java/telemetry/TelemetryAdapter.java.hbs"),
-        Map.entry("telemetrySupport", "/templates/java/telemetry/TelemetrySupport.java.hbs"));
+        Map.entry("telemetrySupport", "/templates/java/telemetry/TelemetrySupport.java.hbs"),
+        Map.entry(
+            "chargebeeTelemetryHeaderParser",
+            "/templates/java/telemetry/ChargebeeTelemetryHeaderParser.java.hbs"));
   }
 
   @Override
