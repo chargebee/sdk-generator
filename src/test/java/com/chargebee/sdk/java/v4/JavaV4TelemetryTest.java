@@ -72,7 +72,14 @@ class JavaV4TelemetryTest {
             "RequestTelemetryError.java",
             "RequestTelemetryResult.java",
             "TelemetryAdapter.java",
-            "TelemetrySupport.java")) {
+            "TelemetrySupport.java",
+            "SdkTelemetryHeader.java",
+            "SdkTelemetryState.java",
+            "SdkTelemetrySnapshot.java",
+            "SdkTelemetryHeaderBuilder.java",
+            "SdkTelemetryEmitter.java",
+            "TelemetryAdapterExecutor.java",
+            "TelemetryExecutor.java")) {
       FileOp.WriteString writeOp = findWriteOp(fileOps, fileName);
       assertThat(writeOp.baseFilePath).isEqualTo(expectedDir);
     }
@@ -109,6 +116,39 @@ class JavaV4TelemetryTest {
         .doesNotContain("ERROR_TYPE, String.valueOf(result.getHttpStatusCode())");
     assertThat(support.fileContent)
         .contains("ERROR_TYPE, error.getChargebeeApiErrorType()");
+  }
+
+  @Test
+  @DisplayName("Should generate SDK telemetry header classes for N+1 adoption metrics")
+  void shouldGenerateSdkTelemetryHeaderClasses() throws IOException {
+    List<FileOp> fileOps = generate();
+
+    FileOp.WriteString header = findWriteOp(fileOps, "SdkTelemetryHeader.java");
+    assertThat(header.fileContent).contains("HEADER_NAME = \"x-chargebee-sdk-telemetry\"");
+    assertThat(header.fileContent).contains("MAX_HEADER_BYTES = 4096");
+    assertThat(header.fileContent).contains("FT_TELEMETRY_ADAPTER = \"ft-telemetry_adapter\"");
+    assertThat(header.fileContent).contains("FT_CUSTOM_TRANSPORT = \"ft-custom_transport\"");
+    assertThat(header.fileContent).contains("FT_RETRY_CONFIG = \"ft-retry_config\"");
+
+    FileOp.WriteString builder = findWriteOp(fileOps, "SdkTelemetryHeaderBuilder.java");
+    assertThat(builder.fileContent).contains("RFC 9651 sf-list");
+    assertThat(builder.fileContent).contains("escapeSfString");
+    assertThat(builder.fileContent).contains("appendBareParam");
+
+    FileOp.WriteString emitter = findWriteOp(fileOps, "SdkTelemetryEmitter.java");
+    assertThat(emitter.fileContent).contains("N+1 scheme");
+    assertThat(emitter.fileContent).contains("isSdkTelemetryEnabled()");
+    assertThat(emitter.fileContent).contains("SdkTelemetryHeaderBuilder.build");
+    assertThat(emitter.fileContent).contains("FT_RETRY_CONFIG");
+
+    FileOp.WriteString executor = findWriteOp(fileOps, "TelemetryExecutor.java");
+    assertThat(executor.fileContent).contains("SdkTelemetryEmitter.around");
+    assertThat(executor.fileContent).contains("TelemetryAdapterExecutor.around");
+
+    FileOp.WriteString adapterExecutor = findWriteOp(fileOps, "TelemetryAdapterExecutor.java");
+    assertThat(adapterExecutor.fileContent).contains("resolveAdapter");
+    assertThat(adapterExecutor.fileContent).contains("onRequestStart");
+    assertThat(adapterExecutor.fileContent).contains("onRequestEnd");
   }
 
   @Test

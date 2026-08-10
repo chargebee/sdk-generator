@@ -104,7 +104,14 @@ public class JavaV4 extends Language {
       "RequestTelemetryError.java",
       "RequestTelemetryResult.java",
       "TelemetryAdapter.java",
-      "TelemetrySupport.java"
+      "TelemetrySupport.java",
+      "SdkTelemetryHeader.java",
+      "SdkTelemetryState.java",
+      "SdkTelemetrySnapshot.java",
+      "SdkTelemetryHeaderBuilder.java",
+      "SdkTelemetryEmitter.java",
+      "TelemetryAdapterExecutor.java",
+      "TelemetryExecutor.java"
     };
     final String[] templateKeys = {
       "telemetryAttributeKeys",
@@ -112,7 +119,14 @@ public class JavaV4 extends Language {
       "telemetryRequestError",
       "telemetryRequestResult",
       "telemetryAdapter",
-      "telemetrySupport"
+      "telemetrySupport",
+      "sdkTelemetryHeader",
+      "sdkTelemetryState",
+      "sdkTelemetrySnapshot",
+      "sdkTelemetryHeaderBuilder",
+      "sdkTelemetryEmitter",
+      "telemetryAdapterExecutor",
+      "telemetryExecutor"
     };
 
     List<FileOp> fileOps = new ArrayList<>();
@@ -158,7 +172,19 @@ public class JavaV4 extends Language {
         Map.entry(
             "telemetryRequestResult", "/templates/java/telemetry/RequestTelemetryResult.java.hbs"),
         Map.entry("telemetryAdapter", "/templates/java/telemetry/TelemetryAdapter.java.hbs"),
-        Map.entry("telemetrySupport", "/templates/java/telemetry/TelemetrySupport.java.hbs"));
+        Map.entry("telemetrySupport", "/templates/java/telemetry/TelemetrySupport.java.hbs"),
+        Map.entry("sdkTelemetryHeader", "/templates/java/telemetry/SdkTelemetryHeader.java.hbs"),
+        Map.entry("sdkTelemetryState", "/templates/java/telemetry/SdkTelemetryState.java.hbs"),
+        Map.entry(
+            "sdkTelemetrySnapshot", "/templates/java/telemetry/SdkTelemetrySnapshot.java.hbs"),
+        Map.entry(
+            "sdkTelemetryHeaderBuilder",
+            "/templates/java/telemetry/SdkTelemetryHeaderBuilder.java.hbs"),
+        Map.entry("sdkTelemetryEmitter", "/templates/java/telemetry/SdkTelemetryEmitter.java.hbs"),
+        Map.entry(
+            "telemetryAdapterExecutor",
+            "/templates/java/telemetry/TelemetryAdapterExecutor.java.hbs"),
+        Map.entry("telemetryExecutor", "/templates/java/telemetry/TelemetryExecutor.java.hbs"));
   }
 
   @Override
