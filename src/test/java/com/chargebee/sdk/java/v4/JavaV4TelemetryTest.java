@@ -134,6 +134,9 @@ class JavaV4TelemetryTest {
     assertThat(builder.fileContent).contains("RFC 9651 sf-list");
     assertThat(builder.fileContent).contains("escapeSfString");
     assertThat(builder.fileContent).contains("appendBareParam");
+    assertThat(builder.fileContent).contains("containsInvalidSfStringChar");
+    assertThat(builder.fileContent).contains("isValidFeatureToken");
+    assertThat(builder.fileContent).contains("ch == '\\0' || ch == '\\n' || ch == '\\r'");
 
     FileOp.WriteString emitter = findWriteOp(fileOps, "SdkTelemetryEmitter.java");
     assertThat(emitter.fileContent).contains("N+1 scheme");
