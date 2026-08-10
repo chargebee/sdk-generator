@@ -758,7 +758,8 @@ public class NodeV3Tests extends LanguageTests {
     assertThat(sdkEmitterFile)
         .contains("attachSdkTelemetryHeader")
         .contains("recordSdkTelemetrySuccess")
-        .contains("N+1 scheme");
+        .contains("N+1 scheme")
+        .contains("env.sdkTelemetryEnabled === false || !hasTelemetryMetadata(call)");
 
     var indexContent = findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "index.ts");
     assertThat(indexContent).contains("SDK_TELEMETRY_HEADER_NAME");

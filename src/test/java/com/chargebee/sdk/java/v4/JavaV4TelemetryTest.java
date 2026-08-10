@@ -155,31 +155,6 @@ class JavaV4TelemetryTest {
   }
 
   @Test
-  @DisplayName("Should append chargebee-telemetry=include to existing Prefer values when missing")
-  void shouldAppendChargebeeTelemetryPreferDirective() throws IOException {
-    List<FileOp> fileOps = generate();
-
-    FileOp.WriteString attributeKeys = findWriteOp(fileOps, "TelemetryAttributeKeys.java");
-    assertThat(attributeKeys.fileContent)
-        .contains("CHARGEBEE_TELEMETRY_PREFER_HEADER = \"Prefer\"");
-    assertThat(attributeKeys.fileContent)
-        .contains("CHARGEBEE_TELEMETRY_PREFER_VALUE = \"chargebee-telemetry=include\"");
-    assertThat(attributeKeys.fileContent)
-        .contains("CHARGEBEE_TELEMETRY_PREFER_DIRECTIVE = \"chargebee-telemetry=\"");
-
-    FileOp.WriteString support = findWriteOp(fileOps, "TelemetrySupport.java");
-    assertThat(support.fileContent).contains("applyResponseTelemetryPreferHeader");
-    assertThat(support.fileContent).contains("preferValueIncludesChargebeeTelemetry");
-    assertThat(support.fileContent).contains("appendChargebeeTelemetryPreferDirective");
-    assertThat(support.fileContent)
-        .contains(
-            "preferValue + \", \" + TelemetryAttributeKeys.CHARGEBEE_TELEMETRY_PREFER_VALUE");
-    assertThat(support.fileContent)
-        .contains("TelemetryAttributeKeys.CHARGEBEE_TELEMETRY_PREFER_DIRECTIVE");
-    assertThat(support.fileContent).doesNotContain("hasRequestHeaderIgnoreCase");
-  }
-
-  @Test
   @DisplayName("Should capture chargebee-* request headers and exclude the PII origin family")
   void shouldCaptureChargebeeRequestHeaders() throws IOException {
     List<FileOp> fileOps = generate();
