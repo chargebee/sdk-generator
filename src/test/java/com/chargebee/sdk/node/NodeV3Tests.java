@@ -763,6 +763,27 @@ public class NodeV3Tests extends LanguageTests {
     var indexContent = findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "index.ts");
     assertThat(indexContent).contains("SDK_TELEMETRY_HEADER_NAME");
     assertThat(indexContent).contains("attachSdkTelemetryHeader");
+
+    var esmEntry =
+        fileOps.stream()
+            .filter(op -> op instanceof FileOp.WriteString)
+            .map(op -> (FileOp.WriteString) op)
+            .filter(op -> op.fileName.equals("chargebee.esm.ts"))
+            .map(op -> op.fileContent)
+            .findFirst()
+            .orElseThrow();
+    assertThat(esmEntry)
+        .contains("TelemetryAttributeKeys, SDK_TELEMETRY_HEADER_NAME");
+
+    var cjsEntry =
+        fileOps.stream()
+            .filter(op -> op instanceof FileOp.WriteString)
+            .map(op -> (FileOp.WriteString) op)
+            .filter(op -> op.fileName.equals("chargebee.cjs.ts"))
+            .map(op -> op.fileContent)
+            .findFirst()
+            .orElseThrow();
+    assertThat(cjsEntry).contains("module.exports.SDK_TELEMETRY_HEADER_NAME");
   }
 
   private String findTelemetryWriteFileOp(
