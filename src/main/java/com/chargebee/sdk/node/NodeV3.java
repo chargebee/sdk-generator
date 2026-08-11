@@ -75,7 +75,7 @@ public class NodeV3 extends Language {
     templates.put(
         "sdkTelemetryHeader", "/templates/node/telemetry/sdkTelemetryHeader.ts.hbs");
     templates.put(
-        "sdkTelemetrySnapshot", "/templates/node/telemetry/sdkTelemetrySnapshot.ts.hbs");
+        "sdkTelemetryFeature", "/templates/node/telemetry/sdkTelemetryFeature.ts.hbs");
     templates.put(
         "sdkTelemetryState", "/templates/node/telemetry/sdkTelemetryState.ts.hbs");
     templates.put(
@@ -97,7 +97,7 @@ public class NodeV3 extends Language {
       "index.ts",
       "otel.ts",
       "sdkTelemetryHeader.ts",
-      "sdkTelemetrySnapshot.ts",
+      "sdkTelemetryFeature.ts",
       "sdkTelemetryState.ts",
       "sdkTelemetryHeaderBuilder.ts",
       "sdkTelemetryEmitter.ts"
@@ -108,7 +108,7 @@ public class NodeV3 extends Language {
       "telemetryIndex",
       "telemetryOtel",
       "sdkTelemetryHeader",
-      "sdkTelemetrySnapshot",
+      "sdkTelemetryFeature",
       "sdkTelemetryState",
       "sdkTelemetryHeaderBuilder",
       "sdkTelemetryEmitter"

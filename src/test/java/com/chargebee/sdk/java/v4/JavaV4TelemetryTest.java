@@ -74,8 +74,8 @@ class JavaV4TelemetryTest {
             "TelemetryAdapter.java",
             "TelemetrySupport.java",
             "SdkTelemetryHeader.java",
+            "SdkTelemetryFeature.java",
             "SdkTelemetryState.java",
-            "SdkTelemetrySnapshot.java",
             "SdkTelemetryHeaderBuilder.java",
             "SdkTelemetryEmitter.java",
             "TelemetryAdapterExecutor.java",
@@ -119,30 +119,32 @@ class JavaV4TelemetryTest {
   }
 
   @Test
-  @DisplayName("Should generate SDK telemetry header classes for N+1 adoption metrics")
+  @DisplayName("Should generate keyed feature SDK telemetry header classes")
   void shouldGenerateSdkTelemetryHeaderClasses() throws IOException {
     List<FileOp> fileOps = generate();
 
     FileOp.WriteString header = findWriteOp(fileOps, "SdkTelemetryHeader.java");
     assertThat(header.fileContent).contains("HEADER_NAME = \"x-chargebee-sdk-telemetry\"");
     assertThat(header.fileContent).contains("MAX_HEADER_BYTES = 4096");
-    assertThat(header.fileContent).contains("FT_TELEMETRY_ADAPTER = \"ft-telemetry_adapter\"");
-    assertThat(header.fileContent).contains("FT_CUSTOM_TRANSPORT = \"ft-custom_transport\"");
-    assertThat(header.fileContent).contains("FT_RETRY_CONFIG = \"ft-retry_config\"");
+    assertThat(header.fileContent).contains("FEATURES_KEY = \"f\"");
+
+    FileOp.WriteString feature = findWriteOp(fileOps, "SdkTelemetryFeature.java");
+    assertThat(feature.fileContent).contains("TELEMETRY_ADAPTER(\"ta\")");
+    assertThat(feature.fileContent).contains("CUSTOM_TRANSPORT(\"ct\")");
+    assertThat(feature.fileContent).contains("RETRY_CONFIG(\"rc\")");
+
+    FileOp.WriteString state = findWriteOp(fileOps, "SdkTelemetryState.java");
+    assertThat(state.fileContent).contains("tryMarkEmitted()");
 
     FileOp.WriteString builder = findWriteOp(fileOps, "SdkTelemetryHeaderBuilder.java");
-    assertThat(builder.fileContent).contains("RFC 9651 sf-list");
-    assertThat(builder.fileContent).contains("escapeSfString");
-    assertThat(builder.fileContent).contains("appendBareParam");
-    assertThat(builder.fileContent).contains("containsInvalidSfStringChar");
-    assertThat(builder.fileContent).contains("isValidFeatureToken");
-    assertThat(builder.fileContent).contains("ch == '\\0' || ch == '\\n' || ch == '\\r'");
+    assertThat(builder.fileContent).contains("FEATURES_KEY");
+    assertThat(builder.fileContent).contains("feature.code()");
 
     FileOp.WriteString emitter = findWriteOp(fileOps, "SdkTelemetryEmitter.java");
-    assertThat(emitter.fileContent).contains("N+1 scheme");
+    assertThat(emitter.fileContent).contains("tryMarkEmitted()");
     assertThat(emitter.fileContent).contains("isSdkTelemetryEnabled()");
     assertThat(emitter.fileContent).contains("SdkTelemetryHeaderBuilder.build");
-    assertThat(emitter.fileContent).contains("FT_RETRY_CONFIG");
+    assertThat(emitter.fileContent).contains("SdkTelemetryFeature.RETRY_CONFIG");
 
     FileOp.WriteString executor = findWriteOp(fileOps, "TelemetryExecutor.java");
     assertThat(executor.fileContent).contains("SdkTelemetryEmitter.around");

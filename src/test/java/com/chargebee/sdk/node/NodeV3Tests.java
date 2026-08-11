@@ -751,18 +751,29 @@ public class NodeV3Tests extends LanguageTests {
         findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "sdkTelemetryHeader.ts");
     assertThat(sdkHeaderFile)
         .contains("SDK_TELEMETRY_HEADER_NAME = 'x-chargebee-sdk-telemetry'")
-        .contains("SDK_TELEMETRY_FT_RETRY_CONFIG = 'ft-retry_config'");
+        .contains("SDK_TELEMETRY_FEATURES_KEY = 'f'");
+
+    var sdkFeatureFile =
+        findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "sdkTelemetryFeature.ts");
+    assertThat(sdkFeatureFile)
+        .contains("TELEMETRY_ADAPTER = 'ta'")
+        .contains("CUSTOM_TRANSPORT = 'ct'")
+        .contains("RETRY_CONFIG = 'rc'");
+
+    var sdkStateFile =
+        findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "sdkTelemetryState.ts");
+    assertThat(sdkStateFile).contains("tryMarkEmitted()");
 
     var sdkEmitterFile =
         findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "sdkTelemetryEmitter.ts");
     assertThat(sdkEmitterFile)
         .contains("attachSdkTelemetryHeader")
-        .contains("recordSdkTelemetrySuccess")
-        .contains("N+1 scheme")
-        .contains("env.sdkTelemetryEnabled === false || !hasTelemetryMetadata(call)");
+        .contains("tryMarkEmitted()")
+        .contains("SdkTelemetryFeature.RETRY_CONFIG");
 
     var indexContent = findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "index.ts");
     assertThat(indexContent).contains("SDK_TELEMETRY_HEADER_NAME");
+    assertThat(indexContent).contains("SdkTelemetryFeature");
     assertThat(indexContent).contains("attachSdkTelemetryHeader");
 
     var esmEntry =
