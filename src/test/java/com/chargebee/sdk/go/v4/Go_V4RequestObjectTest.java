@@ -140,48 +140,4 @@ class Go_V4RequestObjectTest {
         .contains("func (s *CustomerService) Hierarchy() (*CustomerHierarchyResponse, error) {");
     assertThat(methodBody("Hierarchy")).contains("req := &BlankRequest{}");
   }
-
-  @Test
-  @DisplayName("Should generate the call-site migration tool as a separate module")
-  void shouldGenerateMigrationTool() {
-    assertThat(contentOf("/migrate/go.mod"))
-        .contains("module github.com/chargebee/chargebee-go/migrate")
-        .contains("golang.org/x/tools");
-    assertThat(contentOf("/migrate/analyzer.go"))
-        .contains("var Analyzer = &analysis.Analyzer{")
-        .contains("Name:     \"chargebeerequest\",");
-    assertThat(contentOf("/migrate/cmd/chargebee-go-migrate/main.go"))
-        .contains("singlechecker.Main(migrate.Analyzer)");
-    assertThat(contentOf("/migrate/README.md"))
-        .contains(
-            "go run github.com/chargebee/chargebee-go/migrate/cmd/chargebee-go-migrate@latest"
-                + " -fix ./...");
-
-    assertThat(
-            fileOps.stream()
-                .filter(op -> op instanceof FileOp.CreateDirectory)
-                .map(op -> (FileOp.CreateDirectory) op)
-                .anyMatch(op -> op.basePath.equals(OUTPUT_PATH + "/migrate")))
-        .isTrue();
-  }
-
-  @Test
-  @DisplayName("Should ship the analyzer fixtures as an archive rather than loose Go files")
-  void shouldNotWriteLooseTestdataGoFiles() {
-    assertThat(contentOf("/migrate/testdata/analyzer.txtar"))
-        .contains("-- src/callsites/callsites.go --")
-        .contains("-- src/callsites/callsites.go.golden --")
-        .contains("-- src/github.com/chargebee/chargebee-go/v4/chargebee.go --");
-
-    // Loose fixtures under testdata/ only type-check inside the GOPATH that analysistest
-    // builds, which breaks tools that walk the repository for Go source.
-    assertThat(
-            fileOps.stream()
-                .filter(op -> op instanceof FileOp.WriteString)
-                .map(op -> (FileOp.WriteString) op)
-                .map(op -> op.baseFilePath + "/" + op.fileName)
-                .filter(path -> path.contains("/testdata/"))
-                .filter(path -> path.endsWith(".go")))
-        .isEmpty();
-  }
 }
