@@ -289,7 +289,11 @@ public class Java extends Language {
   }
 
   private String getName(String name) {
-    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name);
+    String camelCaseName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, name);
+    if (JAVA_RESERVED_WORDS.contains(camelCaseName)) {
+      return camelCaseName + "_";
+    }
+    return camelCaseName;
   }
 
   private String getPascalName(String name) {
