@@ -104,7 +104,6 @@ class Go_V4RequestObjectTest {
         .contains(
             """
             type CustomerRetrieveRequest struct {
-                // Id is the identifier of the resource in the request path.
                 Id         string `json:"-" form:"-"`
                 apiRequest `json:"-" form:"-"`
             }""")
