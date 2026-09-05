@@ -16,6 +16,7 @@ import com.github.jknack.handlebars.Template;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ResourceFileGenerator implements FileGenerator {
   private final PHP_V4 phpGenerator;
@@ -34,15 +35,15 @@ public class ResourceFileGenerator implements FileGenerator {
     List<FileOp> fileOps = new ArrayList<>();
 
     for (Resource resource : resources) {
-      fileOps.addAll(generateResourceFiles(outputPath, resource));
+      fileOps.addAll(generateResourceFiles(outputPath, resource, resources));
     }
 
     fileOps.addAll(generateContentFile(outputPath, resources));
     return fileOps;
   }
 
-  private List<FileOp> generateResourceFiles(String outputPath, Resource resource)
-      throws IOException {
+  private List<FileOp> generateResourceFiles(
+      String outputPath, Resource resource, List<Resource> resourceList) throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
     fileOps.add(new FileOp.CreateDirectory(outputPath, resource.name));
     var resourceModel = createResourceModel(resource);
@@ -69,6 +70,18 @@ public class ResourceFileGenerator implements FileGenerator {
     model.setClazName(resource.name);
     model.setNamespace(RESOURCE_NAMESPACE + BACK_SLASH + resource.name);
     model.setCustomFieldSupported(resource.isCustomFieldSupported());
+    List<String> knownFields =
+        Stream.of(
+                model.getCols(),
+                model.getGlobalEnumCols(),
+                model.getLocalEnumCols(),
+                model.getListOfEnumCols())
+            .filter(Objects::nonNull)
+            .flatMap(Collection::stream)
+            .map(Column::getApiName)
+            .collect(Collectors.toList());
+
+    model.setKnownFields(knownFields);
     return model;
   }
 
