@@ -25,7 +25,7 @@ public class NodeV3Tests extends LanguageTests {
   void shouldCreateApiEndpointsFile() throws IOException {
     var spec = buildSpec().done();
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -59,7 +59,7 @@ public class NodeV3Tests extends LanguageTests {
     var spec = buildSpec().withResources(subscription, contract_term).done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -98,7 +98,7 @@ public class NodeV3Tests extends LanguageTests {
     var spec = buildSpec().withResources(subscription, subscription_preview).done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -134,7 +134,7 @@ public class NodeV3Tests extends LanguageTests {
     var spec = buildSpec().withResources(subscription, subscription_preview).done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -172,7 +172,7 @@ public class NodeV3Tests extends LanguageTests {
     var spec = buildSpec().withResources(subscription, contract_term, credit_note_estimate).done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -227,7 +227,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -292,7 +292,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -337,7 +337,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -384,7 +384,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -437,7 +437,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -490,7 +490,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -559,7 +559,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -624,7 +624,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -676,7 +676,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
@@ -717,7 +717,7 @@ public class NodeV3Tests extends LanguageTests {
     var spec = buildSpec().done();
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
 
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertCreateDirectoryFileOp(fileOps.get(4), "/node/lib", "/telemetry");
 
     var typesFile = assertTelemetryWriteFileOp(fileOps.get(5), "/node/lib/telemetry", "types.ts");
@@ -746,6 +746,71 @@ public class NodeV3Tests extends LanguageTests {
         .contains("buildRequestHeaderSpanAttributes,");
 
     assertTelemetryWriteFileOp(fileOps.get(8), "/node/lib/telemetry", "otel.ts");
+
+    var sdkHeaderFile =
+        findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "sdkTelemetryHeader.ts");
+    assertThat(sdkHeaderFile)
+        .contains("SDK_TELEMETRY_HEADER_NAME = 'x-chargebee-sdk-telemetry'")
+        .contains("SDK_TELEMETRY_FEATURES_KEY = 'f'");
+
+    var sdkFeatureFile =
+        findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "sdkTelemetryFeature.ts");
+    assertThat(sdkFeatureFile)
+        .contains("TELEMETRY_ADAPTER = 'ta'")
+        .contains("CUSTOM_TRANSPORT = 'ct'")
+        .contains("RETRY_CONFIG = 'rc'");
+
+    var sdkStateFile =
+        findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "sdkTelemetryState.ts");
+    assertThat(sdkStateFile).contains("tryMarkEmitted()");
+
+    var sdkEmitterFile =
+        findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "sdkTelemetryEmitter.ts");
+    assertThat(sdkEmitterFile)
+        .contains("attachSdkTelemetryHeader")
+        .contains("tryMarkEmitted()")
+        .contains("SdkTelemetryFeature.RETRY_CONFIG");
+
+    var indexContent = findTelemetryWriteFileOp(fileOps, "/node/lib/telemetry", "index.ts");
+    assertThat(indexContent).contains("SDK_TELEMETRY_HEADER_NAME");
+    assertThat(indexContent).contains("SdkTelemetryFeature");
+    assertThat(indexContent).contains("attachSdkTelemetryHeader");
+
+    var esmEntry =
+        fileOps.stream()
+            .filter(op -> op instanceof FileOp.WriteString)
+            .map(op -> (FileOp.WriteString) op)
+            .filter(op -> op.fileName.equals("chargebee.esm.ts"))
+            .map(op -> op.fileContent)
+            .findFirst()
+            .orElseThrow();
+    assertThat(esmEntry)
+        .contains("TelemetryAttributeKeys, SDK_TELEMETRY_HEADER_NAME");
+
+    var cjsEntry =
+        fileOps.stream()
+            .filter(op -> op instanceof FileOp.WriteString)
+            .map(op -> (FileOp.WriteString) op)
+            .filter(op -> op.fileName.equals("chargebee.cjs.ts"))
+            .map(op -> op.fileContent)
+            .findFirst()
+            .orElseThrow();
+    assertThat(cjsEntry).contains("module.exports.SDK_TELEMETRY_HEADER_NAME");
+  }
+
+  private String findTelemetryWriteFileOp(
+      List<FileOp> fileOps, String expectedBaseFilePath, String expectedFileName) {
+    return fileOps.stream()
+        .filter(op -> op instanceof FileOp.WriteString)
+        .map(op -> (FileOp.WriteString) op)
+        .filter(
+            op ->
+                op.baseFilePath.equals(expectedBaseFilePath)
+                    && op.fileName.equals(expectedFileName))
+        .map(op -> op.fileContent)
+        .findFirst()
+        .orElseThrow(
+            () -> new AssertionError("Expected telemetry file not found: " + expectedFileName));
   }
 
   private String assertTelemetryWriteFileOp(
@@ -774,7 +839,7 @@ public class NodeV3Tests extends LanguageTests {
             .done();
 
     List<FileOp> fileOps = node.generate("/node/lib/resources", spec);
-    assertThat(fileOps).hasSize(9);
+    assertThat(fileOps).hasSize(14);
     assertWriteStringFileOp(
         fileOps.get(0),
         "/node/lib/resources",
