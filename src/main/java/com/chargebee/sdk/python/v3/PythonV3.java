@@ -288,7 +288,7 @@ public class PythonV3 extends Language {
     StringJoiner buf = new StringJoiner("\n");
     for (Attribute attribute :
         subParam.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList()) {
-      typePrefix = attribute.isRequired ? ": Required" : ": NotRequired";
+      typePrefix = (attribute.isRequired && !attribute.isPcv1Attribute()) ? ": Required" : ": NotRequired";
       if (!attribute.isSubResource()) continue;
       if (attribute.isHiddenParameter()) continue;
       if (attribute.isFilterAttribute()) {
@@ -388,7 +388,7 @@ public class PythonV3 extends Language {
             .withOnlyPagination(true)
             .withFilterSubResource(true);
     for (Attribute attribute : actionAssist.getAllAttribute()) {
-      typePrefix = attribute.isRequired ? ": Required" : ": NotRequired";
+      typePrefix = (attribute.isRequired && !attribute.isPcv1Attribute()) ? ": Required" : ": NotRequired";
       if (attribute.isSubResource() || attribute.isCompositeArrayRequestBody()) {
         if (m.containsKey(attribute.name)) {
           continue;
@@ -550,7 +550,7 @@ public class PythonV3 extends Language {
     List<Attribute> attributes =
         subResource.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList();
     for (Attribute attribute : attributes) {
-      typePrefix = attribute.isRequired ? ": Required" : ": NotRequired";
+      typePrefix = (attribute.isRequired && !attribute.isPcv1Attribute()) ? ": Required" : ": NotRequired";
       if (attribute.isEnumAttribute()) {
         if (attribute.isGenSeparate()) {
           type = Constants.ENUM_WITH_DELIMITER + toCamelCase(attribute.name);
