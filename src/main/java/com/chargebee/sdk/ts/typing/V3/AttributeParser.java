@@ -45,7 +45,7 @@ public class AttributeParser {
       }
       attributesInMultiLine.add(
           attribute.name
-              + (attribute.isRequired ? "" : "?")
+              + (attribute.isRequired && !attribute.isPcv1Attribute() ? "" : "?")
               + ":"
               + dataTypeForMultiLineAttributes(attribute, activeResource)
               + ";");
