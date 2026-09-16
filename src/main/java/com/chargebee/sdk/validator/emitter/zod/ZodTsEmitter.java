@@ -1,5 +1,7 @@
 package com.chargebee.sdk.validator.emitter.zod;
 
+import static com.chargebee.openapi.Extension.IS_PCV1_ATTRIBUTE;
+
 import com.chargebee.openapi.Action;
 import com.chargebee.openapi.HttpRequestType;
 import com.chargebee.openapi.Resource;
@@ -172,7 +174,7 @@ public class ZodTsEmitter implements ValidatorEmitter {
 
     for (Parameter param : queryParams) {
       properties.put(param.getName(), param.getSchema());
-      if (param.getRequired() != null && param.getRequired()) {
+      if (param.getRequired() != null && param.getRequired() && !isPcv1Schema(param.getSchema())) {
         requiredFields.add(param.getName());
       }
     }
@@ -237,6 +239,13 @@ public class ZodTsEmitter implements ValidatorEmitter {
     }
 
     return printer.print(JsBuilder.program(body));
+  }
+
+  private static boolean isPcv1Schema(Schema<?> schema) {
+    return schema != null
+        && schema.getExtensions() != null
+        && schema.getExtensions().get(IS_PCV1_ATTRIBUTE) != null
+        && (int) schema.getExtensions().get(IS_PCV1_ATTRIBUTE) == 1;
   }
 
   private String buildIndex(List<String> resourceSchemaFiles, SharedSchemaRegistry registry) {
