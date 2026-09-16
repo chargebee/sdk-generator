@@ -970,10 +970,19 @@ public class Go_V3 extends Language {
             }
             type = enumTypeCustomLogic(type);
           } else {
+            String subTypeName = Resource.subResourceName(subResource);
+            String enumPrefix =
+                (subTypeName != null
+                        && !subTypeName.equals(toCamelCase(singularize(subResource.id))))
+                    ? toCamelCase(
+                        singularize(
+                            CaseFormat.UPPER_CAMEL.to(
+                                CaseFormat.LOWER_UNDERSCORE, subTypeName)))
+                    : singularize(subResource.name);
             type =
                 firstCharLower(activeResource.name)
                     + Constants.ENUM_DOT
-                    + singularize(subResource.name)
+                    + enumPrefix
                     + toCamelCase(attribute.name);
           }
         }
@@ -995,6 +1004,10 @@ public class Go_V3 extends Language {
               case "discountEnum.EntityType" -> "invoiceEnum.DiscountEntityType";
               case "omnichannelSubscriptionEnum.OmnichannelTransactionType" ->
                   "omnichannelSubscriptionEnum.InitialPurchaseTransactionType";
+              // AppliedCredit is the x-cb-sub-resource-name but the released SDK used
+              // "Allocation" (derived from the property key); preserve backward compatibility.
+              case "creditNoteEnum.AppliedCreditTaxApplication" ->
+                  "creditNoteEnum.AllocationTaxApplication";
               default -> type;
             };
         if (Set.of("QuotedSubscription", "Subscription", "Gift").contains(activeResource.name)
