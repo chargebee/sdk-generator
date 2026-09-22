@@ -1172,7 +1172,7 @@ public class Go_V3 extends Language {
     if (schema instanceof ArraySchema
         && schema.getItems() != null
         && schema.getItems().getType() == null) {
-      return "[]interface{}";
+      return "[]map[string]interface{}";
     }
     return "unknown";
   }
@@ -1215,11 +1215,11 @@ public class Go_V3 extends Language {
     } else if (schema instanceof ArraySchema
         && schema.getItems() != null
         && schema.getItems().getType() == null) {
-      if (attributeName.contains("exemption_details")) {
-        type = "[]map[string]interface{}";
-      } else {
-        type = "[]interface{}";
-      }
+      // Schemaless arrays (items: {} / items: {example:null}) contain arbitrary JSON objects.
+      // The v3 runtime's serializeValue correctly JSON-encodes []map[string]interface{} as a
+      // single form field, whereas []interface{} falls through to serializeSlice which sends
+      // indexed form params that the mock server rejects.
+      type = "[]map[string]interface{}";
     } else if (isListOfSubResourceSchema(schema)) {
       type = "[]*" + toCamelCase(singularize(attributeName));
     } else if (isSubResourceSchema(schema)) {
