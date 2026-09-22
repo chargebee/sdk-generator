@@ -59,9 +59,16 @@ public class Java extends Language {
     if (generationMode.equals(GenerationMode.INTERNAL)) {
       spec.enableForQa();
     }
+    // TODO: Remove this temporary exclusion once cb-openapi-generator feat/SSM-1064 is merged
+    // and the nested sub-resources (ValueSchema, Applicability, VariantCriteria, PreferenceVariant)
+    // are emitted as standalone schemas in the OpenAPI spec.
+    final List<String> tempExcludedResources =
+        List.of("settings_preference", "settings_preference_definition");
     var resources =
         generationMode.equals(GenerationMode.INTERNAL)
-            ? spec.resources()
+            ? spec.resources().stream()
+                .filter(resource -> !tempExcludedResources.contains(resource.id))
+                .toList()
             : spec.resources().stream()
                 .filter(
                     resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
