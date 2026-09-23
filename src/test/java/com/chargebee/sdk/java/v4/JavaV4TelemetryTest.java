@@ -72,7 +72,14 @@ class JavaV4TelemetryTest {
             "RequestTelemetryError.java",
             "RequestTelemetryResult.java",
             "TelemetryAdapter.java",
-            "TelemetrySupport.java")) {
+            "TelemetrySupport.java",
+            "SdkTelemetryHeader.java",
+            "SdkTelemetryFeature.java",
+            "SdkTelemetryState.java",
+            "SdkTelemetryHeaderBuilder.java",
+            "SdkTelemetryEmitter.java",
+            "TelemetryAdapterExecutor.java",
+            "TelemetryExecutor.java")) {
       FileOp.WriteString writeOp = findWriteOp(fileOps, fileName);
       assertThat(writeOp.baseFilePath).isEqualTo(expectedDir);
     }
@@ -109,6 +116,44 @@ class JavaV4TelemetryTest {
         .doesNotContain("ERROR_TYPE, String.valueOf(result.getHttpStatusCode())");
     assertThat(support.fileContent)
         .contains("ERROR_TYPE, error.getChargebeeApiErrorType()");
+  }
+
+  @Test
+  @DisplayName("Should generate keyed feature SDK telemetry header classes")
+  void shouldGenerateSdkTelemetryHeaderClasses() throws IOException {
+    List<FileOp> fileOps = generate();
+
+    FileOp.WriteString header = findWriteOp(fileOps, "SdkTelemetryHeader.java");
+    assertThat(header.fileContent).contains("HEADER_NAME = \"x-chargebee-sdk-telemetry\"");
+    assertThat(header.fileContent).contains("MAX_HEADER_BYTES = 4096");
+    assertThat(header.fileContent).contains("FEATURES_KEY = \"f\"");
+
+    FileOp.WriteString feature = findWriteOp(fileOps, "SdkTelemetryFeature.java");
+    assertThat(feature.fileContent).contains("TELEMETRY_ADAPTER(\"ta\")");
+    assertThat(feature.fileContent).contains("CUSTOM_TRANSPORT(\"ct\")");
+    assertThat(feature.fileContent).contains("RETRY_CONFIG(\"rc\")");
+
+    FileOp.WriteString state = findWriteOp(fileOps, "SdkTelemetryState.java");
+    assertThat(state.fileContent).contains("tryMarkEmitted()");
+
+    FileOp.WriteString builder = findWriteOp(fileOps, "SdkTelemetryHeaderBuilder.java");
+    assertThat(builder.fileContent).contains("FEATURES_KEY");
+    assertThat(builder.fileContent).contains("feature.code()");
+
+    FileOp.WriteString emitter = findWriteOp(fileOps, "SdkTelemetryEmitter.java");
+    assertThat(emitter.fileContent).contains("tryMarkEmitted()");
+    assertThat(emitter.fileContent).contains("isSdkTelemetryEnabled()");
+    assertThat(emitter.fileContent).contains("SdkTelemetryHeaderBuilder.build");
+    assertThat(emitter.fileContent).contains("SdkTelemetryFeature.RETRY_CONFIG");
+
+    FileOp.WriteString executor = findWriteOp(fileOps, "TelemetryExecutor.java");
+    assertThat(executor.fileContent).contains("SdkTelemetryEmitter.around");
+    assertThat(executor.fileContent).contains("TelemetryAdapterExecutor.around");
+
+    FileOp.WriteString adapterExecutor = findWriteOp(fileOps, "TelemetryAdapterExecutor.java");
+    assertThat(adapterExecutor.fileContent).contains("resolveAdapter");
+    assertThat(adapterExecutor.fileContent).contains("onRequestStart");
+    assertThat(adapterExecutor.fileContent).contains("onRequestEnd");
   }
 
   @Test

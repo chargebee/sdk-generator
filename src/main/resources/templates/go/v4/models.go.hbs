@@ -28,6 +28,15 @@ type {{@root.clazName}}{{clazName}} struct {
 func (r *{{@root.clazName}}{{clazName}}) payload() any { return r }
 
 {{~/if}}
+{{~#if hasOnlyPathParam}}
+type {{@root.clazName}}{{clazName}} struct {
+    Id         string `json:"-" form:"-"`
+    apiRequest `json:"-" form:"-"`
+}
+
+func (r *{{@root.clazName}}{{clazName}}) payload() any { return r }
+
+{{~/if}}
 {{~#each inputSubResParams}}
 {{~#if multi}}
 type {{@root.clazName}}{{methodName}}{{camelSingularResName}} struct {

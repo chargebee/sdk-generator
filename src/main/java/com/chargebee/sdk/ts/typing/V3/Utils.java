@@ -61,7 +61,7 @@ public class Utils {
   }
 
   public static String getTypescriptPutMethName(Attribute attribute) {
-    if (attribute.isRequired) {
+    if (attribute.isRequired && !attribute.isPcv1Attribute()) {
       return "";
     } else return "?";
   }

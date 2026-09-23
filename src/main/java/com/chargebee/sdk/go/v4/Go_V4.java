@@ -585,6 +585,16 @@ public class Go_V4 extends Language {
           mutableAction.put("goActionName", toCamelCase((String) action.get("name")));
           mutableAction.put(
               "telemetryOperation", firstCharLower(toCamelCase((String) action.get("name"))));
+
+          boolean hasPathParam = Boolean.TRUE.equals(action.get("hasPathParameters"));
+          boolean hasBodyOrQueryParams =
+              Boolean.TRUE.equals(action.get("hasRequestBodyParameters"))
+                  || Boolean.TRUE.equals(action.get("hasQueryParameters"));
+          // Actions whose only input is the path parameter carry it on the request type instead of
+          // a bare string argument, so callers can also set a context, headers and so on.
+          mutableAction.put("hasIdArg", hasPathParam && hasBodyOrQueryParams);
+          mutableAction.put("hasRequestArg", hasPathParam || hasBodyOrQueryParams);
+
           mutableActions.add(mutableAction);
         }
 
@@ -658,6 +668,8 @@ public class Go_V4 extends Language {
         List<InputSubResParam> inputSubResParamList = new ArrayList<>();
         operation.setClazName(toClazName(action.name, "Request"));
         operation.setHasInputParams(hasInputParams(action));
+        operation.setHasOnlyPathParam(
+            !hasInputParams(action) && !action.pathParameters().isEmpty());
         operation.setInputParams(inputParams(action));
         operation.setHttpRequestType(action.httpRequestType.toString());
 
