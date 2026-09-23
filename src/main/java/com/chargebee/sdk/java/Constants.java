@@ -27,5 +27,20 @@ public class Constants {
   public static final String NUMBER_TYPE = "number";
   public static final String CREDIT_NOTE = "credit_note";
 
+  /**
+   * Java reserved words (keywords and literals) that cannot be used as method identifiers.
+   * When an API attribute name (e.g. "enum") collides with one of these after case conversion,
+   * the generated getter method name must be escaped (see Java#getName(String)).
+   */
+  public static final java.util.Set<String> JAVA_RESERVED_WORDS =
+      java.util.Set.of(
+          "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class",
+          "const", "continue", "default", "do", "double", "else", "enum", "extends", "final",
+          "finally", "float", "for", "goto", "if", "implements", "import", "instanceof", "int",
+          "interface", "long", "native", "new", "package", "private", "protected", "public",
+          "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this",
+          "throw", "throws", "transient", "try", "void", "volatile", "while", "true", "false",
+          "null");
+
   private Constants() {}
 }
