@@ -514,6 +514,7 @@ public class Java extends Language {
   }
 
   public String getRequired(Attribute attribute) {
+    if (attribute.isPcv1Attribute()) return "opt";
     return !attribute.isRequired ? "opt" : "req";
   }
 
@@ -537,7 +538,7 @@ public class Java extends Language {
     String name = attribute.name;
     if (attribute.isEnumAttribute()) {
       if (attribute.isListOfEnum()) {
-        buf.append(attribute.isRequired ? "" : "opt")
+        buf.append((attribute.isRequired && !attribute.isPcv1Attribute()) ? "" : "opt")
             .append("List")
             .append("(\"")
             .append(name)
@@ -554,7 +555,7 @@ public class Java extends Language {
             .append(")");
       }
     } else if (attribute.isListOfSimpleType()) {
-      buf.append(attribute.isRequired ? "" : "opt")
+      buf.append((attribute.isRequired && !attribute.isPcv1Attribute()) ? "" : "opt")
           .append("List")
           .append("(\"")
           .append(name)
@@ -563,7 +564,7 @@ public class Java extends Language {
           .append(Constants.DOT_CLASS);
     } else if (attribute.isListSubResourceAttribute()) {
       if (Resource.isGlobalResourceReference(attribute.schema)) {
-        buf.append(attribute.isRequired ? "req" : "opt")
+        buf.append((attribute.isRequired && !attribute.isPcv1Attribute()) ? "req" : "opt")
             .append("List")
             .append("(\"")
             .append(name)
@@ -571,7 +572,7 @@ public class Java extends Language {
             .append(singularize(attribute.subResourceName()))
             .append(Constants.DOT_CLASS);
       } else
-        buf.append(attribute.isRequired ? "req" : "opt")
+        buf.append((attribute.isRequired && !attribute.isPcv1Attribute()) ? "req" : "opt")
             .append("List")
             .append("(\"")
             .append(name)
@@ -580,7 +581,7 @@ public class Java extends Language {
             .append(Constants.DOT_CLASS);
     } else if (attribute.isSubResource()) {
       if (attribute.isListAttribute()) {
-        buf.append(attribute.isRequired ? "req" : "opt")
+        buf.append((attribute.isRequired && !attribute.isPcv1Attribute()) ? "req" : "opt")
             .append("List")
             .append("(\"")
             .append(name)
@@ -588,7 +589,7 @@ public class Java extends Language {
             .append(getFullClazName(attribute))
             .append(Constants.DOT_CLASS);
       } else
-        buf.append(attribute.isRequired ? "req" : "opt")
+        buf.append((attribute.isRequired && !attribute.isPcv1Attribute()) ? "req" : "opt")
             .append("SubResource")
             .append("(\"")
             .append(name)
@@ -601,18 +602,18 @@ public class Java extends Language {
           new Attribute(
               attribute.schema.getItems().getName(),
               attribute.schema.getItems(),
-              attribute.isRequired);
+              attribute.isRequired && !attribute.isPcv1Attribute());
       buf.append(getRequired(attribute))
           .append(getColsRetType(itemAttribute))
           .append("(\"")
           .append(name)
           .append("\")");
     } else if (isDateTimeAttribute(attribute)) {
-      buf.append(!attribute.isRequired ? "" : "(DateTime)")
+      buf.append((attribute.isRequired && !attribute.isPcv1Attribute()) ? "(DateTime)" : "")
           .append("GetDateTime(\"")
           .append(name)
           .append("\", ")
-          .append(attribute.isRequired)
+          .append(attribute.isRequired && !attribute.isPcv1Attribute())
           .append(")");
     } else if (isJsonObject(attribute)) {
       buf.append("GetJToken(\"")
@@ -627,7 +628,7 @@ public class Java extends Language {
           .append(getRequired(attribute))
           .append(")");
     } else if (Objects.equals(getColsRetType(attribute), "Map<String, Object>")) {
-      buf.append(attribute.isRequired ? "reqMap( \"" : "optMap(\"").append(name).append("\")");
+      buf.append((attribute.isRequired && !attribute.isPcv1Attribute()) ? "reqMap( \"" : "optMap(\"").append(name).append("\")");
     } else {
       buf.append(getRequired(attribute))
           .append(getColsRetType(attribute))
@@ -803,7 +804,7 @@ public class Java extends Language {
         operationRequestParameter.setVarName(GenUtil.getVarName(attribute.name));
         operationRequestParameter.setName(attribute.name);
         operationRequestParameter.setPutMethodName(
-            getPutMethodName(attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
+            getPutMethodName((attribute.isRequired && !attribute.isPcv1Attribute()) || attribute.isAttributeMetaCommentRequired()));
         operationRequestParameter.setSupportsPresenceFilter(
             attribute.isPresenceOperatorSupported());
         operationRequestParameter.setMulti(isMultiFilterAttribute(attribute));
@@ -943,7 +944,7 @@ public class Java extends Language {
     operationRequestParameter.setSimpleList(attribute.isListOfSimpleType());
     operationRequestParameter.setSupportsPresenceFilter(attribute.isPresenceOperatorSupported());
     operationRequestParameter.setPutMethodName(
-        getPutMethodName(attribute.isRequired || attribute.isAttributeMetaCommentRequired()));
+        getPutMethodName((attribute.isRequired && !attribute.isPcv1Attribute()) || attribute.isAttributeMetaCommentRequired()));
     if (attribute.name.equals(Constants.SORT_BY) && !getSortParams(attribute).isEmpty()) {
       operationRequestParameter.setListParam(true);
       operationRequestParameter.setSortParam(true);
@@ -1076,7 +1077,7 @@ public class Java extends Language {
                       dataTypeForMultiAttribute(attribute, iparam.getName(), action.modelName()));
                   subResource.setVarName(
                       singularize(getName(iparam.getName())) + toClazName(attribute.name));
-                  subResource.setPutMethodName(attribute.isRequired ? "add" : "addOpt");
+                  subResource.setPutMethodName((attribute.isRequired && !attribute.isPcv1Attribute()) ? "add" : "addOpt");
                   subResource.setResName(iparam.getName());
                   subResource.setName(attribute.name);
                   subResource.setSortOrder(
@@ -1115,7 +1116,7 @@ public class Java extends Language {
                       dataTypeForMultiAttribute(attribute, iparam.getName(), action.modelName()));
                   subResource.setVarName(
                       singularize(getName(iparam.getName())) + toClazName(attribute.name));
-                  subResource.setPutMethodName(attribute.isRequired ? "add" : "addOpt");
+                  subResource.setPutMethodName((attribute.isRequired && !attribute.isPcv1Attribute()) ? "add" : "addOpt");
                   subResource.setResName(iparam.getName());
                   subResource.setName(attribute.name);
                   subResource.setHasBatch(action.isBatch());
@@ -1334,7 +1335,7 @@ public class Java extends Language {
                   subResource.setVarName(
                       GenUtil.getVarName(iParam.getName() + Inflector.capitalize(value.name)));
                   subResource.setPutMethodName(
-                      getPutMethodName(value.isRequired || value.isAttributeMetaCommentRequired()));
+                      getPutMethodName((value.isRequired && !value.isPcv1Attribute()) || value.isAttributeMetaCommentRequired()));
                   subResource.setResName(iParam.getName());
                   subResource.setName(value.name);
                   subResource.setSortOrder(value.sortOrder());
@@ -1367,7 +1368,7 @@ public class Java extends Language {
                   subResource.setVarName(
                       GenUtil.getVarName(iParam.getName() + Inflector.capitalize(value.name)));
                   subResource.setPutMethodName(
-                      getPutMethodName(value.isRequired || value.isAttributeMetaCommentRequired()));
+                      getPutMethodName((value.isRequired && !value.isPcv1Attribute()) || value.isAttributeMetaCommentRequired()));
                   subResource.setResName(iParam.getName());
                   subResource.setName(value.name);
                   subResource.setSortOrder(value.sortOrder());
