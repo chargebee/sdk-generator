@@ -574,6 +574,12 @@ public class Go_V4 extends Language {
 
     Template actionTemplates = getTemplateContent("services");
     for (var resource : resources) {
+      String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name);
+      if (resource.actions.isEmpty()) {
+        // All operations for this resource were removed from the spec — delete the stale service file.
+        fileOps.add(new FileOp.DeleteFile(outputDirectoryPath, fileName + "_service.go"));
+        continue;
+      }
       if (!resource.actions.isEmpty()) {
         var actionPayload = resource.templateParams(this);
         List<Map<String, Object>> actions = (List<Map<String, Object>>) actionPayload.get("actions");
@@ -604,7 +610,6 @@ public class Go_V4 extends Language {
           continue;
         var content = actionTemplates.apply(actionPayload);
         String dirName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name).replace("_", "");
-        String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name);
         fileOps.add(
             new FileOp.WriteString(outputDirectoryPath, fileName + "_service.go", content));
       }
