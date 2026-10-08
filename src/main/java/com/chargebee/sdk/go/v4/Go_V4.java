@@ -184,7 +184,11 @@ public class Go_V4 extends Language {
         .toList()
         .isEmpty();
 
-    return hasJsonAttr || hasJsonSubResAttr;
+    boolean hasJsonResponseParam = r.getSortedAction().stream()
+        .flatMap(action -> action.response().responseParameters(this).stream())
+        .anyMatch(resp -> Constants.JSON_RAW_MESSAGE.equals(resp.getType()));
+
+    return hasJsonAttr || hasJsonSubResAttr || hasJsonResponseParam;
   }
 
   public boolean hasExternalEnumCols(Resource res) {
