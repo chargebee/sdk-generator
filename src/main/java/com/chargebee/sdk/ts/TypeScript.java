@@ -130,7 +130,7 @@ public class TypeScript extends Language {
       attributesInMultiLine.add(
           "public "
               + attribute.name
-              + (attribute.isRequired ? "" : "?")
+              + (attribute.isRequired && !attribute.isPcv1Attribute() ? "" : "?")
               + ": "
               + dataTypeForMultiLineAttributes(attribute)
               + ";");
@@ -244,7 +244,7 @@ public class TypeScript extends Language {
     for (Attribute attribute : subResourceAttribute.attributes()) {
       if (!attribute.isNotHiddenAttribute()) continue;
       Column column = new Column();
-      if (attribute.isRequired) {
+      if (attribute.isRequired && !attribute.isPcv1Attribute()) {
         column.setName(attribute.name + ": ");
       } else column.setName(attribute.name + "?: ");
       column.setFieldTypeTypescript(dataTypeForMultiLineAttributes(attribute));
@@ -445,7 +445,7 @@ public class TypeScript extends Language {
   }
 
   private String getTypescriptPutMethName(Attribute attribute) {
-    if (attribute.isRequired) {
+    if (attribute.isRequired && !attribute.isPcv1Attribute()) {
       return "";
     } else return "?";
   }
