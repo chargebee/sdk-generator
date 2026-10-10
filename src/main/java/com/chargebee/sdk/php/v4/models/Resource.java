@@ -13,4 +13,5 @@ public class Resource {
   private String namespace;
   private List<String> imports;
   private boolean isCustomFieldSupported;
+  private List<String> knownFields;
 }
