@@ -652,16 +652,38 @@ public class Go_V3 extends Language {
                     + toCamelCase(singularize(attribute.metaModelName()))
                     + toClazName(attribute.name);
           } else if (attribute.isSubResource() && attribute.metaModelName() != null) {
-            type =
-                firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
-                    + Constants.ENUM_DOT
-                    + toClazName(attribute.name);
+            String metaResourceName = getName(singularize(attribute.metaModelName()));
+            boolean metaResourceExists =
+                resourceList.stream().anyMatch(r -> r.name.equals(metaResourceName));
+            if (metaResourceExists) {
+              type =
+                  firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
+                      + Constants.ENUM_DOT
+                      + toClazName(attribute.name);
+            } else {
+              type =
+                  firstCharLower(toCamelCase(activeResource.name))
+                      + Constants.ENUM_DOT
+                      + toCamelCase(singularize(attribute.metaModelName()))
+                      + toClazName(attribute.name);
+            }
 
           } else if (attribute.metaModelName() != null && !attribute.isSubResource()) {
-            type =
-                firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
-                    + Constants.ENUM_DOT
-                    + toClazName(attribute.name);
+            String metaResourceName = getName(singularize(attribute.metaModelName()));
+            boolean metaResourceExists =
+                resourceList.stream().anyMatch(r -> r.name.equals(metaResourceName));
+            if (metaResourceExists) {
+              type =
+                  firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
+                      + Constants.ENUM_DOT
+                      + toClazName(attribute.name);
+            } else {
+              type =
+                  firstCharLower(toCamelCase(activeResource.name))
+                      + Constants.ENUM_DOT
+                      + toCamelCase(singularize(attribute.metaModelName()))
+                      + toClazName(attribute.name);
+            }
           } else {
             type =
                 firstCharLower(toCamelCase(activeResource.name))

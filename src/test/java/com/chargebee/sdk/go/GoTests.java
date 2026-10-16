@@ -1247,6 +1247,7 @@ type ChangeBillingDateRequestParams struct {
   @Test
   void shouldSupportEnumsInMultiAttributesInRequestBodyParams() throws IOException {
     var invoice = buildResource("invoice").done();
+    var paymentIntent = buildResource("payment_intent").done();
     var createForChargeItemsAndChargesOperation =
         buildPostOperation("createForChargeItemsAndCharges")
             .forResource("invoice")
@@ -1272,6 +1273,7 @@ type ChangeBillingDateRequestParams struct {
     var spec =
         buildSpec()
             .withResource(invoice)
+            .withResource(paymentIntent)
             .withPostOperation(
                 "/invoices/create_for_charge_items_and_charges",
                 createForChargeItemsAndChargesOperation)
