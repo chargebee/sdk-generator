@@ -99,6 +99,12 @@ public class Imports {
             refModelName = refModelName.replace("_" + resource.id, "");
           }
         }
+        String finalRefModelName = refModelName;
+        String resourceName =
+            CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, finalRefModelName);
+        if (resourceList.stream().noneMatch(r -> r.name.equals(resourceName))) {
+          continue;
+        }
         if (imports.contains("from chargebee.models import")) {
           imports += ", " + refModelName;
         } else {
@@ -153,6 +159,12 @@ public class Imports {
             refModelName = refModelName.replace("_" + resource.id, "");
           }
         }
+        String finalRefModelName = refModelName;
+        String resourceName =
+            CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, finalRefModelName);
+        if (resourceList.stream().noneMatch(r -> r.name.equals(resourceName))) {
+          continue;
+        }
         if (imports.contains("from chargebee.models import")) {
           imports += ", " + refModelName;
         } else {
@@ -170,7 +182,8 @@ public class Imports {
                 || operationResponse.getName().equals("next_offset")
                 || ResponseParser.isPythonDataType(type)) continue;
             if (!type.equalsIgnoreCase(resource.name)
-                && !externalResourceResponseImports.contains(type)) {
+                && !externalResourceResponseImports.contains(type)
+                && resourceList.stream().anyMatch(r -> r.name.equals(type))) {
               externalResourceResponseImports.add(type);
               if (imports.contains("from chargebee.models import")) {
                 imports += ", " + singularize(operationResponse.getName());
@@ -186,7 +199,8 @@ public class Imports {
             || ResponseParser.isPythonDataType(type)) continue;
         if (type.equals("Any")) continue;
         if (!type.equalsIgnoreCase(resource.name)
-            && !externalResourceResponseImports.contains(type)) {
+            && !externalResourceResponseImports.contains(type)
+            && resourceList.stream().anyMatch(r -> r.name.equals(type))) {
           externalResourceResponseImports.add(type);
           if (imports.contains("from chargebee.models import")) {
             imports += ", " + singularize(response.getName());

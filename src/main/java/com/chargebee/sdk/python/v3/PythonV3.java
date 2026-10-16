@@ -320,14 +320,29 @@ public class PythonV3 extends Language {
                     + "\"";
           } else if (attribute.metaModelName() != null
               && !singularize(attribute.metaModelName()).equals(activeResource.id)) {
-            type =
-                "\""
-                    + singularize(attribute.metaModelName())
-                    + Constants.REFERENCE_ENUM_DELIMITER
-                    + toCamelCase(singularize(attribute.metaModelName()))
-                    + Constants.REFERENCE_ENUM_DELIMITER
-                    + toClazName(attribute.name)
-                    + "\"";
+            String metaResourceName =
+                CaseFormat.LOWER_UNDERSCORE.to(
+                    CaseFormat.UPPER_CAMEL, singularize(attribute.metaModelName()));
+            boolean metaResourceExists =
+                resourceList.stream().anyMatch(r -> r.name.equals(metaResourceName));
+            if (metaResourceExists) {
+              type =
+                  "\""
+                      + singularize(attribute.metaModelName())
+                      + Constants.REFERENCE_ENUM_DELIMITER
+                      + toCamelCase(singularize(attribute.metaModelName()))
+                      + Constants.REFERENCE_ENUM_DELIMITER
+                      + toClazName(attribute.name)
+                      + "\"";
+            } else {
+              type =
+                  "\""
+                      + activeResource.name
+                      + Constants.REFERENCE_ENUM_DELIMITER
+                      + toCamelCase(singularize(attribute.metaModelName()))
+                      + toClazName(attribute.name)
+                      + "\"";
+            }
 
           } else {
             type =
