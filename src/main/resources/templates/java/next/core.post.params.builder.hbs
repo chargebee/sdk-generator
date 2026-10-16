@@ -51,6 +51,7 @@ public final class {{name}}Params {
     {{#if consentFieldsSupported}}
     private final Map<String, Object> consentFields;
     {{/if}}
+    private final Map<String, Object> extraParams;
 
     private {{name}}Params({{name}}Builder builder) {
         {{#each fields}}
@@ -67,6 +68,7 @@ public final class {{name}}Params {
         {{#if consentFieldsSupported}}
         this.consentFields = builder.consentFields.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.consentFields));
         {{/if}}
+        this.extraParams = builder.extraParams.isEmpty() ? Collections.emptyMap() : Collections.unmodifiableMap(new LinkedHashMap<>(builder.extraParams));
     }
 
     {{#each fields}}
@@ -161,6 +163,7 @@ public final class {{name}}Params {
         {{#if consentFieldsSupported}}
         formData.putAll(consentFields);
         {{/if}}
+        formData.putAll(extraParams);
 
         return formData;
     }
@@ -211,6 +214,7 @@ public final class {{name}}Params {
         {{#if consentFieldsSupported}}
         jsonData.putAll(consentFields);
         {{/if}}
+        jsonData.putAll(extraParams);
 
         return jsonData;
     }
@@ -246,6 +250,7 @@ public final class {{name}}Params {
         {{#if consentFieldsSupported}}
         private Map<String, Object> consentFields = new LinkedHashMap<>();
         {{/if}}
+        private final Map<String, Object> extraParams = new LinkedHashMap<>();
 
         private {{name}}Builder() {}
 
@@ -354,6 +359,20 @@ public final class {{name}}Params {
             return this;
         }
         {{/if}}
+
+        /**
+         * Add an arbitrary key-value parameter to this request.
+         * Use this for parameters not covered by typed builder methods
+         * (e.g., passthrough or dynamically-named parameters).
+         *
+         * @param key   the parameter name (may use bracket notation, e.g. "attributes[region][is]")
+         * @param value the parameter value
+         * @return this builder
+         */
+        public {{name}}Builder param(String key, Object value) {
+            extraParams.put(key, value);
+            return this;
+        }
 
         public {{name}}Params build() {
             return new {{name}}Params(this);
