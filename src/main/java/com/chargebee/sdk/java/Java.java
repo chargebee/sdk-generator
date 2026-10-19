@@ -259,7 +259,14 @@ public class Java extends Language {
     List<EnumColumn> enumColumns = new ArrayList<>();
     for (Attribute enumAttribute : attribute.attributes()) {
       if (!enumAttribute.isNotHiddenAttribute()) continue;
-      if (enumAttribute.isApi() && !enumAttribute.isExternalEnum()) {
+      // List-of-enum columns carry x-cb-is-api-column on the item schema, not the array.
+      // Those still need a nested enum when they are not generated as a separate type.
+      boolean localScalarEnum = enumAttribute.isApi() && !enumAttribute.isExternalEnum();
+      boolean localListEnum =
+          enumAttribute.itemsIsApi()
+              && !enumAttribute.isExternalEnum()
+              && !enumAttribute.isGenSeparate();
+      if (localScalarEnum || localListEnum) {
         EnumColumn enumColumn = new EnumColumn();
         enumColumn.setApiClassName(toClazName(enumAttribute.name));
         enumColumn.setVisibleEntries(getEnumEntries(enumAttribute));
