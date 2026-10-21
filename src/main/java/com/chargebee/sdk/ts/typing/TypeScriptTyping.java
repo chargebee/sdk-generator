@@ -1,6 +1,7 @@
 package com.chargebee.sdk.ts.typing;
 
 import static com.chargebee.GenUtil.singularize;
+import static com.chargebee.openapi.Extension.IS_PCV1_ATTRIBUTE;
 import static com.chargebee.openapi.Resource.*;
 import static com.chargebee.sdk.common.AttributeAssistant.isHiddenFromSDK;
 
@@ -112,7 +113,7 @@ public class TypeScriptTyping extends Language {
       if (attribute.isContentObjectAttribute()) continue;
       attributesInMultiLine.add(
           attribute.name
-              + (attribute.isRequired ? "" : "?")
+              + (attribute.isRequired && !attribute.isPcv1Attribute() ? "" : "?")
               + ":"
               + dataTypeForMultiLineAttributes(attribute)
               + ";");
@@ -244,7 +245,7 @@ public class TypeScriptTyping extends Language {
                       String.format(
                           "%s%s:%s",
                           es.getKey(),
-                          requiredProps.contains(es.getKey()) ? "" : "?",
+                          requiredProps.contains(es.getKey()) && !isPcv1Schema(es.getValue()) ? "" : "?",
                           dataType(es.getValue())))
               .collect(Collectors.joining(","));
       return String.format("{%s}%s", objectDefinition, isCompositeArrayRequestBody ? "[]" : "");
@@ -259,7 +260,7 @@ public class TypeScriptTyping extends Language {
             .map(
                 rp ->
                     String.format(
-                        "%s%s:%s", rp.name, rp.isRequired ? "" : "?", dataType(rp.schema)))
+                        "%s%s:%s", rp.name, rp.isRequired && !isPcv1Schema(rp.schema) ? "" : "?", dataType(rp.schema)))
             .collect(Collectors.joining(","));
     return String.format("{%s}[]", type);
   }
@@ -269,5 +270,12 @@ public class TypeScriptTyping extends Language {
     List<String> attributes = getAttributesInMultiLine(resource);
     return Map.ofEntries(
         new AbstractMap.SimpleEntry<String, Object>("actualAttributes", attributes));
+  }
+
+  private static boolean isPcv1Schema(io.swagger.v3.oas.models.media.Schema<?> schema) {
+    return schema != null
+        && schema.getExtensions() != null
+        && schema.getExtensions().get(IS_PCV1_ATTRIBUTE) != null
+        && (int) schema.getExtensions().get(IS_PCV1_ATTRIBUTE) == 1;
   }
 }

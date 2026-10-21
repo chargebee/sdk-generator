@@ -781,7 +781,7 @@ public class Go_V4 extends Language {
                     delimiter,
                     toCamelCase(attribute.name),
                     Constants.FILTER + filterType(attribute.schema),
-                    getJsonVal(attribute, attribute.isRequired)));
+                    getJsonVal(attribute, attribute.isRequired && !attribute.isPcv1Attribute())));
       } else if (attribute.isEnumAttribute()) {
         if (attribute.isGlobalEnumAttribute()) {
           // For global enums, use the global enum type name from the spec
@@ -803,7 +803,7 @@ public class Go_V4 extends Language {
                     delimiter,
                     toCamelCase(attribute.name),
                     type,
-                    getJsonVal(attribute, attribute.isRequired)));
+                    getJsonVal(attribute, attribute.isRequired && !attribute.isPcv1Attribute())));
       } else if (attribute.schema.getItems() != null) {
         buf.add(
             "\t"
@@ -811,7 +811,7 @@ public class Go_V4 extends Language {
                     delimiter,
                     toCamelCase(attribute.name),
                     getGoType(attribute.schema.getItems(), attribute.name),
-                    getJsonVal(attribute, attribute.isRequired)));
+                    getJsonVal(attribute, attribute.isRequired && !attribute.isPcv1Attribute())));
       } else {
         buf.add(
             "\t"
@@ -819,7 +819,7 @@ public class Go_V4 extends Language {
                     delimiter,
                     toCamelCase(attribute.name),
                     getGoType(attribute.schema, attribute.name),
-                    getJsonVal(attribute, attribute.isRequired)));
+                    getJsonVal(attribute, attribute.isRequired && !attribute.isPcv1Attribute())));
       }
     }
     return formatUsingDelimiter(buf.toString());
@@ -884,7 +884,7 @@ public class Go_V4 extends Language {
         }
       }
 
-      boolean req = attribute.isRequired;
+      boolean req = attribute.isRequired && !attribute.isPcv1Attribute();
       if (attribute.name.equals(Constants.SORT_BY)) {
         var dataType = dataType(attribute.schema, attribute.name);
         if (dataType.equalsIgnoreCase("string")) {
@@ -1029,7 +1029,7 @@ public class Go_V4 extends Language {
         } else {
           type = resolveResourceEnumTypeName(activeResource.name, a.name);
         }
-        buf.add("\t" + String.join(delimiter, toCamelCase(a.name), type, getJsonVal(a, true)));
+        buf.add("\t" + String.join(delimiter, toCamelCase(a.name), type, getJsonVal(a, !a.isPcv1Attribute())));
       } else {
         if (a.isSubResource() && a.subResourceName() != null) {
           if (a.isListSubResourceAttribute() && !a.isDependentAttribute()) {
@@ -1039,7 +1039,7 @@ public class Go_V4 extends Language {
                         delimiter,
                         toCamelCase(a.name),
                         dataType(a.schema, a.name),
-                        getJsonVal(a, true)));
+                        getJsonVal(a, !a.isPcv1Attribute())));
           } else {
             buf.add(
                 "\t"
@@ -1047,7 +1047,7 @@ public class Go_V4 extends Language {
                         delimiter,
                         toCamelCase(a.name),
                         dataType(a.schema, a.subResourceName()),
-                        getJsonVal(a, true)));
+                        getJsonVal(a, !a.isPcv1Attribute())));
           }
         } else {
           buf.add(
@@ -1056,7 +1056,7 @@ public class Go_V4 extends Language {
                       delimiter,
                       toCamelCase(a.name),
                       dataType(a.schema, a.name),
-                      getJsonVal(a, true)));
+                      getJsonVal(a, !a.isPcv1Attribute())));
         }
       }
     }
@@ -1157,7 +1157,7 @@ public class Go_V4 extends Language {
         buf.add(
             "\t"
                 + String.join(
-                    delimiter, toCamelCase(attribute.name), type, getJsonVal(attribute, true)));
+                    delimiter, toCamelCase(attribute.name), type, getJsonVal(attribute, !attribute.isPcv1Attribute())));
       } else if (attribute.isSubResource()) {
         buf.add(
             "\t"
@@ -1165,7 +1165,7 @@ public class Go_V4 extends Language {
                     delimiter,
                     toCamelCase(attribute.name),
                     dataType(attribute.schema, attribute.name),
-                    getJsonVal(attribute, true)));
+                    getJsonVal(attribute, !attribute.isPcv1Attribute())));
       } else {
         buf.add(
             "\t"
@@ -1173,7 +1173,7 @@ public class Go_V4 extends Language {
                     delimiter,
                     toCamelCase(attribute.name),
                     dataType(attribute.schema, attribute.name),
-                    getJsonVal(attribute, true)));
+                    getJsonVal(attribute, !attribute.isPcv1Attribute())));
       }
 
     }
