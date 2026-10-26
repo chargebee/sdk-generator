@@ -2350,6 +2350,34 @@ using System.Net;"""
   }
 
   @Test
+  void listOfEnumAttributeShouldHaveConsistentEnumName() throws IOException {
+    var customer =
+        buildResource("customer")
+            .withAttribute(
+                "warning_reasons",
+                new ArraySchema()
+                    .items(
+                        new StringSchema()
+                            ._enum(List.of("no_active_subscription", "usage_threshold_exceeded"))
+                            .extensions(
+                                Map.of(
+                                    "x-cb-sdk-enum-api-name", "WarningReasons",
+                                    "x-cb-is-api-column", true))),
+                false)
+            .done();
+
+    var spec = buildSpec().withResource(customer).done();
+
+    List<FileOp> fileOps = dotnetSdkGen.generate(basePath, spec);
+
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(2);
+    assertThat(writeStringFileOp.fileContent)
+        .contains("public List<WarningReasonEnum> WarningReasons")
+        .contains("GetList<WarningReasonEnum>(\"warning_reasons\")")
+        .contains("public enum WarningReasonEnum");
+  }
+
+  @Test
   void shouldGenerateContentTypeJsonSupportedObject() throws IOException {
     var customer = buildResource("customer").withAttribute("id", true).done();
     var createCustomer =

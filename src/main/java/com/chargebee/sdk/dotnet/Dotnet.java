@@ -312,7 +312,11 @@ public class Dotnet extends Language {
     List<EnumColumn> enumColumns = new ArrayList<>();
     for (Attribute enumAttribute : attributeAssistant.subResourceEnum()) {
       EnumColumn enumColumn = new EnumColumn();
-      enumColumn.setApiClassName(getName(enumAttribute.name));
+      String apiClassName = getName(enumAttribute.name);
+      if (enumAttribute.isListOfEnum()) {
+        apiClassName = singularize(apiClassName);
+      }
+      enumColumn.setApiClassName(apiClassName);
       enumColumn.setVisibleEntries(getEnumEntries(enumAttribute));
       enumColumn.setDeprecated(enumAttribute.isDeprecated());
       enumColumns.add(enumColumn);
@@ -327,7 +331,11 @@ public class Dotnet extends Language {
       EnumColumn enumColumn = new EnumColumn();
       enumColumn.setDeprecated(attribute.isDeprecated());
       enumColumn.setVisibleEntries(getEnumEntries(attribute));
-      enumColumn.setApiClassName(getName(attribute.name));
+      String apiClassName = getName(attribute.name);
+      if (attribute.isListOfEnum()) {
+        apiClassName = singularize(apiClassName);
+      }
+      enumColumn.setApiClassName(apiClassName);
       enumColumns.add(enumColumn);
     }
     return enumColumns;
