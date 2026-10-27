@@ -521,7 +521,7 @@ public class Go_V4 extends Language {
   private FileOp generateClientFile(String outputDirectoryPath) throws IOException {
     Template clientTemplate = getTemplateContent("client");
     List<Map<String, String>> resourceNames = this.resourceList.stream()
-        .filter(Resource::hasAnyAction)
+        .filter(r -> !r.getSortedAction().isEmpty())
         .map(r -> Map.of("name", r.name))
         .toList();
     String content = clientTemplate.apply(Map.of("resources", resourceNames));
