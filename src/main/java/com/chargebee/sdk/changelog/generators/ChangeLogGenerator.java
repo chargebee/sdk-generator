@@ -1,6 +1,5 @@
 package com.chargebee.sdk.changelog.generators;
 
-import static com.chargebee.GenUtil.pluralize;
 import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.sdk.changelog.Constants.CHANGELOG;
 
@@ -14,7 +13,6 @@ import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.changelog.ChangeLog;
 import com.chargebee.sdk.changelog.models.ChangeLogSchema;
 import com.github.jknack.handlebars.Template;
-import com.google.common.base.CaseFormat;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
 import java.io.IOException;
@@ -114,8 +112,7 @@ public class ChangeLogGenerator implements FileGenerator {
   }
 
   private String formatNewResourceLine(Resource resource) {
-    return String.format(
-        "- [`%s`](%s) has been added.", resource.name, getDocsUrlForResourceList(resource));
+    return String.format("- `%s` has been added.", resource.name);
   }
 
   private List<String> generateNewActions(
@@ -144,12 +141,7 @@ public class ChangeLogGenerator implements FileGenerator {
   }
 
   private String formatNewActionLine(Resource resource, Action action) {
-    return String.format(
-        "- [`%s`](%s) has been added to [`%s`](%s).",
-        action.id,
-        getDocsUrlForActions(resource, action),
-        resource.name,
-        getDocsUrlForResourceList(resource));
+    return String.format("- `%s` has been added to `%s`.", action.id, resource.name);
   }
 
   private List<String> generateNewAttributes(
@@ -175,12 +167,7 @@ public class ChangeLogGenerator implements FileGenerator {
   }
 
   private String formatNewAttributeLine(Resource resource, Attribute attribute) {
-    return String.format(
-        "- [`%s`](%s) has been added to [`%s`](%s).",
-        attribute.name,
-        getDocsUrlForAttribute(resource, attribute),
-        resource.name,
-        getDocsUrlForResourceList(resource));
+    return String.format("- `%s` has been added to `%s`.", attribute.name, resource.name);
   }
 
   private List<String> generateNewParameters(
@@ -300,15 +287,8 @@ public class ChangeLogGenerator implements FileGenerator {
       boolean isAdded) {
     String actionVerb = isAdded ? "added" : "removed";
     return String.format(
-        "- [`%s`](%s) has been %s as %s to [`%s`](%s) in [`%s`](%s).",
-        parameter.getName(),
-        getDocsUrlForParameter(resource, action, parameter),
-        actionVerb,
-        parameterType,
-        action.id,
-        getDocsUrlForActions(resource, action),
-        resource.name,
-        getDocsUrlForResourceList(resource));
+        "- `%s` has been %s as %s to `%s` in `%s`.",
+        parameter.getName(), actionVerb, parameterType, action.id, resource.name);
   }
 
   private List<String> generateNewEvents(Spec oldVersion, Spec newerVersion) {
@@ -327,7 +307,7 @@ public class ChangeLogGenerator implements FileGenerator {
 
   private String formatNewEventLine(Map<String, String> event) {
     String eventType = event.get("type");
-    return String.format("- [`%s`](%s) has been added.", eventType, getDocsUrlForEvent(eventType));
+    return String.format("- `%s` has been added.", eventType);
   }
 
   private List<String> generateDeletedResources(
@@ -380,13 +360,7 @@ public class ChangeLogGenerator implements FileGenerator {
   }
 
   private String formatDeletedAction(Resource resource, Action action, boolean includeHyperlink) {
-    if (includeHyperlink) {
-      return String.format(
-          "- `%s` has been removed from [`%s`](%s).",
-          action.id, resource.name, getDocsUrlForResourceList(resource));
-    } else {
-      return String.format("- `%s` has been removed from `%s`.", action.id, resource.name);
-    }
+    return String.format("- `%s` has been removed from `%s`.", action.id, resource.name);
   }
 
   private List<String> generateDeletedAttributes(
@@ -431,13 +405,7 @@ public class ChangeLogGenerator implements FileGenerator {
 
   private String formatDeletedAttribute(
       Resource resource, Attribute attribute, boolean includeHyperlink) {
-    if (includeHyperlink) {
-      return String.format(
-          "- `%s` has been removed from [`%s`](%s).",
-          attribute.name, resource.name, getDocsUrlForResourceList(resource));
-    } else {
-      return String.format("- `%s` has been removed from `%s`.", attribute.name, resource.name);
-    }
+    return String.format("- `%s` has been removed from `%s`.", attribute.name, resource.name);
   }
 
   private List<String> generateDeletedParameters(
@@ -608,28 +576,9 @@ public class ChangeLogGenerator implements FileGenerator {
       String parameterType,
       boolean includeResourceHyperlink,
       boolean includeActionHyperlink) {
-    if (includeResourceHyperlink && includeActionHyperlink) {
-      return String.format(
-          "- `%s` has been removed as %s from [`%s`](%s) in [`%s`](%s).",
-          parameter.getName(),
-          parameterType,
-          action.id,
-          getDocsUrlForActions(resource, action),
-          resource.name,
-          getDocsUrlForResourceList(resource));
-    } else if (includeResourceHyperlink) {
-      return String.format(
-          "- `%s` has been removed as %s from `%s` in [`%s`](%s).",
-          parameter.getName(),
-          parameterType,
-          action.id,
-          resource.name,
-          getDocsUrlForResourceList(resource));
-    } else {
-      return String.format(
-          "- `%s` has been removed as %s from `%s` in `%s`.",
-          parameter.getName(), parameterType, action.id, resource.name);
-    }
+    return String.format(
+        "- `%s` has been removed as %s from `%s` in `%s`.",
+        parameter.getName(), parameterType, action.id, resource.name);
   }
 
   private List<String> generateDeletedEvents(Spec oldVersion, Spec newerVersion) {
@@ -720,11 +669,10 @@ public class ChangeLogGenerator implements FileGenerator {
       boolean isAdded) {
     for (Attribute attribute : attributes) {
       String currentPath = buildAttributePath(path, attribute.name);
-      String anchorId = buildAttributeAnchor(path, attribute.name);
 
       if (attribute.isEnumAttribute() && !attribute.isGlobalEnumAttribute()) {
         processEnumAttributeChange(
-            resource, attribute, currentPath, anchorId, comparisonEnums, lines, isAdded);
+            resource, attribute, currentPath, comparisonEnums, lines, isAdded);
       }
 
       if (attribute.getSubAttributes() != null) {
@@ -738,7 +686,6 @@ public class ChangeLogGenerator implements FileGenerator {
       Resource resource,
       Attribute attribute,
       String path,
-      String anchorId,
       Map<String, Set<String>> comparisonEnums,
       List<String> lines,
       boolean isAdded) {
@@ -750,14 +697,8 @@ public class ChangeLogGenerator implements FileGenerator {
       String actionVerb = isAdded ? "to" : "from";
       lines.add(
           String.format(
-              "- %s %s enum attribute [`%s`](%s#%s) in [`%s`](%s).",
-              formatValuesList(changedValues, isAdded),
-              actionVerb,
-              path,
-              getDocsUrlForResourceObject(resource),
-              anchorId,
-              resource.name,
-              getDocsUrlForResourceList(resource)));
+              "- %s %s enum attribute `%s` in `%s`.",
+              formatValuesList(changedValues, isAdded), actionVerb, path, resource.name));
     }
   }
 
@@ -900,15 +841,13 @@ public class ChangeLogGenerator implements FileGenerator {
     String actionVerb = isAdded ? "to" : "from";
     lines.add(
         String.format(
-            "- %s %s enum %s `%s` in [`%s`](%s) of [`%s`](%s).",
+            "- %s %s enum %s `%s` in `%s` of `%s`.",
             formatValuesList(values, isAdded),
             actionVerb,
             parameterType,
             parameter.getName(),
             action.id,
-            getDocsUrlForActions(resource, action),
-            resource.name,
-            getDocsUrlForResourceList(resource)));
+            resource.name));
   }
 
   // --- Deprecated Resources ---
@@ -932,8 +871,7 @@ public class ChangeLogGenerator implements FileGenerator {
   }
 
   private String formatDeprecatedResourceLine(Resource resource) {
-    return String.format(
-        "- [`%s`](%s) has been deprecated.", resource.name, getDocsUrlForResourceList(resource));
+    return String.format("- `%s` has been deprecated.", resource.name);
   }
 
   // --- Deprecated Actions ---
@@ -963,12 +901,7 @@ public class ChangeLogGenerator implements FileGenerator {
   }
 
   private String formatDeprecatedActionLine(Resource resource, Action action) {
-    return String.format(
-        "- [`%s`](%s) has been deprecated in [`%s`](%s).",
-        action.id,
-        getDocsUrlForActions(resource, action),
-        resource.name,
-        getDocsUrlForResourceList(resource));
+    return String.format("- `%s` has been deprecated in `%s`.", action.id, resource.name);
   }
 
   // --- Deprecated Attributes ---
@@ -998,12 +931,7 @@ public class ChangeLogGenerator implements FileGenerator {
   }
 
   private String formatDeprecatedAttributeLine(Resource resource, Attribute attribute) {
-    return String.format(
-        "- [`%s`](%s) has been deprecated in [`%s`](%s).",
-        attribute.name,
-        getDocsUrlForAttribute(resource, attribute),
-        resource.name,
-        getDocsUrlForResourceList(resource));
+    return String.format("- `%s` has been deprecated in `%s`.", attribute.name, resource.name);
   }
 
   // --- Deprecated Parameters ---
@@ -1111,14 +1039,8 @@ public class ChangeLogGenerator implements FileGenerator {
   private String formatDeprecatedParameterLine(
       Resource resource, Action action, Parameter parameter, String parameterType) {
     return String.format(
-        "- [`%s`](%s) has been deprecated as %s in [`%s`](%s) of [`%s`](%s).",
-        parameter.getName(),
-        getDocsUrlForParameter(resource, action, parameter),
-        parameterType,
-        action.id,
-        getDocsUrlForActions(resource, action),
-        resource.name,
-        getDocsUrlForResourceList(resource));
+        "- `%s` has been deprecated as %s in `%s` of `%s`.",
+        parameter.getName(), parameterType, action.id, resource.name);
   }
 
   private Map<String, Map<String, Boolean>> buildActionDeprecationMap(List<Resource> resources) {
@@ -1133,8 +1055,7 @@ public class ChangeLogGenerator implements FileGenerator {
     return resourceMap;
   }
 
-  private Map<String, Map<String, Boolean>> buildAttributeDeprecationMap(
-      List<Resource> resources) {
+  private Map<String, Map<String, Boolean>> buildAttributeDeprecationMap(List<Resource> resources) {
     Map<String, Map<String, Boolean>> resourceMap = new HashMap<>();
     for (Resource resource : resources) {
       Map<String, Boolean> attributeMap = new HashMap<>();
@@ -1244,14 +1165,8 @@ public class ChangeLogGenerator implements FileGenerator {
     String changeDescription =
         parameter.isRequired ? "optional to required" : "required to optional";
     return String.format(
-        "- [`%s`](%s) has been changed from %s in [`%s`](%s) of [`%s`](%s).",
-        parameter.getName(),
-        getDocsUrlForParameter(resource, action, parameter),
-        changeDescription,
-        action.id,
-        getDocsUrlForActions(resource, action),
-        resource.name,
-        getDocsUrlForResourceList(resource));
+        "- `%s` has been changed from %s in `%s` of `%s`.",
+        parameter.getName(), changeDescription, action.id, resource.name);
   }
 
   private Map<String, Set<String>> buildActionMap(List<Resource> resources) {
@@ -1447,10 +1362,6 @@ public class ChangeLogGenerator implements FileGenerator {
     return basePath.isEmpty() ? attributeName : basePath + "." + attributeName;
   }
 
-  private String buildAttributeAnchor(String basePath, String attributeName) {
-    return basePath.isEmpty() ? attributeName : basePath.replace(".", "_") + "_" + attributeName;
-  }
-
   private String formatValuesList(List<String> values, boolean isAdded) {
     if (values.isEmpty()) {
       return "";
@@ -1527,41 +1438,5 @@ public class ChangeLogGenerator implements FileGenerator {
       return Collections.emptySet();
     }
     return new HashSet<>(new Enum(schema).values());
-  }
-
-  private String toHyphenCase(String text) {
-    return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, text);
-  }
-
-  private String getDocsUrlForEvent(String eventType) {
-    return String.format("https://apidocs.chargebee.com/docs/api/events/webhook/%s", eventType);
-  }
-
-  private String getDocsUrlForResourceList(Resource resource) {
-    return String.format("https://apidocs.chargebee.com/docs/api/%s", pluralize(resource.id));
-  }
-
-  private String getDocsUrlForResourceObject(Resource resource) {
-    String hyphenatedResourceId = resource.id.replace("_", "-");
-    return String.format(
-        "https://apidocs.chargebee.com/docs/api/%s/%s-object",
-        pluralize(resource.id), hyphenatedResourceId);
-  }
-
-  private String getDocsUrlForActions(Resource resource, Action action) {
-    return String.format(
-        "https://apidocs.chargebee.com/docs/api/%s/%s",
-        pluralize(resource.id), toHyphenCase(action.id));
-  }
-
-  private String getDocsUrlForAttribute(Resource resource, Attribute attribute) {
-    return String.format("%s#%s", getDocsUrlForResourceObject(resource), attribute.name);
-  }
-
-  private String getDocsUrlForParameter(Resource resource, Action action, Parameter parameter) {
-    String anchorId = parameter.getName().replace(".", "_");
-    return String.format(
-        "https://apidocs.chargebee.com/docs/api/%s/%s#%s",
-        pluralize(resource.id), toHyphenCase(action.id), anchorId);
   }
 }
