@@ -1205,6 +1205,13 @@ public class Java extends Language {
               + toClazName(name);
         }
       }
+      boolean isSubResourceAttribute =
+          activeResource.getSortedResourceAttributes().stream()
+              .filter(Attribute::isSubResource)
+              .anyMatch(attr -> attr.name.equals(parentAttribute));
+      if (!isSubResourceAttribute) {
+        return activeResource.name + "." + toClazName(name);
+      }
       return toClazName(singularize(parentAttribute)) + "." + toClazName(name);
     }
 
