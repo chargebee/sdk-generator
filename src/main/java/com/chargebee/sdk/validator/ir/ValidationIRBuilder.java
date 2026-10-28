@@ -3,6 +3,7 @@ package com.chargebee.sdk.validator.ir;
 import static com.chargebee.openapi.Extension.ATTRIBUTE_META_COMMENT;
 import static com.chargebee.openapi.Extension.HIDDEN_FROM_CLIENT_SDK;
 import static com.chargebee.openapi.Extension.IS_MULTI_ATTRIBUTE;
+import static com.chargebee.openapi.Extension.IS_PCV1_ATTRIBUTE;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
@@ -140,7 +141,8 @@ public class ValidationIRBuilder {
 
         if (isHidden(propSchema)) continue;
 
-        boolean isRequired = requiredSet.contains(propName) || isMetaCommentRequired(propSchema);
+        boolean isRequired = (requiredSet.contains(propName) || isMetaCommentRequired(propSchema))
+            && !isPcv1Attribute(propSchema);
         boolean isOptional = !isRequired;
         Object defaultVal = propSchema.getDefault();
         String desc = propSchema.getDescription();
@@ -172,7 +174,8 @@ public class ValidationIRBuilder {
 
         if (isHidden(propSchema)) continue;
 
-        boolean isRequired = requiredSet.contains(propName) || isMetaCommentRequired(propSchema);
+        boolean isRequired = (requiredSet.contains(propName) || isMetaCommentRequired(propSchema))
+            && !isPcv1Attribute(propSchema);
         ValidationNode childNode = buildNode(propSchema, visiting);
         propEntries.put(
             propName,
@@ -248,5 +251,11 @@ public class ValidationIRBuilder {
   private static boolean isMetaCommentRequired(Schema<?> schema) {
     return schema.getExtensions() != null
         && "required".equals(schema.getExtensions().get(ATTRIBUTE_META_COMMENT));
+  }
+
+  private static boolean isPcv1Attribute(Schema<?> schema) {
+    return schema.getExtensions() != null
+        && schema.getExtensions().get(IS_PCV1_ATTRIBUTE) != null
+        && (int) schema.getExtensions().get(IS_PCV1_ATTRIBUTE) == 1;
   }
 }

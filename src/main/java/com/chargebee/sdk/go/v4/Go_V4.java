@@ -184,7 +184,11 @@ public class Go_V4 extends Language {
         .toList()
         .isEmpty();
 
-    return hasJsonAttr || hasJsonSubResAttr;
+    boolean hasJsonResponseParam = r.getSortedAction().stream()
+        .flatMap(action -> action.response().responseParameters(this).stream())
+        .anyMatch(resp -> Constants.JSON_RAW_MESSAGE.equals(resp.getType()));
+
+    return hasJsonAttr || hasJsonSubResAttr || hasJsonResponseParam;
   }
 
   public boolean hasExternalEnumCols(Resource res) {
@@ -517,7 +521,7 @@ public class Go_V4 extends Language {
   private FileOp generateClientFile(String outputDirectoryPath) throws IOException {
     Template clientTemplate = getTemplateContent("client");
     List<Map<String, String>> resourceNames = this.resourceList.stream()
-        .filter(Resource::hasAnyAction)
+        .filter(r -> !r.getSortedAction().isEmpty())
         .map(r -> Map.of("name", r.name))
         .toList();
     String content = clientTemplate.apply(Map.of("resources", resourceNames));
@@ -574,6 +578,12 @@ public class Go_V4 extends Language {
 
     Template actionTemplates = getTemplateContent("services");
     for (var resource : resources) {
+      String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name);
+      if (resource.actions.isEmpty()) {
+        // All operations for this resource were removed from the spec — delete the stale service file.
+        fileOps.add(new FileOp.DeleteFile(outputDirectoryPath, fileName + "_service.go"));
+        continue;
+      }
       if (!resource.actions.isEmpty()) {
         var actionPayload = resource.templateParams(this);
         List<Map<String, Object>> actions = (List<Map<String, Object>>) actionPayload.get("actions");
@@ -585,6 +595,16 @@ public class Go_V4 extends Language {
           mutableAction.put("goActionName", toCamelCase((String) action.get("name")));
           mutableAction.put(
               "telemetryOperation", firstCharLower(toCamelCase((String) action.get("name"))));
+
+          boolean hasPathParam = Boolean.TRUE.equals(action.get("hasPathParameters"));
+          boolean hasBodyOrQueryParams =
+              Boolean.TRUE.equals(action.get("hasRequestBodyParameters"))
+                  || Boolean.TRUE.equals(action.get("hasQueryParameters"));
+          // Actions whose only input is the path parameter carry it on the request type instead of
+          // a bare string argument, so callers can also set a context, headers and so on.
+          mutableAction.put("hasIdArg", hasPathParam && hasBodyOrQueryParams);
+          mutableAction.put("hasRequestArg", hasPathParam || hasBodyOrQueryParams);
+
           mutableActions.add(mutableAction);
         }
 
@@ -594,7 +614,6 @@ public class Go_V4 extends Language {
           continue;
         var content = actionTemplates.apply(actionPayload);
         String dirName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name).replace("_", "");
-        String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name);
         fileOps.add(
             new FileOp.WriteString(outputDirectoryPath, fileName + "_service.go", content));
       }
@@ -658,6 +677,8 @@ public class Go_V4 extends Language {
         List<InputSubResParam> inputSubResParamList = new ArrayList<>();
         operation.setClazName(toClazName(action.name, "Request"));
         operation.setHasInputParams(hasInputParams(action));
+        operation.setHasOnlyPathParam(
+            !hasInputParams(action) && !action.pathParameters().isEmpty());
         operation.setInputParams(inputParams(action));
         operation.setHttpRequestType(action.httpRequestType.toString());
 

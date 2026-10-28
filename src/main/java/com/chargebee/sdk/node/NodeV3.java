@@ -74,6 +74,17 @@ public class NodeV3 extends Language {
     templates.put("telemetryOtel", "/templates/node/telemetry/otel.ts.hbs");
     templates.put(
         "telemetryHeaderParser", "/templates/node/telemetry/chargebeeTelemetryHeaderParser.ts.hbs");
+    templates.put(
+        "sdkTelemetryHeader", "/templates/node/telemetry/sdkTelemetryHeader.ts.hbs");
+    templates.put(
+        "sdkTelemetryFeature", "/templates/node/telemetry/sdkTelemetryFeature.ts.hbs");
+    templates.put(
+        "sdkTelemetryState", "/templates/node/telemetry/sdkTelemetryState.ts.hbs");
+    templates.put(
+        "sdkTelemetryHeaderBuilder",
+        "/templates/node/telemetry/sdkTelemetryHeaderBuilder.ts.hbs");
+    templates.put(
+        "sdkTelemetryEmitter", "/templates/node/telemetry/sdkTelemetryEmitter.ts.hbs");
     return templates;
   }
 
@@ -82,24 +93,36 @@ public class NodeV3 extends Language {
     List<FileOp> fileOps = new ArrayList<>();
     fileOps.add(new FileOp.CreateDirectory(parentDirectoryPath, telemetryDirectoryPath));
 
-    Template typesTemplate = getTemplateContent("telemetryTypes");
-    Template parserTemplate = getTemplateContent("telemetryHeaderParser");
-    Template adapterTemplate = getTemplateContent("telemetryAdapter");
-    Template indexTemplate = getTemplateContent("telemetryIndex");
-    Template otelTemplate = getTemplateContent("telemetryOtel");
+    final String[] telemetryFiles = {
+      "types.ts",
+      "chargebeeTelemetryHeaderParser.ts",
+      "TelemetryAdapter.ts",
+      "index.ts",
+      "otel.ts",
+      "sdkTelemetryHeader.ts",
+      "sdkTelemetryFeature.ts",
+      "sdkTelemetryState.ts",
+      "sdkTelemetryHeaderBuilder.ts",
+      "sdkTelemetryEmitter.ts"
+    };
+    final String[] templateKeys = {
+      "telemetryTypes",
+      "telemetryHeaderParser",
+      "telemetryAdapter",
+      "telemetryIndex",
+      "telemetryOtel",
+      "sdkTelemetryHeader",
+      "sdkTelemetryFeature",
+      "sdkTelemetryState",
+      "sdkTelemetryHeaderBuilder",
+      "sdkTelemetryEmitter"
+    };
 
     String telemetryPath = parentDirectoryPath + telemetryDirectoryPath;
-    fileOps.add(new FileOp.WriteString(telemetryPath, "types.ts", typesTemplate.apply("")));
-    fileOps.add(
-        new FileOp.WriteString(
-            telemetryPath,
-            "chargebeeTelemetryHeaderParser.ts",
-            parserTemplate.apply("")));
-    fileOps.add(
-        new FileOp.WriteString(
-            telemetryPath, "TelemetryAdapter.ts", adapterTemplate.apply("")));
-    fileOps.add(new FileOp.WriteString(telemetryPath, "index.ts", indexTemplate.apply("")));
-    fileOps.add(new FileOp.WriteString(telemetryPath, "otel.ts", otelTemplate.apply("")));
+    for (int i = 0; i < telemetryFiles.length; i++) {
+      Template template = getTemplateContent(templateKeys[i]);
+      fileOps.add(new FileOp.WriteString(telemetryPath, telemetryFiles[i], template.apply("")));
+    }
 
     return fileOps;
   }

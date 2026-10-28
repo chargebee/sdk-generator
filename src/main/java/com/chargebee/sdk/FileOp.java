@@ -93,6 +93,21 @@ public abstract class FileOp {
     }
   }
 
+  public static final class DeleteFile extends FileOp {
+    public final String baseFilePath;
+    public final String fileName;
+
+    public DeleteFile(String baseFilePath, String fileName) {
+      this.baseFilePath = baseFilePath;
+      this.fileName = fileName;
+    }
+
+    @Override
+    public void exec() throws IOException {
+      Files.deleteIfExists(Paths.get(baseFilePath, fileName));
+    }
+  }
+
   public static String fetchFileContent(String filePath) throws IOException {
     return new String(Files.readAllBytes(Paths.get(filePath)));
   }

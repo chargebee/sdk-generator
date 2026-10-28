@@ -652,16 +652,38 @@ public class Go_V3 extends Language {
                     + toCamelCase(singularize(attribute.metaModelName()))
                     + toClazName(attribute.name);
           } else if (attribute.isSubResource() && attribute.metaModelName() != null) {
-            type =
-                firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
-                    + Constants.ENUM_DOT
-                    + toClazName(attribute.name);
+            String metaResourceName = getName(singularize(attribute.metaModelName()));
+            boolean metaResourceExists =
+                resourceList.stream().anyMatch(r -> r.name.equals(metaResourceName));
+            if (metaResourceExists) {
+              type =
+                  firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
+                      + Constants.ENUM_DOT
+                      + toClazName(attribute.name);
+            } else {
+              type =
+                  firstCharLower(toCamelCase(activeResource.name))
+                      + Constants.ENUM_DOT
+                      + toCamelCase(singularize(attribute.metaModelName()))
+                      + toClazName(attribute.name);
+            }
 
           } else if (attribute.metaModelName() != null && !attribute.isSubResource()) {
-            type =
-                firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
-                    + Constants.ENUM_DOT
-                    + toClazName(attribute.name);
+            String metaResourceName = getName(singularize(attribute.metaModelName()));
+            boolean metaResourceExists =
+                resourceList.stream().anyMatch(r -> r.name.equals(metaResourceName));
+            if (metaResourceExists) {
+              type =
+                  firstCharLower(toCamelCase(singularize(attribute.metaModelName())))
+                      + Constants.ENUM_DOT
+                      + toClazName(attribute.name);
+            } else {
+              type =
+                  firstCharLower(toCamelCase(activeResource.name))
+                      + Constants.ENUM_DOT
+                      + toCamelCase(singularize(attribute.metaModelName()))
+                      + toClazName(attribute.name);
+            }
           } else {
             type =
                 firstCharLower(toCamelCase(activeResource.name))
@@ -970,10 +992,19 @@ public class Go_V3 extends Language {
             }
             type = enumTypeCustomLogic(type);
           } else {
+            String subTypeName = Resource.subResourceName(subResource);
+            String enumPrefix =
+                (subTypeName != null
+                        && !subTypeName.equals(toCamelCase(singularize(subResource.id))))
+                    ? toCamelCase(
+                        singularize(
+                            CaseFormat.UPPER_CAMEL.to(
+                                CaseFormat.LOWER_UNDERSCORE, subTypeName)))
+                    : singularize(subResource.name);
             type =
                 firstCharLower(activeResource.name)
                     + Constants.ENUM_DOT
-                    + singularize(subResource.name)
+                    + enumPrefix
                     + toCamelCase(attribute.name);
           }
         }
@@ -995,6 +1026,10 @@ public class Go_V3 extends Language {
               case "discountEnum.EntityType" -> "invoiceEnum.DiscountEntityType";
               case "omnichannelSubscriptionEnum.OmnichannelTransactionType" ->
                   "omnichannelSubscriptionEnum.InitialPurchaseTransactionType";
+              // AppliedCredit is the x-cb-sub-resource-name but the released SDK used
+              // "Allocation" (derived from the property key); preserve backward compatibility.
+              case "creditNoteEnum.AppliedCreditTaxApplication" ->
+                  "creditNoteEnum.AllocationTaxApplication";
               default -> type;
             };
         if (Set.of("QuotedSubscription", "Subscription", "Gift").contains(activeResource.name)

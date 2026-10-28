@@ -29,6 +29,68 @@ import org.apache.commons.lang3.StringUtils;
 
 public class Dotnet extends Language {
 
+  private static final Set<String> LEGACY_ENTITY_REQUEST_OPERATIONS = Set.of(
+      "Addon.Delete", "Addon.Retrieve", "Addon.Unarchive",
+      "Alert.Delete", "Alert.Retrieve",
+      "Card.DeleteCardForCustomer", "Card.Retrieve",
+      "Comment.Delete", "Comment.Retrieve",
+      "Configuration.List",
+      "Coupon.Delete", "Coupon.Retrieve", "Coupon.Unarchive",
+      "CouponCode.Archive", "CouponCode.Retrieve",
+      "CouponSet.Delete", "CouponSet.DeleteUnusedCouponCodes", "CouponSet.Retrieve",
+      "CreditNote.DownloadEinvoice", "CreditNote.ResendEinvoice", "CreditNote.SendEinvoice",
+      "CreditUnit.Archive", "CreditUnit.Reactivate",
+      "Currency.RemoveSchedule", "Currency.Retrieve",
+      "Customer.ClearPersonalData", "Customer.DeleteRelationship", "Customer.Retrieve",
+      "Event.Retrieve",
+      "Export.Retrieve",
+      "Feature.Activate", "Feature.Archive", "Feature.Delete", "Feature.Reactivate", "Feature.Retrieve",
+      "Gift.Cancel", "Gift.Claim", "Gift.Retrieve",
+      "HostedPage.Acknowledge", "HostedPage.Retrieve",
+      "Invoice.DownloadEinvoice", "Invoice.PaymentSchedules", "Invoice.ResendEinvoice",
+      "Invoice.SendEinvoice", "Invoice.SyncUsages",
+      "Item.Delete", "Item.Retrieve",
+      "ItemFamily.Delete", "ItemFamily.Retrieve",
+      "ItemPrice.Delete", "ItemPrice.Retrieve",
+      "LedgerOperation.RetrieveLedgerOperation",
+      "MeteredFeature.Archive", "MeteredFeature.Delete", "MeteredFeature.Reactivate",
+      "OmnichannelOneTimeOrder.Retrieve",
+      "OmnichannelSubscription.Retrieve",
+      "Order.AssignOrderNumber", "Order.Delete", "Order.Retrieve",
+      "PaymentIntent.Retrieve",
+      "PaymentScheduleScheme.Delete", "PaymentScheduleScheme.Retrieve",
+      "PaymentSource.Delete", "PaymentSource.DeleteLocal", "PaymentSource.Retrieve",
+      "PaymentVoucher.Retrieve",
+      "Plan.Delete", "Plan.Retrieve", "Plan.Unarchive",
+      "PortalSession.Logout", "PortalSession.Retrieve",
+      "PriceVariant.Delete", "PriceVariant.Retrieve",
+      "PromotionalCredit.Retrieve",
+      "Quote.CreateSignature", "Quote.RefreshSignatureLink", "Quote.Retrieve",
+      "Quote.RetrieveSignature", "Quote.RetrieveSignedPdf", "Quote.UpdateSignature",
+      "Ramp.Delete", "Ramp.Retrieve",
+      "RecordedPurchase.Retrieve",
+      "Rule.Retrieve",
+      "Subscription.Delete", "Subscription.RemoveScheduledChanges",
+      "Subscription.RemoveScheduledPause", "Subscription.RemoveScheduledResumption",
+      "Subscription.Retrieve", "Subscription.RetrieveAdvanceInvoiceSchedule",
+      "Subscription.RetrieveWithScheduledChanges",
+      "TimeMachine.Retrieve",
+      "Transaction.Retrieve", "Transaction.VoidTransaction",
+      "UnbilledCharge.Delete",
+      "VaultedPaymentMethod.Retrieve",
+      "VirtualBankAccount.Delete", "VirtualBankAccount.DeleteLocal", "VirtualBankAccount.Retrieve",
+      "WebhookEndpoint.Delete", "WebhookEndpoint.Retrieve"
+  );
+
+  private boolean isLegacyEntityRequestOperation(Action action) {
+    String clazName = getClazName(action);
+    String methodName = clazName.endsWith("Request")
+        ? clazName.substring(0, clazName.length() - "Request".length())
+        : clazName;
+    String key = activeResource.name + "." + methodName;
+    return LEGACY_ENTITY_REQUEST_OPERATIONS.contains(key);
+  }
+
   Resource activeResource;
   List<Resource> resourceList = new ArrayList<>();
   List<Enum> globalEnums;
@@ -250,7 +312,11 @@ public class Dotnet extends Language {
     List<EnumColumn> enumColumns = new ArrayList<>();
     for (Attribute enumAttribute : attributeAssistant.subResourceEnum()) {
       EnumColumn enumColumn = new EnumColumn();
-      enumColumn.setApiClassName(getName(enumAttribute.name));
+      String apiClassName = getName(enumAttribute.name);
+      if (enumAttribute.isListOfEnum()) {
+        apiClassName = singularize(apiClassName);
+      }
+      enumColumn.setApiClassName(apiClassName);
       enumColumn.setVisibleEntries(getEnumEntries(enumAttribute));
       enumColumn.setDeprecated(enumAttribute.isDeprecated());
       enumColumns.add(enumColumn);
@@ -265,7 +331,11 @@ public class Dotnet extends Language {
       EnumColumn enumColumn = new EnumColumn();
       enumColumn.setDeprecated(attribute.isDeprecated());
       enumColumn.setVisibleEntries(getEnumEntries(attribute));
-      enumColumn.setApiClassName(getName(attribute.name));
+      String apiClassName = getName(attribute.name);
+      if (attribute.isListOfEnum()) {
+        apiClassName = singularize(apiClassName);
+      }
+      enumColumn.setApiClassName(apiClassName);
       enumColumns.add(enumColumn);
     }
     return enumColumns;
@@ -412,9 +482,8 @@ public class Dotnet extends Language {
       operationRequest.setHasBatch(action.isBatch());
       operationRequest.setPostOperationWithFilter(
           action.hasPostActionContainingFilterAsBodyParams());
-      // Don't hide operations that have subDomain - they need specific request classes for fluent
-      // chaining
-      if (operationRequest.canHide() && action.subDomain() == null) continue;
+      if (operationRequest.canHide() && action.subDomain() == null
+          && (action.isListResourceAction() || isLegacyEntityRequestOperation(action))) continue;
       operationRequests.add(operationRequest);
     }
     return operationRequests;
@@ -846,8 +915,10 @@ public class Dotnet extends Language {
     } else {
       if (action.isListResourceAction()) {
         return "return new ListRequest(url)";
-      } else {
+      } else if (isLegacyEntityRequestOperation(action)) {
         return "return new EntityRequest<Type>(url, HttpMethod." + action.httpRequestType + ")";
+      } else {
+        return "return new " + getClazName(action) + "(url, HttpMethod." + action.httpRequestType + ")";
       }
     }
   }
@@ -916,7 +987,13 @@ public class Dotnet extends Language {
     if ((action.isInputObjNeeded() && isCodeGen) || action.subDomain() != null) {
       return getClazName(action);
     } else {
-      return action.isListResourceAction() ? "ListRequest" : "EntityRequest<Type>";
+      if (action.isListResourceAction()) {
+        return "ListRequest";
+      } else if (isLegacyEntityRequestOperation(action)) {
+        return "EntityRequest<Type>";
+      } else {
+        return getClazName(action);
+      }
     }
   }
 

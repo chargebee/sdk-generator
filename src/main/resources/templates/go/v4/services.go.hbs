@@ -21,13 +21,13 @@ type {{camelCaseToPascalCase name}}Service struct {
 
 {{#each actions}}
 {{#if isDeprecated}}// Deprecated: This function is deprecated.{{/if}}
-func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if hasPathParameters}}id string{{/if}}{{#or hasRequestBodyParameters hasQueryParameters}}{{#if hasPathParameters}}, {{/if}}req *{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Request{{/or}}) (*{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Response, error) {
-    {{~#if (not (or hasRequestBodyParameters hasQueryParameters))}}
+func (s *{{camelCaseToPascalCase @root.name}}Service) {{goActionName}}({{#if hasIdArg}}id string, {{/if}}{{#if hasRequestArg}}req *{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Request{{/if}}) (*{{camelCaseToPascalCase @root.name}}{{camelCaseToPascalCase goParamName}}Response, error) {
+    {{~#if (not hasRequestArg)}}
     req := &BlankRequest{}
     {{~/if}}
     req.method = "{{httpRequestType}}"
     {{#if hasPathParameters~}}
-    req.path = fmt.Sprintf("/{{urlPrefix}}{{#if hasPathParameters}}/%v{{/if}}{{#if urlSuffix}}/{{urlSuffix}}{{/if}}"{{#if hasPathParameters}}, url.PathEscape(id){{/if}})
+    req.path = fmt.Sprintf("/{{urlPrefix}}/%v{{#if urlSuffix}}/{{urlSuffix}}{{/if}}", url.PathEscape({{#if hasIdArg}}id{{else}}req.Id{{/if}}))
     {{~else~}}
     req.path = "/{{urlPrefix}}{{#if urlSuffix}}/{{urlSuffix}}{{/if}}"
     {{~/if}}

@@ -2912,6 +2912,7 @@ public class PythonV3Tests extends LanguageTests {
   @Test
   void shouldSupportEnumsInMultiAttributesInRequestBodyParams() throws IOException {
     var invoice = buildResource("invoice").withAttribute("id").done();
+    var paymentIntent = buildResource("payment_intent").done();
     var createForChargeItemsAndChargesOperation =
         buildPostOperation("createForChargeItemsAndCharges")
             .forResource("invoice")
@@ -2937,6 +2938,7 @@ public class PythonV3Tests extends LanguageTests {
     var spec =
         buildSpec()
             .withResource(invoice)
+            .withResource(paymentIntent)
             .withPostOperation(
                 "/invoices/create_for_charge_items_and_charges",
                 createForChargeItemsAndChargesOperation)
@@ -3237,11 +3239,11 @@ public class PythonV3Tests extends LanguageTests {
                 resourceResponseParam("card", card, false))
             .done();
 
-    var spec = buildSpec().withResource(customer).withPostOperation("/customers", operation).done();
+    var spec = buildSpec().withResource(customer).withResource(card).withPostOperation("/customers", operation).done();
 
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"
@@ -3278,11 +3280,11 @@ public class PythonV3Tests extends LanguageTests {
                 resourceResponseParam("card", card, false))
             .done();
 
-    var spec = buildSpec().withResource(customer).withPostOperation("/customers", operation).done();
+    var spec = buildSpec().withResource(customer).withResource(card).withPostOperation("/customers", operation).done();
 
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"
@@ -3317,13 +3319,13 @@ public class PythonV3Tests extends LanguageTests {
 
     var spec =
         buildSpec()
-            .withResources(customer)
+            .withResources(customer, card)
             .withOperation("/customers", listCustomerOperation)
             .done();
 
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"
@@ -3401,13 +3403,13 @@ public class PythonV3Tests extends LanguageTests {
 
     var spec =
         buildSpec()
-            .withResources(customer)
+            .withResources(customer, card)
             .withOperation("/customers", listCustomerOperation)
             .done();
 
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     assertPythonOperationStartsWith(writeStringFileOp,
             "from dataclasses import dataclass\n"
                 + "from chargebee.model import Model\n"

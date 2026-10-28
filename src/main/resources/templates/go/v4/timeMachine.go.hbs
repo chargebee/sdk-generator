@@ -6,7 +6,7 @@ func (s *TimeMachineService) WaitForTimeTravelCompletion(tm TimeMachine) (TimeMa
         }
         count++
         time.Sleep(ConfigTimeMachineWaitInSecs)
-        response, err := s.Retrieve(tm.Name)
+        response, err := s.Retrieve(&TimeMachineRetrieveRequest{Id: tm.Name})
         if err != nil {
             return tm, err
         }
