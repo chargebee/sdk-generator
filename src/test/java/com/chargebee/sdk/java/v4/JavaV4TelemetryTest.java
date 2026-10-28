@@ -209,6 +209,20 @@ class JavaV4TelemetryTest {
   }
 
   @Test
+  @DisplayName("Adapter executor should opt in via Prefer and forward response headers")
+  void adapterExecutorShouldWireResponseTelemetry() throws IOException {
+    List<FileOp> fileOps = generate();
+
+    FileOp.WriteString adapterExecutor = findWriteOp(fileOps, "TelemetryAdapterExecutor.java");
+    assertThat(adapterExecutor.fileContent)
+        .contains("client.isPreferChargebeeTelemetry()")
+        .contains("TelemetrySupport.applyResponseTelemetryPreferHeader(request)")
+        .contains("withHeaders(telemetryRequest, adapterHeaders)")
+        .contains("response.getHeaders()")
+        .contains("TelemetrySupport.extractResponseHeaders(err)");
+  }
+
+  @Test
   @DisplayName("JavaV4Internal should inherit telemetry generation from JavaV4")
   void internalGeneratorShouldIncludeTelemetry() throws IOException {
     JavaV4Internal internalGenerator = new JavaV4Internal();
