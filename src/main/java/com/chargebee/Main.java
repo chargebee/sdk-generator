@@ -28,6 +28,9 @@ import com.chargebee.sdk.validator.ValidatorZod;
 import io.swagger.v3.parser.OpenAPIV3Parser;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -70,9 +73,13 @@ class Generate implements Callable<Integer> {
       }
 
       var openAPILatest =
-          new OpenAPIV3Parser().readLocation(latestSpecUrl, null, null).getOpenAPI();
+          new OpenAPIV3Parser()
+              .readLocation(downloadSpec(latestSpecUrl, "latest_spec.json"), null, null)
+              .getOpenAPI();
       var openAPILastReleased =
-          new OpenAPIV3Parser().readLocation(lastReleasedSpecUrl, null, null).getOpenAPI();
+          new OpenAPIV3Parser()
+              .readLocation(downloadSpec(lastReleasedSpecUrl, "last_released_spec.json"), null, null)
+              .getOpenAPI();
       new JsonSchemaUpcaster(openAPILatest).upcastAllSchemas();
       new JsonSchemaUpcaster(openAPILastReleased).upcastAllSchemas();
 
@@ -123,6 +130,29 @@ class Generate implements Callable<Integer> {
     }
 
     return 0;
+  }
+
+  /**
+   * Downloads a spec from a URL to a temp file and returns the file:// URI. For file:// URLs, the
+   * path is returned as-is. This avoids OpenAPIV3Parser's default HTTP client which can time out on
+   * slow CDNs.
+   */
+  private static String downloadSpec(String specUrl, String tempFileName) throws IOException {
+    if (specUrl.startsWith("file://")) {
+      return specUrl;
+    }
+    Path tempFile = Files.createTempFile("sdk-gen-", "-" + tempFileName);
+    System.err.println("Downloading spec: " + specUrl);
+    HttpURLConnection conn = (HttpURLConnection) new URL(specUrl).openConnection();
+    conn.setConnectTimeout(120_000);
+    conn.setReadTimeout(120_000);
+    try (InputStream in = conn.getInputStream()) {
+      Files.copy(in, tempFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+    } finally {
+      conn.disconnect();
+    }
+    System.err.println("Downloaded spec to: " + tempFile);
+    return tempFile.toUri().toString();
   }
 
   private static void cleanDirectory(Path directoryPath) throws IOException {

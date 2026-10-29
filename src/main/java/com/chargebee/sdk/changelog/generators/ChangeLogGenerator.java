@@ -49,7 +49,7 @@ public class ChangeLogGenerator implements FileGenerator {
         buildChangeLogSchema(oldVersion, newerVersion, oldResources, newResources);
     String content = renderTemplate(schema);
 
-    return new FileOp.WriteString("./", output + "CHANGELOG.md", content);
+    return new FileOp.WriteString(output, "CHANGELOG.md", content);
   }
 
   private ChangeLogSchema buildChangeLogSchema(
