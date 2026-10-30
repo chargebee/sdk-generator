@@ -110,6 +110,20 @@ public final class {{name}}Params {
         }
         {{/if}}
 
+        /**
+         * Add an arbitrary key-value parameter to this request.
+         * Use this for parameters not covered by typed builder methods
+         * (e.g., passthrough or dynamically-named parameters).
+         *
+         * @param key   the parameter name (may use bracket notation, e.g. "attributes[region][is]")
+         * @param value the parameter value
+         * @return this builder
+         */
+        public {{name}}Builder param(String key, Object value) {
+            queryParams.put(key, value);
+            return this;
+        }
+
         public {{name}}Params build() {
             return new {{name}}Params(this);
         }
