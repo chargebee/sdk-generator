@@ -73,6 +73,7 @@ class JavaV4TelemetryTest {
             "RequestTelemetryResult.java",
             "TelemetryAdapter.java",
             "TelemetrySupport.java",
+            "ChargebeeTelemetryHeaderParser.java",
             "SdkTelemetryHeader.java",
             "SdkTelemetryFeature.java",
             "SdkTelemetryState.java",
@@ -175,12 +176,61 @@ class JavaV4TelemetryTest {
   }
 
   @Test
+  @DisplayName("Should emit response telemetry attribute keys and header parser")
+  void shouldEmitResponseTelemetrySupport() throws IOException {
+    List<FileOp> fileOps = generate();
+
+    FileOp.WriteString attributeKeys = findWriteOp(fileOps, "TelemetryAttributeKeys.java");
+    assertThat(attributeKeys.fileContent)
+        .contains("HTTP_RESPONSE_HEADER_ATTRIBUTE_PREFIX = \"http.response.header.\"");
+    assertThat(attributeKeys.fileContent)
+        .contains("X_CHARGEBEE_TELEMETRY_HEADER = \"x-chargebee-telemetry\"");
+    assertThat(attributeKeys.fileContent)
+        .contains("CHARGEBEE_TELEMETRY_FEATURES = CHARGEBEE_TELEMETRY_PREFIX + \"features\"");
+    assertThat(attributeKeys.fileContent)
+        .contains("CHARGEBEE_TELEMETRY_TP_ATTRIBUTE_PREFIX");
+    assertThat(attributeKeys.fileContent).contains("CHARGEBEE_TELEMETRY_PREFIX + \"tp.\"");
+
+    FileOp.WriteString support = findWriteOp(fileOps, "TelemetrySupport.java");
+    assertThat(support.fileContent).contains("buildResponseHeaderSpanAttributes");
+    assertThat(support.fileContent)
+        .contains("attributes.putAll(buildResponseHeaderSpanAttributes(result.getResponseHeaders()))");
+    assertThat(support.fileContent)
+        .contains("ChargebeeTelemetryHeaderParser.parseToSpanAttributes(value)");
+    assertThat(support.fileContent).contains("extractResponseHeaders");
+    assertThat(support.fileContent).contains("getHeaderValueIgnoreCase");
+
+    FileOp.WriteString parser = findWriteOp(fileOps, "ChargebeeTelemetryHeaderParser.java");
+    assertThat(parser.fileContent).contains("parseToSpanAttributes");
+    assertThat(parser.fileContent)
+        .contains("TelemetryAttributeKeys.CHARGEBEE_TELEMETRY_FT_PREFIX");
+    assertThat(parser.fileContent)
+        .contains("TelemetryAttributeKeys.CHARGEBEE_TELEMETRY_FEATURES");
+  }
+
+  @Test
+  @DisplayName("Adapter executor should opt in via Prefer and forward response headers")
+  void adapterExecutorShouldWireResponseTelemetry() throws IOException {
+    List<FileOp> fileOps = generate();
+
+    FileOp.WriteString adapterExecutor = findWriteOp(fileOps, "TelemetryAdapterExecutor.java");
+    assertThat(adapterExecutor.fileContent)
+        .contains("client.isPreferChargebeeTelemetry()")
+        .contains("TelemetrySupport.applyResponseTelemetryPreferHeader(request)")
+        .contains("withHeaders(telemetryRequest, adapterHeaders)")
+        .contains("response.getHeaders()")
+        .contains("TelemetrySupport.extractResponseHeaders(err)");
+  }
+
+  @Test
   @DisplayName("JavaV4Internal should inherit telemetry generation from JavaV4")
   void internalGeneratorShouldIncludeTelemetry() throws IOException {
     JavaV4Internal internalGenerator = new JavaV4Internal();
     List<FileOp> fileOps = internalGenerator.generate(OUTPUT_PATH, minimalSpec());
 
     assertThat(findWriteOp(fileOps, "TelemetrySupport.java").baseFilePath)
+        .endsWith("/com/chargebee/v4/telemetry");
+    assertThat(findWriteOp(fileOps, "ChargebeeTelemetryHeaderParser.java").baseFilePath)
         .endsWith("/com/chargebee/v4/telemetry");
     assertThat(findWriteOp(fileOps, "InternalChargebeeClient.java").baseFilePath)
         .endsWith("/com/chargebee/v4/internal");
