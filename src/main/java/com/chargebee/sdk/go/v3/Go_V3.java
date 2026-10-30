@@ -183,6 +183,10 @@ public class Go_V3 extends Language {
     enumImport.add(enumName);
   }
 
+  private boolean hasGlobalEnumImport() {
+    return enumImport.stream().anyMatch(e -> e.contains(Constants.ENUM_WITH_DELIMITER));
+  }
+
   private List<String> organizeImportEnums() {
     List<String> consolidatedEnums = new ArrayList<>();
     Pattern pattern = Pattern.compile("(\\w+)Enum");
@@ -201,7 +205,7 @@ public class Go_V3 extends Language {
     if (hasJSONObjectCols(activeResource)) {
       buf.add("\t\"encoding/json\"");
     }
-    if (hasExternalEnumCols(activeResource)) {
+    if (hasGlobalEnumImport()) {
       buf.add("\t\"github.com/chargebee/chargebee-go/v3/enum\"");
     }
     if (!getOperRequestClasses(activeResource).isEmpty()
