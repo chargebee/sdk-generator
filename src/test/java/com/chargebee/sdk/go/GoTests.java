@@ -1141,6 +1141,10 @@ type ChangeBillingDateRequestParams struct {
         """
         package customer
 
+        import (
+        \t"github.com/chargebee/chargebee-go/v3/enum"
+        )
+
         type Customer struct {
         \tConsents map[string]interface{} `json:"consents"`
         \tObject   string                 `json:"object"`
@@ -1230,6 +1234,10 @@ type ChangeBillingDateRequestParams struct {
         writeStringFileOp,
         """
         package customer
+
+        import (
+        \t"github.com/chargebee/chargebee-go/v3/enum"
+        )
 
         type Customer struct {
         \tConsents map[string]interface{} `json:"consents"`
@@ -1499,6 +1507,10 @@ type CreateEntityIdentifierParams struct {
         writeStringFileOp,
         """
         package invoice
+
+        import (
+        \t"github.com/chargebee/chargebee-go/v3/enum"
+        )
 
         type Invoice struct {
         \tObject string `json:"object"`
