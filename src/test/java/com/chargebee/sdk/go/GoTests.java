@@ -2030,4 +2030,42 @@ type Result struct {
         writeStringFileOp,
         "packageenumtypeAutocollectionstringconst(AutocollectionOnAutocollection=\"On\"AutocollectionOffAutocollection=\"Off\")");
   }
+
+  @Test
+  void dependentSubResourceImportsItsNestedTypesInItsOwnFile() throws IOException {
+    var item = buildResource("item").withAttribute("value").done();
+    var items = new ArraySchema().items(item.value);
+    items.addExtension("x-cb-is-sub-resource", true);
+    items.addExtension("x-cb-sub-resource-name", "Item");
+    items.addExtension("x-cb-is-dependent-attribute", true);
+    var valueSchema =
+        buildResource("value_schema").withAttribute("items", items).asDependentResource().done();
+    valueSchema.value.addExtension("x-cb-is-dependent-attribute", true);
+    var criteriaSchema =
+        buildResource("criteria_schema")
+            .withSubResourceAttribute("value_schema", valueSchema)
+            .done();
+
+    var spec = buildSpec().withResources(item, valueSchema, criteriaSchema).done();
+
+    List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
+
+    var criteriaFile =
+        fileOps.stream()
+            .filter(FileOp.WriteString.class::isInstance)
+            .map(FileOp.WriteString.class::cast)
+            .filter(file -> file.fileName.equals("criteria_schema.go"))
+            .findFirst()
+            .orElseThrow();
+    var valueSchemaFile =
+        fileOps.stream()
+            .filter(FileOp.WriteString.class::isInstance)
+            .map(FileOp.WriteString.class::cast)
+            .filter(file -> file.fileName.equals("value_schema.go"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(criteriaFile.fileContent).doesNotContain("models/item");
+    assertThat(valueSchemaFile.fileContent).contains("models/item");
+  }
 }
