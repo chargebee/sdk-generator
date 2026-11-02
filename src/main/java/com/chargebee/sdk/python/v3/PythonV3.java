@@ -698,14 +698,7 @@ public class PythonV3 extends Language {
     }
     if (isSubResourceSchema(schema)) {
       String dep = "";
-      if (isGobalResourceReference(schema) || !getDependentResource(activeResource).isEmpty()) {
-        if (schemaNamespaceIsLocal(schema)) {
-          return toCamelCase(attributeName);
-        }
-        dep = getSnakeClazName(attributeName) + ".";
-        return dep + pluralize(toCamelCase(attributeName));
-      }
-      // Patch to match cb-app based naming
+      // Patch to match cb-app based naming. These callers pass the field name, not the class name.
       if ((activeResource.name.equalsIgnoreCase("PaymentIntent")
               && attributeName.equals("error_detail"))
           || (activeResource.name.equalsIgnoreCase("SubscriptionEntitlement")
@@ -719,6 +712,13 @@ public class PythonV3 extends Language {
               + singularize(toCamelCase(subResourceName))
               + "Response";
         }
+      }
+      if (isGobalResourceReference(schema) || !getDependentResource(activeResource).isEmpty()) {
+        if (schemaNamespaceIsLocal(schema)) {
+          return toCamelCase(attributeName);
+        }
+        dep = getSnakeClazName(attributeName) + ".";
+        return dep + pluralize(toCamelCase(attributeName));
       }
       return toCamelCase(attributeName);
     }
