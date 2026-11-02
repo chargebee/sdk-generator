@@ -698,7 +698,7 @@ public class PythonV3 extends Language {
     }
     if (isSubResourceSchema(schema)) {
       String dep = "";
-      if (!getDependentResource(activeResource).isEmpty()) {
+      if (isGobalResourceReference(schema) || !getDependentResource(activeResource).isEmpty()) {
         if (schemaNamespaceIsLocal(schema)) {
           return toCamelCase(attributeName);
         }

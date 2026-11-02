@@ -3476,7 +3476,7 @@ public class PythonV3Tests extends LanguageTests {
                 + "@dataclass\n"
                 + "class PaymentAttemptResponse(Model):\n"
                 + "    raw_data: Dict[Any, Any] = None\n"
-                + "    error_detail: gateway_error_detail.GatewayErrorDetailResponse = None\n"
+                + "    error_detail: \"gateway_error_detail.GatewayErrorDetailResponse\" = None\n"
                 + "\n"
                 + "\n"
                 + "@dataclass\n"
