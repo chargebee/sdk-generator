@@ -39,6 +39,17 @@ public class Enum {
     return Map.of("name", name, "enumDefinition", lang.dataType(schema));
   }
 
+  public Optional<String> sdkEnumApiName() {
+    if (schema.getExtensions() == null) {
+      return Optional.empty();
+    }
+    Object apiName = schema.getExtensions().get(SDK_ENUM_API_NAME);
+    if (apiName instanceof String name && !name.isBlank()) {
+      return Optional.of(name);
+    }
+    return Optional.empty();
+  }
+
   public Optional<String> globalEnumReference() {
     if (schema.getExtensions() == null
         || schema.getExtensions().get(GLOBAL_ENUM_REFERENCE) == null) {

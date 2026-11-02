@@ -212,8 +212,11 @@ public class Dotnet extends Language {
     Template enumTemplate = getTemplateContent("enums");
     globalEnums = globalEnums.stream().sorted(Comparator.comparing(e -> e.name)).toList();
     for (var _enum : globalEnums) {
-      var content = enumTemplate.apply(globalEnumTemplate(_enum));
-      String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, _enum.name);
+      String enumName = _enum.sdkEnumApiName().orElse(_enum.name);
+      GlobalEnum globalEnum = new GlobalEnum(_enum);
+      globalEnum.setName(enumName);
+      var content = enumTemplate.apply(globalEnum.template());
+      String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, enumName);
       fileOps.add(new FileOp.WriteString(outDirectoryPath, fileName + "Enum.cs", content));
     }
     return fileOps;
@@ -1007,10 +1010,6 @@ public class Dotnet extends Language {
 
   public String getSuperClazName(Action action) {
     return action.isListResourceAction() ? "ListRequestBase" : "EntityRequest";
-  }
-
-  private Map<String, Object> globalEnumTemplate(Enum e) {
-    return new GlobalEnum(e).template();
   }
 
   public String dataTypeForForFilterAttribute(Attribute attribute) {
