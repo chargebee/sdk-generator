@@ -228,9 +228,10 @@ public class Go_V3 extends Language {
     }
     if (!getSubResource(activeResource).isEmpty()) {
       for (Attribute sr : getSubResource(activeResource)) {
-        // A dependent or global sub-resource is its own model file. Nested types
-        // are imported there; copying them onto this file leaves them unused.
-        if (sr.isDependentAttribute() || sr.isGlobalResourceReference()) {
+        // A global sub-resource is its own model file. Nested types are imported
+        // there; copying them onto this file leaves them unused. A dependent
+        // attribute that is not global is still inlined in this file.
+        if (sr.isGlobalResourceReference()) {
           continue;
         }
         for (Attribute nestedSubRes :

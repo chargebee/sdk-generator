@@ -2043,7 +2043,7 @@ type Result struct {
     valueSchema.value.addExtension("x-cb-is-dependent-attribute", true);
     var criteriaSchema =
         buildResource("criteria_schema")
-            .withSubResourceAttribute("value_schema", valueSchema)
+            .withSubResourceAttributeReference("value_schema", valueSchema)
             .done();
 
     var spec = buildSpec().withResources(item, valueSchema, criteriaSchema).done();
