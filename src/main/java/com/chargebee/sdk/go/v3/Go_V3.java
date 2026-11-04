@@ -1139,7 +1139,7 @@ public class Go_V3 extends Language {
     }
 
     if (isListOfSubResourceSchema(schema)) {
-      if (!getDependentResource(activeResource).isEmpty()) {
+      if (!schemaNamespaceIsLocal(schema)) {
         String dep =
             getCamelClazName(singularize(attributeName)).toLowerCase().replace("_", "") + ".";
         return "[]*" + dep + toCamelCase(singularize(attributeName));
@@ -1340,6 +1340,11 @@ public class Go_V3 extends Language {
   }
 
   public boolean schemaNamespaceIsLocal(Schema schema) {
+    if (schema instanceof ArraySchema
+        && schema.getItems() != null
+        && !schemaNamespaceIsLocal(schema.getItems())) {
+      return false;
+    }
     return !isDependedAttribute(schema) && !isGobalResourceReference(schema);
   }
 

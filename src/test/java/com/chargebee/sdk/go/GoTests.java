@@ -2068,4 +2068,32 @@ type Result struct {
     assertThat(criteriaFile.fileContent).doesNotContain("models/item");
     assertThat(valueSchemaFile.fileContent).contains("models/item");
   }
+
+  @Test
+  void inlinedListStaysInTheParentFileWhenAnotherFieldIsGlobal() throws IOException {
+    var applicability = buildResource("applicability").withAttribute("value").done();
+    var valueSchema = buildResource("value_schema").withAttribute("type").done();
+    valueSchema.value.addExtension("x-cb-is-dependent-attribute", true);
+    valueSchema.value.addExtension("x-cb-is-global-resource-reference", true);
+    var preferenceDefinition =
+        buildResource("preference_definition")
+            .withSubResourceArrayAttribute("applicability", applicability)
+            .withSubResourceAttributeReference("value_schema", valueSchema)
+            .done();
+
+    var spec = buildSpec().withResources(applicability, valueSchema, preferenceDefinition).done();
+
+    List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
+    var preferenceFile =
+        fileOps.stream()
+            .filter(FileOp.WriteString.class::isInstance)
+            .map(FileOp.WriteString.class::cast)
+            .filter(file -> file.fileName.equals("preference_definition.go"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(preferenceFile.fileContent)
+        .contains("[]*Applicability")
+        .doesNotContain("applicability.Applicability");
+  }
 }

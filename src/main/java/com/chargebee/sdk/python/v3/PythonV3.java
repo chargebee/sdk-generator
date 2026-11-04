@@ -705,7 +705,7 @@ public class PythonV3 extends Language {
 
     if (isListOfSubResourceSchema(schema)) {
       String dep = "";
-      if (!getDependentResource(activeResource).isEmpty()) {
+      if (!schemaNamespaceIsLocal(schema)) {
         dep = getSnakeClazName(singularize(attributeName)) + ".";
         return "List[" + dep + toCamelCase(attributeName) + "]";
       }
@@ -849,6 +849,11 @@ public class PythonV3 extends Language {
   }
 
   public boolean schemaNamespaceIsLocal(Schema schema) {
+    if (schema instanceof ArraySchema
+        && schema.getItems() != null
+        && !schemaNamespaceIsLocal(schema.getItems())) {
+      return false;
+    }
     return !isDependedAttribute(schema) && !isGobalResourceReference(schema);
   }
 
