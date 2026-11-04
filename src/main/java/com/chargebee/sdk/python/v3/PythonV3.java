@@ -200,7 +200,7 @@ public class PythonV3 extends Language {
       pyRes.setEnums(genModelEnums(res, resourceList));
 
       List<SubResource> subResourceList = new ArrayList<>();
-      for (Resource subResource : activeResource.subResources()) {
+      for (Resource subResource : activeResource.subResourcesDeep()) {
         SubResource sr = new SubResource();
         sr.setClazName(singularize(subResource.name));
         sr.setCols(getSubResourceCols(subResource));
@@ -610,7 +610,8 @@ public class PythonV3 extends Language {
                     attribute.name,
                     typePrefix,
                     "[",
-                    dataType(attribute.schema, attribute.name),
+                    quotedLocalSubResourceType(
+                        dataType(attribute.schema, referencedSubResourceName(attribute))),
                     "]"));
       } else {
         buf.add(
@@ -641,14 +642,14 @@ public class PythonV3 extends Language {
             Constants.INDENT_DELIMITER
                 + String.join(STRING_JOIN_DELIMITER, attribute.name, typePrefix, type, typeSuffix));
       } else if (attribute.isSubResource()) {
+        String dataType = dataType(attribute.schema, referencedSubResourceName(attribute));
+        if (!dataType.contains(".")) {
+          dataType = formatResponseDataType(dataType);
+        }
         buf.add(
             Constants.INDENT_DELIMITER
                 + String.join(
-                    STRING_JOIN_DELIMITER,
-                    attribute.name,
-                    typePrefix,
-                    dataType(attribute.schema, attribute.name),
-                    typeSuffix));
+                    STRING_JOIN_DELIMITER, attribute.name, typePrefix, dataType, typeSuffix));
       } else {
         buf.add(
             Constants.INDENT_DELIMITER
@@ -661,6 +662,31 @@ public class PythonV3 extends Language {
       }
     }
     return buf.toString();
+  }
+
+  /**
+   * A list field is named from its property key. An object field is named from
+   * x-cb-sub-resource-name, which is also the class written for that object.
+   */
+  private String referencedSubResourceName(Attribute attribute) {
+    if (attribute.isListSubResourceAttribute() || attribute.subResourceName() == null) {
+      return attribute.name;
+    }
+    return attribute.subResourceName();
+  }
+
+  /**
+   * Request models nest these classes inside the parent. Quoting the name keeps the annotation
+   * from being evaluated before that class exists.
+   */
+  private String quotedLocalSubResourceType(String dataType) {
+    if (dataType.contains(".")) {
+      return dataType;
+    }
+    if (dataType.startsWith("List[") && dataType.endsWith("]")) {
+      return "List[\"" + dataType.substring("List[".length(), dataType.length() - 1) + "\"]";
+    }
+    return "\"" + dataType + "\"";
   }
 
   public String dataType(Schema schema, String attributeName) {

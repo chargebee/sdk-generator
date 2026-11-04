@@ -285,26 +285,37 @@ public class Dotnet extends Language {
     ResourceAssist resourceAssist = new ResourceAssist().setResource(activeResource);
     List<SubResource> subResources = new ArrayList<>();
     for (Attribute attribute : resourceAssist.subResource()) {
+      addLocalSubResource(attribute, subResources);
+    }
+    return subResources;
+  }
 
+  private void addLocalSubResource(Attribute attribute, List<SubResource> subResources) {
+    if (attribute.isSubResource()
+        && !attribute.isDependentAttribute()
+        && !Resource.isGlobalResourceReference(attribute.schema)) {
       String clazName =
           attribute.schema instanceof ArraySchema
               ? singularize(toClazName(attribute.name))
               : attribute.subResourceName();
 
       boolean alreadyExists =
-          subResources.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
-      if (alreadyExists) continue;
-
-      SubResource subResource = new SubResource();
-      subResource.setClazName(clazName);
-      subResource.setEnumCols(getSubResourceEnum(attribute));
-      subResource.setCols(getSubResourceCols(attribute));
-      subResource.setSchemaLessEnum(
-          SchemaLessEnumParser.getSchemaLessEnumForSubResource(
-              attribute.subResourceName(), activeResource));
-      subResources.add(subResource);
+          clazName != null
+              && subResources.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
+      if (!alreadyExists && clazName != null) {
+        SubResource subResource = new SubResource();
+        subResource.setClazName(clazName);
+        subResource.setEnumCols(getSubResourceEnum(attribute));
+        subResource.setCols(getSubResourceCols(attribute));
+        subResource.setSchemaLessEnum(
+            SchemaLessEnumParser.getSchemaLessEnumForSubResource(
+                attribute.subResourceName(), activeResource));
+        subResources.add(subResource);
+      }
+      for (Attribute child : attribute.attributes()) {
+        addLocalSubResource(child, subResources);
+      }
     }
-    return subResources;
   }
 
   private List<EnumColumn> getSubResourceEnum(Attribute attribute) {
@@ -846,7 +857,14 @@ public class Dotnet extends Language {
           && attribute.schema.getItems().getExtensions().get(SUB_RESOURCE_PARENT_NAME) != null) {
         return activeResource.name + toClazName(singularize(attribute.name));
       }
-      return toClazName(attribute.subResourceName());
+      String bare = toClazName(attribute.subResourceName());
+      boolean topLevelResource = resourceList.stream().anyMatch(r -> r.name.equals(bare));
+      if (!topLevelResource
+          && !attribute.isDependentAttribute()
+          && !Resource.isGlobalResourceReference(attribute.schema)) {
+        return activeResource.name + bare;
+      }
+      return bare;
     }
     return null;
   }

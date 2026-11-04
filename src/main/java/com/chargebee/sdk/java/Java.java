@@ -310,23 +310,27 @@ public class Java extends Language {
   private List<SubResource> getSubResrouces(Resource res) {
     List<SubResource> subResources = new ArrayList<>();
     for (Attribute attribute : res.getSortedResourceAttributes()) {
-      if (attribute.isSubResource()
-          && !attribute.isDependentAttribute()
-          && !Resource.isGlobalResourceReference(attribute.schema)) {
-        String clazName =
-            (attribute.schema instanceof ArraySchema)
-                ? singularize(toClazName(attribute.name))
-                : attribute.subResourceName();
+      addLocalSubResource(attribute, res, subResources);
+    }
+    return subResources;
+  }
 
-        boolean alreadyExists =
-            subResources.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
-        if (alreadyExists) continue;
+  private void addLocalSubResource(
+      Attribute attribute, Resource res, List<SubResource> subResources) {
+    if (attribute.isSubResource()
+        && !attribute.isDependentAttribute()
+        && !Resource.isGlobalResourceReference(attribute.schema)) {
+      String clazName =
+          (attribute.schema instanceof ArraySchema)
+              ? singularize(toClazName(attribute.name))
+              : attribute.subResourceName();
 
+      boolean alreadyExists =
+          clazName != null
+              && subResources.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
+      if (!alreadyExists && clazName != null) {
         SubResource subResource = new SubResource();
-        subResource.setClazName(
-            attribute.schema instanceof ArraySchema
-                ? singularize(toClazName(attribute.name))
-                : attribute.subResourceName());
+        subResource.setClazName(clazName);
         List<EnumColumn> subResourceEnums = new ArrayList<>(getSubResourceEnum(attribute));
         // Only collect enums from composite array parameters for internal SDK generation
         if (generationMode.equals(GenerationMode.INTERNAL)) {
@@ -340,8 +344,10 @@ public class Java extends Language {
         subResource.setCols(getSubResourceCols(attribute));
         subResources.add(subResource);
       }
+      for (Attribute child : attribute.attributes()) {
+        addLocalSubResource(child, res, subResources);
+      }
     }
-    return subResources;
   }
 
   private boolean shouldGenerateEnum(Attribute attribute) {

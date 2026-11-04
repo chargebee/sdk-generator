@@ -2030,4 +2030,32 @@ type Result struct {
         writeStringFileOp,
         "packageenumtypeAutocollectionstringconst(AutocollectionOnAutocollection=\"On\"AutocollectionOffAutocollection=\"Off\")");
   }
+
+  @Test
+  void inlinedGrandchildSubResourceIsDeclaredInTheParentFile() throws IOException {
+    var allowedValue = buildResource("allowed_value").withAttribute("value").done();
+    var valueSchema =
+        buildResource("value_schema")
+            .withSubResourceArrayAttribute("allowed_values", allowedValue)
+            .done();
+    var preferenceDefinition =
+        buildResource("preference_definition")
+            .withSubResourceAttribute("value_schema", valueSchema)
+            .done();
+
+    var spec = buildSpec().withResources(preferenceDefinition).done();
+
+    List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
+    var preferenceFile =
+        fileOps.stream()
+            .filter(FileOp.WriteString.class::isInstance)
+            .map(FileOp.WriteString.class::cast)
+            .filter(file -> file.fileName.equals("preference_definition.go"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(preferenceFile.fileContent)
+        .contains("[]*AllowedValue")
+        .contains("type AllowedValue struct");
+  }
 }

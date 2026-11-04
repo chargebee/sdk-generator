@@ -658,7 +658,7 @@ public class Go_V4 extends Language {
       goRes.setHasCustomFields(activeResource.isCustomFieldSupported());
 
       List<SubResource> subResourceList = new ArrayList<>();
-      for (Resource subResource : activeResource.subResources()) {
+      for (Resource subResource : activeResource.subResourcesDeep()) {
         String clazName = singularize(subResource.name);
         boolean alreadyExists = subResourceList.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
         if (alreadyExists)
@@ -1085,6 +1085,17 @@ public class Go_V4 extends Language {
     return activeResource.name + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
   }
 
+  /**
+   * A list field is named from its property key. An object field is named from
+   * x-cb-sub-resource-name, which is also the struct written for that object.
+   */
+  private String referencedSubResourceName(Attribute attribute) {
+    if (attribute.isListSubResourceAttribute() || attribute.subResourceName() == null) {
+      return attribute.name;
+    }
+    return attribute.subResourceName();
+  }
+
   public String getSubResourceCols(Resource subResource) {
     String type = "";
     StringJoiner buf = new StringJoiner("\n");
@@ -1164,7 +1175,7 @@ public class Go_V4 extends Language {
                 + String.join(
                     delimiter,
                     toCamelCase(attribute.name),
-                    dataType(attribute.schema, attribute.name),
+                    dataType(attribute.schema, referencedSubResourceName(attribute)),
                     getJsonVal(attribute, true)));
       } else {
         buf.add(

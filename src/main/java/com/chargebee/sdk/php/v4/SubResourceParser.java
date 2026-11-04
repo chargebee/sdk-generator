@@ -7,17 +7,36 @@ import com.chargebee.openapi.Resource;
 import com.chargebee.sdk.common.ResourceAssist;
 import com.chargebee.sdk.php.v4.models.Column;
 import io.swagger.v3.oas.models.media.ArraySchema;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class SubResourceParser {
   public static List<com.chargebee.sdk.php.v4.models.Resource> listSubResources(
       Resource activeResource) {
-    return new ResourceAssist()
-        .setResource(activeResource).subResource().stream()
-            .filter(SubResourceParser::isValidSubResource)
-            .map(SubResourceParser::createSubResource)
-            .collect(Collectors.toList());
+    List<com.chargebee.sdk.php.v4.models.Resource> subResources = new ArrayList<>();
+    Set<String> seen = new HashSet<>();
+    for (Attribute attribute : new ResourceAssist().setResource(activeResource).subResource()) {
+      addLocalSubResource(attribute, subResources, seen);
+    }
+    return subResources;
+  }
+
+  private static void addLocalSubResource(
+      Attribute attribute,
+      List<com.chargebee.sdk.php.v4.models.Resource> subResources,
+      Set<String> seen) {
+    if (isValidSubResource(attribute)) {
+      String clazName = determineClassName(attribute);
+      if (clazName != null && seen.add(clazName)) {
+        subResources.add(createSubResource(attribute));
+      }
+      for (Attribute child : attribute.attributes()) {
+        addLocalSubResource(child, subResources, seen);
+      }
+    }
   }
 
   public static List<Column> getSubResourceCols(Attribute subResourceAttribute) {

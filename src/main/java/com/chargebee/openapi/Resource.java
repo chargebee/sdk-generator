@@ -175,6 +175,29 @@ public class Resource {
         .toList();
   }
 
+  /**
+   * Local sub-resources, including ones nested inside another sub-resource. Children are listed
+   * before their parent so a generated file can reference the nested type after it is declared.
+   * Global resource references stay out; those already have their own model.
+   */
+  public List<Resource> subResourcesDeep() {
+    List<Resource> collected = new ArrayList<>();
+    Set<String> seen = new HashSet<>();
+    collectLocalSubResources(this, collected, seen);
+    return collected;
+  }
+
+  private void collectLocalSubResources(
+      Resource resource, List<Resource> collected, Set<String> seen) {
+    for (Resource subResource : resource.subResources()) {
+      if (!seen.add(subResource.name)) {
+        continue;
+      }
+      collectLocalSubResources(subResource, collected, seen);
+      collected.add(subResource);
+    }
+  }
+
   public List<Resource> subResources() {
     if (schema.getProperties() == null) {
       return List.of();
