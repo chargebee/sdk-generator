@@ -1296,12 +1296,6 @@ public class Dotnet extends Language {
   }
 
   public String getTypeForListOfEnumsAttribute(Attribute attribute) {
-    // A local list enum is declared from the attribute name (AllowedOperatorEnum).
-    // The item schema's SDK API name can be the underlying column (Operator) and
-    // must not be used until the enum is generated as its own file.
-    if (!attribute.isGenSeparate()) {
-      return singularize(getName(attribute.name)) + "Enum";
-    }
     return singularize((String) attribute.schema.getItems().getExtensions().get(SDK_ENUM_API_NAME))
         + "Enum";
   }
