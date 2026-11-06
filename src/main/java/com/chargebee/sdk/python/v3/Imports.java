@@ -147,6 +147,32 @@ public class Imports {
       imports += "\nfrom chargebee.models import entitlement_override";
     }
 
+    for (Resource subResource : resource.subResources()) {
+      for (Attribute nestedAttr :
+          subResource.attributes().stream()
+              .filter(Attribute::isNotHiddenAttribute)
+              .toList()) {
+        if (nestedAttr.isGlobalResourceReference() && nestedAttr.subResourceName() != null) {
+          String subResName = nestedAttr.subResourceName();
+          String moduleName =
+              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, subResName);
+          String resourceName =
+              CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, moduleName);
+          if (resourceList.stream().noneMatch(r -> r.name.equals(resourceName))) {
+            continue;
+          }
+          if (imports.contains(moduleName)) {
+            continue;
+          }
+          if (imports.contains("from chargebee.models import")) {
+            imports += ", " + moduleName;
+          } else {
+            imports += Constants.MODEL_IMPORT + moduleName;
+          }
+        }
+      }
+    }
+
     if (!getDependentResource(resource).isEmpty()) {
       for (Attribute dr : getDependentResource(resource)) {
         var refModelName = singularize(dr.name);

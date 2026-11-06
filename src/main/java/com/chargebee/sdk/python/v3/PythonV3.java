@@ -641,13 +641,17 @@ public class PythonV3 extends Language {
             Constants.INDENT_DELIMITER
                 + String.join(STRING_JOIN_DELIMITER, attribute.name, typePrefix, type, typeSuffix));
       } else if (attribute.isSubResource()) {
+        String subResDataType = dataType(attribute.schema, attribute.name);
+        if (attribute.isGlobalResourceReference() && attribute.subResourceName() != null) {
+          subResDataType = subResDataType.replace("]", "Response]");
+        }
         buf.add(
             Constants.INDENT_DELIMITER
                 + String.join(
                     STRING_JOIN_DELIMITER,
                     attribute.name,
                     typePrefix,
-                    dataType(attribute.schema, attribute.name),
+                    subResDataType,
                     typeSuffix));
       } else {
         buf.add(
@@ -704,6 +708,18 @@ public class PythonV3 extends Language {
     }
 
     if (isListOfSubResourceSchema(schema)) {
+      if (isGobalResourceReference(schema)) {
+        String subResName = subResourceName(schema);
+        if (subResName != null) {
+          String moduleName =
+              CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, subResName).toLowerCase();
+          return "List["
+              + moduleName
+              + "."
+              + singularize(toCamelCase(subResName))
+              + "]";
+        }
+      }
       String dep = "";
       if (!getDependentResource(activeResource).isEmpty()) {
         dep = getSnakeClazName(singularize(attributeName)) + ".";
@@ -843,6 +859,10 @@ public class PythonV3 extends Language {
   }
 
   public boolean isGobalResourceReference(Schema schema) {
+    if (schema instanceof io.swagger.v3.oas.models.media.ArraySchema
+        && schema.getItems() != null) {
+      schema = schema.getItems();
+    }
     return schema.getExtensions() != null
         && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
         && ((boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFRENCE));
