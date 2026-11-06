@@ -53,7 +53,8 @@ public class SchemaLessEnumParser {
                           .filter(a -> a.name.equals(iParam.getName()))
                           .flatMap(a -> a.attributes().stream())
                           .anyMatch(subAttr -> Objects.equals(subAttr.name, value.name));
-                  if (enumExistsInResourceSubResource || Objects.equals(value.name, iParam.getName())) {
+                  if (enumExistsInResourceSubResource
+                      || Objects.equals(value.name, iParam.getName())) {
                     return;
                   }
                 }
@@ -66,8 +67,7 @@ public class SchemaLessEnumParser {
                           .toList();
                   if (filteredResources.isEmpty()) {
                     if (Objects.equals(res.name, activeResource.name)) {
-                      String prefixedName =
-                          singularize(value.metaModelName()) + "_" + value.name;
+                      String prefixedName = singularize(value.metaModelName()) + "_" + value.name;
                       Enum tempEnum = new Enum(prefixedName, value.schema);
                       if (enumList.stream()
                           .noneMatch(

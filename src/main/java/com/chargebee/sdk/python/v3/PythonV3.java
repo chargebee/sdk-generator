@@ -86,8 +86,7 @@ public class PythonV3 extends Language {
 
     fileOps.add(new FileOp.WriteString(telemetryPath, "types.py", typesTemplate.apply("")));
     fileOps.add(
-        new FileOp.WriteString(
-            telemetryPath, "telemetry_support.py", supportTemplate.apply("")));
+        new FileOp.WriteString(telemetryPath, "telemetry_support.py", supportTemplate.apply("")));
     fileOps.add(new FileOp.WriteString(telemetryPath, "__init__.py", indexTemplate.apply("")));
 
     return fileOps;
@@ -648,11 +647,7 @@ public class PythonV3 extends Language {
         buf.add(
             Constants.INDENT_DELIMITER
                 + String.join(
-                    STRING_JOIN_DELIMITER,
-                    attribute.name,
-                    typePrefix,
-                    subResDataType,
-                    typeSuffix));
+                    STRING_JOIN_DELIMITER, attribute.name, typePrefix, subResDataType, typeSuffix));
       } else {
         buf.add(
             Constants.INDENT_DELIMITER
@@ -713,11 +708,7 @@ public class PythonV3 extends Language {
         if (subResName != null) {
           String moduleName =
               CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, subResName).toLowerCase();
-          return "List["
-              + moduleName
-              + "."
-              + singularize(toCamelCase(subResName))
-              + "]";
+          return "List[" + moduleName + "." + singularize(toCamelCase(subResName)) + "]";
         }
       }
       String dep = "";
@@ -859,8 +850,7 @@ public class PythonV3 extends Language {
   }
 
   public boolean isGobalResourceReference(Schema schema) {
-    if (schema instanceof io.swagger.v3.oas.models.media.ArraySchema
-        && schema.getItems() != null) {
+    if (schema instanceof io.swagger.v3.oas.models.media.ArraySchema && schema.getItems() != null) {
       schema = schema.getItems();
     }
     return schema.getExtensions() != null

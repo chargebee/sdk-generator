@@ -241,8 +241,7 @@ public class Go_V3 extends Language {
               nestedSubRes.subResourceName() != null
                   ? nestedSubRes.subResourceName().toLowerCase()
                   : singularize(nestedSubRes.name.replace("_", "").toLowerCase());
-          buf.add(
-              "\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
+          buf.add("\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
         }
       }
     }
@@ -963,12 +962,14 @@ public class Go_V3 extends Language {
   }
 
   private String getListOfEnumTypeForAttribute(Attribute a) {
-    if(a.isExternalEnum() || a.isGenSeparate()) {
-      return "[]" + Constants.ENUM_WITH_DELIMITER + (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
+    if (a.isExternalEnum() || a.isGenSeparate()) {
+      return "[]"
+          + Constants.ENUM_WITH_DELIMITER
+          + (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
     }
     return getCamelClazName(activeResource.name)
-            + Constants.ENUM_DOT
-            + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
+        + Constants.ENUM_DOT
+        + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
   }
 
   public String getSubResourceCols(Resource subResource) {
@@ -1005,8 +1006,7 @@ public class Go_V3 extends Language {
                         && !subTypeName.equals(toCamelCase(singularize(subResource.id))))
                     ? toCamelCase(
                         singularize(
-                            CaseFormat.UPPER_CAMEL.to(
-                                CaseFormat.LOWER_UNDERSCORE, subTypeName)))
+                            CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, subTypeName)))
                     : singularize(subResource.name);
             type =
                 firstCharLower(activeResource.name)
@@ -1033,8 +1033,8 @@ public class Go_V3 extends Language {
               case "discountEnum.EntityType" -> "invoiceEnum.DiscountEntityType";
               case "omnichannelSubscriptionEnum.OmnichannelTransactionType" ->
                   "omnichannelSubscriptionEnum.InitialPurchaseTransactionType";
-              // AppliedCredit is the x-cb-sub-resource-name but the released SDK used
-              // "Allocation" (derived from the property key); preserve backward compatibility.
+                // AppliedCredit is the x-cb-sub-resource-name but the released SDK used
+                // "Allocation" (derived from the property key); preserve backward compatibility.
               case "creditNoteEnum.AppliedCreditTaxApplication" ->
                   "creditNoteEnum.AllocationTaxApplication";
               default -> type;
