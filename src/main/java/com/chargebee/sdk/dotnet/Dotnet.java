@@ -647,11 +647,15 @@ public class Dotnet extends Language {
       if (!attribute.isNotHiddenAttribute()) continue;
       Column column = new Column();
       column.setDeprecated(attribute.isDeprecated());
-      column.setReturnType(
-          updateForSubAttributes(
-              attribute.subResourceName() != null
-                  ? attribute.subResourceName()
-                  : getColsRetType(attribute)));
+      String returnType;
+      if (attribute.subResourceName() != null) {
+        returnType = attribute.isListSubResourceAttribute()
+            ? LIST_OF + attribute.subResourceName() + ">"
+            : attribute.subResourceName();
+      } else {
+        returnType = getColsRetType(attribute);
+      }
+      column.setReturnType(updateForSubAttributes(returnType));
       column.setGetterCode(updateForSubAttributes(getGetterCode(attribute)));
       if (attribute.name.equals("type")) {
         column.setMethName(toClazName(singularize(subResourceAttribute.name)) + "Type");
@@ -1152,6 +1156,17 @@ public class Dotnet extends Language {
               + "."
               + toClazName(attribute.name)
               + "Enum";
+        }
+      }
+      boolean parentIsSubResource =
+          activeResource.attributes().stream()
+              .anyMatch(a -> a.name.equals(parentAttribute) && a.isSubResource());
+      if (!parentIsSubResource) {
+        String enumName =
+            CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, attribute.name);
+        if (globalEnums != null
+            && globalEnums.stream().anyMatch(e -> e.name != null && e.name.equals(enumName))) {
+          return "ChargeBee.Models.Enums." + getName(attribute.name + ENUM_SUFFIX);
         }
       }
       return toClazName(activeResource.id)
