@@ -2378,6 +2378,43 @@ using System.Net;"""
   }
 
   @Test
+  void localListOfEnumUsesTheDeclaredEnumName() throws IOException {
+    var criteriaSchema =
+        buildResource("CriteriaSchema")
+            .withAttribute(
+                "allowed_operator",
+                new ArraySchema()
+                    .items(
+                        new StringSchema()
+                            ._enum(List.of("is", "in"))
+                            .extensions(
+                                Map.of(
+                                    "x-cb-sdk-enum-api-name", "Operator",
+                                    "x-cb-is-api-column", true,
+                                    "x-cb-is-gen-separate", false))),
+                false)
+            .done();
+
+    var spec = buildSpec().withResource(criteriaSchema).done();
+
+    List<FileOp> fileOps = dotnetSdkGen.generate(basePath, spec);
+    var model =
+        fileOps.stream()
+            .filter(FileOp.WriteString.class::isInstance)
+            .map(FileOp.WriteString.class::cast)
+            .filter(file -> file.fileName.equals("CriteriaSchema.cs"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(model.fileContent)
+        .contains("public List<AllowedOperatorEnum> AllowedOperator")
+        .contains("GetList<AllowedOperatorEnum>(\"allowed_operator\")")
+        .contains("public enum AllowedOperatorEnum")
+        .doesNotContain("List<OperatorEnum>")
+        .doesNotContain("GetList<OperatorEnum>");
+  }
+
+  @Test
   void shouldGenerateContentTypeJsonSupportedObject() throws IOException {
     var customer = buildResource("customer").withAttribute("id", true).done();
     var createCustomer =
