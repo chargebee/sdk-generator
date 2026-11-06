@@ -228,6 +228,7 @@ public class Go_V3 extends Language {
     }
     if (!getSubResource(activeResource).isEmpty()) {
       for (Attribute sr : getSubResource(activeResource)) {
+        if (sr.isDependentAttribute() || sr.isGlobalResourceReference()) continue;
         for (Attribute nestedSubRes :
             sr.attributes().stream()
                 .filter(
@@ -236,10 +237,12 @@ public class Go_V3 extends Language {
                             || attr.isGlobalResourceReference()
                                 && attr.name != "error_detail")) // error detail is handled below
                 .toList()) {
+          String refModelName =
+              nestedSubRes.subResourceName() != null
+                  ? nestedSubRes.subResourceName().toLowerCase()
+                  : singularize(nestedSubRes.name.replace("_", "").toLowerCase());
           buf.add(
-              "\t\"github.com/chargebee/chargebee-go/v3/models/"
-                  + singularize(nestedSubRes.name.replace("_", "").toLowerCase())
-                  + "\"");
+              "\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
         }
       }
     }
@@ -1058,12 +1061,23 @@ public class Go_V3 extends Language {
                 + String.join(
                     delimiter, toCamelCase(attribute.name), type, getJsonVal(attribute, true)));
       } else if (attribute.isSubResource()) {
+        String subResType;
+        if (attribute.isGlobalResourceReference() && attribute.subResourceName() != null) {
+          String subResName = attribute.subResourceName();
+          String pkgName = subResName.toLowerCase();
+          subResType =
+              attribute.isListSubResourceAttribute()
+                  ? "[]*" + pkgName + "." + subResName
+                  : "*" + pkgName + "." + subResName;
+        } else {
+          subResType = dataType(attribute.schema, attribute.name);
+        }
         buf.add(
             "\t"
                 + String.join(
                     delimiter,
                     toCamelCase(attribute.name),
-                    dataType(attribute.schema, attribute.name),
+                    subResType,
                     getJsonVal(attribute, true)));
       } else {
         buf.add(

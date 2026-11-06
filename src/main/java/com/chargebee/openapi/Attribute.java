@@ -40,9 +40,17 @@ public class Attribute {
   }
 
   public boolean isGlobalResourceReference() {
-    return schema.getExtensions() != null
-        && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
-        && (boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE);
+    boolean isGlobalRef =
+        schema.getExtensions() != null
+            && schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
+            && (boolean) schema.getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE);
+    if (!isGlobalRef && schema.getItems() != null) {
+      isGlobalRef =
+          schema.getItems().getExtensions() != null
+              && schema.getItems().getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE) != null
+              && (boolean) schema.getItems().getExtensions().get(IS_GLOBAL_RESOURCE_REFERENCE);
+    }
+    return isGlobalRef;
   }
 
   public boolean isForeignColumn() {

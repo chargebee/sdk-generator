@@ -29,6 +29,11 @@ public class SchemaLessEnumParser {
             if (attribute.isFilterAttribute()) continue;
             atter.addAll(attribute.attributes());
           }
+          if (iParam.isCompositeArrayBody()
+              && iParam.schema instanceof ObjectSchema
+              && iParam.schema.getProperties() != null) {
+            atter.addAll(attribute.attributes());
+          }
           atter.add(attribute);
           atter.forEach(
               value -> {
