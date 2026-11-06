@@ -1317,6 +1317,11 @@ public class Go_V4 extends Language {
     if (schema.getExtensions() != null && schema.getExtensions().get(SUB_RESOURCE_NAME) != null) {
       return (String) schema.getExtensions().get(SUB_RESOURCE_NAME);
     }
+    if (schema.getItems() != null
+        && schema.getItems().getExtensions() != null
+        && schema.getItems().getExtensions().get(SUB_RESOURCE_NAME) != null) {
+      return (String) schema.getItems().getExtensions().get(SUB_RESOURCE_NAME);
+    }
     return null;
   }
 
