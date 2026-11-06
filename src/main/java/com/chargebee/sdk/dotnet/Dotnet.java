@@ -1154,6 +1154,12 @@ public class Dotnet extends Language {
               + "Enum";
         }
       }
+      String enumName =
+          CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, attribute.name);
+      if (globalEnums != null
+          && globalEnums.stream().anyMatch(e -> e.name != null && e.name.equals(enumName))) {
+        return "ChargeBee.Models.Enums." + getName(attribute.name + ENUM_SUFFIX);
+      }
       return toClazName(activeResource.id)
           + toClazName(singularize(parentAttribute))
           + "."
