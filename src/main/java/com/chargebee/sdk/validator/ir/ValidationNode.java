@@ -15,7 +15,8 @@ public sealed interface ValidationNode
         ValidationNode.BooleanNode,
         ValidationNode.ArrayNode,
         ValidationNode.MapNode,
-        ValidationNode.RefNode {
+        ValidationNode.RefNode,
+        ValidationNode.UnionNode {
 
   record ObjectNode(Map<String, PropertyEntry> properties, boolean allowUnknown, String ref)
       implements ValidationNode {}
@@ -36,4 +37,7 @@ public sealed interface ValidationNode
 
   /** Reference to a named shared schema; resolved during emission. */
   record RefNode(String targetName) implements ValidationNode {}
+
+  /** Value must match at least one of the given options (tried in order). */
+  record UnionNode(List<ValidationNode> options) implements ValidationNode {}
 }
