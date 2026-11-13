@@ -183,6 +183,10 @@ public class Go_V3 extends Language {
     enumImport.add(enumName);
   }
 
+  private boolean hasGlobalEnumImport() {
+    return enumImport.stream().anyMatch(e -> e.contains(Constants.ENUM_WITH_DELIMITER));
+  }
+
   private List<String> organizeImportEnums() {
     List<String> consolidatedEnums = new ArrayList<>();
     Pattern pattern = Pattern.compile("(\\w+)Enum");
@@ -201,7 +205,7 @@ public class Go_V3 extends Language {
     if (hasJSONObjectCols(activeResource)) {
       buf.add("\t\"encoding/json\"");
     }
-    if (hasExternalEnumCols(activeResource)) {
+    if (hasGlobalEnumImport()) {
       buf.add("\t\"github.com/chargebee/chargebee-go/v3/enum\"");
     }
     if (!getOperRequestClasses(activeResource).isEmpty()
@@ -224,6 +228,7 @@ public class Go_V3 extends Language {
     }
     if (!getSubResource(activeResource).isEmpty()) {
       for (Attribute sr : getSubResource(activeResource)) {
+        if (sr.isDependentAttribute() || sr.isGlobalResourceReference()) continue;
         for (Attribute nestedSubRes :
             sr.attributes().stream()
                 .filter(
@@ -232,10 +237,11 @@ public class Go_V3 extends Language {
                             || attr.isGlobalResourceReference()
                                 && attr.name != "error_detail")) // error detail is handled below
                 .toList()) {
-          buf.add(
-              "\t\"github.com/chargebee/chargebee-go/v3/models/"
-                  + singularize(nestedSubRes.name.replace("_", "").toLowerCase())
-                  + "\"");
+          String refModelName =
+              nestedSubRes.subResourceName() != null
+                  ? nestedSubRes.subResourceName().toLowerCase()
+                  : singularize(nestedSubRes.name.replace("_", "").toLowerCase());
+          buf.add("\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
         }
       }
     }
@@ -956,12 +962,14 @@ public class Go_V3 extends Language {
   }
 
   private String getListOfEnumTypeForAttribute(Attribute a) {
-    if(a.isExternalEnum() || a.isGenSeparate()) {
-      return "[]" + Constants.ENUM_WITH_DELIMITER + (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
+    if (a.isExternalEnum() || a.isGenSeparate()) {
+      return "[]"
+          + Constants.ENUM_WITH_DELIMITER
+          + (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
     }
     return getCamelClazName(activeResource.name)
-            + Constants.ENUM_DOT
-            + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
+        + Constants.ENUM_DOT
+        + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
   }
 
   public String getSubResourceCols(Resource subResource) {
@@ -998,8 +1006,7 @@ public class Go_V3 extends Language {
                         && !subTypeName.equals(toCamelCase(singularize(subResource.id))))
                     ? toCamelCase(
                         singularize(
-                            CaseFormat.UPPER_CAMEL.to(
-                                CaseFormat.LOWER_UNDERSCORE, subTypeName)))
+                            CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, subTypeName)))
                     : singularize(subResource.name);
             type =
                 firstCharLower(activeResource.name)
@@ -1026,8 +1033,8 @@ public class Go_V3 extends Language {
               case "discountEnum.EntityType" -> "invoiceEnum.DiscountEntityType";
               case "omnichannelSubscriptionEnum.OmnichannelTransactionType" ->
                   "omnichannelSubscriptionEnum.InitialPurchaseTransactionType";
-              // AppliedCredit is the x-cb-sub-resource-name but the released SDK used
-              // "Allocation" (derived from the property key); preserve backward compatibility.
+                // AppliedCredit is the x-cb-sub-resource-name but the released SDK used
+                // "Allocation" (derived from the property key); preserve backward compatibility.
               case "creditNoteEnum.AppliedCreditTaxApplication" ->
                   "creditNoteEnum.AllocationTaxApplication";
               default -> type;
@@ -1054,12 +1061,23 @@ public class Go_V3 extends Language {
                 + String.join(
                     delimiter, toCamelCase(attribute.name), type, getJsonVal(attribute, true)));
       } else if (attribute.isSubResource()) {
+        String subResType;
+        if (attribute.isGlobalResourceReference() && attribute.subResourceName() != null) {
+          String subResName = attribute.subResourceName();
+          String pkgName = subResName.toLowerCase();
+          subResType =
+              attribute.isListSubResourceAttribute()
+                  ? "[]*" + pkgName + "." + subResName
+                  : "*" + pkgName + "." + subResName;
+        } else {
+          subResType = dataType(attribute.schema, attribute.name);
+        }
         buf.add(
             "\t"
                 + String.join(
                     delimiter,
                     toCamelCase(attribute.name),
-                    dataType(attribute.schema, attribute.name),
+                    subResType,
                     getJsonVal(attribute, true)));
       } else {
         buf.add(

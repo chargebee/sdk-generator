@@ -24,6 +24,7 @@ import java.util.Set;
  *   <li>ArrayNode{items}           → z.array(itemSchema).optional()
  *   <li>ObjectNode{props}          → z.object({...}).passthrough().optional()
  *   <li>RefNode                    → refNameBlockSchema (identifier)
+ *   <li>UnionNode{a,b}             → z.union([a, b]).optional()
  * </ul>
  */
 public class ZodTypeMapper {
@@ -62,6 +63,8 @@ public class ZodTypeMapper {
       base = mapToZod(mn, propName);
     } else if (node instanceof ValidationNode.RefNode rn) {
       base = refToZod(rn);
+    } else if (node instanceof ValidationNode.UnionNode un) {
+      base = unionToZod(un, propName);
     } else {
       throw new IllegalArgumentException("Unknown ValidationNode: " + node.getClass());
     }
@@ -140,6 +143,11 @@ public class ZodTypeMapper {
         JsBuilder.member("z", "record"),
         JsBuilder.callExpr(JsBuilder.member("z", "string")),
         valueExpr);
+  }
+
+  private JsNode unionToZod(ValidationNode.UnionNode un, String propName) {
+    List<JsNode> options = un.options().stream().map(opt -> toZod(opt, propName, true)).toList();
+    return JsBuilder.callExpr(JsBuilder.member("z", "union"), JsBuilder.arr(options));
   }
 
   private JsNode refToZod(ValidationNode.RefNode rn) {

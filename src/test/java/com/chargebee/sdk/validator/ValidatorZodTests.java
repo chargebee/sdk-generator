@@ -46,6 +46,11 @@ public class ValidatorZodTests extends LanguageTests {
       (MapEntry<String, Schema<?>>)
           (MapEntry<?, ?>) buildResource("coupon_code").withAttribute("code", true).done();
 
+  @SuppressWarnings("unchecked")
+  private static final MapEntry<String, Schema<?>> EXPORT =
+      (MapEntry<String, Schema<?>>)
+          (MapEntry<?, ?>) buildResource("export").withAttribute("id", true).done();
+
   // ---- subject under test --------------------------------------------------
 
   private static ValidatorZod validatorZod;
@@ -169,8 +174,7 @@ public class ValidatorZodTests extends LanguageTests {
             .withSortOrder(1)
             .done();
 
-    var spec =
-        buildSpec().withResource(COUPON_CODE).withOperation("/coupon_codes", listOp).done();
+    var spec = buildSpec().withResource(COUPON_CODE).withOperation("/coupon_codes", listOp).done();
 
     List<FileOp> fileOps = validatorZod.generate("/validators", spec);
 
@@ -188,6 +192,144 @@ public class ValidatorZodTests extends LanguageTests {
         .contains("in: z.string().regex(")
         .contains("code: ListCouponCodeCodeSchema.optional()")
         .contains("limit: z.number().int().optional()");
+  }
+
+  @Test
+  void shouldAcceptSdkTypedValuesForFilterOperators() throws IOException {
+    var statusFilter =
+        filterSchema("EnumFilter")
+            .addProperty("is", new StringSchema()._enum(List.of("active", "paused")))
+            .addProperty(
+                "in",
+                new StringSchema()
+                    ._enum(List.of("active", "paused"))
+                    .pattern("^\\[(active|paused)(,(active|paused))*\\]$"))
+            .addProperty("is_present", booleanWireSchema());
+    var itemPriceIdFilter =
+        filterSchema("StringFilter")
+            .addProperty("is", new StringSchema().minLength(1))
+            .addProperty("not_in", new StringSchema().pattern("^\\[(.*)(,.*)*\\]$"));
+    itemPriceIdFilter.addExtension(Extension.IS_MULTI_ATTRIBUTE, true);
+    var createdAtFilter =
+        filterSchema("TimestampFilter")
+            .addProperty("after", new StringSchema().format("unix-time").pattern("^\\d{10}$"))
+            .addProperty("between", new StringSchema().pattern("^\\[\\d{10},\\d{10}\\]$"));
+    var mrrFilter =
+        filterSchema("NumberFilter")
+            .addProperty("gte", new StringSchema().format("number").pattern("^-?\\d+$"));
+    var flagFilter = filterSchema("BooleanFilter").addProperty("is", booleanWireSchema());
+
+    var listOp =
+        buildListOperation("list")
+            .forResource("subscription")
+            .withResponse(resourceResponseParam("subscription", SUBSCRIPTION))
+            .withQueryParam("status", statusFilter, false)
+            .withQueryParam("item_price_id", itemPriceIdFilter, false)
+            .withQueryParam("created_at", createdAtFilter, false)
+            .withQueryParam("mrr", mrrFilter, false)
+            .withQueryParam("has_scheduled_changes", flagFilter, false)
+            .withSortOrder(1)
+            .done();
+    var spec =
+        buildSpec().withResource(SUBSCRIPTION).withOperation("/subscriptions", listOp).done();
+
+    // Emitter output is multi-line; compare with all whitespace removed.
+    String src =
+        findFileContent(validatorZod.generate("/validators", spec), "subscription.schema.ts")
+            .replaceAll("\\s+", "");
+
+    assertThat(src)
+        .contains("is:z.enum(['active','paused']).optional()")
+        .contains("is:z.string().min(1).optional()")
+        .contains(
+            "in:z.union([z.array(z.enum(['active','paused']).optional()),"
+                + "z.enum(['active','paused'])]).optional()")
+        .contains(
+            "not_in:z.union([z.array(z.string().optional()),"
+                + "z.string().regex(RegExp('^\\\\[(.*)(,.*)*\\\\]$'))]).optional()")
+        .contains("after:z.union([z.number().int(),z.string().regex(RegExp('^\\\\d{10}$'))])")
+        .contains("gte:z.union([z.number().int(),z.string().regex(RegExp('^-?\\\\d+$'))])")
+        .contains("between:z.union([z.array(z.number().int().optional()).min(2).max(2),z.string()")
+        .contains("is_present:z.union([z.boolean(),z.enum(['true','false'])]).optional()")
+        .contains("is:z.union([z.boolean(),z.enum(['true','false'])]).optional()")
+        .contains("item_price_id:ListSubscriptionItemPriceIdSchema.optional()");
+  }
+
+  @Test
+  void shouldKeepGroupOfMultiValueFiltersAsObject() throws IOException {
+    var idFilter = filterSchema("StringFilter").addProperty("is", new StringSchema().minLength(1));
+    idFilter.addExtension(Extension.IS_MULTI_ATTRIBUTE, true);
+    var customerGroup = new ObjectSchema().addProperty("id", idFilter);
+
+    var exportOp =
+        buildPostOperation("customers")
+            .forResource("export")
+            .withResponse(resourceResponseParam("export", EXPORT))
+            .withRequestBody("customer", customerGroup)
+            .withSortOrder(0)
+            .done();
+    var spec =
+        buildSpec().withResource(EXPORT).withPostOperation("/exports/customers", exportOp).done();
+
+    String src =
+        findFileContent(validatorZod.generate("/validators", spec), "export.schema.ts")
+            .replaceAll("\\s+", "");
+
+    assertThat(src)
+        .contains("customer:CustomersExportCustomerSchema.optional()")
+        .contains(
+            "constCustomersExportCustomerSchema=z.object({id:CustomersExportIdSchema.optional()")
+        .doesNotContain("z.array(z.object({id:");
+  }
+
+  @Test
+  void shouldAcceptArrayOfObjectsForCompositeArrayParams() throws IOException {
+    var element =
+        new ObjectSchema()
+            .addProperty("item_price_id", new StringSchema().maxLength(100))
+            .addProperty("quantity", new IntegerSchema());
+    element.setRequired(List.of("item_price_id"));
+
+    var createOp =
+        buildPostOperation("create_with_items")
+            .forResource("subscription")
+            .withResponse(resourceResponseParam("subscription", SUBSCRIPTION))
+            .withCompositeArrayRequestBody("subscription_items", element)
+            .withSortOrder(0)
+            .done();
+    var spec =
+        buildSpec()
+            .withResource(SUBSCRIPTION)
+            .withPostOperation("/subscriptions/create_with_items", createOp)
+            .done();
+
+    String src =
+        findFileContent(validatorZod.generate("/validators", spec), "subscription.schema.ts")
+            .replaceAll("\\s+", "");
+
+    assertThat(src)
+        .contains(
+            "constCreateWithItemsSubscriptionSubscriptionItemsItemSchema=z.object({"
+                + "item_price_id:z.string().max(100),quantity:z.number().int().optional()});")
+        .contains(
+            "constCreateWithItemsSubscriptionSubscriptionItemsSchema=z.object({"
+                + "item_price_id:z.array(")
+        .contains(
+            "subscription_items:z.union([z.array(CreateWithItemsSubscriptionSubscriptionItemsItemSchema"
+                + ".optional()),CreateWithItemsSubscriptionSubscriptionItemsSchema]).optional()");
+  }
+
+  private static ObjectSchema filterSchema(String sdkFilterName) {
+    var schema = new ObjectSchema();
+    schema.addExtension(Extension.IS_FILTER_PARAMETER, true);
+    schema.addExtension(Extension.SDK_FILTER_NAME, sdkFilterName);
+    return schema;
+  }
+
+  private static StringSchema booleanWireSchema() {
+    var schema = new StringSchema();
+    schema.format("boolean")._enum(List.of("true", "false"));
+    return schema;
   }
 
   // =========================================================================

@@ -39,14 +39,11 @@ public class PythonV3Tests extends LanguageTests {
   }
 
   private String withoutPythonRequestTelemetryArgs(String content) {
-    return content.replaceAll(
-        "(?s),\\s*resource=\"[^\"]*\",\\s*operation=\"[^\"]*\",\\s*\\)", ")");
+    return content.replaceAll("(?s),\\s*resource=\"[^\"]*\",\\s*operation=\"[^\"]*\",\\s*\\)", ")");
   }
 
   private String normalizePythonOperationsContent(String content) {
-    return withoutPythonRequestTelemetryArgs(content)
-        .replace('"', '\'')
-        .replaceAll("\\s+", "");
+    return withoutPythonRequestTelemetryArgs(content).replace('"', '\'').replaceAll("\\s+", "");
   }
 
   private void assertPythonOperationStartsWith(FileOp.WriteString fileOp, String expectedPrefix) {
@@ -77,10 +74,13 @@ public class PythonV3Tests extends LanguageTests {
     return content
         .replaceAll(",\\s*telemetry_adapter=None", "")
         .replaceAll(
-            "if telemetry_adapter is not None:\\s*self\\.env\\.telemetry_adapter = telemetry_adapter\\s*",
+            "if telemetry_adapter is not None:\\s*self\\.env\\.telemetry_adapter ="
+                + " telemetry_adapter\\s*",
             "")
         .replaceAll(
-            "def update_telemetry_adapter\\(self, telemetry_adapter\\):\\s*self\\.env\\.telemetry_adapter = telemetry_adapter\\s*",
+            "def update_telemetry_adapter\\(self,"
+                + " telemetry_adapter\\):\\s*self\\.env\\.telemetry_adapter ="
+                + " telemetry_adapter\\s*",
             "");
   }
 
@@ -1099,11 +1099,12 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "from chargebee.models import enums");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "from chargebee.models import enums");
   }
 
   @Test
@@ -1134,21 +1135,22 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "from chargebee.models import enums\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class Customer:\n"
-                + "\n"
-                + "    env: environment.Environment\n"
-                + "\n"
-                + "\n"
-                + "\n"
-                + "    class CreateParams(TypedDict):\n"
-                + "        auto_collection: NotRequired[enums.AutoCollection]\n");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "from chargebee.models import enums\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class Customer:\n"
+            + "\n"
+            + "    env: environment.Environment\n"
+            + "\n"
+            + "\n"
+            + "\n"
+            + "    class CreateParams(TypedDict):\n"
+            + "        auto_collection: NotRequired[enums.AutoCollection]\n");
   }
 
   @Test
@@ -1180,12 +1182,13 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "import json\n"
-                + "from chargebee.main import Environment\n");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "import json\n"
+            + "from chargebee.main import Environment\n");
   }
 
   @Test
@@ -1195,12 +1198,13 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "import json\n"
-                + "from chargebee import OperationFailedError\n");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "import json\n"
+            + "from chargebee import OperationFailedError\n");
   }
 
   @Test
@@ -1247,28 +1251,29 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "import json\n"
-                + "from chargebee.main import Environment\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class Event:\n"
-                + "\n"
-                + "    env: environment.Environment\n"
-                + "\n"
-                + FileOp.fetchFileContent("src/main/resources/templates/python/v3/event.py.hbs")
-                + "\n"
-                + "\n"
-                + "\n"
-                + "    def retrieve(self, id, headers=None) -> RetrieveResponse:\n"
-                + "        jsonKeys = { \n"
-                + "        }\n"
-                + "        options = {}\n"
-                + "        return request.send('get', request.uri_path(\"events\", id), self.env,"
-                + " None, headers, RetrieveResponse,None, False, jsonKeys, options)");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "import json\n"
+            + "from chargebee.main import Environment\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class Event:\n"
+            + "\n"
+            + "    env: environment.Environment\n"
+            + "\n"
+            + FileOp.fetchFileContent("src/main/resources/templates/python/v3/event.py.hbs")
+            + "\n"
+            + "\n"
+            + "\n"
+            + "    def retrieve(self, id, headers=None) -> RetrieveResponse:\n"
+            + "        jsonKeys = { \n"
+            + "        }\n"
+            + "        options = {}\n"
+            + "        return request.send('get', request.uri_path(\"events\", id), self.env,"
+            + " None, headers, RetrieveResponse,None, False, jsonKeys, options)");
   }
 
   @Test
@@ -1324,29 +1329,29 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "import json\n"
-                + "from chargebee import OperationFailedError\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class TimeMachine:\n"
-                + "\n"
-                + "    env: environment.Environment\n"
-                + "\n"
-                + FileOp.fetchFileContent(
-                    "src/main/resources/templates/python/v3/timeMachine.py.hbs")
-                + "\n"
-                + "\n"
-                + "\n"
-                + "    def retrieve(self, id, headers=None) -> RetrieveResponse:\n"
-                + "        jsonKeys = { \n"
-                + "        }\n"
-                + "        options = {}\n"
-                + "        return request.send('get', request.uri_path(\"time_machines\", id),"
-                + " self.env, None, headers, RetrieveResponse,None, False, jsonKeys, options)");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "import json\n"
+            + "from chargebee import OperationFailedError\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class TimeMachine:\n"
+            + "\n"
+            + "    env: environment.Environment\n"
+            + "\n"
+            + FileOp.fetchFileContent("src/main/resources/templates/python/v3/timeMachine.py.hbs")
+            + "\n"
+            + "\n"
+            + "\n"
+            + "    def retrieve(self, id, headers=None) -> RetrieveResponse:\n"
+            + "        jsonKeys = { \n"
+            + "        }\n"
+            + "        options = {}\n"
+            + "        return request.send('get', request.uri_path(\"time_machines\", id),"
+            + " self.env, None, headers, RetrieveResponse,None, False, jsonKeys, options)");
   }
 
   @Test
@@ -1377,34 +1382,35 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "from chargebee.models import enums\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class Customer:\n"
-                + "\n"
-                + "    env: environment.Environment\n"
-                + "\n"
-                + "\n"
-                + "\n"
-                + "    class CreateParams(TypedDict):\n"
-                + "        first_name: NotRequired[str]\n"
-                + "        prorated_taxable_amount: NotRequired[float]\n"
-                + "        billing_date: NotRequired[int]\n"
-                + "        is_location_valid: NotRequired[bool]\n"
-                + "        auto_collection: NotRequired[enums.AutoCollection]\n"
-                + "\n"
-                + "    def create(self, params: CreateParams = None, headers=None) ->"
-                + " CreateResponse:\n"
-                + "        jsonKeys = { \n"
-                + "        }\n"
-                + "        options = {}\n"
-                + "        return request.send('post', request.uri_path(\"customers\"), self.env,"
-                + " cast(Dict[Any, Any], params), headers, CreateResponse,None, False, jsonKeys,"
-                + " options)");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "from chargebee.models import enums\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class Customer:\n"
+            + "\n"
+            + "    env: environment.Environment\n"
+            + "\n"
+            + "\n"
+            + "\n"
+            + "    class CreateParams(TypedDict):\n"
+            + "        first_name: NotRequired[str]\n"
+            + "        prorated_taxable_amount: NotRequired[float]\n"
+            + "        billing_date: NotRequired[int]\n"
+            + "        is_location_valid: NotRequired[bool]\n"
+            + "        auto_collection: NotRequired[enums.AutoCollection]\n"
+            + "\n"
+            + "    def create(self, params: CreateParams = None, headers=None) ->"
+            + " CreateResponse:\n"
+            + "        jsonKeys = { \n"
+            + "        }\n"
+            + "        options = {}\n"
+            + "        return request.send('post', request.uri_path(\"customers\"), self.env,"
+            + " cast(Dict[Any, Any], params), headers, CreateResponse,None, False, jsonKeys,"
+            + " options)");
   }
 
   @Test
@@ -2298,11 +2304,12 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "from chargebee.models import enums");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "from chargebee.models import enums");
   }
 
   @Test
@@ -2352,14 +2359,25 @@ public class PythonV3Tests extends LanguageTests {
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
     assertResourceOperationContents(
         writeStringFileOp,
-        "\n"
+        "\nfrom enum import Enum\n"
+            + "\n"
             + "@dataclass\n"
             + "class Entitlement:\n"
             + "\n"
             + "    env: environment.Environment\n"
             + "\n"
+            + "    class EntityType(Enum):\n"
+            + "        PLAN = 'plan'\n"
+            + "        ADDON = 'addon'\n"
+            + "        CHARGE = 'charge'\n"
+            + "        PLAN_PRICE = 'plan_price'\n"
+            + "        ADDON_PRICE = 'addon_price'\n"
+            + "\n"
+            + "        def __str__(self):\n"
+            + "            return self.value\n"
+            + "\n"
             + "    class CreateEntitlementParams(TypedDict):\n"
-            + "        entity_type: NotRequired[\"Entitlement.EntityType\"]");
+            + "        entity_type: NotRequired['Entitlement.EntityType']");
   }
 
   @Test
@@ -2395,32 +2413,33 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "from chargebee.filters import Filters\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class PaymentVoucher:\n"
-                + "\n"
-                + "    env: environment.Environment\n"
-                + "\n"
-                + "\n"
-                + "\n"
-                + "    class PaymentVouchersForCustomerParams(TypedDict):\n"
-                + "        limit: NotRequired[str]\n"
-                + "        status: NotRequired[Filters.EnumFilter]\n"
-                + "\n"
-                + "    def payment_vouchers_for_customer(self, id, params:"
-                + " PaymentVouchersForCustomerParams = None, headers=None) ->"
-                + " PaymentVouchersForCustomerResponse:\n"
-                + "        jsonKeys = { \n"
-                + "        }\n"
-                + "        options = {}\n"
-                + "        return request.send('get', request.uri_path(\"customers\", id,"
-                + " \"payment_vouchers\"), self.env, cast(Dict[Any, Any], params), headers,"
-                + " PaymentVouchersForCustomerResponse,None, False, jsonKeys, options)");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "from chargebee.filters import Filters\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class PaymentVoucher:\n"
+            + "\n"
+            + "    env: environment.Environment\n"
+            + "\n"
+            + "\n"
+            + "\n"
+            + "    class PaymentVouchersForCustomerParams(TypedDict):\n"
+            + "        limit: NotRequired[str]\n"
+            + "        status: NotRequired[Filters.EnumFilter]\n"
+            + "\n"
+            + "    def payment_vouchers_for_customer(self, id, params:"
+            + " PaymentVouchersForCustomerParams = None, headers=None) ->"
+            + " PaymentVouchersForCustomerResponse:\n"
+            + "        jsonKeys = { \n"
+            + "        }\n"
+            + "        options = {}\n"
+            + "        return request.send('get', request.uri_path(\"customers\", id,"
+            + " \"payment_vouchers\"), self.env, cast(Dict[Any, Any], params), headers,"
+            + " PaymentVouchersForCustomerResponse,None, False, jsonKeys, options)");
   }
 
   @Test
@@ -2489,42 +2508,43 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "from enum import Enum\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class Customer:\n"
-                + "\n"
-                + "    env: environment.Environment\n"
-                + "    class BillingDayOfWeek(Enum):\n"
-                + "        SUNDAY = \"sunday\"\n"
-                + "        MONDAY = \"monday\"\n"
-                + "        TUESDAY = \"tuesday\"\n"
-                + "        WEDNESDAY = \"wednesday\"\n"
-                + "        THURSDAY = \"thursday\"\n"
-                + "        FRIDAY = \"friday\"\n"
-                + "        SATURDAY = \"saturday\"\n"
-                + "\n"
-                + "        def __str__(self):\n"
-                + "            return self.value\n"
-                + "\n"
-                + "\n"
-                + "\n"
-                + "    class ChangeBillingDateParams(TypedDict):\n"
-                + "        billing_date: NotRequired[int]\n"
-                + "        billing_day_of_week: NotRequired[\"Customer.BillingDayOfWeek\"]\n"
-                + "\n"
-                + "    def change_billing_date(self, id, params: ChangeBillingDateParams = None,"
-                + " headers=None) -> ChangeBillingDateResponse:\n"
-                + "        jsonKeys = { \n"
-                + "        }\n"
-                + "        options = {}\n"
-                + "        return request.send('post', request.uri_path(\"customers\", id,"
-                + " \"change_billing_date\"), self.env, cast(Dict[Any, Any], params), headers,"
-                + " ChangeBillingDateResponse,None, False, jsonKeys, options)");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "from enum import Enum\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class Customer:\n"
+            + "\n"
+            + "    env: environment.Environment\n"
+            + "    class BillingDayOfWeek(Enum):\n"
+            + "        SUNDAY = \"sunday\"\n"
+            + "        MONDAY = \"monday\"\n"
+            + "        TUESDAY = \"tuesday\"\n"
+            + "        WEDNESDAY = \"wednesday\"\n"
+            + "        THURSDAY = \"thursday\"\n"
+            + "        FRIDAY = \"friday\"\n"
+            + "        SATURDAY = \"saturday\"\n"
+            + "\n"
+            + "        def __str__(self):\n"
+            + "            return self.value\n"
+            + "\n"
+            + "\n"
+            + "\n"
+            + "    class ChangeBillingDateParams(TypedDict):\n"
+            + "        billing_date: NotRequired[int]\n"
+            + "        billing_day_of_week: NotRequired[\"Customer.BillingDayOfWeek\"]\n"
+            + "\n"
+            + "    def change_billing_date(self, id, params: ChangeBillingDateParams = None,"
+            + " headers=None) -> ChangeBillingDateResponse:\n"
+            + "        jsonKeys = { \n"
+            + "        }\n"
+            + "        options = {}\n"
+            + "        return request.send('post', request.uri_path(\"customers\", id,"
+            + " \"change_billing_date\"), self.env, cast(Dict[Any, Any], params), headers,"
+            + " ChangeBillingDateResponse,None, False, jsonKeys, options)");
   }
 
   @Test
@@ -2593,45 +2613,46 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "from enum import Enum\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class Customer:\n"
-                + "\n"
-                + "    env: environment.Environment\n"
-                + "    class ParentAccountAccessPortalEditChildSubscriptions(Enum):\n"
-                + "        YES = \"yes\"\n"
-                + "        VIEW_ONLY = \"view_only\"\n"
-                + "        NO = \"no\"\n"
-                + "\n"
-                + "        def __str__(self):\n"
-                + "            return self.value\n"
-                + "\n"
-                + "    class ParentAccountAccess(TypedDict):\n"
-                + "        portal_edit_child_subscriptions:"
-                + " NotRequired[\"Customer.ParentAccountAccessPortalEditChildSubscriptions\"]\n"
-                + "\n"
-                + "    class RelationshipsParentAccountAccessParams(TypedDict):\n"
-                + "        portal_edit_child_subscriptions:"
-                + " NotRequired[\"Customer.ParentAccountAccessPortalEditChildSubscriptions\"]\n"
-                + "\n"
-                + "\n"
-                + "    class RelationshipsParams(TypedDict):\n"
-                + "        parent_account_access:"
-                + " NotRequired[\"Customer.RelationshipsParentAccountAccessParams\"]\n"
-                + "\n"
-                + "    def relationships(self, id, params: RelationshipsParams = None,"
-                + " headers=None) -> RelationshipsResponse:\n"
-                + "        jsonKeys = { \n"
-                + "        }\n"
-                + "        options = {}\n"
-                + "        return request.send('post', request.uri_path(\"customers\", id,"
-                + " \"relationships\"), self.env, cast(Dict[Any, Any], params), headers,"
-                + " RelationshipsResponse,None, False, jsonKeys, options)");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "from enum import Enum\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class Customer:\n"
+            + "\n"
+            + "    env: environment.Environment\n"
+            + "    class ParentAccountAccessPortalEditChildSubscriptions(Enum):\n"
+            + "        YES = \"yes\"\n"
+            + "        VIEW_ONLY = \"view_only\"\n"
+            + "        NO = \"no\"\n"
+            + "\n"
+            + "        def __str__(self):\n"
+            + "            return self.value\n"
+            + "\n"
+            + "    class ParentAccountAccess(TypedDict):\n"
+            + "        portal_edit_child_subscriptions:"
+            + " NotRequired[\"Customer.ParentAccountAccessPortalEditChildSubscriptions\"]\n"
+            + "\n"
+            + "    class RelationshipsParentAccountAccessParams(TypedDict):\n"
+            + "        portal_edit_child_subscriptions:"
+            + " NotRequired[\"Customer.ParentAccountAccessPortalEditChildSubscriptions\"]\n"
+            + "\n"
+            + "\n"
+            + "    class RelationshipsParams(TypedDict):\n"
+            + "        parent_account_access:"
+            + " NotRequired[\"Customer.RelationshipsParentAccountAccessParams\"]\n"
+            + "\n"
+            + "    def relationships(self, id, params: RelationshipsParams = None,"
+            + " headers=None) -> RelationshipsResponse:\n"
+            + "        jsonKeys = { \n"
+            + "        }\n"
+            + "        options = {}\n"
+            + "        return request.send('post', request.uri_path(\"customers\", id,"
+            + " \"relationships\"), self.env, cast(Dict[Any, Any], params), headers,"
+            + " RelationshipsResponse,None, False, jsonKeys, options)");
   }
 
   @Test
@@ -2739,36 +2760,37 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "from chargebee.filters import Filters\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class Customer:\n"
-                + "\n"
-                + "    env: environment.Environment\n"
-                + "\n"
-                + "    class ListEinvoiceParams(TypedDict):\n"
-                + "        status: NotRequired[Filters.EnumFilter]\n"
-                + "\n"
-                + "\n"
-                + "    class ListParams(TypedDict):\n"
-                + "        first_name: NotRequired[Filters.StringFilter]\n"
-                + "        auto_collection: NotRequired[Filters.EnumFilter]\n"
-                + "        created_at: NotRequired[Filters.TimestampFilter]\n"
-                + "        auto_close_invoices: NotRequired[Filters.BooleanFilter]\n"
-                + "        sort_by: NotRequired[Filters.SortFilter]\n"
-                + "        einvoice: NotRequired[\"Customer.ListEinvoiceParams\"]\n"
-                + "\n"
-                + "    def list(self, params: ListParams = None, headers=None) -> ListResponse:\n"
-                + "        jsonKeys = { \n"
-                + "        }\n"
-                + "        options = {}\n"
-                + "        return request.send_list_request('get', request.uri_path(\"customers\"),"
-                + " self.env, cast(Dict[Any, Any], params), headers, ListResponse,None, False,"
-                + " jsonKeys, options)");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "from chargebee.filters import Filters\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class Customer:\n"
+            + "\n"
+            + "    env: environment.Environment\n"
+            + "\n"
+            + "    class ListEinvoiceParams(TypedDict):\n"
+            + "        status: NotRequired[Filters.EnumFilter]\n"
+            + "\n"
+            + "\n"
+            + "    class ListParams(TypedDict):\n"
+            + "        first_name: NotRequired[Filters.StringFilter]\n"
+            + "        auto_collection: NotRequired[Filters.EnumFilter]\n"
+            + "        created_at: NotRequired[Filters.TimestampFilter]\n"
+            + "        auto_close_invoices: NotRequired[Filters.BooleanFilter]\n"
+            + "        sort_by: NotRequired[Filters.SortFilter]\n"
+            + "        einvoice: NotRequired[\"Customer.ListEinvoiceParams\"]\n"
+            + "\n"
+            + "    def list(self, params: ListParams = None, headers=None) -> ListResponse:\n"
+            + "        jsonKeys = { \n"
+            + "        }\n"
+            + "        options = {}\n"
+            + "        return request.send_list_request('get', request.uri_path(\"customers\"),"
+            + " self.env, cast(Dict[Any, Any], params), headers, ListResponse,None, False,"
+            + " jsonKeys, options)");
   }
 
   @Test
@@ -2820,31 +2842,32 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(5);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from .responses import *\n"
-                + "from chargebee import request, environment\n"
-                + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
-                + "from chargebee.filters import Filters\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class Customer:\n"
-                + "\n"
-                + "    env: environment.Environment\n"
-                + "\n"
-                + "    class ListRelationshipParams(TypedDict):\n"
-                + "        parent_id: NotRequired[Filters.EnumFilter]\n"
-                + "\n"
-                + "\n"
-                + "    class ListParams(TypedDict):\n"
-                + "        relationship: NotRequired[\"Customer.ListRelationshipParams\"]\n"
-                + "\n"
-                + "    def list(self, params: ListParams = None, headers=None) -> ListResponse:\n"
-                + "        jsonKeys = { \n"
-                + "        }\n"
-                + "        options = {}\n"
-                + "        return request.send_list_request('get', request.uri_path(\"customers\"),"
-                + " self.env, cast(Dict[Any, Any], params), headers, ListResponse,None, False,"
-                + " jsonKeys, options)");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from .responses import *\n"
+            + "from chargebee import request, environment\n"
+            + "from typing import TypedDict, Required, NotRequired, Dict, List, Any, cast\n"
+            + "from chargebee.filters import Filters\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class Customer:\n"
+            + "\n"
+            + "    env: environment.Environment\n"
+            + "\n"
+            + "    class ListRelationshipParams(TypedDict):\n"
+            + "        parent_id: NotRequired[Filters.EnumFilter]\n"
+            + "\n"
+            + "\n"
+            + "    class ListParams(TypedDict):\n"
+            + "        relationship: NotRequired[\"Customer.ListRelationshipParams\"]\n"
+            + "\n"
+            + "    def list(self, params: ListParams = None, headers=None) -> ListResponse:\n"
+            + "        jsonKeys = { \n"
+            + "        }\n"
+            + "        options = {}\n"
+            + "        return request.send_list_request('get', request.uri_path(\"customers\"),"
+            + " self.env, cast(Dict[Any, Any], params), headers, ListResponse,None, False,"
+            + " jsonKeys, options)");
   }
 
   @Test
@@ -3135,19 +3158,20 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from dataclasses import dataclass\n"
-                + "from chargebee.model import Model\n"
-                + "from typing import Dict, List, Any\n"
-                + "from chargebee.models import subscription_estimate\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class EstimateResponse(Model):\n"
-                + "    raw_data: Dict[Any, Any] = None\n"
-                + "    subscription_estimate:"
-                + " \"subscription_estimate.SubscriptionEstimateResponse\" = None\n"
-                + "    subscription_estimates:"
-                + " List[\"subscription_estimate.SubscriptionEstimateResponse\"] = None");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from dataclasses import dataclass\n"
+            + "from chargebee.model import Model\n"
+            + "from typing import Dict, List, Any\n"
+            + "from chargebee.models import subscription_estimate\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class EstimateResponse(Model):\n"
+            + "    raw_data: Dict[Any, Any] = None\n"
+            + "    subscription_estimate:"
+            + " \"subscription_estimate.SubscriptionEstimateResponse\" = None\n"
+            + "    subscription_estimates:"
+            + " List[\"subscription_estimate.SubscriptionEstimateResponse\"] = None");
   }
 
   @Test
@@ -3239,29 +3263,35 @@ public class PythonV3Tests extends LanguageTests {
                 resourceResponseParam("card", card, false))
             .done();
 
-    var spec = buildSpec().withResource(customer).withResource(card).withPostOperation("/customers", operation).done();
+    var spec =
+        buildSpec()
+            .withResource(customer)
+            .withResource(card)
+            .withPostOperation("/customers", operation)
+            .done();
 
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from dataclasses import dataclass\n"
-                + "from chargebee.model import Model\n"
-                + "from typing import Dict, List, Any\n"
-                + "from chargebee.response import Response\n"
-                + "from chargebee.models import card\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class CustomerResponse(Model):\n"
-                + "    raw_data: Dict[Any, Any] = None\n"
-                + "    id: str = None\n"
-                + "\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class CreateResponse(Response):\n"
-                + "    is_idempotency_replayed: bool\n"
-                + "    customer: CustomerResponse\n"
-                + "    card: \"card.CardResponse\" = None");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from dataclasses import dataclass\n"
+            + "from chargebee.model import Model\n"
+            + "from typing import Dict, List, Any\n"
+            + "from chargebee.response import Response\n"
+            + "from chargebee.models import card\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class CustomerResponse(Model):\n"
+            + "    raw_data: Dict[Any, Any] = None\n"
+            + "    id: str = None\n"
+            + "\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class CreateResponse(Response):\n"
+            + "    is_idempotency_replayed: bool\n"
+            + "    customer: CustomerResponse\n"
+            + "    card: \"card.CardResponse\" = None");
   }
 
   @Test
@@ -3280,29 +3310,35 @@ public class PythonV3Tests extends LanguageTests {
                 resourceResponseParam("card", card, false))
             .done();
 
-    var spec = buildSpec().withResource(customer).withResource(card).withPostOperation("/customers", operation).done();
+    var spec =
+        buildSpec()
+            .withResource(customer)
+            .withResource(card)
+            .withPostOperation("/customers", operation)
+            .done();
 
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from dataclasses import dataclass\n"
-                + "from chargebee.model import Model\n"
-                + "from typing import Dict, List, Any\n"
-                + "from chargebee.response import Response\n"
-                + "from chargebee.models import card\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class CustomerResponse(Model):\n"
-                + "    raw_data: Dict[Any, Any] = None\n"
-                + "    id: str = None\n"
-                + "\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class UpdateResponse(Response):\n"
-                + "    is_idempotency_replayed: bool\n"
-                + "    customer: CustomerResponse\n"
-                + "    card: \"card.CardResponse\" = None");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from dataclasses import dataclass\n"
+            + "from chargebee.model import Model\n"
+            + "from typing import Dict, List, Any\n"
+            + "from chargebee.response import Response\n"
+            + "from chargebee.models import card\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class CustomerResponse(Model):\n"
+            + "    raw_data: Dict[Any, Any] = None\n"
+            + "    id: str = None\n"
+            + "\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class UpdateResponse(Response):\n"
+            + "    is_idempotency_replayed: bool\n"
+            + "    customer: CustomerResponse\n"
+            + "    card: \"card.CardResponse\" = None");
   }
 
   @Test
@@ -3326,29 +3362,30 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from dataclasses import dataclass\n"
-                + "from chargebee.model import Model\n"
-                + "from typing import Dict, List, Any\n"
-                + "from chargebee.response import Response\n"
-                + "from chargebee.models import card\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class CustomerResponse(Model):\n"
-                + "    raw_data: Dict[Any, Any] = None\n"
-                + "    id: str = None\n"
-                + "\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class ListCustomerResponse:\n"
-                + "    customer: CustomerResponse\n"
-                + "    card: \"card.CardResponse\" = None\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class ListResponse(Response):\n"
-                + "\n"
-                + "    list: List[ListCustomerResponse]\n"
-                + "    next_offset: str = None");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from dataclasses import dataclass\n"
+            + "from chargebee.model import Model\n"
+            + "from typing import Dict, List, Any\n"
+            + "from chargebee.response import Response\n"
+            + "from chargebee.models import card\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class CustomerResponse(Model):\n"
+            + "    raw_data: Dict[Any, Any] = None\n"
+            + "    id: str = None\n"
+            + "\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class ListCustomerResponse:\n"
+            + "    customer: CustomerResponse\n"
+            + "    card: \"card.CardResponse\" = None\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class ListResponse(Response):\n"
+            + "\n"
+            + "    list: List[ListCustomerResponse]\n"
+            + "    next_offset: str = None");
   }
 
   @Test
@@ -3370,23 +3407,24 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from dataclasses import dataclass\n"
-                + "from chargebee.model import Model\n"
-                + "from typing import Dict, List, Any\n"
-                + "from chargebee.response import Response\n"
-                + "from chargebee.models import hierarchy\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class CustomerResponse(Model):\n"
-                + "    raw_data: Dict[Any, Any] = None\n"
-                + "    id: str = None\n"
-                + "\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class HierarchyResponse(Response):\n"
-                + "\n"
-                + "    hierarchies: List[\"hierarchy.HierarchyResponse\"]");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from dataclasses import dataclass\n"
+            + "from chargebee.model import Model\n"
+            + "from typing import Dict, List, Any\n"
+            + "from chargebee.response import Response\n"
+            + "from chargebee.models import hierarchy\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class CustomerResponse(Model):\n"
+            + "    raw_data: Dict[Any, Any] = None\n"
+            + "    id: str = None\n"
+            + "\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class HierarchyResponse(Response):\n"
+            + "\n"
+            + "    hierarchies: List[\"hierarchy.HierarchyResponse\"]");
   }
 
   @Test
@@ -3410,29 +3448,30 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from dataclasses import dataclass\n"
-                + "from chargebee.model import Model\n"
-                + "from typing import Dict, List, Any\n"
-                + "from chargebee.response import Response\n"
-                + "from chargebee.models import card\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class CustomerResponse(Model):\n"
-                + "    raw_data: Dict[Any, Any] = None\n"
-                + "    id: str = None\n"
-                + "\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class ListCustomerResponse:\n"
-                + "    customer: CustomerResponse\n"
-                + "    card: \"card.CardResponse\" = None\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class ListResponse(Response):\n"
-                + "\n"
-                + "    list: List[ListCustomerResponse]\n"
-                + "    next_offset: str = None");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from dataclasses import dataclass\n"
+            + "from chargebee.model import Model\n"
+            + "from typing import Dict, List, Any\n"
+            + "from chargebee.response import Response\n"
+            + "from chargebee.models import card\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class CustomerResponse(Model):\n"
+            + "    raw_data: Dict[Any, Any] = None\n"
+            + "    id: str = None\n"
+            + "\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class ListCustomerResponse:\n"
+            + "    customer: CustomerResponse\n"
+            + "    card: \"card.CardResponse\" = None\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class ListResponse(Response):\n"
+            + "\n"
+            + "    list: List[ListCustomerResponse]\n"
+            + "    next_offset: str = None");
   }
 
   @Test
@@ -3469,22 +3508,23 @@ public class PythonV3Tests extends LanguageTests {
     List<FileOp> fileOps = pythonSdkGen.generate(basePath, spec);
 
     var writeStringFileOp = (FileOp.WriteString) fileOps.get(6);
-    assertPythonOperationStartsWith(writeStringFileOp,
-            "from dataclasses import dataclass\n"
-                + "from chargebee.model import Model\n"
-                + "from typing import Dict, List, Any\n"
-                + "from chargebee.models import gateway_error_detail\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class PaymentAttemptResponse(Model):\n"
-                + "    raw_data: Dict[Any, Any] = None\n"
-                + "    error_detail: gateway_error_detail.GatewayErrorDetailResponse = None\n"
-                + "\n"
-                + "\n"
-                + "@dataclass\n"
-                + "class PaymentIntentResponse(Model):\n"
-                + "    raw_data: Dict[Any, Any] = None\n"
-                + "    active_payment_attempt: PaymentAttemptResponse = None\n");
+    assertPythonOperationStartsWith(
+        writeStringFileOp,
+        "from dataclasses import dataclass\n"
+            + "from chargebee.model import Model\n"
+            + "from typing import Dict, List, Any\n"
+            + "from chargebee.models import gateway_error_detail\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class PaymentAttemptResponse(Model):\n"
+            + "    raw_data: Dict[Any, Any] = None\n"
+            + "    error_detail: gateway_error_detail.GatewayErrorDetailResponse = None\n"
+            + "\n"
+            + "\n"
+            + "@dataclass\n"
+            + "class PaymentIntentResponse(Model):\n"
+            + "    raw_data: Dict[Any, Any] = None\n"
+            + "    active_payment_attempt: PaymentAttemptResponse = None\n");
   }
 
   @Test

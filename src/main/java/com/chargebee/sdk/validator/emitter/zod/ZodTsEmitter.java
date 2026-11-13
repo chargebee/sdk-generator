@@ -200,6 +200,8 @@ public class ZodTsEmitter implements ValidatorEmitter {
       collectRefsInto(an.items(), refs);
     } else if (node instanceof ValidationNode.MapNode mn) {
       collectRefsInto(mn.valueSchema(), refs);
+    } else if (node instanceof ValidationNode.UnionNode un) {
+      for (ValidationNode opt : un.options()) collectRefsInto(opt, refs);
     }
   }
 

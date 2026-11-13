@@ -11,6 +11,7 @@ import com.chargebee.handlebar.Inflector;
 import com.chargebee.openapi.*;
 import com.chargebee.openapi.Enum;
 import com.chargebee.openapi.Resource;
+import com.chargebee.openapi.parameter.Parameter;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.Language;
 import com.chargebee.sdk.common.ActionAssist;
@@ -338,6 +339,38 @@ public class Dotnet extends Language {
       enumColumn.setApiClassName(apiClassName);
       enumColumns.add(enumColumn);
     }
+    // Collect enums from composite array body params whose parent is NOT a sub-resource
+    List<String> subResourceAttributeNames =
+        activeResource.getSortedResourceAttributes().stream()
+            .filter(Attribute::isSubResource)
+            .map(attr -> attr.name)
+            .toList();
+    for (Action action : activeResource.getSortedAction()) {
+      for (Parameter iparam : action.requestBodyParameters()) {
+        if (iparam.isCompositeArrayBody()
+            && !subResourceAttributeNames.contains(iparam.getName())) {
+          Attribute multiAttribute =
+              new Attribute(iparam.getName(), iparam.schema, iparam.isRequired);
+          for (Attribute subAttr : multiAttribute.attributes()) {
+            if (!subAttr.isNotHiddenAttribute()) continue;
+            if (subAttr.isEnumAttribute()
+                && !subAttr.isGlobalEnumAttribute()
+                && !subAttr.isGenSeparate()) {
+              String apiClassName = getName(subAttr.name);
+              boolean alreadyExists =
+                  enumColumns.stream().anyMatch(e -> e.getApiClassName().equals(apiClassName));
+              if (!alreadyExists) {
+                EnumColumn enumColumn = new EnumColumn();
+                enumColumn.setDeprecated(subAttr.isDeprecated());
+                enumColumn.setVisibleEntries(getEnumEntries(subAttr));
+                enumColumn.setApiClassName(apiClassName);
+                enumColumns.add(enumColumn);
+              }
+            }
+          }
+        }
+      }
+    }
     return enumColumns;
   }
 
@@ -647,11 +680,15 @@ public class Dotnet extends Language {
       if (!attribute.isNotHiddenAttribute()) continue;
       Column column = new Column();
       column.setDeprecated(attribute.isDeprecated());
-      column.setReturnType(
-          updateForSubAttributes(
-              attribute.subResourceName() != null
-                  ? attribute.subResourceName()
-                  : getColsRetType(attribute)));
+      String returnType;
+      if (attribute.subResourceName() != null) {
+        returnType = attribute.isListSubResourceAttribute()
+            ? LIST_OF + attribute.subResourceName() + ">"
+            : attribute.subResourceName();
+      } else {
+        returnType = getColsRetType(attribute);
+      }
+      column.setReturnType(updateForSubAttributes(returnType));
       column.setGetterCode(updateForSubAttributes(getGetterCode(attribute)));
       if (attribute.name.equals("type")) {
         column.setMethName(toClazName(singularize(subResourceAttribute.name)) + "Type");
@@ -1153,6 +1190,14 @@ public class Dotnet extends Language {
               + toClazName(attribute.name)
               + "Enum";
         }
+      }
+      boolean parentIsSubResource =
+          activeResource.attributes().stream()
+              .anyMatch(a -> a.name.equals(parentAttribute) && a.isSubResource());
+      if (!parentIsSubResource) {
+        return toClazName(activeResource.name)
+            + "."
+            + getName(attribute.name + ENUM_SUFFIX);
       }
       return toClazName(activeResource.id)
           + toClazName(singularize(parentAttribute))
