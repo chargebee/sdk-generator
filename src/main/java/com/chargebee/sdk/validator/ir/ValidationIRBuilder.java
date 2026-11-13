@@ -2,9 +2,11 @@ package com.chargebee.sdk.validator.ir;
 
 import static com.chargebee.openapi.Extension.ATTRIBUTE_META_COMMENT;
 import static com.chargebee.openapi.Extension.HIDDEN_FROM_CLIENT_SDK;
+import static com.chargebee.openapi.Extension.IS_FILTER_PARAMETER;
 import static com.chargebee.openapi.Extension.IS_MULTI_ATTRIBUTE;
 import static com.chargebee.openapi.Extension.IS_PCV1_ATTRIBUTE;
 
+import com.chargebee.openapi.Resource;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
@@ -86,6 +88,12 @@ public class ValidationIRBuilder {
     String type = schema.getType();
 
     if ("object".equals(type) || (schema instanceof ObjectSchema)) {
+      if (isFilterParameter(schema)) {
+        return buildFilterNode(schema, visiting);
+      }
+      if (Resource.isCompositeArrayRequestBody(schema)) {
+        return buildCompositeArrayNode(schema, visiting);
+      }
       return buildObjectNode(schema, visiting);
     }
 
@@ -192,6 +200,108 @@ public class ValidationIRBuilder {
     return new ValidationNode.ArrayNode(innerObject, null, null);
   }
 
+  /**
+   * Composite array params: accepts an array of objects (SDK type) or the spec's object of arrays.
+   */
+  private ValidationNode buildCompositeArrayNode(Schema<?> schema, Set<String> visiting) {
+    Map<String, PropertyEntry> elementProps = new LinkedHashMap<>();
+    Set<String> requiredSet =
+        schema.getRequired() == null ? Set.of() : new HashSet<>(schema.getRequired());
+    Map<String, Schema> properties = schema.getProperties();
+
+    if (properties != null) {
+      for (Map.Entry<String, Schema> entry : properties.entrySet()) {
+        String propName = entry.getKey();
+        Schema<?> propSchema = entry.getValue();
+        Schema<?> itemSchema = propSchema.getItems() != null ? propSchema.getItems() : propSchema;
+
+        if (isHidden(propSchema) || isHidden(itemSchema)) continue;
+
+        boolean isRequired =
+            (requiredSet.contains(propName)
+                    || isMetaCommentRequired(propSchema)
+                    || isMetaCommentRequired(itemSchema))
+                && !isPcv1Attribute(propSchema)
+                && !isPcv1Attribute(itemSchema);
+        elementProps.put(
+            propName,
+            new PropertyEntry(
+                buildNode(itemSchema, visiting),
+                isRequired,
+                !isRequired,
+                itemSchema.getDefault(),
+                propSchema.getDescription()));
+      }
+    }
+
+    ValidationNode rowWise =
+        new ValidationNode.ArrayNode(
+            new ValidationNode.ObjectNode(elementProps, false, null), null, null);
+    ValidationNode columnWise = buildObjectNode(schema, visiting);
+    return new ValidationNode.UnionNode(List.of(rowWise, columnWise));
+  }
+
+  /** Filter params: each operator accepts the SDK-typed value or the spec's wire-format string. */
+  private ValidationNode buildFilterNode(Schema<?> schema, Set<String> visiting) {
+    Map<String, PropertyEntry> propEntries = new LinkedHashMap<>();
+    Set<String> requiredSet =
+        schema.getRequired() == null ? Set.of() : new HashSet<>(schema.getRequired());
+    Map<String, Schema> properties = schema.getProperties();
+
+    if (properties != null) {
+      for (Map.Entry<String, Schema> entry : properties.entrySet()) {
+        String operator = entry.getKey();
+        Schema<?> opSchema = entry.getValue();
+
+        if (isHidden(opSchema)) continue;
+
+        boolean isRequired = requiredSet.contains(operator);
+        ValidationNode wireNode = buildNode(opSchema, visiting);
+        ValidationNode typedNode = buildFilterOperatorTypedNode(operator, opSchema);
+        ValidationNode node =
+            typedNode == null
+                ? wireNode
+                : new ValidationNode.UnionNode(List.of(typedNode, wireNode));
+        propEntries.put(
+            operator,
+            new PropertyEntry(
+                node, isRequired, !isRequired, opSchema.getDefault(), opSchema.getDescription()));
+      }
+    }
+
+    boolean allowUnknown = schema.getAdditionalProperties() != null;
+    return new ValidationNode.ObjectNode(propEntries, allowUnknown, null);
+  }
+
+  /** SDK-typed form of a filter operator, or null when it matches the wire format. */
+  private static ValidationNode buildFilterOperatorTypedNode(String operator, Schema<?> opSchema) {
+    if ("in".equals(operator) || "not_in".equals(operator)) {
+      List<String> enumValues = enumValuesOf(opSchema);
+      return new ValidationNode.ArrayNode(
+          new ValidationNode.StringNode(null, null, null, null, enumValues), null, null);
+    }
+    if ("between".equals(operator)) {
+      return new ValidationNode.ArrayNode(new ValidationNode.NumberNode(true, null, null), 2, 2);
+    }
+    String format = opSchema.getFormat();
+    if ("unix-time".equals(format) || "number".equals(format)) {
+      return new ValidationNode.NumberNode(true, null, null);
+    }
+    if ("boolean".equals(format) || List.of("true", "false").equals(enumValuesOf(opSchema))) {
+      return new ValidationNode.BooleanNode(null);
+    }
+    return null;
+  }
+
+  private static List<String> enumValuesOf(Schema<?> schema) {
+    if (schema.getEnum() == null || schema.getEnum().isEmpty()) return null;
+    List<String> values = new ArrayList<>();
+    for (Object v : schema.getEnum()) {
+      if (v != null) values.add(v.toString());
+    }
+    return values;
+  }
+
   private ValidationNode buildArrayNode(Schema<?> schema, Set<String> visiting) {
     Schema<?> items = schema.getItems();
     ValidationNode itemsNode =
@@ -236,11 +346,18 @@ public class ValidationIRBuilder {
 
   private static boolean hasMultiValueAttributes(Map<String, Schema> properties) {
     if (properties == null) return false;
+    // Filter params are not multi-value attributes.
     return properties.values().stream()
         .anyMatch(
             s ->
                 s.getExtensions() != null
-                    && Boolean.TRUE.equals(s.getExtensions().get(IS_MULTI_ATTRIBUTE)));
+                    && Boolean.TRUE.equals(s.getExtensions().get(IS_MULTI_ATTRIBUTE))
+                    && !isFilterParameter(s));
+  }
+
+  private static boolean isFilterParameter(Schema<?> schema) {
+    return schema.getExtensions() != null
+        && Boolean.TRUE.equals(schema.getExtensions().get(IS_FILTER_PARAMETER));
   }
 
   private static boolean isHidden(Schema<?> schema) {

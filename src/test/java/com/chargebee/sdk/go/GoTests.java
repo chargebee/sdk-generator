@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.chargebee.sdk.FileOp;
 import com.chargebee.sdk.LanguageTests;
 import com.chargebee.sdk.go.v3.Go_V3;
-
 import io.swagger.v3.oas.models.media.*;
 import java.io.IOException;
 import java.util.List;
@@ -1567,7 +1566,9 @@ type CreateEntityIdentifierParams struct {
 
     List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
 
-    var writeStringFileOp = (FileOp.WriteString) fileOps.get(8);
+    assertThat(fileOps.get(8)).isInstanceOf(FileOp.CreateDirectory.class);
+    assertThat(fileOps.get(9)).isInstanceOf(FileOp.WriteString.class);
+    var writeStringFileOp = (FileOp.WriteString) fileOps.get(10);
     assertGoModelFileContent(
         writeStringFileOp,
         """

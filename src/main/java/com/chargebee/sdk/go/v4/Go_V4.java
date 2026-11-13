@@ -1,8 +1,8 @@
 package com.chargebee.sdk.go.v4;
 
+import static com.chargebee.GenUtil.*;
 import static com.chargebee.GenUtil.firstCharLower;
 import static com.chargebee.GenUtil.normalizeToLowerCamelCase;
-import static com.chargebee.GenUtil.*;
 import static com.chargebee.openapi.Extension.*;
 import static com.chargebee.openapi.Resource.isListOfSubResourceSchema;
 import static com.chargebee.openapi.Resource.isSubResourceSchema;
@@ -43,19 +43,20 @@ public class Go_V4 extends Language {
   List<String> enumImport = new ArrayList<>();
 
   // Mapping for global enum names that differ from their x-cb-sdk-enum-api-name
-  private static final Map<String, String> GLOBAL_ENUM_NAME_MAPPING = Map.of(
-      "JurisType", "TaxJurisType",
-      "Status", "GiftStatus" // Gift.status has enum api name "Status" but global is GiftStatus
-  );
+  private static final Map<String, String> GLOBAL_ENUM_NAME_MAPPING =
+      Map.of(
+          "JurisType", "TaxJurisType",
+          "Status", "GiftStatus" // Gift.status has enum api name "Status" but global is GiftStatus
+          );
 
   // Mapping for resource-scoped enum type names that need rewriting.
   // Keys are the default full type name (e.g. "SubscriptionStatus"),
   // values are the desired replacement name.
-  private static final Map<String, String> RESOURCE_ENUM_NAME_MAPPING = Map.of(
-    // We have two resources `Alert` and `AlertStatus` with a `status` field which
-    // leads to duplicate `AlertStatus` types. Rename the enum type to fix the conflict.
-    "AlertStatus", "AlertStatusType"
-  );
+  private static final Map<String, String> RESOURCE_ENUM_NAME_MAPPING =
+      Map.of(
+          // We have two resources `Alert` and `AlertStatus` with a `status` field which
+          // leads to duplicate `AlertStatus` types. Rename the enum type to fix the conflict.
+          "AlertStatus", "AlertStatusType");
 
   /**
    * Get the correct global enum type name for an attribute.
@@ -86,8 +87,8 @@ public class Go_V4 extends Language {
   }
 
   private String resolveResourceEnumTypeName(String resourceName, String attrName) {
-    String defaultName = resourceName
-        + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, attrName);
+    String defaultName =
+        resourceName + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, attrName);
     return applyEnumNameRewrite(defaultName);
   }
 
@@ -115,9 +116,10 @@ public class Go_V4 extends Language {
 
   @Override
   public List<FileOp> generateSDK(String outputDirectoryPath, Spec spec) throws IOException {
-    var resources = spec.resources().stream()
-        .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
-        .toList();
+    var resources =
+        spec.resources().stream()
+            .filter(resource -> !Arrays.stream(this.hiddenOverride).toList().contains(resource.id))
+            .toList();
     this.resourceList = resources;
     List<FileOp> fileOps = new ArrayList<>();
 
@@ -171,22 +173,26 @@ public class Go_V4 extends Language {
   }
 
   private boolean hasJSONObjectCols(Resource r) {
-    boolean hasJsonAttr = r.attributes().stream()
-        .filter(com.chargebee.openapi.Attribute::isNotHiddenAttribute)
-        .anyMatch(a -> dataType(a.schema, a.name).equals(Constants.JSON_RAW_MESSAGE));
+    boolean hasJsonAttr =
+        r.attributes().stream()
+            .filter(com.chargebee.openapi.Attribute::isNotHiddenAttribute)
+            .anyMatch(a -> dataType(a.schema, a.name).equals(Constants.JSON_RAW_MESSAGE));
 
-    boolean hasJsonSubResAttr = !r.subResources().stream()
-        .filter(
-            sr -> sr.attributes().stream()
-                .filter(com.chargebee.openapi.Attribute::isNotHiddenAttribute)
-                .anyMatch(
-                    a -> dataType(a.schema, a.name).equals(Constants.JSON_RAW_MESSAGE)))
-        .toList()
-        .isEmpty();
+    boolean hasJsonSubResAttr =
+        !r.subResources().stream()
+            .filter(
+                sr ->
+                    sr.attributes().stream()
+                        .filter(com.chargebee.openapi.Attribute::isNotHiddenAttribute)
+                        .anyMatch(
+                            a -> dataType(a.schema, a.name).equals(Constants.JSON_RAW_MESSAGE)))
+            .toList()
+            .isEmpty();
 
-    boolean hasJsonResponseParam = r.getSortedAction().stream()
-        .flatMap(action -> action.response().responseParameters(this).stream())
-        .anyMatch(resp -> Constants.JSON_RAW_MESSAGE.equals(resp.getType()));
+    boolean hasJsonResponseParam =
+        r.getSortedAction().stream()
+            .flatMap(action -> action.response().responseParameters(this).stream())
+            .anyMatch(resp -> Constants.JSON_RAW_MESSAGE.equals(resp.getType()));
 
     return hasJsonAttr || hasJsonSubResAttr || hasJsonResponseParam;
   }
@@ -200,8 +206,8 @@ public class Go_V4 extends Language {
     }
     for (Action action : res.getSortedAction()) {
       for (Parameter requestParams : action.requestBodyParameters()) {
-        com.chargebee.openapi.Attribute attribute = new Attribute(requestParams.getName(), requestParams.schema,
-            requestParams.isRequired);
+        com.chargebee.openapi.Attribute attribute =
+            new Attribute(requestParams.getName(), requestParams.schema, requestParams.isRequired);
         if (attribute.isEnumAttribute() && attribute.isExternalEnum()) {
           return true;
         }
@@ -212,8 +218,8 @@ public class Go_V4 extends Language {
         }
       }
       for (Parameter requestParams : action.queryParameters()) {
-        com.chargebee.openapi.Attribute attribute = new Attribute(requestParams.getName(), requestParams.schema,
-            requestParams.isRequired);
+        com.chargebee.openapi.Attribute attribute =
+            new Attribute(requestParams.getName(), requestParams.schema, requestParams.isRequired);
         if (attribute.isEnumAttribute() && attribute.isExternalEnum()) {
           return true;
         }
@@ -396,7 +402,8 @@ public class Go_V4 extends Language {
   }
 
   private boolean isMultiFilterAttribute(Parameter queryParameter) {
-    Attribute attribute = new Attribute(queryParameter.getName(), queryParameter.schema, queryParameter.isRequired);
+    Attribute attribute =
+        new Attribute(queryParameter.getName(), queryParameter.schema, queryParameter.isRequired);
     return attribute.isMultiAttribute();
   }
 
@@ -405,15 +412,13 @@ public class Go_V4 extends Language {
       Parameter queryParameter,
       List<OperationRequestParameter> operationRequestParameters,
       String parentName) {
-    Attribute attribute = new Attribute(queryParameter.getName(), queryParameter.schema, queryParameter.isRequired);
-    if (queryParameter.isHiddenFromSDK())
-      return;
-    if (queryParameter.isPaginationProperty())
-      return;
+    Attribute attribute =
+        new Attribute(queryParameter.getName(), queryParameter.schema, queryParameter.isRequired);
+    if (queryParameter.isHiddenFromSDK()) return;
+    if (queryParameter.isPaginationProperty()) return;
     if (!attribute.attributes().isEmpty()
         && attribute.attributes().stream()
-            .noneMatch(com.chargebee.openapi.Attribute::isNotHiddenAttribute))
-      return;
+            .noneMatch(com.chargebee.openapi.Attribute::isNotHiddenAttribute)) return;
     OperationRequestParameter operationRequestParameter = new OperationRequestParameter();
     operationRequestParameter.setHidden(queryParameter.isHiddenFromSDK());
     operationRequestParameter.setDeprecated(queryParameter.isDeprecated());
@@ -460,18 +465,15 @@ public class Go_V4 extends Language {
       handleOperationListAttribute(action, queryParameter, operationRequestParameters, null);
     }
     for (Parameter requestBodyParameter : action.requestBodyParameters()) {
-      Attribute attribute = new Attribute(
-          requestBodyParameter.getName(),
-          requestBodyParameter.schema,
-          requestBodyParameter.isRequired);
-      if (requestBodyParameter.isHiddenFromSDK())
-        continue;
-      if (requestBodyParameter.isCompositeArrayBody())
-        continue;
-      if (requestBodyParameter.isCompositeArrayBody())
-        continue;
-      if (!attribute.isFilterAttribute() && !attribute.attributes().isEmpty())
-        continue;
+      Attribute attribute =
+          new Attribute(
+              requestBodyParameter.getName(),
+              requestBodyParameter.schema,
+              requestBodyParameter.isRequired);
+      if (requestBodyParameter.isHiddenFromSDK()) continue;
+      if (requestBodyParameter.isCompositeArrayBody()) continue;
+      if (requestBodyParameter.isCompositeArrayBody()) continue;
+      if (!attribute.isFilterAttribute() && !attribute.attributes().isEmpty()) continue;
       if (attribute.isFilterAttribute()) {
         handleOperationListAttribute(
             action, requestBodyParameter, operationRequestParameters, null);
@@ -507,23 +509,22 @@ public class Go_V4 extends Language {
         Map.entry("webhookHandler", "/templates/go/v4/webhookHandler.go.hbs"),
         Map.entry("telemetryAttributeKeys", "/templates/go/telemetry/attribute_keys.go.hbs"),
         Map.entry(
-            "telemetryRequestContext",
-            "/templates/go/telemetry/request_telemetry_context.go.hbs"),
+            "telemetryRequestContext", "/templates/go/telemetry/request_telemetry_context.go.hbs"),
         Map.entry(
             "telemetryRequestError", "/templates/go/telemetry/request_telemetry_error.go.hbs"),
         Map.entry(
-            "telemetryRequestResult",
-            "/templates/go/telemetry/request_telemetry_result.go.hbs"),
+            "telemetryRequestResult", "/templates/go/telemetry/request_telemetry_result.go.hbs"),
         Map.entry("telemetryAdapter", "/templates/go/telemetry/telemetry_adapter.go.hbs"),
         Map.entry("telemetrySupport", "/templates/go/telemetry/telemetry_support.go.hbs"));
   }
 
   private FileOp generateClientFile(String outputDirectoryPath) throws IOException {
     Template clientTemplate = getTemplateContent("client");
-    List<Map<String, String>> resourceNames = this.resourceList.stream()
-        .filter(r -> !r.getSortedAction().isEmpty())
-        .map(r -> Map.of("name", r.name))
-        .toList();
+    List<Map<String, String>> resourceNames =
+        this.resourceList.stream()
+            .filter(r -> !r.getSortedAction().isEmpty())
+            .map(r -> Map.of("name", r.name))
+            .toList();
     String content = clientTemplate.apply(Map.of("resources", resourceNames));
     return new FileOp.WriteString(outputDirectoryPath, "client.go", content);
   }
@@ -536,12 +537,14 @@ public class Go_V4 extends Language {
     addMissingSeparateListEnum(globalEnums);
     Template globalEnumTemplate = getTemplateContent("globalEnums");
 
-    List<Map<String, Object>> enumList = new ArrayList<>(globalEnums.stream()
-        .sorted(Comparator.comparing(e -> e.name))
-        // Exclude EventType as it's generated in the webhook package
-        .filter(e -> !e.name.equals("EventType"))
-        .map(e -> new GlobalEnum(e).template())
-        .toList());
+    List<Map<String, Object>> enumList =
+        new ArrayList<>(
+            globalEnums.stream()
+                .sorted(Comparator.comparing(e -> e.name))
+                // Exclude EventType as it's generated in the webhook package
+                .filter(e -> !e.name.equals("EventType"))
+                .map(e -> new GlobalEnum(e).template())
+                .toList());
 
     // Generate webhook event type enum
     var webhookInfo = spec.extractWebhookInfo(true);
@@ -594,36 +597,38 @@ public class Go_V4 extends Language {
 
   private List<Map<String, Object>> generateWebhookEventTypeEnum(
       List<Map<String, String>> webhookInfo) {
-    List<Map<String, String>> possibleValues = webhookInfo.stream()
-        .map(info -> info.get("type"))
-        .filter(Objects::nonNull)
-        .distinct()
-        .sorted()
-        .map(type -> Map.of("name", type))
-        .toList();
+    List<Map<String, String>> possibleValues =
+        webhookInfo.stream()
+            .map(info -> info.get("type"))
+            .filter(Objects::nonNull)
+            .distinct()
+            .sorted()
+            .map(type -> Map.of("name", type))
+            .toList();
 
-    List<Map<String, Object>> enumData = List.of(Map.of(
-        "name", "EventType",
-        "possibleValues", possibleValues));
+    List<Map<String, Object>> enumData =
+        List.of(Map.of("name", "EventType", "possibleValues", possibleValues));
 
     return enumData;
   }
 
-  private List<FileOp> generateServices(
-      String outputDirectoryPath, List<Resource> resources) throws IOException {
+  private List<FileOp> generateServices(String outputDirectoryPath, List<Resource> resources)
+      throws IOException {
     List<FileOp> fileOps = new ArrayList<>();
 
     Template actionTemplates = getTemplateContent("services");
     for (var resource : resources) {
       String fileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name);
       if (resource.actions.isEmpty()) {
-        // All operations for this resource were removed from the spec — delete the stale service file.
+        // All operations for this resource were removed from the spec — delete the stale service
+        // file.
         fileOps.add(new FileOp.DeleteFile(outputDirectoryPath, fileName + "_service.go"));
         continue;
       }
       if (!resource.actions.isEmpty()) {
         var actionPayload = resource.templateParams(this);
-        List<Map<String, Object>> actions = (List<Map<String, Object>>) actionPayload.get("actions");
+        List<Map<String, Object>> actions =
+            (List<Map<String, Object>>) actionPayload.get("actions");
         List<Map<String, Object>> mutableActions = new ArrayList<>();
 
         for (Map<String, Object> action : actions) {
@@ -647,12 +652,11 @@ public class Go_V4 extends Language {
 
         actionPayload.put("telemetryResource", normalizeToLowerCamelCase(resource.id));
         actionPayload.put("actions", mutableActions);
-        if (mutableActions.isEmpty())
-          continue;
+        if (mutableActions.isEmpty()) continue;
         var content = actionTemplates.apply(actionPayload);
-        String dirName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name).replace("_", "");
-        fileOps.add(
-            new FileOp.WriteString(outputDirectoryPath, fileName + "_service.go", content));
+        String dirName =
+            CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, resource.name).replace("_", "");
+        fileOps.add(new FileOp.WriteString(outputDirectoryPath, fileName + "_service.go", content));
       }
     }
     return fileOps;
@@ -663,15 +667,13 @@ public class Go_V4 extends Language {
     List<FileOp> fileOps = new ArrayList<>();
 
     // Get global enum names to avoid collisions
-    Set<String> globalEnumNames = spec.globalEnums().stream()
-        .map(e -> e.name)
-        .collect(java.util.stream.Collectors.toSet());
+    Set<String> globalEnumNames =
+        spec.globalEnums().stream().map(e -> e.name).collect(java.util.stream.Collectors.toSet());
 
     Template modelTemplate = getTemplateContent("models");
     Template responseTemplate = getTemplateContent("responses");
     for (var res : resources) {
-      if (SDK_DEBUG && !DEBUG_RESOURCE.contains(res.name))
-        continue;
+      if (SDK_DEBUG && !DEBUG_RESOURCE.contains(res.name)) continue;
       activeResource = res;
 
       StringBuffer buf = new StringBuffer(Constants.FILE_HEADER);
@@ -697,9 +699,9 @@ public class Go_V4 extends Language {
       List<SubResource> subResourceList = new ArrayList<>();
       for (Resource subResource : activeResource.subResources()) {
         String clazName = singularize(subResource.name);
-        boolean alreadyExists = subResourceList.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
-        if (alreadyExists)
-          continue;
+        boolean alreadyExists =
+            subResourceList.stream().anyMatch(sr -> sr.getClazName().equals(clazName));
+        if (alreadyExists) continue;
         SubResource sr = new SubResource();
         sr.setClazName(clazName);
         sr.setCols(getSubResourceCols(subResource));
@@ -710,7 +712,8 @@ public class Go_V4 extends Language {
       // operations
       List<com.chargebee.sdk.go.v4.model.Operation> operations = new ArrayList<>();
       for (Action action : activeResource.getSortedAction()) {
-        com.chargebee.sdk.go.v4.model.Operation operation = new com.chargebee.sdk.go.v4.model.Operation();
+        com.chargebee.sdk.go.v4.model.Operation operation =
+            new com.chargebee.sdk.go.v4.model.Operation();
         List<InputSubResParam> inputSubResParamList = new ArrayList<>();
         operation.setClazName(toClazName(action.name, "Request"));
         operation.setHasInputParams(hasInputParams(action));
@@ -719,19 +722,22 @@ public class Go_V4 extends Language {
         operation.setInputParams(inputParams(action));
         operation.setHttpRequestType(action.httpRequestType.toString());
 
-        ResponseParser goOperationResponse = new ResponseParser(
-            action, activeResource.name, action.response().responseParameters(this));
-        com.chargebee.sdk.go.v4.model.Response goResponse = new com.chargebee.sdk.go.v4.model.Response();
+        ResponseParser goOperationResponse =
+            new ResponseParser(
+                action, activeResource.name, action.response().responseParameters(this));
+        com.chargebee.sdk.go.v4.model.Response goResponse =
+            new com.chargebee.sdk.go.v4.model.Response();
         goResponse.setClassName(goOperationResponse.className());
         goResponse.setResponseParams(goOperationResponse.actionResponseParams());
         goResponse.setSubResponseClassName(goOperationResponse.subResponseClassName());
         goResponse.setSubResponseParams(goOperationResponse.subResponseParams());
         operation.setOperationResponses(goResponse);
 
-        ActionAssist actionAssist = ActionAssist.of(action)
-            .withFlatMultiAttribute(false)
-            .withPagination(true)
-            .withFilterSubResource(true);
+        ActionAssist actionAssist =
+            ActionAssist.of(action)
+                .withFlatMultiAttribute(false)
+                .withPagination(true)
+                .withFilterSubResource(true);
         for (Attribute subResource : actionAssist.consolidatedSubParams()) {
           InputSubResParam inputSubResParam = new InputSubResParam();
           inputSubResParam.setMethodName(toCamelCase(action.name));
@@ -760,8 +766,7 @@ public class Go_V4 extends Language {
 
       String modelFileName = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, res.name);
       fileOps.add(
-          new FileOp.WriteString(
-              outputDirectoryPath, modelFileName + ".go", buf.toString()));
+          new FileOp.WriteString(outputDirectoryPath, modelFileName + ".go", buf.toString()));
     }
     return fileOps;
   }
@@ -769,7 +774,8 @@ public class Go_V4 extends Language {
   private String getResponseImports(Resource res) {
     Set<String> imports = new HashSet<>();
     for (Action action : res.getSortedAction()) {
-      for (com.chargebee.sdk.common.model.OperationResponse r : action.response().responseParameters(this)) {
+      for (com.chargebee.sdk.common.model.OperationResponse r :
+          action.response().responseParameters(this)) {
         extractImports(r, res.name, imports);
       }
     }
@@ -784,7 +790,8 @@ public class Go_V4 extends Language {
   }
 
   private void extractImports(
-      com.chargebee.sdk.common.model.OperationResponse r, String activeResourceName,
+      com.chargebee.sdk.common.model.OperationResponse r,
+      String activeResourceName,
       Set<String> imports) {
     String type = r.getType();
     if (type != null
@@ -808,9 +815,9 @@ public class Go_V4 extends Language {
     StringJoiner buf = new StringJoiner("\n");
     String subResName = toCamelCase(singularize(subParam.name));
 
-    for (Attribute attribute : subParam.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList()) {
-      if (attribute.isHiddenParameter())
-        continue;
+    for (Attribute attribute :
+        subParam.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList()) {
+      if (attribute.isHiddenParameter()) continue;
       if (attribute.isFilterAttribute()) {
         buf.add(
             "\t"
@@ -829,8 +836,9 @@ public class Go_V4 extends Language {
           if (subResName.equals(activeResource.name)) {
             type = applyEnumNameRewrite(activeResource.name + toCamelCase(attribute.name));
           } else {
-            type = applyEnumNameRewrite(
-                activeResource.name + subResName + toCamelCase(attribute.name));
+            type =
+                applyEnumNameRewrite(
+                    activeResource.name + subResName + toCamelCase(attribute.name));
           }
         }
         // addEnumImport(type);
@@ -867,11 +875,12 @@ public class Go_V4 extends Language {
     List<Parameter> params = new ArrayList<>();
     params.addAll(action.requestBodyParameters());
     params.addAll(action.queryParameters());
-    List<Attribute> attributes = params.stream()
-        .map(p -> new Attribute(p.getName(), p.schema, p.isRequired))
-        .filter(Attribute::isNotHiddenAttribute)
-        .sorted(Comparator.comparing(Attribute::sortOrder))
-        .toList();
+    List<Attribute> attributes =
+        params.stream()
+            .map(p -> new Attribute(p.getName(), p.schema, p.isRequired))
+            .filter(Attribute::isNotHiddenAttribute)
+            .sorted(Comparator.comparing(Attribute::sortOrder))
+            .toList();
     for (Attribute attribute : attributes) {
       if (attribute.isSubResource()
           || attribute.isCompositeArrayRequestBody()
@@ -892,20 +901,24 @@ public class Go_V4 extends Language {
     String type = "";
     StringJoiner buf = new StringJoiner("\n");
     HashMap<String, Integer> m = new HashMap<>();
-    ActionAssist actionAssist = ActionAssist.of(action)
-        .withFlatOuterEntries(true)
-        .withPagination(true)
-        .withOnlyPagination(true)
-        .withFilterSubResource(true);
+    ActionAssist actionAssist =
+        ActionAssist.of(action)
+            .withFlatOuterEntries(true)
+            .withPagination(true)
+            .withOnlyPagination(true)
+            .withFilterSubResource(true);
     for (Attribute attribute : actionAssist.getAllAttribute()) {
-      if (attribute.isDeprecated())
-        continue;
+      if (attribute.isDeprecated()) continue;
       if (attribute.isSubResource() || attribute.isCompositeArrayRequestBody()) {
         if (m.containsKey(attribute.name)) {
           continue;
         } else {
           m.put(attribute.name, 1);
-          type = "*" + activeResource.name + firstCharUpper(action.name) + toCamelCase(singularize(attribute.name));
+          type =
+              "*"
+                  + activeResource.name
+                  + firstCharUpper(action.name)
+                  + toCamelCase(singularize(attribute.name));
           if (attribute.isCompositeArrayRequestBody()) {
             type = "[]" + type;
           }
@@ -962,7 +975,10 @@ public class Go_V4 extends Language {
                   + String.join(
                       delimiter,
                       toCamelCase(attribute.name),
-                      "*" + activeResource.name + toCamelCase(action.name) + toCamelCase(attribute.name),
+                      "*"
+                          + activeResource.name
+                          + toCamelCase(action.name)
+                          + toCamelCase(attribute.name),
                       getJsonVal(attribute, req)));
         } else {
           buf.add(
@@ -1004,7 +1020,8 @@ public class Go_V4 extends Language {
       Map<String, Object> enumMap = this.resourceEnumTemplate(e, resourceName);
       if (!enumMap.isEmpty()) {
         String enumName = (String) enumMap.get("name");
-        String fullName = resourceName + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, enumName);
+        String fullName =
+            resourceName + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, enumName);
         if (globalEnumNames.contains(fullName)) {
           continue;
         }
@@ -1024,7 +1041,8 @@ public class Go_V4 extends Language {
       Map<String, Object> enumMap = this.resourceEnumTemplate(e, resourceName);
       if (!enumMap.isEmpty()) {
         String enumName = (String) enumMap.get("name");
-        String fullName = resourceName + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, enumName);
+        String fullName =
+            resourceName + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, enumName);
         if (globalEnumNames.contains(fullName)) {
           continue;
         }
@@ -1098,13 +1116,7 @@ public class Go_V4 extends Language {
       }
     }
     if (activeResource.isCustomFieldSupported())
-      buf.add(
-          "\t"
-              + String.join(
-                  delimiter,
-                  "CustomFields",
-                  "*CustomFields",
-                  "`json:\"-\"`"));
+      buf.add("\t" + String.join(delimiter, "CustomFields", "*CustomFields", "`json:\"-\"`"));
     if (activeResource.name.equals("Customer"))
       buf.add(
           "\t"
@@ -1116,7 +1128,7 @@ public class Go_V4 extends Language {
   }
 
   private String getListOfEnumTypeForAttribute(Attribute a) {
-    if (a.isExternalEnum() || a.isGenSeparate()){
+    if (a.isExternalEnum() || a.isGenSeparate()) {
       return (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
     }
     return activeResource.name + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
@@ -1125,7 +1137,8 @@ public class Go_V4 extends Language {
   public String getSubResourceCols(Resource subResource) {
     String type = "";
     StringJoiner buf = new StringJoiner("\n");
-    List<Attribute> attributes = subResource.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList();
+    List<Attribute> attributes =
+        subResource.attributes().stream().filter(Attribute::isNotHiddenAttribute).toList();
     for (Attribute attribute : attributes) {
       if (attribute.isDeprecated()) {
         buf.add("\t//Deprecated: this field is deprecated");
@@ -1135,16 +1148,25 @@ public class Go_V4 extends Language {
           // For global enums, use the global type name from the spec
           type = getGlobalEnumTypeName(attribute);
         } else if (attribute.isGenSeparate()) {
-          type = applyEnumNameRewrite(
-              activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name));
+          type =
+              applyEnumNameRewrite(
+                  activeResource.name
+                      + singularize(subResource.name)
+                      + toCamelCase(attribute.name));
         } else if (attribute.isDependentAttribute()) {
           type = toCamelCase(attribute.name);
         } else if (attribute.isExternalEnum()) {
-          type = applyEnumNameRewrite(
-              activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name));
+          type =
+              applyEnumNameRewrite(
+                  activeResource.name
+                      + singularize(subResource.name)
+                      + toCamelCase(attribute.name));
         } else {
-          type = applyEnumNameRewrite(
-              activeResource.name + singularize(subResource.name) + toCamelCase(attribute.name));
+          type =
+              applyEnumNameRewrite(
+                  activeResource.name
+                      + singularize(subResource.name)
+                      + toCamelCase(attribute.name));
         }
         // Patch to match cb-app based enum naming
         // type =
@@ -1212,7 +1234,6 @@ public class Go_V4 extends Language {
                     dataType(attribute.schema, attribute.name),
                     getJsonVal(attribute, true)));
       }
-
     }
     buf.add("\t" + String.join(delimiter, "Object", Constants.STRING_TYPE, "`json:\"object\"`"));
     return formatUsingDelimiter(buf.toString());
@@ -1224,7 +1245,8 @@ public class Go_V4 extends Language {
       colsRetType = colsRetType.replace("enum.InvoiceStatus", "invoiceEnum.Status");
       colsRetType = colsRetType.replace("enum.CnReasonCode", "creditNoteEnum.ReasonCode");
       colsRetType = colsRetType.replace("enum.CnStatus", "creditNoteEnum.Status");
-      colsRetType = colsRetType.replace("enum.PaymentMethodType", "paymentIntentEnum.PaymentMethodType");
+      colsRetType =
+          colsRetType.replace("enum.PaymentMethodType", "paymentIntentEnum.PaymentMethodType");
     }
     return colsRetType;
   }
@@ -1354,6 +1376,11 @@ public class Go_V4 extends Language {
     if (schema.getExtensions() != null && schema.getExtensions().get(SUB_RESOURCE_NAME) != null) {
       return (String) schema.getExtensions().get(SUB_RESOURCE_NAME);
     }
+    if (schema.getItems() != null
+        && schema.getItems().getExtensions() != null
+        && schema.getItems().getExtensions().get(SUB_RESOURCE_NAME) != null) {
+      return (String) schema.getItems().getExtensions().get(SUB_RESOURCE_NAME);
+    }
     return null;
   }
 
@@ -1411,8 +1438,7 @@ public class Go_V4 extends Language {
       return (String) schema.getExtensions().get(SDK_FILTER_NAME);
     }
     Optional<Schema> filterSch = schema.getProperties().values().stream().findFirst();
-    if (filterSch.isEmpty())
-      return null;
+    if (filterSch.isEmpty()) return null;
     Schema filterSchema = filterSch.get();
     if (filterSchema.getEnum() != null) {
       if (filterSchema.getFormat() != null && filterSchema.getFormat().equals("boolean")) {

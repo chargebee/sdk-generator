@@ -229,10 +229,8 @@ public class Go_V3 extends Language {
     }
     if (!getSubResource(activeResource).isEmpty()) {
       for (Attribute sr : getSubResource(activeResource)) {
-        // A global sub-resource is its own model file. Nested types are imported
-        // there; copying them onto this file leaves them unused. A dependent
-        // attribute that is not global is still inlined in this file.
-        if (sr.isGlobalResourceReference()) {
+        // Separate models import their own nested types.
+        if (sr.isDependentAttribute() || sr.isGlobalResourceReference()) {
           continue;
         }
         for (Attribute nestedSubRes :
@@ -243,12 +241,14 @@ public class Go_V3 extends Language {
                             || attr.isGlobalResourceReference()
                                 && attr.name != "error_detail")) // error detail is handled below
                 .toList()) {
+          String refModelName =
+              nestedSubRes.subResourceName() != null
+                  ? nestedSubRes.subResourceName().toLowerCase()
+                  : singularize(nestedSubRes.name.replace("_", "").toLowerCase());
           addImport(
               buf,
               seenImports,
-              "\t\"github.com/chargebee/chargebee-go/v3/models/"
-                  + singularize(nestedSubRes.name.replace("_", "").toLowerCase())
-                  + "\"");
+              "\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
         }
       }
     }
@@ -977,12 +977,14 @@ public class Go_V3 extends Language {
   }
 
   private String getListOfEnumTypeForAttribute(Attribute a) {
-    if(a.isExternalEnum() || a.isGenSeparate()) {
-      return "[]" + Constants.ENUM_WITH_DELIMITER + (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
+    if (a.isExternalEnum() || a.isGenSeparate()) {
+      return "[]"
+          + Constants.ENUM_WITH_DELIMITER
+          + (String) a.getSchema().getItems().getExtensions().get(SDK_ENUM_API_NAME);
     }
     return getCamelClazName(activeResource.name)
-            + Constants.ENUM_DOT
-            + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
+        + Constants.ENUM_DOT
+        + CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, a.name);
   }
 
   public String getSubResourceCols(Resource subResource) {
@@ -1019,8 +1021,7 @@ public class Go_V3 extends Language {
                         && !subTypeName.equals(toCamelCase(singularize(subResource.id))))
                     ? toCamelCase(
                         singularize(
-                            CaseFormat.UPPER_CAMEL.to(
-                                CaseFormat.LOWER_UNDERSCORE, subTypeName)))
+                            CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, subTypeName)))
                     : singularize(subResource.name);
             type =
                 firstCharLower(activeResource.name)
@@ -1047,8 +1048,8 @@ public class Go_V3 extends Language {
               case "discountEnum.EntityType" -> "invoiceEnum.DiscountEntityType";
               case "omnichannelSubscriptionEnum.OmnichannelTransactionType" ->
                   "omnichannelSubscriptionEnum.InitialPurchaseTransactionType";
-              // AppliedCredit is the x-cb-sub-resource-name but the released SDK used
-              // "Allocation" (derived from the property key); preserve backward compatibility.
+                // AppliedCredit is the x-cb-sub-resource-name but the released SDK used
+                // "Allocation" (derived from the property key); preserve backward compatibility.
               case "creditNoteEnum.AppliedCreditTaxApplication" ->
                   "creditNoteEnum.AllocationTaxApplication";
               default -> type;
@@ -1075,12 +1076,23 @@ public class Go_V3 extends Language {
                 + String.join(
                     delimiter, toCamelCase(attribute.name), type, getJsonVal(attribute, true)));
       } else if (attribute.isSubResource()) {
+        String subResType;
+        if (attribute.isGlobalResourceReference() && attribute.subResourceName() != null) {
+          String subResName = attribute.subResourceName();
+          String pkgName = subResName.toLowerCase();
+          subResType =
+              attribute.isListSubResourceAttribute()
+                  ? "[]*" + pkgName + "." + subResName
+                  : "*" + pkgName + "." + subResName;
+        } else {
+          subResType = dataType(attribute.schema, attribute.name);
+        }
         buf.add(
             "\t"
                 + String.join(
                     delimiter,
                     toCamelCase(attribute.name),
-                    dataType(attribute.schema, attribute.name),
+                    subResType,
                     getJsonVal(attribute, true)));
       } else {
         buf.add(
