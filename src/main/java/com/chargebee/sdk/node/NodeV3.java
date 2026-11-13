@@ -73,6 +73,8 @@ public class NodeV3 extends Language {
     templates.put("telemetryIndex", "/templates/node/telemetry/index.ts.hbs");
     templates.put("telemetryOtel", "/templates/node/telemetry/otel.ts.hbs");
     templates.put(
+        "telemetryHeaderParser", "/templates/node/telemetry/chargebeeTelemetryHeaderParser.ts.hbs");
+    templates.put(
         "sdkTelemetryHeader", "/templates/node/telemetry/sdkTelemetryHeader.ts.hbs");
     templates.put(
         "sdkTelemetryFeature", "/templates/node/telemetry/sdkTelemetryFeature.ts.hbs");
@@ -93,6 +95,7 @@ public class NodeV3 extends Language {
 
     final String[] telemetryFiles = {
       "types.ts",
+      "chargebeeTelemetryHeaderParser.ts",
       "TelemetryAdapter.ts",
       "index.ts",
       "otel.ts",
@@ -104,6 +107,7 @@ public class NodeV3 extends Language {
     };
     final String[] templateKeys = {
       "telemetryTypes",
+      "telemetryHeaderParser",
       "telemetryAdapter",
       "telemetryIndex",
       "telemetryOtel",
