@@ -734,7 +734,8 @@ public class NodeV3Tests extends LanguageTests {
         .contains("'chargebee-request-origin-';")
         .contains("startAttributes: Record<string, string | string[]>;")
         .contains("responseHeaders?: ResponseHeadersForTelemetry;")
-        .contains("endAttributes: Record<string, RequestTelemetryEndAttributeValue>;")
+        .contains("endAttributes: Record<string, string | number>;")
+        .contains("responseTelemetryAttributes?: Record<string, ResponseTelemetryAttributeValue>;")
         .contains("requestHeaders?: Record<string, string | number>;");
 
     var parserFile =
@@ -752,7 +753,8 @@ public class NodeV3Tests extends LanguageTests {
         .contains("export function getResponseHeaderValueIgnoreCase(")
         .contains("export function buildResponseHeaderSpanAttributes(")
         .contains("parseChargebeeTelemetryHeaderToSpanAttributes(value)")
-        .contains("...buildResponseHeaderSpanAttributes(result.responseHeaders),")
+        .doesNotContain("...buildResponseHeaderSpanAttributes(result.responseHeaders),")
+        .contains("telemetryResult.responseTelemetryAttributes = responseTelemetryAttributes;")
         .contains("export function extractResponseHeaders(")
         .contains("...buildRequestHeaderSpanAttributes(input.requestHeaders),");
 

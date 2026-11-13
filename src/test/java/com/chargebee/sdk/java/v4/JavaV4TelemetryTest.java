@@ -194,7 +194,9 @@ class JavaV4TelemetryTest {
     FileOp.WriteString support = findWriteOp(fileOps, "TelemetrySupport.java");
     assertThat(support.fileContent).contains("buildResponseHeaderSpanAttributes");
     assertThat(support.fileContent)
-        .contains("attributes.putAll(buildResponseHeaderSpanAttributes(result.getResponseHeaders()))");
+        .doesNotContain(
+            "attributes.putAll(buildResponseHeaderSpanAttributes(result.getResponseHeaders()))")
+        .contains("buildResponseHeaderSpanAttributes(result.getResponseHeaders()));");
     assertThat(support.fileContent)
         .contains("ChargebeeTelemetryHeaderParser.parseToSpanAttributes(value)");
     assertThat(support.fileContent).contains("extractResponseHeaders");
