@@ -530,7 +530,11 @@ public class Go_V4 extends Language {
   }
 
   private FileOp generateGlobalEnumFiles(String outDirectoryPath, Spec spec) throws IOException {
-    List<Enum> globalEnums = spec.globalEnums();
+    List<Enum> globalEnums = new ArrayList<>(spec.globalEnums());
+    // A gen-separate list enum is referenced by its global name. Write that
+    // type only when it is not already a component schema. Existing enums,
+    // including EventType, are left as they are.
+    addMissingSeparateListEnum(globalEnums);
     Template globalEnumTemplate = getTemplateContent("globalEnums");
 
     List<Map<String, Object>> enumList =
@@ -550,6 +554,39 @@ public class Go_V4 extends Language {
 
     var content = globalEnumTemplate.apply(Map.of("globalEnums", enumList));
     return new FileOp.WriteString(outDirectoryPath, "types.go", content);
+  }
+
+  private void addMissingSeparateListEnum(List<Enum> globalEnums) {
+    Set<String> names = new HashSet<>();
+    for (Enum existing : globalEnums) {
+      names.add(existing.name);
+    }
+    for (Resource resource : resourceList) {
+      for (Attribute attribute : resource.getSortedResourceAttributes()) {
+        addSeparateListEnumIfMissing(attribute, globalEnums, names);
+        if (!attribute.isSubResource()) {
+          continue;
+        }
+        for (Attribute subAttribute : attribute.attributes()) {
+          addSeparateListEnumIfMissing(subAttribute, globalEnums, names);
+        }
+      }
+    }
+  }
+
+  private void addSeparateListEnumIfMissing(
+      Attribute attribute, List<Enum> globalEnums, Set<String> names) {
+    if (!attribute.isListOfEnum()
+        || !attribute.isGenSeparate()
+        || !attribute.isGlobalEnumAttribute()) {
+      return;
+    }
+    String enumName = getGlobalEnumTypeName(attribute);
+    if (enumName == null || enumName.isEmpty() || names.contains(enumName)) {
+      return;
+    }
+    names.add(enumName);
+    globalEnums.add(new Enum(enumName, attribute.schema));
   }
 
   private Map<String, Object> resourceEnumTemplate(Enum e, String resourceName) {
