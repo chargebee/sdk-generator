@@ -216,7 +216,12 @@ public class Go_V3 extends Language {
     if (!getDependentResource(activeResource).isEmpty()) {
       for (Attribute dr : getDependentResource(activeResource)) {
         var refModelName = singularize(dr.name.replace("_", ""));
-        if (dr.isDependentAttribute()
+        if (dr.isGlobalResourceReference() && dr.subResourceName() != null) {
+          // Match the field type, which names the package after x-cb-sub-resource-name.
+          // The property key can differ: criteria_schema.value_schema is a CriteriaValueSchema,
+          // while a separate value_schema resource also exists.
+          refModelName = dr.subResourceName().toLowerCase();
+        } else if (dr.isDependentAttribute()
             && resourceList.stream().noneMatch(r -> r.id.equals(singularize(dr.name)))) {
           if (dr.subResourceName() != null) {
             refModelName = dr.subResourceName().toLowerCase();
