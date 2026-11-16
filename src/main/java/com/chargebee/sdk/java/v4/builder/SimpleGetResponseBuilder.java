@@ -297,9 +297,10 @@ public class SimpleGetResponseBuilder {
             && "object".equals(itemsSchema.getType())
             && itemsSchema.getProperties() != null
             && !itemsSchema.getProperties().isEmpty()) {
-          // For inline object definitions with properties, use the old logic
-          fieldType =
-              TypeMapper.getJavaType(module + "_" + fieldName + "_Item", (Schema<?>) itemsSchema);
+          // Inline object items: keep the field a list of the generated "<module>_<field>_Item"
+          // sub-model (see getSubModels). A non-paginated list response such as
+          // {"list": [{"preference": {...}}]} must stay List<PreferenceListItem>, not a single item.
+          fieldType = new ListType(module + "_" + fieldName + "_Item", fieldSchema);
         }
         // Otherwise, keep the ListType as-is (it will be List<Object> for arrays with no item
         // schema)
