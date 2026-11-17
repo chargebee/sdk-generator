@@ -195,4 +195,10 @@ public class NodeV3 extends Language {
 
     return fileOps;
   }
+
+  // -o chargebee-node/src/resources
+  @Override
+  protected int sdkRootDepthFromOutputDirectory() {
+    return 2;
+  }
 }

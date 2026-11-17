@@ -69,4 +69,10 @@ public class JavaV4Internal extends JavaV4 {
     // so no need to add them here
     return templates;
   }
+
+  // The internal jar is not pinned.
+  @Override
+  protected int sdkRootDepthFromOutputDirectory() {
+    return -1;
+  }
 }
