@@ -1699,4 +1699,10 @@ public class Java extends Language {
   public boolean cleanDirectoryBeforeGenerate() {
     return false;
   }
+
+  // -o chargebee-java/src/main/java/com/chargebee (internal jars are not pinned)
+  @Override
+  protected int sdkRootDepthFromOutputDirectory() {
+    return generationMode == GenerationMode.EXTERNAL ? 5 : -1;
+  }
 }

@@ -195,4 +195,10 @@ public class JavaV4 extends Language {
   public boolean cleanDirectoryBeforeGenerate() {
     return false;
   }
+
+  // -o chargebee-java/src/main/java/
+  @Override
+  protected int sdkRootDepthFromOutputDirectory() {
+    return 3;
+  }
 }

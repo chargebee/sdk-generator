@@ -185,4 +185,10 @@ public class PHP_V4 extends Language {
   public boolean cleanDirectoryBeforeGenerate() {
     return false;
   }
+
+  // -o chargebee-php/src
+  @Override
+  protected int sdkRootDepthFromOutputDirectory() {
+    return 1;
+  }
 }

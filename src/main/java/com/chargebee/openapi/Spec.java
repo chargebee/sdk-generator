@@ -43,6 +43,11 @@ public class Spec {
         .collect(Collectors.groupingBy(Action::resourceId));
   }
 
+  /** The spec's own version ({@code info.version}), or null when the spec does not declare one. */
+  public String openApiVersion() {
+    return openAPI.getInfo() == null ? null : openAPI.getInfo().getVersion();
+  }
+
   public void enableForQa() {
     QAModeHandler.getInstance().setValue(true);
   }

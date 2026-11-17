@@ -16,6 +16,10 @@ import com.github.jknack.handlebars.helper.StringHelpers;
 import io.swagger.v3.oas.models.media.Schema;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -101,7 +105,61 @@ public abstract class Language implements DataType {
 
   public List<FileOp> generate(String outputDirectoryPath, Spec spec) throws IOException {
     initialise();
-    return generateSDK(outputDirectoryPath, spec);
+    List<FileOp> fileOps = new ArrayList<>(generateSDK(outputDirectoryPath, spec));
+    FileOp openApiVersionFile = openApiVersionFile(outputDirectoryPath, spec);
+    if (openApiVersionFile != null) {
+      fileOps.add(openApiVersionFile);
+    }
+    return fileOps;
+  }
+
+  public static final String OPENAPI_VERSION_FILE_NAME = "OPENAPI_VERSION";
+  private static final String SDK_ROOT_MARKER_FILE_NAME = "VERSION";
+
+  /**
+   * How many directories the {@code -o} output directory sits below the SDK repository root (e.g.
+   * 1 for {@code chargebee-php/src}). The {@code OPENAPI_VERSION} file is written at that root. A
+   * negative value means this generator does not write an {@code OPENAPI_VERSION} file.
+   */
+  protected int sdkRootDepthFromOutputDirectory() {
+    return -1;
+  }
+
+  /**
+   * Pins the OpenAPI spec version the SDK was generated from by writing {@code info.version} to
+   * {@code OPENAPI_VERSION} at the SDK repository root. The root is only accepted when it holds
+   * the SDK's {@code VERSION} file, so generating into an ad-hoc output directory never drops the
+   * file somewhere unrelated.
+   */
+  public FileOp openApiVersionFile(String outputDirectoryPath, Spec spec) {
+    int depth = sdkRootDepthFromOutputDirectory();
+    if (depth < 0) {
+      return null;
+    }
+    String openApiVersion = spec.openApiVersion();
+    if (openApiVersion == null || openApiVersion.isBlank()) {
+      System.err.println(
+          "Warning: OpenAPI spec has no info.version, skipping " + OPENAPI_VERSION_FILE_NAME);
+      return null;
+    }
+    Path sdkRoot = Paths.get(outputDirectoryPath).toAbsolutePath().normalize();
+    for (int i = 0; i < depth && sdkRoot != null; i++) {
+      sdkRoot = sdkRoot.getParent();
+    }
+    if (sdkRoot == null || !Files.isRegularFile(sdkRoot.resolve(SDK_ROOT_MARKER_FILE_NAME))) {
+      System.err.println(
+          "Warning: no SDK repository root (a directory with a "
+              + SDK_ROOT_MARKER_FILE_NAME
+              + " file) found "
+              + depth
+              + " level(s) above "
+              + outputDirectoryPath
+              + ", skipping "
+              + OPENAPI_VERSION_FILE_NAME);
+      return null;
+    }
+    return new FileOp.WriteString(
+        sdkRoot.toString(), OPENAPI_VERSION_FILE_NAME, openApiVersion.trim() + "\n");
   }
 
   public FileOp generate(String outputDirectoryPath, Spec oldVersion, Spec newerVersion)
