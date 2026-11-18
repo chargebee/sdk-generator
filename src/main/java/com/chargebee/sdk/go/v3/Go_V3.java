@@ -202,20 +202,26 @@ public class Go_V3 extends Language {
   private String getImportFiles() {
     List<String> consolidatedEnum = organizeImportEnums();
     StringJoiner buf = new StringJoiner("\n");
+    Set<String> seenImports = new LinkedHashSet<>();
     if (hasJSONObjectCols(activeResource)) {
-      buf.add("\t\"encoding/json\"");
+      addImport(buf, seenImports, "\t\"encoding/json\"");
     }
     if (hasGlobalEnumImport()) {
-      buf.add("\t\"github.com/chargebee/chargebee-go/v3/enum\"");
+      addImport(buf, seenImports, "\t\"github.com/chargebee/chargebee-go/v3/enum\"");
     }
     if (!getOperRequestClasses(activeResource).isEmpty()
         && (hasFilterParams() || isExportResource())) {
-      buf.add("\t\"github.com/chargebee/chargebee-go/v3/filter\"");
+      addImport(buf, seenImports, "\t\"github.com/chargebee/chargebee-go/v3/filter\"");
     }
     if (!getDependentResource(activeResource).isEmpty()) {
       for (Attribute dr : getDependentResource(activeResource)) {
         var refModelName = singularize(dr.name.replace("_", ""));
-        if (dr.isDependentAttribute()
+        if (dr.isGlobalResourceReference() && dr.subResourceName() != null) {
+          // Match the field type, which names the package after x-cb-sub-resource-name.
+          // The property key can differ: criteria_schema.value_schema is a CriteriaValueSchema,
+          // while a separate value_schema resource also exists.
+          refModelName = dr.subResourceName().toLowerCase();
+        } else if (dr.isDependentAttribute()
             && resourceList.stream().noneMatch(r -> r.id.equals(singularize(dr.name)))) {
           if (dr.subResourceName() != null) {
             refModelName = dr.subResourceName().toLowerCase();
@@ -223,12 +229,15 @@ public class Go_V3 extends Language {
             refModelName = refModelName.replace(activeResource.id, "");
           }
         }
-        buf.add("\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
+        addImport(buf, seenImports, "\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
       }
     }
     if (!getSubResource(activeResource).isEmpty()) {
       for (Attribute sr : getSubResource(activeResource)) {
-        if (sr.isDependentAttribute() || sr.isGlobalResourceReference()) continue;
+        // Separate models import their own nested types.
+        if (sr.isDependentAttribute() || sr.isGlobalResourceReference()) {
+          continue;
+        }
         for (Attribute nestedSubRes :
             sr.attributes().stream()
                 .filter(
@@ -241,16 +250,21 @@ public class Go_V3 extends Language {
               nestedSubRes.subResourceName() != null
                   ? nestedSubRes.subResourceName().toLowerCase()
                   : singularize(nestedSubRes.name.replace("_", "").toLowerCase());
-          buf.add("\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
+          addImport(
+              buf,
+              seenImports,
+              "\t\"github.com/chargebee/chargebee-go/v3/models/" + refModelName + "\"");
         }
       }
     }
     if (activeResource.name.equalsIgnoreCase("PaymentIntent")) {
-      buf.add("\t\"github.com/chargebee/chargebee-go/v3/models/gatewayerrordetail\"");
+      addImport(buf, seenImports, "\t\"github.com/chargebee/chargebee-go/v3/models/gatewayerrordetail\"");
     }
     consolidatedEnum.forEach(
         a ->
-            buf.add(
+            addImport(
+                buf,
+                seenImports,
                 "\t"
                     + getCamelClazName(a)
                     + Constants.ENUM_MODEL_IMPORT
@@ -260,6 +274,12 @@ public class Go_V3 extends Language {
       return "";
     } else {
       return "\nimport (\n" + buf + "\n)" + "\n";
+    }
+  }
+
+  private void addImport(StringJoiner buf, Set<String> seenImports, String importLine) {
+    if (seenImports.add(importLine)) {
+      buf.add(importLine);
     }
   }
 

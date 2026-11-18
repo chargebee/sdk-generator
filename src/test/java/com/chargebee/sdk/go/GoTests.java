@@ -2031,4 +2031,76 @@ type Result struct {
         writeStringFileOp,
         "packageenumtypeAutocollectionstringconst(AutocollectionOnAutocollection=\"On\"AutocollectionOffAutocollection=\"Off\")");
   }
+
+  @Test
+  void dependentSubResourceImportsItsNestedTypesInItsOwnFile() throws IOException {
+    var item = buildResource("item").withAttribute("value").done();
+    var items = new ArraySchema().items(item.value);
+    items.addExtension("x-cb-is-sub-resource", true);
+    items.addExtension("x-cb-sub-resource-name", "Item");
+    items.addExtension("x-cb-is-dependent-attribute", true);
+    var valueSchema =
+        buildResource("value_schema").withAttribute("items", items).asDependentResource().done();
+    valueSchema.value.addExtension("x-cb-is-dependent-attribute", true);
+    var criteriaSchema =
+        buildResource("criteria_schema")
+            .withSubResourceAttributeReference("value_schema", valueSchema)
+            .done();
+
+    var spec = buildSpec().withResources(item, valueSchema, criteriaSchema).done();
+
+    List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
+
+    var criteriaFile =
+        fileOps.stream()
+            .filter(FileOp.WriteString.class::isInstance)
+            .map(FileOp.WriteString.class::cast)
+            .filter(file -> file.fileName.equals("criteria_schema.go"))
+            .findFirst()
+            .orElseThrow();
+    var valueSchemaFile =
+        fileOps.stream()
+            .filter(FileOp.WriteString.class::isInstance)
+            .map(FileOp.WriteString.class::cast)
+            .filter(file -> file.fileName.equals("value_schema.go"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(criteriaFile.fileContent).doesNotContain("models/item");
+    assertThat(valueSchemaFile.fileContent).contains("models/item");
+  }
+
+  @Test
+  void dependentReferenceImportsThePackageNamedAfterItsSubResourceName() throws IOException {
+    // criteria_schema.value_schema is a CriteriaValueSchema, while a separate value_schema
+    // (ValueSchema) resource also exists. The import must follow the referenced type.
+    var valueSchema =
+        buildResource("value_schema").withAttribute("type").asDependentResource().done();
+    var criteriaValueSchema =
+        buildResource("criteria_value_schema").withAttribute("type").asDependentResource().done();
+    criteriaValueSchema.value.addExtension("x-cb-is-dependent-attribute", true);
+    var criteriaSchema =
+        buildResource("criteria_schema")
+            .withSubResourceAttributeReference("value_schema", criteriaValueSchema)
+            .asDependentResource()
+            .done();
+
+    var spec =
+        buildSpec().withResources(valueSchema, criteriaValueSchema, criteriaSchema).done();
+
+    List<FileOp> fileOps = goSdkGen.generate(basePath, spec);
+
+    var criteriaFile =
+        fileOps.stream()
+            .filter(FileOp.WriteString.class::isInstance)
+            .map(FileOp.WriteString.class::cast)
+            .filter(file -> file.fileName.equals("criteria_schema.go"))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(criteriaFile.fileContent)
+        .contains("\"github.com/chargebee/chargebee-go/v3/models/criteriavalueschema\"")
+        .contains("criteriavalueschema.CriteriaValueSchema")
+        .doesNotContain("models/valueschema\"");
+  }
 }
