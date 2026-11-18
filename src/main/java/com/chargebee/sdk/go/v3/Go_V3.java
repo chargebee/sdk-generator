@@ -1375,4 +1375,10 @@ public class Go_V3 extends Language {
   public boolean cleanDirectoryBeforeGenerate() {
     return false;
   }
+
+  // -o chargebee-go
+  @Override
+  protected int sdkRootDepthFromOutputDirectory() {
+    return 0;
+  }
 }

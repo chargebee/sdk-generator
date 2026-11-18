@@ -1359,4 +1359,10 @@ public class Dotnet extends Language {
   public boolean cleanDirectoryBeforeGenerate() {
     return false;
   }
+
+  // -o chargebee-dotnet/ChargeBee
+  @Override
+  protected int sdkRootDepthFromOutputDirectory() {
+    return 1;
+  }
 }

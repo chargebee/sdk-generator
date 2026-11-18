@@ -866,4 +866,10 @@ public class PythonV3 extends Language {
   public boolean cleanDirectoryBeforeGenerate() {
     return false;
   }
+
+  // -o chargebee-python/chargebee
+  @Override
+  protected int sdkRootDepthFromOutputDirectory() {
+    return 1;
+  }
 }

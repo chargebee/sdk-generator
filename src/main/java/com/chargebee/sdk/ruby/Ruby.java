@@ -193,4 +193,10 @@ public class Ruby extends Language {
   public boolean cleanDirectoryBeforeGenerate() {
     return false;
   }
+
+  // -o chargebee-ruby/lib/chargebee
+  @Override
+  protected int sdkRootDepthFromOutputDirectory() {
+    return 2;
+  }
 }
