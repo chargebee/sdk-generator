@@ -438,6 +438,91 @@ using System.Net;"""
         """);
   }
 
+  private static Schema<?> subResourceEnumFilterParam(String attributeName, String metaModelName) {
+    return new ObjectSchema()
+        .properties(
+            Map.of(
+                attributeName,
+                new ObjectSchema()
+                    .properties(
+                        Map.of(
+                            "is", new StringSchema()._enum(List.of("in_progress", "exhausted"))))
+                    .extensions(
+                        Map.of(
+                            "x-cb-is-sub-resource", true,
+                            "x-cb-is-filter-parameter", true,
+                            "x-cb-meta-model-name", metaModelName,
+                            "x-cb-sdk-filter-name", "EnumFilter"))));
+  }
+
+  private static FileOp.WriteString modelFile(List<FileOp> fileOps, String fileName) {
+    return fileOps.stream()
+        .filter(FileOp.WriteString.class::isInstance)
+        .map(FileOp.WriteString.class::cast)
+        .filter(file -> file.fileName.equals(fileName))
+        .findFirst()
+        .orElseThrow();
+  }
+
+  @Test
+  void crossResourceEnumFilterShouldReferenceTheReferencedResourceEnum() throws IOException {
+    var invoice =
+        buildResource("invoice")
+            .withAttribute("id", true)
+            .withAttribute(
+                "dunning_status", new StringSchema()._enum(List.of("in_progress", "exhausted")))
+            .done();
+    var invoiceRetryContext =
+        buildResource("invoice_retry_context").withAttribute("invoice_id", true).done();
+    var listOperation =
+        buildListOperation("list")
+            .forResource("invoice_retry_context")
+            .withQueryParam("invoice", subResourceEnumFilterParam("dunning_status", "invoices"))
+            .withResponse(resourceResponseParam("invoice_retry_context", invoiceRetryContext))
+            .asInputObjNeeded()
+            .done();
+    var spec =
+        buildSpec()
+            .withTwoResources(invoice, invoiceRetryContext)
+            .withOperation("/invoice_retry_contexts", listOperation)
+            .done();
+
+    List<FileOp> fileOps = dotnetSdkGen.generate(basePath, spec);
+
+    assertThat(modelFile(fileOps, "InvoiceRetryContext.cs").fileContent)
+        .contains(
+            "EnumFilter<Invoice.DunningStatusEnum, InvoiceRetryContextListRequest>"
+                + " InvoiceDunningStatus()")
+        .doesNotContain("InvoiceRetryContextInvoice");
+  }
+
+  @Test
+  void ownSubResourceEnumFilterShouldKeepResourcePrefixedEnum() throws IOException {
+    var einvoice =
+        buildResource("einvoice")
+            .withAttribute("status", new StringSchema()._enum(List.of("in_progress", "exhausted")))
+            .done();
+    var invoice =
+        buildResource("invoice")
+            .withAttribute("id", true)
+            .withAttribute("status", new StringSchema()._enum(List.of("paid", "posted")), false)
+            .withAttribute("einvoice", einvoice)
+            .done();
+    var listOperation =
+        buildListOperation("list")
+            .forResource("invoice")
+            .withQueryParam("einvoice", subResourceEnumFilterParam("status", "einvoices"))
+            .withResponse(resourceResponseParam("invoice", invoice))
+            .asInputObjNeeded()
+            .done();
+    var spec = buildSpec().withResource(invoice).withOperation("/invoices", listOperation).done();
+
+    List<FileOp> fileOps = dotnetSdkGen.generate(basePath, spec);
+
+    assertThat(modelFile(fileOps, "Invoice.cs").fileContent)
+        .contains("EnumFilter<InvoiceEinvoice.StatusEnum, InvoiceListRequest> EinvoiceStatus()");
+  }
+
   @Test
   void shouldHaveEntityTypeAsRequestTypeIfNoRequestBodyOrQueryParams() throws IOException {
     var customer = buildResource("customer").withAttribute("id", true).done();

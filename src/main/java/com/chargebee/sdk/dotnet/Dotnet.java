@@ -1096,7 +1096,10 @@ public class Dotnet extends Language {
         if (isSubResourcesNameSpaceGlobal(activeResource, attribute.metaModelName())) {
           prefix = "";
         }
-        ;
+        String crossResourceEnum = crossResourceFilterEnumName(attribute);
+        if (crossResourceEnum != null) {
+          return crossResourceEnum;
+        }
         return prefix
             + Inflector.capitalize(
                 toClazName(
@@ -1112,6 +1115,34 @@ public class Dotnet extends Language {
       }
     }
     return Inflector.capitalize(toClazName(attribute.name)) + "Enum";
+  }
+
+  /**
+   * Resolves the enum type for a filter on another top-level resource (e.g. {@code
+   * invoice[dunning_status]} on invoice_retry_contexts). Such filters are not nested sub-resources
+   * of the active resource, so no {@code <ActiveResource><SubResource>} class is generated; the
+   * enum lives on the referenced resource itself, e.g. {@code Invoice.DunningStatusEnum}. Returns
+   * null when the filter targets a genuine sub-resource of the active resource.
+   */
+  private String crossResourceFilterEnumName(Attribute attribute) {
+    String subResourceName = Inflector.singularize(attribute.metaModelName());
+    boolean isOwnSubResource =
+        activeResource.attributes().stream()
+            .anyMatch(
+                a -> a.name.equals(subResourceName) || a.name.equals(attribute.metaModelName()));
+    if (isOwnSubResource) {
+      return null;
+    }
+    String referencedClazName = Inflector.capitalize(toClazName(subResourceName));
+    boolean referencedResourceHasEnum =
+        resourceList.stream()
+            .filter(r -> r.name.equals(referencedClazName))
+            .flatMap(r -> r.attributes().stream())
+            .anyMatch(a -> a.name.equals(attribute.name) && a.isEnumAttribute());
+    if (!referencedResourceHasEnum) {
+      return null;
+    }
+    return referencedClazName + "." + Inflector.capitalize(toClazName(attribute.name)) + "Enum";
   }
 
   private boolean isSubResourcesNameSpaceGlobal(
